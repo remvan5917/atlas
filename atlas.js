@@ -22,7 +22,6 @@ const dayKey = (d = new Date()) => `${d.getFullYear()}-${deux2(d.getMonth() + 1)
 const hhmm = (d = new Date()) => `${d.getHours()} h ${deux2(d.getMinutes())}`;
 let toastT = 0;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 2600); }
-const VOIX = { print: () => null }; // (les oreilles savent faire une empreinte de voix : Atlas n'en a pas besoin)
 
 /* ---------- la mémoire ---------- */
 const STORE = window.__BANC ? 'atlas-banc' : 'atlas-etat';
@@ -32,8 +31,9 @@ function fresh() {
     settings: {
       brain: 'groq', key: '', model: AI.DEFAULT_MODEL, localUrl: 'http://localhost:11434/v1', localModel: '',
       voix: 'sombre', sound: true, micSens: 'loin', ears: 'auto', seeCloud: false, visionModel: AI.VISION_MODEL, ville: null, eveil: true,
+      conversation: true, accueil: true,
     },
-    notes: [], listes: [], minuteurs: [], chat: [], tomb: {}, updatedAt: 0, importe: false,
+    notes: [], listes: [], minuteurs: [], chat: [], voices: [], tomb: {}, updatedAt: 0, importe: false,
   };
 }
 function charge() {
@@ -113,7 +113,7 @@ document.addEventListener('click', e => {
 /* ---------- la mémoire partagée (l'ordinateur de la maison : /atlas/etat) ---------- */
 const SYNC = (() => {
   let sale = false, occupe = false, derniere = 0, erreur = '';
-  const LISTES = ['notes', 'listes'];
+  const LISTES = ['notes', 'listes', 'voices'];
   function fusion(a, b) {
     const tombs = {};
     [a.tomb || {}, b.tomb || {}].forEach(src => Object.keys(src).forEach(l => Object.keys(src[l]).forEach(k => { tombs[l] = tombs[l] || {}; tombs[l][k] = Math.max(tombs[l][k] || 0, src[l][k]); })));
@@ -131,7 +131,7 @@ const SYNC = (() => {
   }
   const partage = () => ({ ville: S.settings.ville, voix: S.settings.voix, nom: S.nom });
   function applique(m) {
-    S.notes = m.notes; S.listes = m.listes; S.tomb = m.tomb;
+    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.tomb = m.tomb;
     if (m.partage) { if (m.partage.ville) S.settings.ville = m.partage.ville; if (m.partage.voix) S.settings.voix = m.partage.voix; if (typeof m.partage.nom === 'string') S.nom = m.partage.nom; }
     try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ }
   }
@@ -142,10 +142,10 @@ const SYNC = (() => {
     try {
       for (let essai = 0; essai < 3; essai++) {
         const g = await (await fetch(`${root}/atlas/etat`, { cache: 'no-store' })).json();
-        const local = { notes: S.notes, listes: S.listes, tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
+        const local = { notes: S.notes, listes: S.listes, voices: S.voices, tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
         const m = g && g.data ? fusion(local, g.data) : local;
         applique(m);
-        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
+        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
         if (r.status === 409) continue;
         if (!r.ok) throw new Error(`mémoire ${r.status}`);
         sale = false; derniere = Date.now(); erreur = ''; break;
@@ -176,6 +176,7 @@ const LIEN = (() => {
     lire,
     ok: () => !!src(),
     prenom: () => { const s = src(); return (s && s.prenom) || ''; },
+    voix: () => { const s = src(); return (s && s.voices) || []; },
     minutes: () => { const s = src(); return (s && s.playLog && s.playLog[dayKey()]) || 0; },
     activites: () => { const s = src(); return ((s && s.log) || []).filter(x => x.at >= debut() && x.type !== 'humeur').length; },
     upcoming(max) {
@@ -272,7 +273,7 @@ function systeme(text) {
   const notes = (S.notes || []).slice(-15).map(x => `- ${x.text}`).join('\n');
   const up = LIEN.upcoming(30).slice(0, 5).map(x => `${x.e.text} dans ${x.days} jour${x.days > 1 ? 's' : ''}`);
   const enfant = LIEN.prenom();
-  return `Tu es Atlas, l'assistant personnel d'un papa${S.nom ? ` (il aime que tu l'appelles « ${S.nom} »)` : ''}. Il a développé des compétences en IA et en algorithmes, et se lance dans la domotique et la robotique ; il construit avec son fils${enfant ? ` ${enfant}` : ''} un robot pour enfant, Shadow (Atlas et Shadow sont deux assistants séparés).
+  return `Tu es Atlas, l'assistant personnel d'un papa et l'assistant de toute sa maison (sa famille, ses invités)${S.nom ? ` (il aime que tu l'appelles « ${S.nom} »)` : ''}. Il a développé des compétences en IA et en algorithmes, et se lance dans la domotique et la robotique ; il construit avec son fils${enfant ? ` ${enfant}` : ''} un robot pour enfant, Shadow (Atlas et Shadow sont deux assistants séparés).
 Tu es un assistant adulte, direct, précis et compétent : technique, IA, code, électronique, domotique, maison, administratif, cuisine, sport, culture, organisation, conseils… Ta personnalité : une IA de film (comme JARVIS) — calme, précise, élégante, un brin pince-sans-rire, jamais enfantine. Tu tutoies, tu vas droit au but. Pas d'émojis.
 FORMAT : tout ce que tu écris est dit à voix haute, rien ne s'affiche. Réponds en deux à cinq phrases naturelles et courtes, comme à l'oral : sans markdown, sans listes, sans titres, sans symboles, sans code. Pour une question longue, donne l'essentiel puis propose d'aller plus loin. Seulement s'il demande de MONTRER ou d'AFFICHER quelque chose (du code, une liste), ajoute après ta réponse orale une ligne [[ecran]] puis le détail en texte (markdown simple, code entre \`\`\`).
 COMMANDES (au plus une, à la toute fin) : [[web:recherche]] pour chercher sur Internet, [[regarder]] pour regarder avec ta caméra, [[rappel:AAAA-MM-JJ HH:MM|texte]] pour un rappel, [[note:texte]] pour l'ajouter à ses notes, [[minuteur:durée]], [[meteo]].
@@ -281,7 +282,8 @@ Tu as une caméra : s'il te demande ce que tu vois, de regarder quelque chose ou
 Tu as Internet : pour une actualité, une info récente, un prix, un horaire, un résultat, la météo d'un autre endroit ou un fait dont tu n'es pas sûr, réponds seulement [[web:ta recherche en quelques mots]]. N'invente jamais une info récente.
 Tu n'as pas accès à ses comptes, ses mails ou sa maison connectée (pas encore) : ne prétends jamais le contraire. Si tu ne sais pas, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
 Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
-${notes ? `Ses notes :\n${notes}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}`;
+${notes ? `Ses notes :\n${notes}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
+${CONV.contexte()}`;
 }
 async function repondre(text) {
   if (!AI.ready()) return say("Mon cerveau n'est pas branché : règle-le dans mes réglages. Mes outils marchent quand même : calculs, conversions, minuteurs, réveil, listes, notes, météo, état du PC et le point du jour.");
@@ -320,6 +322,7 @@ async function repondre(text) {
   let dit = String(oral || '').replace(/\[\[[^\]]*\]\]/g, '').trim();
   if (!dit && detailPropre && !montrer) dit = detailPropre.replace(/```[\s\S]*?```/g, ' ').replace(/[*#`>|_-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 700);
   if (!spoken && dit) await say(dit);
+  CONV.note('Atlas', dit);
   c.push({ role: 'assistant', content: `${dit}${detailPropre ? `\n[[ecran]]\n${detailPropre}` : ''}`.slice(0, 4000), at: Date.now() });
   if (c.length > 40) S.chat = c.slice(-40);
   save();
@@ -470,6 +473,12 @@ const R = {
   effacer: /\b(efface|supprime|vide) (toutes )?(mes|les) notes\b/,
   journee: /\b(journee|bilan|il a fait quoi|qu est ce qu il a fait|comment ca s est passe|comment s est passee|temps d ecran|il a joue a quoi)\b.*\b(fils|petit|shadow|lui|il|aujourd hui)\b|\b(la journee|le bilan) d/,
   rappel: /\brappelle moi\b/,
+  convOn: /\b(participe (a|aux) (la |nos |les )?(conversations?|discussions?)|mode conversation|ecoute (la|nos) (conversation|discussion)|tu peux participer)\b/,
+  convOff: /\b(ne participe plus|arrete de participer|arrete d ecouter (la|nos) (conversation|discussion)|mode discret|ne nous ecoute plus|reste discret)\b/,
+  apprendVoix: /\b(apprends|retiens|enregistre) (ma|la) voix\b/,
+  quiParle: /\b(qui (parle|me parle|suis je|je suis)|tu (reconnais|sais reconnaitre) ma voix|tu sais qui (je suis|parle)|c est qui qui parle)\b/,
+  oublieVoix: /\boublie (la|ma) voix\b/,
+  presente: /\b(presente toi|presentez vous|qui es tu|tu es qui|presente toi a)\b/,
   effacerEcran: /^(efface|efface l ecran|cache l ecran|ferme l ecran|ferme)$/,
   web: /\b(cherche|recherche|regarde|trouve|va voir|verifie)\b.*\b(internet|le web|en ligne|google)\b|\bsur (internet|le web)\b/,
   actus: /\b(actualites?|actus|les infos|les nouvelles|quoi de neuf (dans le monde|en france|aujourd hui)|les titres du jour|le journal)\b/,
@@ -483,7 +492,7 @@ async function handle(text) {
   const t = String(text).replace(/^\s*(atlas|atlass|atlasse|atla|hatlas|attlas)[\s,.!]*/i, '').trim() || text;
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
-  if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
+  if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
   if (R.repete.test(n) && n.split(' ').length <= 5) return say(lastSaid || "Je n'ai encore rien dit.");
   if (R.effacerEcran.test(n)) { hideBoard(); return say('OK.'); }
   const nt = t.match(/^\s*(?:note|prends note|ajoute (?:à|a) mes notes|ajoute dans mes notes|note dans mes notes)\s*(?:que |de |:)?\s*(.+)$/i);
@@ -491,6 +500,12 @@ async function handle(text) {
   if (R.effacer.test(n)) return effacerNotes();
   if (R.lire.test(n)) return lireNotes();
   if (R.journee.test(n)) return say(LIEN.journee());
+  if (R.convOn.test(n)) { S.settings.conversation = true; dlg.discret = false; save(); return say("Je participe à vos conversations. Je n'interviens que si j'ai quelque chose d'utile à dire, et je reste discret le reste du temps. Dis « reste discret » si tu veux que je me taise."); }
+  if (R.convOff.test(n)) { S.settings.conversation = false; save(); return say("Je reste discret : je ne réponds plus que quand on m'appelle par mon nom."); }
+  if (R.apprendVoix.test(n)) return apprendreVoix(t);
+  if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && VOIX.forget(nom)) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
+  if (R.quiParle.test(n)) return say(!dlg.qui ? (OREILLES.engine() === 'whisper' ? "Je ne reconnais pas ta voix. Dis « apprends ma voix », et je la retiendrai." : "Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq.") : /^invité/.test(dlg.qui) ? "Je ne connais pas encore ta voix. Dis « apprends ma voix », et je la retiendrai." : `C'est ${dlg.qui}. Je reconnais ta voix.`);
+  if (R.presente.test(n)) return presentation();
   if (R.rappel.test(n) && (await rappelLocal(t))) return;
   const outil = !R.web.test(n) && OUTILS.route(t, n); // le couteau suisse
   if (outil) return outil();
@@ -506,19 +521,154 @@ async function handle(text) {
   return repondre(t);
 }
 
+/* ---------- le mode conversation : il suit la discussion de la maison, et intervient seulement à bon escient ----------
+   - il sait qui parle (empreinte de voix) ; une voix inconnue devient « invité 1 », « invité 2 »… le temps de la soirée ;
+   - le fil de la conversation reste en mémoire vive (20 minutes au plus), jamais enregistré ;
+   - il intervient seulement s'il apporte vraiment quelque chose (une question à laquelle il sait répondre, une erreur
+     sur un fait) — jamais pendant une dispute, une conversation intime, ou avec un enfant qui ne lui parle pas ;
+     au plus une intervention spontanée toutes les deux minutes ;
+   - il accueille une fois par soirée une voix qu'il ne connaît pas ;
+   - ce qui s'adresse à Shadow (et la réponse de Shadow) ne le concerne pas. */
+const CONV = (() => {
+  const fil = [];
+  let spontane = 0, depuisEval = 0, invites = [], accueilli = 0, shadowJusqua = 0;
+  function nomPour(print) {
+    if (!print) return '';
+    const id = VOIX.identify(print);
+    if (id) { VOIX.learn(id.name, print); return id.name; } // il affine la voix des gens qu'il connaît
+    let g = invites.find(x => VOIX.dist(x.p, print) < 7.5);
+    if (!g) { g = { p: print, n: (invites.length ? invites[invites.length - 1].n : 0) + 1, vu: 0 }; invites.push(g); if (invites.length > 6) invites.shift(); }
+    g.vu++; g.at = Date.now();
+    return `invité ${g.n}`;
+  }
+  function note(qui, texte) {
+    if (!texte) return;
+    fil.push({ at: Date.now(), qui: qui || '', texte: String(texte).slice(0, 400) });
+    while (fil.length > 60 || (fil.length && Date.now() - fil[0].at > 20 * 60000)) fil.shift();
+  }
+  const ligne = x => `${x.qui || "quelqu'un"} : ${x.texte}`;
+  const recents = (k = 14) => fil.filter(x => Date.now() - x.at < 20 * 60000).slice(-k);
+  const presents = () => [...new Set(recents(30).map(x => x.qui).filter(q => q && q !== 'Atlas' && !/^invité/.test(q)))];
+  const nbInvites = () => new Set(recents(30).map(x => x.qui).filter(q => /^invité/.test(q))).size;
+  function contexte() {
+    const r = recents(12), connus = VOIX.people().map(p => p.name);
+    let t = connus.length ? `Les voix que tu connais : ${connus.join(', ')}.` : '';
+    t += dlg.qui ? (/^invité/.test(dlg.qui) ? ` Cette phrase vient d'une voix que tu ne connais pas (${dlg.qui}, peut-être un invité) : sois accueillant et poli.` : ` Tu reconnais la voix : c'est ${dlg.qui} qui te parle (adresse-toi à cette personne ; si c'est un enfant, parle simplement et gentiment).`) : '';
+    if (r.length > 1) t += `\nLa conversation dans la pièce, juste avant (pour comprendre le contexte ; « invité » = une voix inconnue) :\n${r.map(ligne).join('\n')}`;
+    return t;
+  }
+  // après « Shadow, … » : la réponse de Shadow (une ou deux phrases) n'est pas pour lui ;
+  // la fenêtre se ferme dès qu'une voix connue reparle
+  let shadowReste = 0;
+  function pourShadow() { shadowJusqua = Date.now() + 15000; shadowReste = 2; }
+  function shadowRepond(qui) {
+    if (Date.now() > shadowJusqua || shadowReste <= 0) return false;
+    if (qui && !/^invité/.test(qui)) { shadowJusqua = 0; return false; } // c'est quelqu'un de la maison qui parle
+    shadowReste--; return true;
+  }
+  const QUESTION = /^(c est quoi|qu est ce|pourquoi|comment|combien|quand|qui|ou est|ou se|ou on|quel|quelle|quels|quelles|est ce que|tu sais|vous savez|on sait|ca fait combien|c etait quand|c est combien|il fait combien|ca existe|c est vrai que|tu crois que|vous croyez que)\b/;
+  async function peutEtre(texte, qui) {
+    if (voice.speaking) return;
+    // un invité : il l'accueille, une fois par soirée
+    const g = /^invité/.test(qui) && invites.find(x => `invité ${x.n}` === qui);
+    const nq = N(texte), estQuestion = /\?/.test(texte) || QUESTION.test(nq);
+    if (S.settings.accueil !== false && g && g.vu >= 2 && !estQuestion && Date.now() - accueilli > 3 * 3600000 && Date.now() - spontane > 30000) {
+      accueilli = Date.now(); spontane = Date.now();
+      const h = new Date().getHours();
+      const m = `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}. Je ne crois pas qu'on se connaisse : je suis Atlas, l'assistant de la maison. J'écoute la conversation et j'interviens si je peux aider ; il suffit de dire mon nom.`;
+      note('Atlas', m); face.set('idle'); return say(m);
+    }
+    depuisEval++;
+    const n = N(texte), mots = n.split(' ').filter(Boolean).length, question = /\?/.test(texte) || QUESTION.test(n);
+    if (mots < 4 || Date.now() - spontane < 120000) return;
+    if (!question && depuisEval < 8) return; // il ne réfléchit pas à chaque phrase : seulement aux questions, ou de temps en temps
+    if (!AI.ready()) return;
+    depuisEval = 0;
+    const r = recents(14);
+    const sys = `Tu es Atlas, l'assistant vocal d'une maison (une IA de film : calme, précise, élégante, un brin pince-sans-rire). Tu écoutes discrètement la conversation de la famille et de ses invités. Les voix que tu reconnais sont nommées ; « invité 1 », « invité 2 »… sont des voix que tu ne connais pas ; « quelqu'un » : tu ne sais pas qui.
+Décide si tu interviens maintenant. Interviens SEULEMENT si tu apportes vraiment quelque chose :
+- quelqu'un pose une question (à la cantonade ou à un autre) à laquelle tu peux répondre de façon sûre et utile ;
+- quelqu'un affirme quelque chose de faux sur un fait important, et tu en es certain ;
+- très rarement, une remarque courte, fine et drôle qui tomberait parfaitement juste.
+Ne parle JAMAIS : pour paraphraser ou approuver ; dans une conversation intime, triste, ou une dispute ; pour une question personnelle que tu ne peux pas connaître ; à un enfant qui ne t'a pas parlé ; si la question attend l'avis de quelqu'un d'autre ; sur l'actualité récente (tu n'es pas sûr sans chercher).
+Si tu interviens : une ou deux phrases, à l'oral, naturelles, sans markdown ; adresse-toi à la personne par son prénom si tu le connais (jamais « invité » : dis plutôt « pour votre question… »). Sinon, réponds exactement : [[silence]]
+Nous sommes le ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, il est ${hhmm()}.`;
+    let t = '';
+    try { t = String(await AI.chat([{ role: 'system', content: sys }, { role: 'user', content: `La conversation (la dernière phrase vient d'être dite) :\n${r.map(ligne).join('\n')}\n\nInterviens-tu ? Ta phrase, ou [[silence]].` }], { maxTokens: 150, temperature: 0.6 }) || ''); } catch (e) { return; }
+    if (/\[\[\s*silence\s*\]\]/i.test(t)) return;
+    const dit = nettoie(t).replace(/\[\[[^\]]*\]\]/g, '').trim();
+    if (dit.length < 4 || /^(silence|rien|je n'interviens pas)/i.test(dit)) return;
+    spontane = Date.now(); dlg.repondu = Date.now(); dlg.quiParlait = ''; dlg.state = 'talk'; dlg.silence = 0;
+    note('Atlas', dit); face.set('idle');
+    await say(dit);
+  }
+  return { nomPour, note, contexte, presents, nbInvites, pourShadow, shadowRepond, peutEtre, _fil: fil };
+})();
+
+/* ---------- apprendre une voix ---------- */
+async function apprendreVoix(text) {
+  if (OREILLES.engine() !== 'whisper') return say("Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq, réglées dans mes réglages.");
+  let nom = (String(text).match(/\b(?:je suis|je m['’]appelle|c['’]est|moi c['’]est)\s+([A-Za-zÀ-ÿ-]{2,20})/i) || [])[1] || '';
+  for (let i = 0; i < 2 && !nom; i++) {
+    const a = await ask('Comment tu t\'appelles ?');
+    const m = String(a).replace(/^(je m['’]appelle|je suis|c['’]est|moi c['’]est|moi)\s+/i, '').trim().split(/\s+/)[0] || '';
+    if (m.length >= 2 && (await askYesNo(`${m.charAt(0).toUpperCase()}${m.slice(1)}, c'est bien ça ?`))) nom = m;
+  }
+  if (!nom) return say("Je n'ai pas compris le prénom. On réessaiera.");
+  nom = nom.charAt(0).toUpperCase() + nom.slice(1);
+  const phrases = [`Très bien, ${nom}. Parle-moi un peu de ta journée, en quelques phrases.`, "Maintenant, dis-moi ce que tu as prévu demain.", 'Et pour finir, compte lentement jusqu\'à quinze.'];
+  const prints = [];
+  for (const q of phrases) {
+    let l = q;
+    for (let k = 0; k < 2; k++) {
+      await ask(l, { wait: 25000 });
+      const p = OREILLES.takePrint();
+      if (p) { prints.push(p); break; }
+      l = 'Parle un peu plus longtemps, que je retienne bien ta voix.';
+    }
+  }
+  if (prints.length < 2) return say("Je n'ai pas assez bien entendu ta voix. On réessaiera dans un endroit plus calme.");
+  VOIX.enroll(nom, prints);
+  dlg.qui = nom; fx.ok();
+  return say(`C'est fait, ${nom}. Je reconnaîtrai ta voix, même au milieu d'une conversation.`);
+}
+
+/* ---------- « présente-toi » : pour les invités ---------- */
+async function presentation() {
+  const p = CONV.presents(), inv = CONV.nbInvites(), h = new Date().getHours();
+  const salut = `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}${inv ? ` à tous, et bienvenue à nos invités` : p.length ? ` ${p.join(', ')}` : ''}.`;
+  await say(`${salut} Je suis Atlas, l'assistant de cette maison. J'écoute, je reconnais les voix, je cherche sur Internet, je vois avec ma caméra, je fais les calculs, les conversions et la météo, je gère les minuteurs, les listes et les rappels, et je garde un œil sur l'ordinateur de la maison. Je suis la conversation et j'interviens quand je peux aider. Pour me parler, il suffit de dire mon nom.`);
+}
+
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
 async function vie() {
   for (;;) {
     if (dlg.state === 'off') { await wait(500); continue; }
-    const talk = dlg.state === 'talk';
-    const r = await hear({ maxWait: talk ? 25000 : 60000, cheap: !talk, prompt: talk ? '' : 'Atlas.' });
+    const talk = dlg.state === 'talk', conv = S.settings.conversation !== false;
+    // en mode conversation, il écoute la pièce avec les oreilles de la maison (le son ne sort pas de la maison)
+    const r = await hear({ maxWait: talk ? 25000 : 60000, cheap: conv || !talk, prompt: talk ? '' : 'Atlas.' });
     if (r === null) continue;
     if (!r) { if (talk && ++dlg.silence >= 2) { dlg.state = 'standby'; face.set('idle'); } continue; }
     const n = N(r);
-    if (!talk && !R.reveil.test(n)) continue; // en veille : il ne répond qu'à son nom
-    dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now();
+    dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
+    const appele = R.reveil.test(n);
+    if (conv) {
+      CONV.note(dlg.qui, r);
+      if (/^shadow\b/.test(n)) { CONV.pourShadow(); continue; } // on parle à Shadow (et sa réponse arrive juste après)
+      if (!appele && CONV.shadowRepond(dlg.qui)) continue;
+      // c'est pour lui : on l'appelle, ou on lui répond juste après sa réponse (la même personne)
+      const suite = talk && Date.now() - (dlg.repondu || 0) < 12000 && (!dlg.qui || !dlg.quiParlait || dlg.qui === dlg.quiParlait);
+      if (!appele && !suite) {
+        if (dlg.discret) continue;
+        dlg.busy = true;
+        try { await CONV.peutEtre(r, dlg.qui); } catch (e) { console.warn('conversation', e); } finally { dlg.busy = false; }
+        continue;
+      }
+      dlg.discret = false;
+    } else if (!talk && !appele) continue; // en veille : il ne répond qu'à son nom
+    dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now(); dlg.quiParlait = dlg.qui;
     dlg.busy = true;
-    try { await handle(r); } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; }
+    try { await handle(r); } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; dlg.repondu = Date.now(); }
   }
 }
 OREILLES.on('bargein', () => { if (!voice.speaking) return; dlg.interrupt = true; voice.stop(); }); // on lui parle pendant qu'il parle : il se tait
@@ -583,9 +733,17 @@ function ouvreReglages() {
   $('#r-micro').value = s.micSens || 'loin';
   $('#r-son').checked = s.sound !== false;
   $('#r-eveil').checked = s.eveil !== false;
-  renderNotes();
+  $('#r-conv').checked = s.conversation !== false;
+  $('#r-accueil').checked = s.accueil !== false;
+  renderNotes(); renderVoix();
   $('#r-sync').textContent = SYNC.etat();
   $('#dlg-reglages').showModal();
+}
+function renderVoix() {
+  const l = VOIX.people();
+  $('#r-voix-liste').innerHTML = l.length
+    ? l.map(p => `<div class="item"><span>${esc(p.name)} <small class="muted">${p.shadow ? '(apprise par Shadow)' : `(${p.prints.length} empreinte${p.prints.length > 1 ? 's' : ''})`}</small></span>${p.shadow ? '' : `<button type="button" class="ghost sm danger" data-unvoix="${esc(p.name)}">Oublier</button>`}</div>`).join('')
+    : '<p class="small muted">Aucune voix pour l\'instant.</p>';
 }
 function renderNotes() {
   const box = $('#r-notes');
@@ -617,6 +775,9 @@ function lieReglages() {
   bind('#r-voix', el => { s().voix = el.value; VOIXMAISON.cache.clear(); });
   bind('#r-micro', el => { s().micSens = el.value; });
   bind('#r-son', el => { s().sound = el.checked; });
+  bind('#r-conv', el => { s().conversation = el.checked; dlg.discret = false; });
+  bind('#r-accueil', el => { s().accueil = el.checked; });
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-unvoix]'); if (b && VOIX.forget(b.dataset.unvoix)) renderVoix(); });
   bind('#r-eveil', el => { s().eveil = el.checked; if (el.checked) garderAllume(); else if (verrou) { verrou.release().catch(() => {}); verrou = null; } });
   $('#r-importer').addEventListener('click', async () => { await importerShadow(true); ouvreReglages(); });
   document.addEventListener('click', e => {

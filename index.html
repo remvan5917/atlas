@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '2';
+    window.ATLAS_VERSION = '3';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -30,7 +30,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -98,6 +98,15 @@
         <p class="small muted">Mot de réveil : « Atlas ». Après une réponse, il t'écoute encore un moment sans que tu redises son nom.</p>
       </fieldset>
       <fieldset>
+        <legend>La conversation</legend>
+        <label class="check"><input id="r-conv" type="checkbox"> Participer aux conversations de la maison : il suit la discussion et intervient seulement s'il peut aider (sinon, il ne répond qu'à son nom)</label>
+        <label class="check"><input id="r-accueil" type="checkbox"> Accueillir une voix qu'il ne connaît pas (un invité), une fois par soirée</label>
+        <p class="small muted">Le fil de la conversation reste en mémoire vive, jamais enregistré. Avec les oreilles de la maison, le son ne sort pas de chez toi. Pense à prévenir tes invités qu'Atlas écoute.</p>
+        <p class="small carnet-h">Les voix qu'il connaît</p>
+        <div id="r-voix-liste"></div>
+        <p class="small muted">Pour ajouter une voix : « Atlas, apprends ma voix ». Les voix déjà apprises par Shadow sont reconnues aussi.</p>
+      </fieldset>
+      <fieldset>
         <legend>Tes notes</legend>
         <div id="r-notes"></div>
         <div class="ligne"><button type="button" id="r-importer" class="ghost sm">Reprendre les notes, listes et réglages de Shadow</button></div>
@@ -107,12 +116,13 @@
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=2"></script>
-  <script src="cerveau.js?v=2"></script>
-  <script src="oreilles.js?v=2"></script>
-  <script src="voix.js?v=2"></script>
-  <script src="atlas.js?v=2"></script>
-  <script src="outils.js?v=2"></script>
-  <script src="noyau.js?v=2"></script>
+  <script src="orthographe.js?v=3"></script>
+  <script src="cerveau.js?v=3"></script>
+  <script src="oreilles.js?v=3"></script>
+  <script src="voix.js?v=3"></script>
+  <script src="empreintes.js?v=3"></script>
+  <script src="atlas.js?v=3"></script>
+  <script src="outils.js?v=3"></script>
+  <script src="noyau.js?v=3"></script>
 </body>
 </html>

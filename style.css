@@ -110,3 +110,5 @@ menu { display: flex; justify-content: flex-end; gap: 10px; margin: 14px 0 0; pa
   .hud-l { left: 16px; } .hud-r { right: 16px; }
 }
 @supports not (width: min(1px, 2px)) { #noyau { width: 88vw; height: 88vw; } .board .papa-txt { width: 80vw; } }
+
+.carnet-h { margin: 12px 0 4px; color: var(--ambre); letter-spacing: .08em; }

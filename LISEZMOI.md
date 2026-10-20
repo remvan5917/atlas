@@ -16,6 +16,15 @@ Adresse : https://remvan5917.github.io/atlas/
 - **Notes et rappels** : « note que… », « lis mes notes », « rappelle-moi de sortir le linge dans 20 minutes / à 18 heures ».
 - **La journée de ton fils avec Shadow** et l'agenda de la famille : lus dans la mémoire de Shadow, **sans jamais y écrire**.
 
+## Le mode conversation (activé par défaut)
+- **Il sait qui parle** : empreinte de voix calculée sur l'appareil (que des nombres, jamais d'enregistrement), reprise de Shadow — les voix déjà apprises par Shadow sont reconnues aussi. « Atlas, apprends ma voix », « qui parle ? », « oublie la voix de… ». Une voix inconnue devient « invité 1 », « invité 2 »… le temps de la soirée.
+- **Il suit la discussion** (fil en mémoire vive, 20 minutes au plus, jamais enregistré) et **n'intervient que s'il apporte quelque chose** : une question à laquelle il sait répondre, une erreur sur un fait ; jamais pendant une dispute, une conversation intime, ou avec un enfant qui ne lui parle pas ; au plus une intervention spontanée toutes les deux minutes. Il ne réfléchit pas à chaque phrase (seulement aux questions, ou de temps en temps), pour économiser le cerveau.
+- Quand on l'appelle, il répond à la bonne personne (par son prénom) ; juste après sa réponse, la même personne peut enchaîner sans redire « Atlas ».
+- **Il accueille une voix inconnue** (un invité) une fois par soirée, et se présente sur demande (« Atlas, présente-toi »).
+- Ce qui commence par « Shadow… » et la réponse de Shadow ne le concernent pas.
+- En mode conversation, il écoute la pièce avec les oreilles de la maison (whisper.cpp sur l'ordinateur) : le son ne sort pas de chez toi. « Reste discret » / « participe à la conversation », ou dans les réglages.
+- Pense à prévenir les invités (et la famille) qu'Atlas écoute.
+
 ## Le noyau et la voix
 - Le noyau (`noyau.js`) : sphère de particules 3D, cœur lumineux, anneaux, couronne de fréquences qui suit le vrai son de sa voix (et ta voix quand il écoute), et l'affichage de bord.
 - La voix (`voix.js`) : robot sombre (par défaut), démon de métal, robot glacial, ou une voix humaine (Pierre, Jessica, Tom), fabriquées par l'ordinateur de la maison (Piper) puis traitées dans le téléphone, sans écho.
