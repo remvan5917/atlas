@@ -143,6 +143,7 @@ const voice = {
       .replace(/[☀-➿⬀-⯿]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|️|‍/g, '')
       .replace(/×/g, ' fois ').replace(/−/g, ' moins ')
       .replace(/[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŒ]{2,}/g, m => m.toLowerCase()) // « ATLAS » se lit comme un mot, pas lettre par lettre
+      .replace(/\batlas\b/gi, 'Atlasse') // les voix françaises avalent le « s » final : « Atla »
       .replace(/[«»*#`]/g, ' ').replace(/\s+/g, ' ').trim();
   },
   say(text) {

@@ -461,7 +461,7 @@ function briefing() {
 
 /* ---------- ce qu'il comprend ---------- */
 const R = {
-  reveil: /^(atlas|atlass|atlasse|at las|hatlas|attlas)\b|\b(atlas|atlass|atlasse|hatlas)\b/,
+  reveil: /^(atlas|atlass|atlasse|atla|at las|hatlas|attlas)\b|\b(atlas|atlass|atlasse|atla|hatlas)\b/,
   veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|bonne nuit atlas|repose toi|tu peux te reposer)\b/,
   stop: /^(stop|tais toi|silence|chut|arrete|ca suffit|stoppe)\b/,
   repete: /\b(repete|redis|tu peux repeter|j ai pas compris|pardon)\b/,
@@ -479,8 +479,8 @@ async function handle(text) {
   let n = N(text);
   cacheEcran();
   // « Atlas, … » : son nom au début ne compte pas
-  n = n.replace(/^(atlas|atlass|atlasse|hatlas|attlas)\s*/, '').trim();
-  const t = String(text).replace(/^\s*(atlas|atlass|atlasse|hatlas|attlas)[\s,.!]*/i, '').trim() || text;
+  n = n.replace(/^(atlas|atlass|atlasse|atla|hatlas|attlas)\s*/, '').trim();
+  const t = String(text).replace(/^\s*(atlas|atlass|atlasse|atla|hatlas|attlas)[\s,.!]*/i, '').trim() || text;
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
