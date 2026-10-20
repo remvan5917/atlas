@@ -17,7 +17,7 @@ const VOIXMAISON = {
     const u = (S.settings.localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
     return u ? u.replace(/^(https?:\/\/(?:localhost|127\.0\.0\.1)):11434$/, '$1:11435') : '';
   },
-  papa() { return S.settings.voix || 'sombre'; },
+  papa() { return S.settings.voix || 'futuriste'; },
   usable() { return !!this.root() && Date.now() > this.downUntil && navigator.onLine !== false && !!(window.AudioContext || window.webkitAudioContext) && !!window.fetch; },
   get(t) {
     const pv = this.papa(), key = `${pv}|${t}`;
@@ -34,6 +34,7 @@ const VOIXMAISON = {
     return p;
   },
   prefetch(text) {
+    if (ELEVEN.usable()) return ELEVEN.prefetch(text);
     if (!this.usable() || !S.settings.sound) return;
     const t = voice.clean(text);
     if (t) this.get(t).catch(() => {});
@@ -43,6 +44,11 @@ const VOIXMAISON = {
 // les voix de robot (mêmes réglages que les essais écoutés par papa)
 // demande : ce que l'ordinateur fabrique (Piper parle plus vite) ; rate : le téléphone ralentit (plus grave, rythme normal)
 const ROBOTS = {
+  // les voix futuristes d'Atlas (les mêmes réglages que les essais écoutés par papa)
+  futuriste: { demande: { voix: 'pierre', vitesse: 0.92 }, rate: 0.93, hp: 90, ring: [30, 0.07], sat: 1.15, comb: [1.6, 0.25, 0.16], flang: [1.4, 0.6, 0.12, 0.3, 0.22], pres: [3400, 1.0, 2.5], lp: 9500, gain: 0.9 },
+  holographique: { demande: { voix: 'pierre', vitesse: 1.0 }, rate: 0.97, hp: 110, flang: [2.2, 1.4, 0.25, 0.45, 0.4], comb: [0.9, 0.3, 0.12], pres: [5000, 0.9, 3.5], lp: 11000, gain: 0.9 },
+  synthetique: { demande: { voix: 'pierre', vitesse: 0.92 }, rate: 0.94, hp: 100, ring: [110, 0.22], sat: 1.4, comb: [3.2, 0.35, 0.2], pres: [2500, 1.0, 3], lp: 8000, gain: 0.85 },
+  // les voix de robot inquiétantes (de l'époque du mode papa)
   sombre: { demande: { voix: 'pierre', vitesse: 0.78 }, rate: 0.78, hp: 70, ring: [34, 0.32], sat: 1.8, comb: [7.5, 0.5, 0.35], pres: [1800, 1.2, 3], lp: 5200, bourdon: [46, 0.18] },
   demon: { demande: { voix: 'tom', vitesse: 0.7 }, rate: 0.68, hp: 55, ring: [48, 0.55], sat: 3.2, comb: [4.2, 0.62, 0.45], pres: [1200, 1.0, 4], lp: 4200, bourdon: [38, 0.28], gain: 0.62 },
   glacial: { demande: { voix: 'pierre', vitesse: 0.95 }, rate: 0.9, hp: 140, flang: [2.5, 1.8, 0.18, 0.55, 0.45], pres: [3000, 1.0, 3], lp: 7000 },
@@ -124,6 +130,60 @@ VOIXMAISON.playPapa = function (buffer) {
   return { src, duration: buffer.duration / 0.97, stop() { try { src.stop(); } catch (e) { /* déjà fini */ } try { lfo.stop(); } catch (e) { /* rien */ } } };
 };
 
+/* ---------- ElevenLabs : la voix choisie par papa (façon JARVIS) ----------
+   Prioritaire quand elle est réglée (clé + identifiant de la voix) ; si ElevenLabs ne répond pas ou si le crédit
+   est épuisé, Atlas reprend tout seul la voix de l'ordinateur, puis celle du téléphone. La clé reste sur l'appareil. */
+const ELEVEN = {
+  downUntil: 0, cache: new Map(), erreur: '',
+  usable() { const s = S.settings; return s.eleven !== false && !!s.elevenKey && !!s.elevenVoice && navigator.onLine !== false && Date.now() > this.downUntil && !!window.fetch; },
+  get(t) {
+    const s = S.settings, key = `${s.elevenVoice}|${s.elevenModel || 'eleven_v4_turbo'}|${t}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+    const ctl = window.AbortController ? new AbortController() : null;
+    const tm = setTimeout(() => ctl && ctl.abort(), 9000);
+    const p = fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(s.elevenVoice)}?output_format=mp3_44100_128`, {
+      method: 'POST', signal: ctl ? ctl.signal : undefined,
+      headers: { 'Content-Type': 'application/json', 'xi-api-key': s.elevenKey, Accept: 'audio/mpeg' },
+      body: JSON.stringify({ text: t, model_id: s.elevenModel || 'eleven_v4_turbo', language_code: 'fr', voice_settings: { stability: 0.55, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true, speed: 1 } }),
+    }).then(async r => {
+      clearTimeout(tm);
+      if (!r.ok) { let d = ''; try { d = (await r.json()).detail; d = d && (d.message || d.status || d); } catch (e) { /* rien */ } const e = new Error(`ElevenLabs ${r.status}${d ? ` : ${String(d).slice(0, 120)}` : ''}`); e.status = r.status; throw e; }
+      return r.arrayBuffer();
+    }).then(buf => new Promise((res, rej) => fx.audio().decodeAudioData(buf, res, rej)));
+    p.catch(e => {
+      this.cache.delete(key); this.erreur = e.message;
+      // crédit épuisé ou clé refusée : on n'insiste pas pendant 30 min ; un souci réseau : 2 min
+      this.downUntil = Date.now() + ((e.status === 401 || e.status === 402 || e.status === 429 || /quota/i.test(e.message)) ? 30 * 60000 : 120000);
+    });
+    this.cache.set(key, p);
+    if (this.cache.size > 16) this.cache.delete(this.cache.keys().next().value);
+    return p;
+  },
+  // la touche numérique (légère) : une présence de studio et un reflet de machine à peine audible
+  play(buffer) {
+    const c = fx.audio(), oscs = [], effet = S.settings.elevenEffet || 'leger';
+    const src = c.createBufferSource(); src.buffer = buffer;
+    const G = v => { const g = c.createGain(); g.gain.value = v; return g; };
+    const f = (type, freq, q, gain) => { const n = c.createBiquadFilter(); n.type = type; n.frequency.value = freq; if (q) n.Q.value = q; if (gain !== undefined) n.gain.value = gain; return n; };
+    const out = G(0.95), lim = c.createDynamicsCompressor();
+    lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.12;
+    let cur = src;
+    if (effet !== 'aucun') {
+      const hp = f('highpass', 75), pres = f('peaking', 3200, 0.9, 1.5); cur.connect(hp); hp.connect(pres);
+      const sum = G(1); pres.connect(sum);
+      const d = c.createDelay(0.05), fb = G(0.18), wet = G(0.09), lfo = c.createOscillator(), lg = G(0.0004);
+      d.delayTime.value = 0.0012; lfo.frequency.value = 0.15; lfo.connect(lg); lg.connect(d.delayTime); lfo.start(); oscs.push(lfo);
+      pres.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(sum);
+      cur = sum;
+    }
+    cur.connect(out); out.connect(lim); lim.connect(c.destination);
+    const an = c.createAnalyser(); an.fftSize = 256; an.smoothingTimeConstant = 0.6; lim.connect(an); VOIXMAISON.an = an;
+    src.start();
+    return { src, duration: buffer.duration, stop() { try { src.stop(); } catch (e) { /* déjà fini */ } oscs.forEach(o => { try { o.stop(); } catch (e) { /* rien */ } }); } };
+  },
+  prefetch(t) { if (this.usable() && S.settings.sound) this.get(voice.clean(t)).catch(() => {}); },
+};
+
 const voice = {
   v: null, male: false, speaking: false, endedAt: 0, _cur: null,
   init() {
@@ -143,20 +203,21 @@ const voice = {
       .replace(/[☀-➿⬀-⯿]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|️|‍/g, '')
       .replace(/×/g, ' fois ').replace(/−/g, ' moins ')
       .replace(/[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŒ]{2,}/g, m => m.toLowerCase()) // « ATLAS » se lit comme un mot, pas lettre par lettre
-      .replace(/\batlas\b/gi, 'Atlasse') // les voix françaises avalent le « s » final : « Atla »
+      .replace(/\batlas\b/gi, () => (ELEVEN.usable() ? 'Atlas' : 'Atlasse')) // Piper avale le « s » final : « Atla »
       .replace(/[«»*#`]/g, ' ').replace(/\s+/g, ' ').trim();
   },
   say(text) {
     const t = this.clean(text);
     if (!S.settings.sound || !t) return Promise.resolve();
     lastSaid = t;
-    if (VOIXMAISON.usable()) return this.sayMaison(t).catch(() => this.saySynth(t));
-    return this.saySynth(t);
+    const maison = () => (VOIXMAISON.usable() ? this.sayMaison(t).catch(() => this.saySynth(t)) : this.saySynth(t));
+    if (ELEVEN.usable()) return this.sayMaison(t, ELEVEN).catch(maison); // la voix ElevenLabs d'abord
+    return maison();
   },
-  sayMaison(t) {
-    return VOIXMAISON.get(t).then(buf => new Promise(res => {
+  sayMaison(t, moteur = VOIXMAISON) {
+    return moteur.get(t).then(buf => new Promise(res => {
       OREILLES.mute(true); // il ne s'écoute pas lui-même
-      const node = VOIXMAISON.play(buf);
+      const node = moteur.play(buf);
       this._cur = node; this.speaking = true; face.talk(true);
       let done = false;
       const end = () => {
@@ -176,8 +237,8 @@ const voice = {
       const u = new SpeechSynthesisUtterance(t);
       u.lang = 'fr-FR';
       if (this.v) u.voice = this.v;
-      u.rate = 1;
-      u.pitch = ROBOTS[VOIXMAISON.papa()] ? 0.1 : this.male ? 0.88 : 0.72; // sans l'ordinateur : la plus grave possible
+      u.rate = 0.98;
+      u.pitch = this.male ? 0.9 : 0.8; // sans l'ordinateur : la voix du téléphone, naturelle et posée (jamais déformée)
       let done = false;
       const end = () => { if (done) return; done = true; this.speaking = false; this.endedAt = Date.now(); face.talk(false); OREILLES.mute(false); res(); };
       u.onstart = () => { this.speaking = true; face.talk(true); };

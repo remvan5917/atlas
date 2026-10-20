@@ -1,6 +1,6 @@
 // Garde Atlas disponible même sans réseau (les outils sans Internet marchent toujours).
 // Les fichiers sont toujours vérifiés auprès du serveur (sinon le navigateur ressert une ancienne version).
-const CACHE = 'atlas-app-v5';
+const CACHE = 'atlas-app-v7';
 const FILES = ['./', 'index.html', 'style.css', 'orthographe.js', 'cerveau.js', 'oreilles.js', 'voix.js', 'empreintes.js', 'yeux.js', 'atlas.js', 'outils.js', 'noyau.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {

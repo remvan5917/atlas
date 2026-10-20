@@ -28,7 +28,7 @@ Adresse : https://remvan5917.github.io/atlas/
 
 ## Le noyau et la voix
 - Le noyau (`noyau.js`) : sphère de particules 3D, cœur lumineux, anneaux, couronne de fréquences qui suit le vrai son de sa voix (et ta voix quand il écoute), et l'affichage de bord.
-- La voix (`voix.js`) : robot sombre (par défaut), démon de métal, robot glacial, ou une voix humaine (Pierre, Jessica, Tom), fabriquées par l'ordinateur de la maison (Piper) puis traitées dans le téléphone, sans écho.
+- La voix (`voix.js`) : **la voix ElevenLabs de papa en priorité** (clé + Voice ID dans les réglages ; modèle v4 turbo par défaut ; une très légère touche numérique façon JARVIS, réglable) ; si ElevenLabs ne répond pas ou si le crédit est épuisé, la voix de l'ordinateur (futuriste par défaut, holographique, synthétique, ou les robots inquiétants, Pierre, Jessica, Tom — Piper puis traitée dans le téléphone, sans écho), puis celle du téléphone, naturelle. La clé ElevenLabs reste sur l'appareil ; le Voice ID et le modèle voyagent entre appareils.
 
 ## L'ordinateur de la maison (le même que pour Shadow)
 Le relais `~/.local/share/shadow/ollama-pont.py` sert les deux assistants :

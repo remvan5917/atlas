@@ -30,16 +30,21 @@ function fresh() {
     v: 1, nom: '',
     settings: {
       brain: 'groq', key: '', model: AI.DEFAULT_MODEL, localUrl: 'http://localhost:11434/v1', localModel: '',
-      voix: 'sombre', sound: true, micSens: 'loin', ears: 'auto', seeCloud: false, visionModel: AI.VISION_MODEL, ville: null, eveil: true,
+      voix: 'futuriste', sound: true, micSens: 'loin', ears: 'auto', seeCloud: false, visionModel: AI.VISION_MODEL, ville: null, eveil: true,
       conversation: true, accueil: true, arrivee: true, camera: true,
+      eleven: true, elevenKey: '', elevenVoice: '', elevenModel: 'eleven_v4_turbo', elevenEffet: 'leger',
     },
-    notes: [], listes: [], minuteurs: [], chat: [], voices: [], tomb: {}, updatedAt: 0, importe: false,
+    notes: [], listes: [], minuteurs: [], chat: [], voices: [], tomb: {}, updatedAt: 0, importe: false, voixV6: true,
   };
 }
 function charge() {
   try {
     const j = JSON.parse(localStorage.getItem(STORE) || 'null');
-    if (j && j.settings) { const f = fresh(); return Object.assign(f, j, { settings: Object.assign(f.settings, j.settings) }); }
+    if (j && j.settings) {
+      const f = fresh(), m = Object.assign(f, j, { settings: Object.assign(f.settings, j.settings) });
+      if (!m.voixV6) { m.voixV6 = true; if (m.settings.voix === 'sombre') m.settings.voix = 'futuriste'; } // la nouvelle voix futuriste (une fois)
+      return m;
+    }
   } catch (e) { /* mémoire illisible : on repart de zéro */ }
   return fresh();
 }
@@ -130,7 +135,7 @@ const SYNC = (() => {
     return out;
   }
   // les réglages qui voyagent d'un appareil à l'autre (jamais la clé Groq : elle reste sur l'appareil où on l'a tapée)
-  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens'];
+  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet'];
   const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
     S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.tomb = m.tomb;
@@ -793,7 +798,13 @@ function ouvreReglages() {
   $('#r-key').value = s.key || '';
   $('#r-model').value = s.model || '';
   $('#r-see').checked = !!s.seeCloud;
-  $('#r-voix').value = s.voix || 'sombre';
+  $('#r-voix').value = s.voix || 'futuriste';
+  $('#r-eleven').checked = s.eleven !== false;
+  $('#r-eleven-key').value = s.elevenKey || '';
+  $('#r-eleven-voice').value = s.elevenVoice || '';
+  $('#r-eleven-model').value = s.elevenModel || 'eleven_v4_turbo';
+  $('#r-eleven-effet').value = s.elevenEffet || 'leger';
+  $('#r-eleven-etat').textContent = !s.elevenKey || !s.elevenVoice ? '' : ELEVEN.erreur && Date.now() < ELEVEN.downUntil ? `En pause : ${ELEVEN.erreur}` : 'Prête.';
   $('#r-micro').value = s.micSens || 'loin';
   $('#r-son').checked = s.sound !== false;
   $('#r-eveil').checked = s.eveil !== false;
@@ -839,6 +850,17 @@ function lieReglages() {
   bind('#r-model', el => { s().model = el.value.trim() || AI.DEFAULT_MODEL; });
   bind('#r-see', el => { s().seeCloud = el.checked; });
   bind('#r-voix', el => { s().voix = el.value; VOIXMAISON.cache.clear(); });
+  bind('#r-eleven', el => { s().eleven = el.checked; });
+  bind('#r-eleven-key', el => { s().elevenKey = el.value.trim(); ELEVEN.downUntil = 0; ELEVEN.cache.clear(); });
+  bind('#r-eleven-voice', el => { s().elevenVoice = el.value.trim(); ELEVEN.downUntil = 0; ELEVEN.cache.clear(); });
+  bind('#r-eleven-model', el => { s().elevenModel = el.value; ELEVEN.cache.clear(); });
+  bind('#r-eleven-effet', el => { s().elevenEffet = el.value; });
+  $('#r-eleven-test').addEventListener('click', async () => {
+    ELEVEN.downUntil = 0; fx.audio();
+    $('#r-eleven-etat').textContent = 'Essai…';
+    try { await ELEVEN.get(voice.clean("Bonsoir. Je suis Atlas. Tous mes systèmes sont opérationnels.")); $('#r-eleven-etat').textContent = 'Prête.'; await say("Bonsoir. Je suis Atlas. Tous mes systèmes sont opérationnels."); }
+    catch (e) { $('#r-eleven-etat').textContent = `Ça ne marche pas : ${e.message}`; }
+  });
   bind('#r-micro', el => { s().micSens = el.value; });
   bind('#r-son', el => { s().sound = el.checked; });
   bind('#r-conv', el => { s().conversation = el.checked; dlg.discret = false; });
