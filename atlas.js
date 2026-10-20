@@ -1,0 +1,681 @@
+/* =========================================================
+   ATLAS — l'assistant personnel de papa (le cœur)
+   Né du « mode papa » de Shadow, devenu un projet à part : toujours disponible, sans code, sans mode.
+   - On l'appelle « Atlas » ; après une réponse, il écoute encore un moment sans qu'on redise son nom.
+   - Un assistant adulte (IA de film : calme, précis, pince-sans-rire), tout à la voix, rien à l'écran
+     sauf si on le demande (« affiche-le »).
+   - Internet (recherche web de Groq, ou l'ordinateur de la maison), la caméra (vision détaillée),
+     les notes, le couteau suisse (outils.js), le noyau (noyau.js).
+   - La journée de l'enfant et l'agenda de la famille : lus dans la mémoire de Shadow, sans jamais y écrire.
+   - Ses notes et ses listes passent d'un appareil à l'autre (l'ordinateur de la maison : /atlas/etat).
+   ========================================================= */
+'use strict';
+
+/* ---------- petits outils ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const N = t => ORTHO.norm(t);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const deux2 = n => String(n).padStart(2, '0');
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${deux2(d.getMonth() + 1)}-${deux2(d.getDate())}`;
+const hhmm = (d = new Date()) => `${d.getHours()} h ${deux2(d.getMinutes())}`;
+let toastT = 0;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 2600); }
+const VOIX = { print: () => null }; // (les oreilles savent faire une empreinte de voix : Atlas n'en a pas besoin)
+
+/* ---------- la mémoire ---------- */
+const STORE = window.__BANC ? 'atlas-banc' : 'atlas-etat';
+function fresh() {
+  return {
+    v: 1, nom: '',
+    settings: {
+      brain: 'groq', key: '', model: AI.DEFAULT_MODEL, localUrl: 'http://localhost:11434/v1', localModel: '',
+      voix: 'sombre', sound: true, micSens: 'loin', ears: 'auto', seeCloud: false, visionModel: AI.VISION_MODEL, ville: null, eveil: true,
+    },
+    notes: [], listes: [], minuteurs: [], chat: [], tomb: {}, updatedAt: 0, importe: false,
+  };
+}
+function charge() {
+  try {
+    const j = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (j && j.settings) { const f = fresh(); return Object.assign(f, j, { settings: Object.assign(f.settings, j.settings) }); }
+  } catch (e) { /* mémoire illisible : on repart de zéro */ }
+  return fresh();
+}
+let S = charge();
+function save() { S.updatedAt = Date.now(); try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ } SYNC.sale(); }
+function tomb(liste, item) { (S.tomb[liste] = S.tomb[liste] || {})[String(item.id)] = Date.now(); }
+
+/* ---------- les sons ---------- */
+const fx = {
+  ctx: null,
+  audio() { this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)(); if (this.ctx.state === 'suspended') this.ctx.resume(); return this.ctx; },
+  tone(seq) {
+    if (!S.settings.sound) return;
+    try {
+      const c = this.audio(); let t = c.currentTime;
+      for (const [f, d] of seq) {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+        o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + d + 0.02);
+        t += d * 0.9;
+      }
+    } catch (e) { /* pas de son */ }
+  },
+  ok() { this.tone([[880, 0.07], [1320, 0.12]]); },
+  oops() { this.tone([[330, 0.12], [247, 0.18]]); },
+};
+
+/* ---------- son état (lu par le noyau) ---------- */
+const face = {
+  el: null, state: 'idle', _t: 0,
+  MOODS: ['idle', 'listen', 'think', 'happy', 'oops', 'sleep', 'confused', 'surprise'],
+  set(st) { this.state = st; if (!this.el) return; this.el.classList.remove(...this.MOODS); this.el.classList.add(st); },
+  flash(st, ms = 1500) { const was = this.state; this.set(st); clearTimeout(this._t); this._t = setTimeout(() => { if (this.state === st) this.set(was === st ? 'idle' : was); }, ms); },
+  talk(on) { if (this.el) this.el.classList.toggle('talk', !!on); },
+};
+
+/* ---------- le détail à l'écran (seulement si papa le demande) ---------- */
+function showBoard(html, cls) { const b = $('#board'); b.className = `board ${cls || ''}`; b.innerHTML = html; b.hidden = false; }
+function hideBoard() { const b = $('#board'); b.hidden = true; b.innerHTML = ''; }
+function md(t) {
+  const blocs = [];
+  let h = esc(String(t || '').trim()).replace(/```([a-z0-9+-]*)\n?([\s\S]*?)```/gi, (m, lang, code) => { blocs.push(code.replace(/\n$/, '')); return `\u0000${blocs.length - 1}\u0000`; });
+  h = h.split(/\n{2,}/).map(p => {
+    if (/^\u0000\d+\u0000$/.test(p.trim())) return p.trim();
+    const lignes = p.split('\n');
+    if (lignes.every(l => /^\s*([-*•]|\d+[.)])\s+/.test(l))) {
+      const ol = /^\s*\d/.test(lignes[0]);
+      return `<${ol ? 'ol' : 'ul'}>${lignes.map(l => `<li>${l.replace(/^\s*([-*•]|\d+[.)])\s+/, '')}</li>`).join('')}</${ol ? 'ol' : 'ul'}>`;
+    }
+    if (/^#{1,4}\s/.test(p)) return `<h4>${p.replace(/^#{1,4}\s/, '')}</h4>`;
+    return `<p>${lignes.join('<br>')}</p>`;
+  }).join('');
+  h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+  return h.replace(/\u0000(\d+)\u0000/g, (m, i) => `<div class="pcode"><button type="button" class="ghost sm" data-copy="${i}">Copier</button><pre><code>${blocs[+i]}</code></pre></div>`);
+}
+let derniersBlocs = [], effaceT = 0;
+const cacheEcran = () => { clearTimeout(effaceT); if (!$('#board').hidden) hideBoard(); };
+function ecran(titre, texte) {
+  clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 45000);
+  derniersBlocs = [];
+  String(texte).replace(/```[a-z0-9+-]*\n?([\s\S]*?)```/gi, (m, code) => { derniersBlocs.push(code.replace(/\n$/, '')); return m; });
+  showBoard(`<div class="papa-txt">${titre ? `<h3>${esc(titre)}</h3>` : ''}${md(texte)}</div>`, 'papa-board');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  try { navigator.clipboard.writeText(derniersBlocs[+b.dataset.copy] || '').then(() => toast('Copié'), () => toast('Copie impossible')); } catch (er) { toast('Copie impossible'); }
+});
+
+/* ---------- la mémoire partagée (l'ordinateur de la maison : /atlas/etat) ---------- */
+const SYNC = (() => {
+  let sale = false, occupe = false, derniere = 0, erreur = '';
+  const LISTES = ['notes', 'listes'];
+  function fusion(a, b) {
+    const tombs = {};
+    [a.tomb || {}, b.tomb || {}].forEach(src => Object.keys(src).forEach(l => Object.keys(src[l]).forEach(k => { tombs[l] = tombs[l] || {}; tombs[l][k] = Math.max(tombs[l][k] || 0, src[l][k]); })));
+    const out = { tomb: tombs };
+    LISTES.forEach(l => {
+      const m = new Map();
+      [].concat(a[l] || [], b[l] || []).forEach(x => { if (x && x.id != null && !m.has(String(x.id))) m.set(String(x.id), x); });
+      const mort = tombs[l] || {};
+      out[l] = [...m.values()].filter(x => !(mort[String(x.id)] && mort[String(x.id)] >= (x.at || x.id))).sort((x, y) => x.id - y.id);
+    });
+    const recent = (b.updatedAt || 0) > (a.updatedAt || 0) ? b : a;
+    out.partage = Object.assign({}, a.partage || {}, recent.partage || {});
+    out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
+    return out;
+  }
+  const partage = () => ({ ville: S.settings.ville, voix: S.settings.voix, nom: S.nom });
+  function applique(m) {
+    S.notes = m.notes; S.listes = m.listes; S.tomb = m.tomb;
+    if (m.partage) { if (m.partage.ville) S.settings.ville = m.partage.ville; if (m.partage.voix) S.settings.voix = m.partage.voix; if (typeof m.partage.nom === 'string') S.nom = m.partage.nom; }
+    try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ }
+  }
+  async function sync() {
+    const root = VOIXMAISON.root();
+    if (!root || occupe || navigator.onLine === false || window.__BANC) return;
+    occupe = true;
+    try {
+      for (let essai = 0; essai < 3; essai++) {
+        const g = await (await fetch(`${root}/atlas/etat`, { cache: 'no-store' })).json();
+        const local = { notes: S.notes, listes: S.listes, tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
+        const m = g && g.data ? fusion(local, g.data) : local;
+        applique(m);
+        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
+        if (r.status === 409) continue;
+        if (!r.ok) throw new Error(`mémoire ${r.status}`);
+        sale = false; derniere = Date.now(); erreur = ''; break;
+      }
+    } catch (e) { erreur = e.message; } finally { occupe = false; }
+  }
+  setTimeout(sync, 4000);
+  setInterval(() => { if (!dlg.busy) sync(); }, 45000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden && sale) sync(); });
+  return { sync, sale() { sale = true; }, etat: () => (derniere ? `Partagé avec l'ordinateur de la maison il y a ${Math.max(0, Math.round((Date.now() - derniere) / 60000))} min.` : erreur ? `Pas encore partagé (${erreur}).` : 'Pas encore partagé.'), _fusion: fusion };
+})();
+
+/* ---------- le lien avec Shadow : la journée de l'enfant et l'agenda (lecture seule) ---------- */
+const LIEN = (() => {
+  let d = null;
+  const NOMS = { dictee: 'dictées', lecture: 'lectures', heure: "l'heure", anglais: 'anglais', jacques: 'Jacques a dit', emotions: 'émotions', pfc: 'pierre-feuille-ciseaux', cris: "cris d'animaux", doigts: 'doigts', quiz: 'quiz', calc: 'calcul', journal: 'journal', chanson: 'comptines', soir: 'histoires du soir', devinette: 'devinettes', ensemble: 'jeux à plusieurs', pokequiz: 'quiz Pokémon', pokechasse: 'chasse aux Pokémon', pokecombat: 'combats Pokémon', pokedevine: 'devinettes Pokémon', savoir: 'encyclopédie', humeur: 'humeur', badge: 'médailles', projet: 'projets', meteo: 'météo' };
+  async function lire() {
+    const root = VOIXMAISON.root();
+    if (!root || window.__BANC) return;
+    try { const g = await (await fetch(`${root}/shadow/etat`, { cache: 'no-store' })).json(); if (g && g.data) d = g.data; } catch (e) { /* plus tard */ }
+  }
+  // sur le même appareil, la mémoire de Shadow est aussi dans le navigateur : on prend la plus récente
+  function local() { try { return JSON.parse(localStorage.getItem('shadow-v1') || 'null'); } catch (e) { return null; } }
+  const src = () => { const l = local(); return l && (!d || (l.updatedAt || 0) > (d.updatedAt || 0)) ? l : d; };
+  const debut = () => new Date(new Date().setHours(0, 0, 0, 0)).getTime();
+  setTimeout(lire, 2500); setInterval(lire, 10 * 60000);
+  return {
+    lire,
+    ok: () => !!src(),
+    prenom: () => { const s = src(); return (s && s.prenom) || ''; },
+    minutes: () => { const s = src(); return (s && s.playLog && s.playLog[dayKey()]) || 0; },
+    activites: () => { const s = src(); return ((s && s.log) || []).filter(x => x.at >= debut() && x.type !== 'humeur').length; },
+    upcoming(max) {
+      const s = src(), ev = (s && s.settings && s.settings.events) || [], auj = new Date(); auj.setHours(0, 0, 0, 0);
+      return ev.map(e => {
+        const [y, m, j] = String(e.date || '').split('-').map(Number);
+        let dt = new Date(y, m - 1, j);
+        if (e.yearly) { dt = new Date(auj.getFullYear(), m - 1, j); if (dt < auj) dt = new Date(auj.getFullYear() + 1, m - 1, j); }
+        return { e, days: Math.round((dt - auj) / 86400000) };
+      }).filter(x => x.days >= 0 && x.days <= max).sort((a, b) => a.days - b.days);
+    },
+    journee() {
+      const s = src();
+      if (!s) return "Je n'ai pas encore la mémoire de Shadow. L'ordinateur de la maison doit être allumé.";
+      const qui = s.prenom || 'Ton fils', log = (s.log || []).filter(x => x.at >= debut());
+      const par = {};
+      log.forEach(x => { if (x.type === 'humeur') return; const k = NOMS[x.type] || x.type; const g = par[k] || (par[k] = { n: 0, s: 0, t: 0 }); g.n++; if (typeof x.s === 'number' && x.n) { g.s += x.s; g.t += x.n; } });
+      const acts = Object.keys(par).map(k => `${k}${par[k].n > 1 ? ` (${par[k].n} fois)` : ''}${par[k].t ? `, ${par[k].s} sur ${par[k].t}` : ''}`);
+      const humeur = log.filter(x => x.type === 'humeur').map(x => x.d).pop();
+      const min = (s.playLog && s.playLog[dayKey()]) || 0, lim = +(s.settings && s.settings.dailyLimit) || 0;
+      const parts = [min ? `${qui} a passé ${min} minutes avec Shadow aujourd'hui${lim ? `, sur une limite de ${lim}` : ''}.` : `${qui} n'a pas parlé à Shadow aujourd'hui.`];
+      if (acts.length) parts.push(`Il a fait : ${acts.join(' ; ')}.`);
+      if (humeur && humeur !== '(secret)') parts.push(`Son humeur du jour : « ${humeur} ».`);
+      return parts.join(' ');
+    },
+  };
+})();
+
+/* ---------- écouter ---------- */
+const dlg = { state: 'off', busy: false, silence: 0, lastActive: 0, interrupt: false, started: false };
+const brainTimes = [];
+async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
+  dlg.interrupt = false;
+  if (face.state !== 'think') face.set(dlg.state === 'standby' ? 'idle' : 'listen');
+  const r = await OREILLES.listen({ prompt: prompt || 'Un adulte parle en français à Atlas, son assistant.', maxWait, cheap, endSilence: 1.0 });
+  if (face.el) face.el.classList.remove('hearing');
+  if (r && typeof r === 'object') {
+    if (r.error === 'not-allowed') { if (Date.now() - (dlg.micDitAt || 0) > 60000) { dlg.micDitAt = Date.now(); await say("Le micro est bloqué. Autorise le micro pour ce site, puis touche l'écran."); } await wait(5000); return ''; }
+    if (r.status === 429) { await wait(Math.max(20, Math.min(r.retryAfter || 60, 300)) * 1000); return ''; }
+    await wait(3000); return '';
+  }
+  // sa propre voix qui revient du haut-parleur : on l'ignore
+  if (typeof r === 'string' && r && Date.now() - (voice.endedAt || 0) < 2500) {
+    const mots = x => N(x).split(' ').filter(w => w.length > 2), a = mots(r), b = new Set(mots(lastSaid));
+    if (a.length >= 4 && b.size && a.filter(w => b.has(w)).length / a.length > 0.85) return '';
+  }
+  return r;
+}
+const say = t => voice.say(t);
+async function ask(text, { wait: w = 20000 } = {}) {
+  await say(text);
+  const a = await hear({ maxWait: w });
+  return a || '';
+}
+const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
+const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
+async function askYesNo(text) {
+  for (let i = 0; i < 2; i++) { const a = await ask(i ? `Oui ou non ? ${text}` : text); if (isYes(a)) return true; if (isNo(a)) return false; }
+  return false;
+}
+function wake() { if (dlg.state === 'sleep' || dlg.state === 'standby') { dlg.state = 'talk'; dlg.silence = 0; } }
+
+/* ---------- la caméra (pour la vision détaillée) ---------- */
+const CAMERA = (() => {
+  let stream = null, video = null, fermeT = 0;
+  async function ouvre() {
+    if (stream) return true;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+      video = document.createElement('video'); video.muted = true; video.playsInline = true; video.srcObject = stream;
+      await video.play(); await wait(700); // le temps que l'image se règle
+      return true;
+    } catch (e) { stream = null; return false; }
+  }
+  function ferme() { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; video = null; }
+  async function photo() {
+    if (!(await ouvre())) return null;
+    clearTimeout(fermeT); fermeT = setTimeout(ferme, 60000); // la caméra se referme toute seule
+    const c = document.createElement('canvas'), w = Math.min(960, video.videoWidth || 640);
+    c.width = w; c.height = Math.round(w * (video.videoHeight || 480) / (video.videoWidth || 640));
+    c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.82);
+  }
+  return { photo, ferme };
+})();
+
+/* ---------- son cerveau ---------- */
+const nettoie = t => String(t || '').replace(/<think>[\s\S]*?<\/think>/g, '').replace(/【[^】]*】/g, '').replace(/\[\d+(?:[,\s]*\d+)*\]/g, '')
+  .replace(/https?:\/\/\S+/g, '').replace(/\(\s*\)/g, '').replace(/[*#`>|_]+/g, ' ').replace(/\s+([.,;:!?])/g, '$1').replace(/\s+/g, ' ').trim();
+const appel = () => (S.nom ? `, ${S.nom}` : '');
+const difficile = t => String(t).length > 170 || /\b(pourquoi|comment ca marche|explique|compare|analyse|reflechis|en detail|code|programme|script|algorithme|architecture|strategie|plan|optimise|debug)\b/.test(N(t));
+function systeme(text) {
+  const now = new Date();
+  const notes = (S.notes || []).slice(-15).map(x => `- ${x.text}`).join('\n');
+  const up = LIEN.upcoming(30).slice(0, 5).map(x => `${x.e.text} dans ${x.days} jour${x.days > 1 ? 's' : ''}`);
+  const enfant = LIEN.prenom();
+  return `Tu es Atlas, l'assistant personnel d'un papa${S.nom ? ` (il aime que tu l'appelles « ${S.nom} »)` : ''}. Il a développé des compétences en IA et en algorithmes, et se lance dans la domotique et la robotique ; il construit avec son fils${enfant ? ` ${enfant}` : ''} un robot pour enfant, Shadow (Atlas et Shadow sont deux assistants séparés).
+Tu es un assistant adulte, direct, précis et compétent : technique, IA, code, électronique, domotique, maison, administratif, cuisine, sport, culture, organisation, conseils… Ta personnalité : une IA de film (comme JARVIS) — calme, précise, élégante, un brin pince-sans-rire, jamais enfantine. Tu tutoies, tu vas droit au but. Pas d'émojis.
+FORMAT : tout ce que tu écris est dit à voix haute, rien ne s'affiche. Réponds en deux à cinq phrases naturelles et courtes, comme à l'oral : sans markdown, sans listes, sans titres, sans symboles, sans code. Pour une question longue, donne l'essentiel puis propose d'aller plus loin. Seulement s'il demande de MONTRER ou d'AFFICHER quelque chose (du code, une liste), ajoute après ta réponse orale une ligne [[ecran]] puis le détail en texte (markdown simple, code entre \`\`\`).
+COMMANDES (au plus une, à la toute fin) : [[web:recherche]] pour chercher sur Internet, [[regarder]] pour regarder avec ta caméra, [[rappel:AAAA-MM-JJ HH:MM|texte]] pour un rappel, [[note:texte]] pour l'ajouter à ses notes, [[minuteur:durée]], [[meteo]].
+Tu as des outils qu'il peut demander directement (ne prétends pas qu'ils n'existent pas) : calculs exacts et TVA, conversions d'unités et de devises, minuteurs nommés, réveil, chrono, Pomodoro, listes (courses, à faire…), météo de n'importe quelle ville, état de son PC, « fais-moi le point », heure dans le monde, jours avant une date, pile ou face, la journée de son fils avec Shadow. S'il en parle, dis-lui la phrase à dire (par exemple « dis : minuteur pâtes 9 minutes »).
+Tu as une caméra : s'il te demande ce que tu vois, de regarder quelque chose ou ce qu'il tient, réponds seulement [[regarder]]. Ne dis jamais que tu n'as pas de caméra.
+Tu as Internet : pour une actualité, une info récente, un prix, un horaire, un résultat, la météo d'un autre endroit ou un fait dont tu n'es pas sûr, réponds seulement [[web:ta recherche en quelques mots]]. N'invente jamais une info récente.
+Tu n'as pas accès à ses comptes, ses mails ou sa maison connectée (pas encore) : ne prétends jamais le contraire. Si tu ne sais pas, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
+Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
+${notes ? `Ses notes :\n${notes}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}`;
+}
+async function repondre(text) {
+  if (!AI.ready()) return say("Mon cerveau n'est pas branché : règle-le dans mes réglages. Mes outils marchent quand même : calculs, conversions, minuteurs, réveil, listes, notes, météo, état du PC et le point du jour.");
+  const c = S.chat || (S.chat = []);
+  c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now() });
+  const think = difficile(text);
+  const msgs = [{ role: 'system', content: systeme(text) }].concat(c.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 3000) })));
+  face.set('think');
+  let queue = think ? say(pick(['Je regarde ça.', 'Je réfléchis.', 'Une seconde.'])) : Promise.resolve(), spoken = 0, ecr = false;
+  const t0 = performance.now();
+  const onSentence = raw0 => {
+    if (!spoken) { brainTimes.push(Math.round(performance.now() - t0)); if (brainTimes.length > 20) brainTimes.shift(); }
+    if (ecr) return;
+    let s = String(raw0);
+    const i = s.indexOf('[[ecran');
+    if (i >= 0) { s = s.slice(0, i); ecr = true; }
+    s = s.replace(/\[\[[^\]]*\]\]/g, '').replace(/\[\[[^\]]*$/, '').replace(/[*`#]/g, '').trim();
+    if (!s || dlg.interrupt) return;
+    if (!spoken++) face.set('idle');
+    VOIXMAISON.prefetch(s);
+    queue = queue.then(() => (dlg.interrupt ? null : say(s)));
+  };
+  let raw = '';
+  try {
+    raw = await AI.chatStream(msgs, { maxTokens: think ? 1200 : 700, temperature: 0.5, think }, onSentence);
+  } catch (e) {
+    if (!spoken) { try { raw = await AI.chat(msgs, { maxTokens: 900, temperature: 0.5, think }); onSentence(raw); } catch (e2) { face.set('oops'); await queue; return say(e2.status === 429 ? "Mon cerveau en ligne a épuisé son crédit pour le moment. Mes outils restent disponibles." : "Mon cerveau ne répond pas. Réessaie dans un instant."); } }
+  }
+  await queue;
+  raw = String(raw || '').replace(/<think>[\s\S]*?<\/think>/g, '');
+  const [oral, detail] = raw.split(/\[\[ecran\]\]/i);
+  const cmd = raw.match(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo)\s*(?::\s*([^\]]*))?\]\]/i);
+  const detailPropre = String(detail || '').replace(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo)[^\]]*\]\]/gi, '').trim();
+  const montrer = /\b(affiche|afficher|montre|montrer|ecris|ecrire|a l ecran|sur l ecran)\b/.test(N(text));
+  if (detailPropre && montrer) ecran('', detailPropre);
+  let dit = String(oral || '').replace(/\[\[[^\]]*\]\]/g, '').trim();
+  if (!dit && detailPropre && !montrer) dit = detailPropre.replace(/```[\s\S]*?```/g, ' ').replace(/[*#`>|_-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 700);
+  if (!spoken && dit) await say(dit);
+  c.push({ role: 'assistant', content: `${dit}${detailPropre ? `\n[[ecran]]\n${detailPropre}` : ''}`.slice(0, 4000), at: Date.now() });
+  if (c.length > 40) S.chat = c.slice(-40);
+  save();
+  if (!cmd) return;
+  const a = cmd[1].toLowerCase(), arg = (cmd[2] || '').trim();
+  if (a === 'regarder') return voir(text);
+  if (a === 'web') return internet(text, arg);
+  if (a === 'rappel') return rappelPour(arg, spoken);
+  if (a === 'note' && arg) return noter(arg);
+  if (a === 'minuteur') return OUTILS.minuteur(arg ? `minuteur ${arg}` : text);
+  if (a === 'meteo') return OUTILS.meteo(text);
+}
+
+/* ---------- les rappels ([[rappel:AAAA-MM-JJ HH:MM|texte]], « rappelle-moi de… dans 20 minutes / à 18 h ») ---------- */
+function rappelPour(arg, discret) {
+  const m = String(arg).match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})\s*\|\s*(.+)/);
+  if (!m) return say("Je n'ai pas compris l'heure du rappel.");
+  const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  if (d < new Date()) return say('Cette heure est déjà passée.');
+  S.minuteurs.push({ id: Date.now(), nom: m[6].trim(), fin: +d, total: (d - Date.now()) / 1000, type: 'rappel' }); save();
+  return discret ? Promise.resolve() : say(`Rappel enregistré pour ${d.toLocaleDateString('fr-FR', { weekday: 'long' })} à ${hhmm(d)}.`);
+}
+async function rappelLocal(text) {
+  const n = N(text), raw = String(text);
+  const mq = raw.match(/rappelle[- ]moi\s+(de\s+|d['’]\s*|qu['’]\s*|que\s+)?(.+?)(?:\s+(?:dans|à|a|vers|demain|ce soir)(?=\s|$).*)?$/i) || [];
+  const lien = (mq[1] || '').trim().replace(/^d['’]$/, "d'").replace(/^qu['’]$/, "qu'"), quoi = mq[2] || '';
+  let fin = 0;
+  const sec = OUTILS._duree(n);
+  if (/\bdans\b/.test(n) && sec) fin = Date.now() + sec * 1000;
+  const h = n.match(/\b(?:a|vers)\s+(\d{1,2})\s*(?:heures?|h)\s*(\d{1,2})?/);
+  if (!fin && h) { const d = new Date(); d.setHours(+h[1], h[2] ? +h[2] : 0, 0, 0); if (/\bdemain\b/.test(n) || d <= new Date()) d.setDate(d.getDate() + 1); fin = +d; }
+  if (!fin) return false;
+  const nom = quoi.trim().replace(/[.!?]+$/, '') || 'ton rappel';
+  S.minuteurs.push({ id: Date.now(), nom: lien && quoi ? `${lien}${/['’]$/.test(lien) ? '' : ' '}${nom}` : nom, fin, total: (fin - Date.now()) / 1000, type: 'rappel' }); save();
+  const d = new Date(fin);
+  await say(`C'est noté : je te rappelle ${lien && quoi ? `${lien}${/['’]$/.test(lien) ? '' : ' '}` : ''}${nom}${fin - Date.now() < 3 * 3600000 ? ` dans ${Math.round((fin - Date.now()) / 60000)} minutes` : ` ${d.getDate() !== new Date().getDate() ? 'demain ' : ''}à ${hhmm(d)}`}.`);
+  return true;
+}
+
+/* ---------- Internet : la recherche web de Groq, ou l'ordinateur de la maison ---------- */
+async function groqWeb(question) {
+  const key = S.settings.key;
+  if (!key || navigator.onLine === false) return '';
+  const ctl = window.AbortController ? new AbortController() : null;
+  const tm = setTimeout(() => ctl && ctl.abort(), 35000);
+  const d = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST', signal: ctl ? ctl.signal : undefined,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: `Tu es Atlas, l'assistant vocal d'un adulte. Nous sommes le ${d}. Cherche sur le web, puis réponds en français en deux à cinq phrases courtes, faites pour être dites à voix haute : pas de markdown, pas de liste, pas de lien, pas de références entre crochets. Donne les faits récents avec leur date si utile. Termine par une phrase « Source : » suivie du nom du site principal. Si tu ne trouves pas, dis-le.` },
+          { role: 'user', content: question },
+        ],
+        tools: [{ type: 'browser_search' }], tool_choice: 'required', reasoning_effort: 'low', temperature: 0.4, max_completion_tokens: 1800,
+      }),
+    });
+    if (!r.ok) { const e = new Error(`web ${r.status}`); e.status = r.status; throw e; }
+    const j = await r.json();
+    const m = j && j.choices && j.choices[0] && j.choices[0].message;
+    return nettoie(m && m.content);
+  } finally { clearTimeout(tm); }
+}
+async function maisonWeb(question, mode) {
+  const root = VOIXMAISON.root();
+  if (!root) return null;
+  const r = await fetch(`${root}/shadow/web?${new URLSearchParams({ q: question, mode })}`);
+  return r.ok ? r.json() : null;
+}
+async function internet(question, recherche, actus) {
+  NOYAU.etiquette('RECHERCHE');
+  face.set('think');
+  await say(pick(['Je cherche.', 'Je regarde sur Internet.', 'Une seconde, je cherche.']));
+  try {
+    const q = (recherche || question).slice(0, 200);
+    if (!actus) { try { const t = await groqWeb(q); if (t) { face.set('idle'); return say(t); } } catch (e) { console.warn('web groq', e); } }
+    let res = null;
+    try { res = await maisonWeb(actus ? (recherche || '') : q, actus ? 'actus' : 'tout'); } catch (e) { res = null; }
+    const actusL = res && res.actus ? res.actus.slice(0, 7) : [], savoir = res && res.savoir ? res.savoir : [];
+    if (!actusL.length && !savoir.length) { face.set('confused'); return say("Je n'arrive pas à aller sur Internet en ce moment : ni Groq, ni l'ordinateur de la maison ne répondent."); }
+    const extraits = actusL.map(a => `- ${a.titre} (${a.source}${a.date ? `, ${a.date}` : ''})`).concat(savoir.map(w => `- Wikipédia « ${w.titre} » : ${w.texte}`)).join('\n');
+    if (!AI.ready()) return say(actusL.length ? `Les titres : ${actusL.slice(0, 4).map(a => `${a.titre}, d'après ${a.source}`).join('. ')}.` : `D'après Wikipédia : ${savoir[0].texte.slice(0, 400)}`);
+    const t = await AI.chat([
+      { role: 'system', content: `${systeme(question)}\n\nVoici ce que tu viens de trouver sur Internet (titres d'actualité récents et extraits de Wikipédia) :\n${extraits}\n\nRéponds à voix haute, en deux à cinq phrases, uniquement avec ces informations ; ignore ce qui ne correspond pas à la question. Cite la source à l'oral (« d'après Frandroid… »). Si rien ne répond, dis-le simplement. Pas de commande entre crochets.` },
+      { role: 'user', content: question },
+    ], { maxTokens: 320, temperature: 0.4 });
+    face.set('idle');
+    return say(nettoie(t) || "Je n'ai rien trouvé de clair.");
+  } finally { NOYAU.etiquette(null); }
+}
+
+/* ---------- il regarde (vision détaillée) ---------- */
+async function voir(question) {
+  if (!S.settings.seeCloud || !S.settings.key) return say("Pour que je voie, active la vision détaillée dans mes réglages : une photo de la caméra est alors envoyée à Groq pour la décrire.");
+  NOYAU.etiquette('VISION');
+  face.set('think');
+  try {
+    const img = await CAMERA.photo();
+    if (!img) { face.set('confused'); return say("Ma caméra ne s'ouvre pas. Autorise la caméra pour ce site."); }
+    const r = await AI.see(img, `Tu es Atlas, l'assistant d'un adulte. Voici ce que voit ta caméra en ce moment. Réponds en français, en deux à quatre phrases naturelles et précises, à sa question : « ${question} ». Factuel, sans inventer. Ne décris pas le corps des personnes. Pas d'émoji, pas de liste.`);
+    face.set('idle');
+    return say(nettoie(r) || "Je ne vois rien de clair.");
+  } catch (e) { face.set('oops'); return say(e.status === 429 ? 'La vision a épuisé son crédit pour le moment.' : "Je n'arrive pas à analyser l'image."); } finally { NOYAU.etiquette(null); }
+}
+
+/* ---------- les notes ---------- */
+async function noter(txt) {
+  const t = String(txt).trim().replace(/^que\s+/i, '');
+  if (!t) return say('Je note quoi ?');
+  S.notes.push({ id: Date.now(), text: t.charAt(0).toUpperCase() + t.slice(1), at: Date.now() });
+  save(); fx.ok();
+  return say('Noté.');
+}
+async function lireNotes() {
+  const l = S.notes;
+  if (!l.length) return say("Tu n'as aucune note.");
+  return say(l.length === 1 ? `Une note : ${l[0].text}` : `Tu as ${l.length} notes. ${l.slice(-5).map(x => x.text).join('. ')}.`);
+}
+async function effacerNotes() {
+  if (!S.notes.length) return say("Il n'y a rien à effacer.");
+  if (!(await askYesNo(`J'efface tes ${S.notes.length} notes ?`))) return say('Je les garde.');
+  S.notes.forEach(x => tomb('notes', x)); S.notes = []; save();
+  return say('Notes effacées.');
+}
+
+/* ---------- le point de situation au démarrage ---------- */
+function briefing() {
+  const h = new Date().getHours(), parts = [`${h < 5 ? 'Bonne nuit' : h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'}${appel()}.`];
+  if (LIEN.ok() && LIEN.minutes()) parts.push(`${LIEN.prenom() || 'Ton fils'} a passé ${LIEN.minutes()} minutes avec Shadow aujourd'hui.`);
+  if (S.notes.length) parts.push(`Tu as ${S.notes.length} note${S.notes.length > 1 ? 's' : ''}.`);
+  const up = LIEN.upcoming(2)[0];
+  if (up) parts.push(`${up.e.text.charAt(0).toUpperCase()}${up.e.text.slice(1)} ${up.days === 0 ? "aujourd'hui" : up.days === 1 ? 'demain' : `dans ${up.days} jours`}.`);
+  if (!AI.ready()) parts.push('Attention : mon noyau cognitif est hors ligne.');
+  parts.push(pick(["Je t'écoute.", 'À ta disposition.', 'Que puis-je faire pour toi ?']));
+  return parts.join(' ');
+}
+
+/* ---------- ce qu'il comprend ---------- */
+const R = {
+  reveil: /^(atlas|atlass|atlasse|at las|hatlas|attlas)\b|\b(atlas|atlass|atlasse|hatlas)\b/,
+  veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|bonne nuit atlas|repose toi|tu peux te reposer)\b/,
+  stop: /^(stop|tais toi|silence|chut|arrete|ca suffit|stoppe)\b/,
+  repete: /\b(repete|redis|tu peux repeter|j ai pas compris|pardon)\b/,
+  noter: /^(?:note|prends note|ajoute a mes notes|ajoute dans mes notes|note dans mes notes)\b\s*(?:que |de |:)?\s*(.+)$/,
+  lire: /\b(lis|lire|quelles sont|dis moi) (moi )?(mes|les) notes\b|^mes notes$/,
+  effacer: /\b(efface|supprime|vide) (toutes )?(mes|les) notes\b/,
+  journee: /\b(journee|bilan|il a fait quoi|qu est ce qu il a fait|comment ca s est passe|comment s est passee|temps d ecran|il a joue a quoi)\b.*\b(fils|petit|shadow|lui|il|aujourd hui)\b|\b(la journee|le bilan) d/,
+  rappel: /\brappelle moi\b/,
+  effacerEcran: /^(efface|efface l ecran|cache l ecran|ferme l ecran|ferme)$/,
+  web: /\b(cherche|recherche|regarde|trouve|va voir|verifie)\b.*\b(internet|le web|en ligne|google)\b|\bsur (internet|le web)\b/,
+  actus: /\b(actualites?|actus|les infos|les nouvelles|quoi de neuf (dans le monde|en france|aujourd hui)|les titres du jour|le journal)\b/,
+  voir: /\b(qu est ce que tu vois|tu vois quoi|que vois tu|regarde|regardes|tu me vois|qui est la|decris ce que tu vois|combien de doigts|qu est ce que je tiens|je tiens quoi|c est quoi ca|qu est ce que c est que ca)\b/,
+};
+async function handle(text) {
+  let n = N(text);
+  cacheEcran();
+  // « Atlas, … » : son nom au début ne compte pas
+  n = n.replace(/^(atlas|atlass|atlasse|hatlas|attlas)\s*/, '').trim();
+  const t = String(text).replace(/^\s*(atlas|atlass|atlasse|hatlas|attlas)[\s,.!]*/i, '').trim() || text;
+  if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
+  if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
+  if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
+  if (R.repete.test(n) && n.split(' ').length <= 5) return say(lastSaid || "Je n'ai encore rien dit.");
+  if (R.effacerEcran.test(n)) { hideBoard(); return say('OK.'); }
+  const nt = t.match(/^\s*(?:note|prends note|ajoute (?:à|a) mes notes|ajoute dans mes notes|note dans mes notes)\s*(?:que |de |:)?\s*(.+)$/i);
+  if (nt && R.noter.test(n)) return noter(nt[1]);
+  if (R.effacer.test(n)) return effacerNotes();
+  if (R.lire.test(n)) return lireNotes();
+  if (R.journee.test(n)) return say(LIEN.journee());
+  if (R.rappel.test(n) && (await rappelLocal(t))) return;
+  const outil = !R.web.test(n) && OUTILS.route(t, n); // le couteau suisse
+  if (outil) return outil();
+  if (R.voir.test(n) && !R.web.test(n)) return voir(t);
+  if (R.actus.test(n) && !R.web.test(n)) {
+    const sujet = (n.match(/\b(?:sur|de|du|concernant|a propos de)\s+(?:l |la |le |les )?(.+)$/) || [])[1] || '';
+    return internet(t, sujet.replace(/\b(aujourd hui|du jour|en ce moment|s il te plait)\b/g, '').trim(), true);
+  }
+  if (R.web.test(n)) {
+    const q = t.replace(/^.*?\b(?:cherche|recherche|regarde|trouve|va voir|vérifie|verifie)\b\s*(?:sur|dans|en)?\s*(?:internet|le web|ligne|google)?\s*(?:si|ce que|qui|quel|quelle|pour)?\s*/i, '').trim();
+    return internet(t, q.length > 3 ? q : t);
+  }
+  return repondre(t);
+}
+
+/* ---------- la boucle de vie : il écoute tout le temps ---------- */
+async function vie() {
+  for (;;) {
+    if (dlg.state === 'off') { await wait(500); continue; }
+    const talk = dlg.state === 'talk';
+    const r = await hear({ maxWait: talk ? 25000 : 60000, cheap: !talk, prompt: talk ? '' : 'Atlas.' });
+    if (r === null) continue;
+    if (!r) { if (talk && ++dlg.silence >= 2) { dlg.state = 'standby'; face.set('idle'); } continue; }
+    const n = N(r);
+    if (!talk && !R.reveil.test(n)) continue; // en veille : il ne répond qu'à son nom
+    dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now();
+    dlg.busy = true;
+    try { await handle(r); } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; }
+  }
+}
+OREILLES.on('bargein', () => { if (!voice.speaking) return; dlg.interrupt = true; voice.stop(); }); // on lui parle pendant qu'il parle : il se tait
+OREILLES.on('speech', () => face.el && face.el.classList.add('hearing'));
+OREILLES.on('speechend', () => face.el && face.el.classList.remove('hearing'));
+
+/* ---------- l'écran reste allumé ---------- */
+let verrou = null;
+async function garderAllume() {
+  if (!S.settings.eveil || !('wakeLock' in navigator) || document.hidden) return;
+  try { verrou = await navigator.wakeLock.request('screen'); } catch (e) { verrou = null; }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && dlg.started) garderAllume(); });
+
+/* ---------- reprendre ce qu'il avait dans Shadow (notes, listes, réglages) ---------- */
+async function importerShadow(manuel) {
+  let pris = 0;
+  try {
+    const l = JSON.parse(localStorage.getItem('shadow-v1') || 'null');
+    let p = l && l.papa;
+    // (le même appareil : on reprend aussi les réglages du cerveau, de la voix et de la ville)
+    if (l && l.settings) {
+      const s = l.settings, a = S.settings;
+      if (!a.key && s.key) { a.key = s.key; pris++; }
+      if (s.brain && a.brain === 'groq' && s.brain === 'local') a.brain = 'local';
+      if (s.localUrl && /11434|ts\.net/.test(s.localUrl) && a.localUrl === 'http://localhost:11434/v1') a.localUrl = s.localUrl;
+      if (s.localModel && !a.localModel) a.localModel = s.localModel;
+      if (s.model && a.model === AI.DEFAULT_MODEL) a.model = s.model;
+      if (s.ville && !a.ville) a.ville = s.ville;
+      if (s.voixPapa) a.voix = s.voixPapa;
+      if (s.seeCloud) a.seeCloud = true;
+      if (s.micSens) a.micSens = s.micSens;
+    }
+    const root = VOIXMAISON.root();
+    if (root && (!p || !(p.notes || []).length)) { try { const g = await (await fetch(`${root}/shadow/etat`, { cache: 'no-store' })).json(); if (g && g.data && g.data.papa) p = g.data.papa; } catch (e) { /* pas de mémoire partagée */ } }
+    if (p) {
+      const ids = new Set(S.notes.map(x => String(x.id)));
+      (p.notes || []).forEach(x => { if (!ids.has(String(x.id))) { S.notes.push(Object.assign({ at: x.id }, x)); pris++; } });
+      const ids2 = new Set(S.listes.map(x => String(x.id)));
+      (p.listes || []).forEach(x => { if (!ids2.has(String(x.id))) { S.listes.push(x); pris++; } });
+    }
+  } catch (e) { console.warn('import', e); }
+  S.importe = true; save();
+  if (manuel) toast(pris ? `Repris depuis Shadow : ${pris} élément${pris > 1 ? 's' : ''}` : 'Rien de nouveau à reprendre');
+  return pris;
+}
+
+/* ---------- les réglages ---------- */
+function ouvreReglages() {
+  const s = S.settings;
+  $('#r-version').textContent = `v${window.ATLAS_VERSION}`;
+  $('#r-nom').value = S.nom || '';
+  $('#r-ville').value = s.ville ? s.ville.name : '';
+  $('#r-ville-ok').textContent = s.ville ? `Météo : ${s.ville.name}` : '';
+  $('#r-brain').value = s.brain;
+  $('#r-local-url').value = s.localUrl || '';
+  $('#r-local-model').value = s.localModel || '';
+  $('#r-key').value = s.key || '';
+  $('#r-model').value = s.model || '';
+  $('#r-see').checked = !!s.seeCloud;
+  $('#r-voix').value = s.voix || 'sombre';
+  $('#r-micro').value = s.micSens || 'loin';
+  $('#r-son').checked = s.sound !== false;
+  $('#r-eveil').checked = s.eveil !== false;
+  renderNotes();
+  $('#r-sync').textContent = SYNC.etat();
+  $('#dlg-reglages').showModal();
+}
+function renderNotes() {
+  const box = $('#r-notes');
+  box.innerHTML = S.notes.length
+    ? S.notes.slice().reverse().map(x => `<div class="item"><span>${esc(x.text)}</span><button type="button" class="ghost sm danger" data-unnote="${x.id}">✕</button></div>`).join('')
+    : '<p class="small muted">Aucune note. Dis : « note que… ».</p>';
+}
+async function chercheVille(nom) {
+  try {
+    const r = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&name=${encodeURIComponent(nom)}`)).json();
+    const g = r.results && r.results[0];
+    if (!g) { $('#r-ville-ok').textContent = 'Ville introuvable.'; return; }
+    S.settings.ville = { name: g.name, lat: Math.round(g.latitude * 100) / 100, lon: Math.round(g.longitude * 100) / 100 }; save();
+    $('#r-ville-ok').textContent = `Météo : ${g.name}${g.country ? `, ${g.country}` : ''}`;
+    OUTILS.rafraichir();
+  } catch (e) { $('#r-ville-ok').textContent = 'Le service météo ne répond pas.'; }
+}
+function lieReglages() {
+  const s = () => S.settings;
+  const bind = (id, fn, ev = 'change') => $(id).addEventListener(ev, e => { fn(e.target); save(); });
+  bind('#r-nom', el => { S.nom = el.value.trim().slice(0, 30); });
+  $('#r-ville').addEventListener('change', e => { const v = e.target.value.trim(); if (v) chercheVille(v); else { S.settings.ville = null; save(); } });
+  bind('#r-brain', el => { s().brain = el.value; });
+  bind('#r-local-url', el => { s().localUrl = el.value.trim(); VOIXMAISON.downUntil = 0; });
+  bind('#r-local-model', el => { s().localModel = el.value.trim(); });
+  bind('#r-key', el => { s().key = el.value.trim(); });
+  bind('#r-model', el => { s().model = el.value.trim() || AI.DEFAULT_MODEL; });
+  bind('#r-see', el => { s().seeCloud = el.checked; });
+  bind('#r-voix', el => { s().voix = el.value; VOIXMAISON.cache.clear(); });
+  bind('#r-micro', el => { s().micSens = el.value; });
+  bind('#r-son', el => { s().sound = el.checked; });
+  bind('#r-eveil', el => { s().eveil = el.checked; if (el.checked) garderAllume(); else if (verrou) { verrou.release().catch(() => {}); verrou = null; } });
+  $('#r-importer').addEventListener('click', async () => { await importerShadow(true); ouvreReglages(); });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-unnote]');
+    if (!b) return;
+    const it = S.notes.find(x => String(x.id) === b.dataset.unnote);
+    if (it) { tomb('notes', it); S.notes = S.notes.filter(x => x !== it); save(); renderNotes(); }
+  });
+  $('#btn-reglages').addEventListener('click', ouvreReglages);
+}
+
+/* ---------- une version plus récente ? il se met à jour tout seul (une fois) ---------- */
+async function verifierMaj() {
+  try {
+    if (!navigator.onLine || window.__BANC) return;
+    const m = (await (await fetch(`index.html?maj=${Date.now()}`, { cache: 'no-store' })).text()).match(/ATLAS_VERSION = '(\d+)'/);
+    if (!m || +m[1] <= +window.ATLAS_VERSION) return;
+    let deja = ''; try { deja = sessionStorage.getItem('atlas-maj') || ''; } catch (e) { /* rien */ }
+    if (deja === m[1]) return;
+    try { sessionStorage.setItem('atlas-maj', m[1]); } catch (e) { /* rien */ }
+    if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => k.startsWith('atlas-app')).map(k => caches.delete(k))); }
+    const regs = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [];
+    await Promise.all(regs.map(g => g.update().catch(() => {})));
+    location.reload();
+  } catch (e) { /* plus tard */ }
+}
+
+/* ---------- le démarrage ---------- */
+async function demarrer() {
+  if (dlg.started) return;
+  dlg.started = true;
+  $('#demarrer').hidden = true;
+  voice.unlock(); OREILLES.prime(); fx.audio();
+  try { await OREILLES.start(); } catch (e) { /* le micro sera demandé plus tard */ }
+  garderAllume();
+  face.set('idle');
+  if (!S.importe) await importerShadow(false);
+  VOIXMAISON.prefetch(briefing());
+  await NOYAU.allume();
+  dlg.state = 'talk'; dlg.silence = 0;
+  await say(briefing());
+}
+window.addEventListener('load', () => {
+  face.el = $('#face');
+  voice.init();
+  lieReglages();
+  const porte = $('#demarrer');
+  porte.addEventListener('click', demarrer);
+  porte.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') demarrer(); });
+  // toucher le noyau pendant qu'il parle : il se tait ; en veille : il écoute
+  $('#papa-hud').addEventListener('click', e => {
+    if (e.target.closest('button')) return;
+    if (voice.speaking) { dlg.interrupt = true; voice.stop(); return; }
+    if (dlg.state === 'standby') { dlg.state = 'talk'; dlg.silence = 0; fx.tone([[1175, 0.06]]); OREILLES.cancel(); }
+  });
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+    setTimeout(verifierMaj, 4000);
+  }
+  window.ATLAS_OK = true;
+  vie();
+});

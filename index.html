@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <script>
+    window.ATLAS_VERSION = '1';
+    // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
+    (function () {
+      function show(msg) {
+        var b = document.getElementById('boot-err');
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'boot-err';
+          b.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:999;background:#1d1a14;color:#ffcf8a;border:1px solid #6b4f22;padding:10px 12px;border-radius:12px;font:13px/1.35 ui-monospace,monospace;word-break:break-word';
+          (document.body || document.documentElement).appendChild(b);
+        }
+        b.textContent = 'Atlas a un souci (v' + window.ATLAS_VERSION + ') : ' + msg;
+      }
+      if (/[?&]banc\b/.test(location.search)) window.__BANC = true;
+      window.addEventListener('error', function (e) {
+        if (e.target && e.target !== window && e.target.src) return show('fichier introuvable ' + e.target.src.split('/').pop());
+        show((e.message || 'erreur') + (e.filename ? ' (' + e.filename.split('/').pop() + ', ligne ' + e.lineno + ')' : ''));
+      }, true);
+    })();
+  </script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Atlas</title>
+  <meta name="description" content="Atlas, l'assistant personnel (voix, outils, Internet)">
+  <meta name="theme-color" content="#07080a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+  <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
+  <div id="face" class="face idle" aria-hidden="true"></div>
+
+  <!-- le noyau (l'IA de film) et son affichage de bord -->
+  <div id="papa-hud" hidden>
+    <canvas id="noyau" aria-hidden="true"></canvas>
+    <div class="hud-coin hud-tl"><b>ATLAS</b><span>ASSISTANT · NOYAU</span><span id="hud-session">SÉANCE 00:00</span></div>
+    <div class="hud-coin hud-tr"><b id="hud-heure">00:00:00</b><span id="hud-date"></span></div>
+    <div class="hud-panneau hud-l">
+      <p><i>CERVEAU</i><em id="hud-cerveau">—</em></p>
+      <p><i>RÉPONSE</i><em id="hud-latence">—</em></p>
+      <p><i>MICRO</i><em id="hud-micro">—</em></p>
+      <p><i>MINUTEUR</i><em id="hud-minuteur">—</em></p>
+    </div>
+    <div class="hud-panneau hud-r">
+      <p><i>MÉTÉO</i><em id="hud-meteo">—</em></p>
+      <p><i>AGENDA</i><em id="hud-agenda">—</em></p>
+      <p><i>NOTES</i><em id="hud-notes">0</em></p>
+      <p><i id="hud-enfant-nom">ENFANT</i><em id="hud-enfant">—</em></p>
+    </div>
+    <div id="hud-etat">EN ATTENTE</div>
+    <svg class="hud-cadre" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M2 9 V2 H9 M91 2 H98 V9 M98 91 V98 H91 M9 98 H2 V91"/></svg>
+  </div>
+
+  <div id="board" class="board" hidden></div>
+
+  <!-- le premier toucher : le son et le micro ont besoin d'un geste -->
+  <div id="demarrer" role="button" tabindex="0" aria-label="Démarrer Atlas">
+    <div class="porte"><div class="anneau"><i></i></div><b>ATLAS</b><small>TOUCHER POUR DÉMARRER</small></div>
+  </div>
+
+  <button id="btn-reglages" type="button" aria-label="Réglages">⚙</button>
+  <div id="toast" hidden></div>
+
+  <dialog id="dlg-reglages">
+    <form method="dialog" class="dlg">
+      <h2>RÉGLAGES</h2>
+      <p class="small muted">Atlas <span id="r-version"></span> · tout reste sur tes appareils ; la clé ne quitte jamais cet appareil.</p>
+      <fieldset>
+        <legend>Toi</legend>
+        <label>Comment Atlas t'appelle (facultatif)<input id="r-nom" type="text" autocomplete="off" placeholder="par exemple : chef"></label>
+        <label>Ta ville (pour la météo)<input id="r-ville" type="text" autocomplete="off" placeholder="par exemple : Lyon"></label>
+        <p class="small muted" id="r-ville-ok"></p>
+      </fieldset>
+      <fieldset>
+        <legend>Cerveau</legend>
+        <label>Le cerveau
+          <select id="r-brain"><option value="local">L'ordinateur de la maison d'abord (Groq en secours)</option><option value="groq">En ligne (Groq)</option></select></label>
+        <label>Adresse de l'ordinateur de la maison<input id="r-local-url" type="url" autocomplete="off" placeholder="https://….ts.net/v1"></label>
+        <label>Modèle de la maison<input id="r-local-model" type="text" autocomplete="off" placeholder="shadow-cerveau"></label>
+        <label>Clé Groq (gardée sur cet appareil seulement)<input id="r-key" type="password" autocomplete="off" placeholder="gsk_…"></label>
+        <label>Modèle Groq<input id="r-model" type="text" autocomplete="off"></label>
+        <label class="check"><input id="r-see" type="checkbox"> Vision détaillée : quand tu lui demandes de regarder, une photo de la caméra est envoyée à Groq pour la décrire</label>
+      </fieldset>
+      <fieldset>
+        <legend>Voix et micro</legend>
+        <label>Sa voix
+          <select id="r-voix"><option value="sombre">Robot sombre (grave, métallique)</option><option value="demon">Démon de métal (le plus effrayant)</option><option value="glacial">Robot glacial (calme, façon HAL)</option><option value="pierre">Pierre (voix humaine)</option><option value="jessica">Jessica (voix humaine)</option><option value="tom">Tom</option></select></label>
+        <label>Sensibilité du micro
+          <select id="r-micro"><option value="loin">Toute la pièce (de loin)</option><option value="max">Très sensible</option><option value="haute">Sensible</option><option value="normal">Normale (proche)</option></select></label>
+        <label class="check"><input id="r-son" type="checkbox"> Le son</label>
+        <label class="check"><input id="r-eveil" type="checkbox"> Garder l'écran allumé quand Atlas tourne</label>
+        <p class="small muted">Mot de réveil : « Atlas ». Après une réponse, il t'écoute encore un moment sans que tu redises son nom.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Tes notes</legend>
+        <div id="r-notes"></div>
+        <div class="ligne"><button type="button" id="r-importer" class="ghost sm">Reprendre les notes, listes et réglages de Shadow</button></div>
+        <p class="small muted" id="r-sync"></p>
+      </fieldset>
+      <menu><button value="ok" class="go">Fermer</button></menu>
+    </form>
+  </dialog>
+
+  <script src="orthographe.js?v=1"></script>
+  <script src="cerveau.js?v=1"></script>
+  <script src="oreilles.js?v=1"></script>
+  <script src="voix.js?v=1"></script>
+  <script src="atlas.js?v=1"></script>
+  <script src="outils.js?v=1"></script>
+  <script src="noyau.js?v=1"></script>
+</body>
+</html>
