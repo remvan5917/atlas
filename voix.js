@@ -199,6 +199,9 @@ const ELEVEN = {
 
 const voice = {
   v: null, male: false, speaking: false, endedAt: 0, _cur: null,
+  endormi: false, // un autre Atlas a pris la main sur cet appareil : celui-ci se tait
+  _file: Promise.resolve(), _gen: 0, _attente: 0, _dernier: '', _dernierA: 0,
+  occupe() { return this.speaking || this._attente > 0; }, // il parle, ou une phrase attend son tour
   init() {
     if (!('speechSynthesis' in window)) return;
     const choose = () => {
@@ -219,9 +222,19 @@ const voice = {
       .replace(/\batlas\b/gi, () => (ELEVEN.usable() ? 'Atlas' : 'Atlasse')) // Piper avale le « s » final : « Atla »
       .replace(/[«»*#`]/g, ' ').replace(/\s+/g, ' ').trim();
   },
+  // une seule phrase à la fois : les autres attendent leur tour (jamais deux voix l'une sur l'autre)
   say(text) {
     const t = this.clean(text);
-    if (!S.settings.sound || !t) return Promise.resolve();
+    if (!S.settings.sound || !t || this.endormi) return Promise.resolve();
+    if (t === this._dernier && Date.now() - this._dernierA < 5000) return this._file; // la même phrase deux fois de suite : une seule
+    this._dernier = t; this._dernierA = Date.now();
+    const gen = this._gen;
+    this._attente++;
+    const p = this._file.then(() => (gen === this._gen && !this.endormi ? this._dire(t) : null)).finally(() => { this._attente--; });
+    this._file = p.catch(() => {});
+    return p;
+  },
+  _dire(t) {
     lastSaid = t;
     const maison = () => (VOIXMAISON.usable() ? this.sayMaison(t).catch(() => this.saySynth(t)) : this.saySynth(t));
     if (ELEVEN.usable()) return this.sayMaison(t, ELEVEN).catch(maison); // la voix ElevenLabs d'abord
@@ -262,6 +275,7 @@ const voice = {
     });
   },
   stop() {
+    this._gen++; // les phrases en attente sont oubliées
     if (this._cur) { try { this._cur.src.onended && this._cur.src.onended(); } catch (e) { /* rien */ } }
     if ('speechSynthesis' in window) speechSynthesis.cancel();
   },

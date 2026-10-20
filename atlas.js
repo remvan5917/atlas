@@ -49,7 +49,7 @@ function charge() {
   return fresh();
 }
 let S = charge();
-function save() { S.updatedAt = Date.now(); try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ } SYNC.sale(); }
+function save() { if (voice.endormi) return; S.updatedAt = Date.now(); try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ } SYNC.sale(); }
 function tomb(liste, item) { (S.tomb[liste] = S.tomb[liste] || {})[String(item.id)] = Date.now(); }
 
 /* ---------- les sons ---------- */
@@ -152,7 +152,7 @@ const SYNC = (() => {
   }
   async function sync() {
     const root = VOIXMAISON.root();
-    if (!root || occupe || navigator.onLine === false || window.__BANC) return;
+    if (!root || occupe || navigator.onLine === false || window.__BANC || voice.endormi) return;
     occupe = true;
     try {
       for (let essai = 0; essai < 3; essai++) {
@@ -598,7 +598,7 @@ const CONV = (() => {
   }
   const QUESTION = /^(c est quoi|qu est ce|pourquoi|comment|combien|quand|qui|ou est|ou se|ou on|quel|quelle|quels|quelles|est ce que|tu sais|vous savez|on sait|ca fait combien|c etait quand|c est combien|il fait combien|ca existe|c est vrai que|tu crois que|vous croyez que)\b/;
   async function peutEtre(texte, qui) {
-    if (voice.speaking) return;
+    if (voice.occupe()) return;
     // un invité : il l'accueille, une fois par soirée
     const g = /^invité/.test(qui) && invites.find(x => `invité ${x.n}` === qui);
     const nq = N(texte), estQuestion = /\?/.test(texte) || QUESTION.test(nq);
@@ -666,7 +666,7 @@ const ARRIVEE = (() => {
     dernierAccueil = Date.now();
     return phrase(nom);
   }
-  async function dire(t) { if (!t || voice.speaking || dlg.busy) return; face.flash('happy', 1200); CONV.note('Atlas', t); await say(t); }
+  async function dire(t) { if (!t || voice.occupe() || dlg.busy) return; face.flash('happy', 1200); CONV.note('Atlas', t); await say(t); }
   // les yeux : chaque seconde, qui est dans la pièce
   function visages(faces) {
     if (!dlg.started) return;
@@ -725,11 +725,11 @@ async function presentation() {
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
 async function vie() {
   for (;;) {
-    if (dlg.state === 'off') { await wait(500); continue; }
+    if (dlg.state === 'off' || voice.endormi) { await wait(500); continue; }
     const talk = dlg.state === 'talk', conv = S.settings.conversation !== false;
     // en mode conversation, il écoute la pièce avec les oreilles de la maison (le son ne sort pas de la maison)
     const r = await hear({ maxWait: talk ? 25000 : 60000, cheap: conv || !talk, prompt: talk ? '' : 'Atlas.' });
-    if (r === null) continue;
+    if (r === null || voice.endormi) continue; // un autre Atlas a pris la main pendant qu'il écoutait
     if (!r) { if (talk && ++dlg.silence >= 2) { dlg.state = 'standby'; face.set('idle'); } continue; }
     const n = N(r);
     dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
@@ -764,7 +764,7 @@ async function vie() {
     } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; dlg.repondu = Date.now(); }
   }
 }
-OREILLES.on('bargein', () => { if (!voice.speaking) return; dlg.interrupt = true; voice.stop(); }); // on lui parle pendant qu'il parle : il se tait
+OREILLES.on('bargein', () => { if (!voice.occupe()) return; dlg.interrupt = true; voice.stop(); }); // on lui parle pendant qu'il parle : il se tait
 OREILLES.on('speech', () => face.el && face.el.classList.add('hearing'));
 OREILLES.on('speechend', () => face.el && face.el.classList.remove('hearing'));
 
@@ -924,10 +924,58 @@ async function verifierMaj() {
   } catch (e) { /* plus tard */ }
 }
 
+/* ---------- un seul Atlas à la fois sur l'appareil (l'appli et un onglet ouverts ensemble : il répondait deux fois) ---------- */
+const UNIQUE = (() => {
+  const id = Math.random().toString(36).slice(2);
+  const canal = 'BroadcastChannel' in window ? new BroadcastChannel('atlas') : null;
+  function prends() {
+    voice.endormi = false;
+    if (canal) canal.postMessage({ moi: id });
+    try { localStorage.setItem('atlas-actif', JSON.stringify({ id, t: Date.now() })); } catch (e) { /* rien */ }
+  }
+  // un autre Atlas vient de démarrer : celui-ci rend le micro et la caméra, et se tait
+  function endors() {
+    if (voice.endormi || !dlg.started) return;
+    voice.endormi = true; dlg.state = 'off';
+    voice.stop(); OREILLES.stop();
+    if (typeof VISION !== 'undefined' && VISION.isOn()) VISION.stop();
+    if (verrou) { try { verrou.release(); } catch (e) { /* rien */ } verrou = null; }
+    face.set('idle');
+    const porte = $('#demarrer'), m = porte.querySelector('small');
+    m.dataset.avant = m.dataset.avant || m.textContent;
+    m.textContent = 'ATLAS EST OUVERT AILLEURS · TOUCHER POUR LE REPRENDRE ICI';
+    porte.hidden = false;
+  }
+  if (canal) canal.onmessage = e => { if (e.data && e.data.moi && e.data.moi !== id) endors(); };
+  window.addEventListener('storage', e => { // en secours, si le canal n'existe pas
+    if (e.key !== 'atlas-actif' || !e.newValue) return;
+    try { if (JSON.parse(e.newValue).id !== id) endors(); } catch (x) { /* rien */ }
+  });
+  return { prends, dort: () => voice.endormi };
+})();
+
+// reprendre la main ici (l'autre Atlas se tait à son tour)
+async function reprendre() {
+  UNIQUE.prends();
+  S = charge(); // ce que l'autre a noté entre-temps
+  const porte = $('#demarrer'), m = porte.querySelector('small');
+  if (m.dataset.avant) m.textContent = m.dataset.avant;
+  porte.hidden = true;
+  fx.audio();
+  try { await OREILLES.start(); } catch (e) { /* le micro sera demandé plus tard */ }
+  garderAllume();
+  dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now();
+  SYNC.sync();
+  await say('Je suis là.');
+  ARRIVEE.yeux();
+}
+
 /* ---------- le démarrage ---------- */
 async function demarrer() {
+  if (UNIQUE.dort()) return reprendre();
   if (dlg.started) return;
   dlg.started = true; dlg.depuis = Date.now();
+  UNIQUE.prends();
   $('#demarrer').hidden = true;
   voice.unlock(); OREILLES.prime(); fx.audio();
   try { await OREILLES.start(); } catch (e) { /* le micro sera demandé plus tard */ }
@@ -950,7 +998,7 @@ window.addEventListener('load', () => {
   // toucher le noyau pendant qu'il parle : il se tait ; en veille : il écoute
   $('#papa-hud').addEventListener('click', e => {
     if (e.target.closest('button')) return;
-    if (voice.speaking) { dlg.interrupt = true; voice.stop(); return; }
+    if (voice.occupe()) { dlg.interrupt = true; voice.stop(); return; }
     if (dlg.state === 'standby') { dlg.state = 'talk'; dlg.silence = 0; fx.tone([[1175, 0.06]]); OREILLES.cancel(); }
   });
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

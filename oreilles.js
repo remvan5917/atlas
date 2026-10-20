@@ -265,6 +265,7 @@ const OREILLES = (() => {
 
   return {
     start, prime, listen, cancel, mute,
+    stop: () => { cancel(); closeMic(); }, // un autre Atlas a pris la main : on rend le micro
     engine: () => engine,
     listening: () => !!pending,
     meter: () => ({ level, threshold, noise, lastHeard, speaking }),

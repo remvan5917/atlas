@@ -7,6 +7,7 @@ Adresse : https://remvan5917.github.io/atlas/
 - Touche l'écran une fois (le son et le micro ont besoin d'un geste), puis parle.
 - Mot de réveil : **« Atlas »**. Après une réponse, il t'écoute encore un moment sans que tu redises son nom.
 - « Atlas, mets-toi en veille », « stop » / « tais-toi », « répète ». Toucher le noyau pendant qu'il parle le fait taire.
+- **Un seul Atlas à la fois sur un appareil** : si on l'ouvre ailleurs (l'appli et un onglet Chrome, deux onglets), le dernier démarré prend la main ; l'autre rend le micro et la caméra et affiche « Atlas est ouvert ailleurs » (un toucher pour le reprendre). Il ne dit jamais deux phrases en même temps : elles attendent leur tour.
 
 ## Ce qu'il sait faire
 - **Un assistant adulte** (IA de film : calme, précis, pince-sans-rire), tout à la voix ; rien ne s'affiche, sauf si tu demandes « affiche-le » (code avec un bouton « Copier »).
