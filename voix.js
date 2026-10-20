@@ -202,6 +202,12 @@ const voice = {
   endormi: false, // un autre Atlas a pris la main sur cet appareil : celui-ci se tait
   _file: Promise.resolve(), _gen: 0, _attente: 0, _dernier: '', _dernierA: 0,
   occupe() { return this.speaking || this._attente > 0; }, // il parle, ou une phrase attend son tour
+  // il prévient l'ordinateur de la maison quand il parle : Shadow ne prend pas sa voix pour quelqu'un de la maison
+  annonce(ms) {
+    const r = VOIXMAISON.root();
+    if (!r || window.__BANC) return;
+    try { fetch(`${r}/atlas/parle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ms ? { ms: Math.round(ms) } : { fin: true }), keepalive: true }).catch(() => {}); } catch (e) { /* rien */ }
+  },
   init() {
     if (!('speechSynthesis' in window)) return;
     const choose = () => {
@@ -245,11 +251,12 @@ const voice = {
       OREILLES.mute(true); // il ne s'écoute pas lui-même
       const node = moteur.play(buf);
       this._cur = node; this.speaking = true; face.talk(true);
+      this.annonce(node.duration * 1000 + 300);
       let done = false;
       const end = () => {
         if (done) return;
         done = true; this.speaking = false; this.endedAt = Date.now(); this._cur = null;
-        node.stop(); face.talk(false); OREILLES.mute(false);
+        node.stop(); face.talk(false); OREILLES.mute(false); this.annonce(0);
         res();
       };
       node.src.onended = end;
@@ -266,8 +273,8 @@ const voice = {
       u.rate = 0.98;
       u.pitch = this.male ? 0.9 : 0.8; // sans l'ordinateur : la voix du téléphone, naturelle et posée (jamais déformée)
       let done = false;
-      const end = () => { if (done) return; done = true; this.speaking = false; this.endedAt = Date.now(); face.talk(false); OREILLES.mute(false); res(); };
-      u.onstart = () => { this.speaking = true; face.talk(true); };
+      const end = () => { if (done) return; done = true; this.speaking = false; this.endedAt = Date.now(); face.talk(false); OREILLES.mute(false); this.annonce(0); res(); };
+      u.onstart = () => { this.speaking = true; face.talk(true); this.annonce(1500 + t.length * 80); };
       u.onend = end; u.onerror = end;
       setTimeout(end, 6000 + t.length * 120);
       OREILLES.mute(true);

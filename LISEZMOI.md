@@ -27,6 +27,7 @@ Adresse : https://remvan5917.github.io/atlas/
 - **Il accueille une voix inconnue** (un invité) une fois par soirée, et se présente sur demande (« Atlas, présente-toi »).
 - **Il accueille ceux qui arrivent** : quelqu'un de la famille qu'il n'a ni vu ni entendu depuis 3 heures (« Bonsoir Maman, bon retour »), à la voix ou à la caméra (`yeux.js`, repris de Shadow : il reconnaît les visages que Shadow a appris, sur l'appareil, sans jamais modifier la mémoire de Shadow ; aucune image n'est envoyée). Un visage inconnu bien visible ou une voix inconnue : il accueille l'invité (une fois par soirée). Ceux qui sont déjà là au démarrage ne sont pas accueillis.
 - Ce qui commence par « Shadow… » et la réponse de Shadow ne le concernent pas.
+- **Et dans l'autre sens** : quand Atlas parle, il le signale à l'ordinateur de la maison (`/atlas/parle`) ; Shadow, qui écoute la même pièce, ignore ce qu'il a entendu pendant ce moment-là. Atlas ne peut donc ni discuter avec Shadow ni lui apprendre des choses (Atlas ne fait que lire la mémoire de Shadow, jamais l'écrire).
 - En mode conversation, il écoute la pièce avec les oreilles de la maison (whisper.cpp sur l'ordinateur) : le son ne sort pas de chez toi. « Reste discret » / « participe à la conversation », ou dans les réglages.
 - Pense à prévenir les invités (et la famille) qu'Atlas écoute.
 
