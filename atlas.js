@@ -223,6 +223,8 @@ const LIEN = (() => {
 
 /* ---------- écouter ---------- */
 const dlg = { state: 'off', busy: false, silence: 0, lastActive: 0, interrupt: false, started: false };
+const entendus = []; // le diagnostic : les dernières phrases entendues et ce qu'il en a fait (mémoire vive)
+function journal(t, qui, quoi) { entendus.push({ at: Date.now(), t: String(t).slice(0, 80), qui: qui || '?', quoi }); if (entendus.length > 12) entendus.shift(); }
 const brainTimes = [];
 async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   dlg.interrupt = false;
@@ -480,7 +482,7 @@ function briefing() {
 
 /* ---------- ce qu'il comprend ---------- */
 const R = {
-  reveil: /^(atlas|atlass|atlasse|atla|at las|hatlas|attlas)\b|\b(atlas|atlass|atlasse|atla|hatlas)\b/,
+  reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas)\b/,
   veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|bonne nuit atlas|repose toi|tu peux te reposer)\b/,
   stop: /^(stop|tais toi|silence|chut|arrete|ca suffit|stoppe)\b/,
   repete: /\b(repete|redis|tu peux repeter|j ai pas compris|pardon)\b/,
@@ -504,8 +506,8 @@ async function handle(text) {
   let n = N(text);
   cacheEcran();
   // « Atlas, … » : son nom au début ne compte pas
-  n = n.replace(/^(atlas|atlass|atlasse|atla|hatlas|attlas)\s*/, '').trim();
-  const t = String(text).replace(/^\s*(atlas|atlass|atlasse|atla|hatlas|attlas)[\s,.!]*/i, '').trim() || text;
+  n = n.replace(/^((dis |hey |he |ok |eh )?(l )?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas))\s*/, '').trim();
+  const t = String(text).replace(/^\s*((dis|hey|hé|ok|eh)[\s,]+)?(l['’]\s*)?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas)[\s,.!?]*/i, '').trim() || text;
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
@@ -553,7 +555,7 @@ const CONV = (() => {
     const id = VOIX.identify(print);
     if (id) { VOIX.learn(id.name, print); return id.name; } // il affine la voix des gens qu'il connaît
     let g = invites.find(x => VOIX.dist(x.p, print) < 7.5);
-    if (!g) { g = { p: print, n: (invites.length ? invites[invites.length - 1].n : 0) + 1, vu: 0 }; invites.push(g); if (invites.length > 6) invites.shift(); }
+    if (!g) { g = { p: print, n: (invites.length ? invites[invites.length - 1].n : 0) + 1, vu: 0, debut: Date.now() }; invites.push(g); if (invites.length > 6) invites.shift(); }
     g.vu++; g.at = Date.now();
     return `invité ${g.n}`;
   }
@@ -565,6 +567,18 @@ const CONV = (() => {
   const ligne = x => `${x.qui || "quelqu'un"} : ${x.texte}`;
   const recents = (k = 14) => fil.filter(x => Date.now() - x.at < 20 * 60000).slice(-k);
   const presents = () => [...new Set(recents(30).map(x => x.qui).filter(q => q && q !== 'Atlas' && !/^invité/.test(q)))];
+  // combien d'AUTRES personnes ont parlé ces 4 dernières minutes (une voix inconnue ne compte que si elle a parlé 2 fois,
+  // et toutes les voix inconnues comptent pour une seule si personne de connu n'est là : la même voix peut varier)
+  // cette voix inconnue parle à Atlas : ce n'est pas un invité à accueillir (sans doute quelqu'un de la maison)
+  function parleAtlas(qui) { const g = /^invité/.test(qui || '') && invites.find(x => `invité ${x.n}` === qui); if (g) g.connuAtlas = true; }
+  function autres(qui) {
+    const r = fil.filter(x => Date.now() - x.at < 4 * 60000 && x.qui && x.qui !== 'Atlas' && x.qui !== qui);
+    const connus = new Set(r.filter(x => !/^invité/.test(x.qui)).map(x => x.qui));
+    const inc = {}; r.filter(x => /^invité/.test(x.qui)).forEach(x => { inc[x.qui] = (inc[x.qui] || 0) + 1; });
+    const nbInc = Object.keys(inc).filter(k => inc[k] >= 2).length;
+    if (/^invité/.test(qui || '') && !connus.size) return 0; // une seule personne inconnue qui parle (sûrement la même)
+    return connus.size + (connus.size ? nbInc : Math.min(nbInc, 1));
+  }
   const nbInvites = () => new Set(recents(30).map(x => x.qui).filter(q => /^invité/.test(q))).size;
   function contexte() {
     const r = recents(12), connus = VOIX.people().map(p => p.name);
@@ -588,7 +602,8 @@ const CONV = (() => {
     // un invité : il l'accueille, une fois par soirée
     const g = /^invité/.test(qui) && invites.find(x => `invité ${x.n}` === qui);
     const nq = N(texte), estQuestion = /\?/.test(texte) || QUESTION.test(nq);
-    if (g && g.vu >= 2 && !estQuestion && Date.now() - spontane > 30000) {
+    // un vrai invité : une voix nouvelle (apparue il y a moins de 10 min), qui n'a jamais parlé à Atlas
+    if (g && g.vu >= 2 && !g.connuAtlas && Date.now() - g.debut < 10 * 60000 && !estQuestion && Date.now() - spontane > 30000 && (presents().length || nbInvites() >= 2)) {
       const m = accueillirInvite();
       if (m) { note('Atlas', m); face.set('idle'); return say(m); }
     }
@@ -623,7 +638,7 @@ Nous sommes le ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 
     const h = new Date().getHours();
     return `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}. Je ne crois pas qu'on se connaisse : je suis Atlas, l'assistant de la maison. J'écoute la conversation et j'interviens si je peux aider ; il suffit de dire mon nom.`;
   }
-  return { nomPour, note, contexte, presents, nbInvites, pourShadow, shadowRepond, peutEtre, accueillirInvite, _fil: fil };
+  return { nomPour, note, contexte, presents, nbInvites, pourShadow, shadowRepond, peutEtre, accueillirInvite, autres, parleAtlas, _fil: fil };
 })();
 
 /* ---------- l'accueil : quelqu'un arrive dans la pièce (vu à la caméra, ou entendu à la voix) ----------
@@ -661,7 +676,7 @@ const ARRIVEE = (() => {
     if (inconnu) { inconnuDepuis = inconnuDepuis || Date.now(); } else inconnuDepuis = 0;
     if (accueil) return dire(accueil);
     // un visage inconnu, bien visible depuis 5 secondes : un invité
-    if (inconnuDepuis && Date.now() - inconnuDepuis > 5000 && Date.now() - (dlg.depuis || 0) > 60000) { inconnuDepuis = 0; const t = CONV.accueillirInvite(); if (t) dire(t); }
+    if (inconnuDepuis && Date.now() - inconnuDepuis > 5000 && Date.now() - (dlg.depuis || 0) > 60000 && faces.some(f => f.name)) { inconnuDepuis = 0; const t = CONV.accueillirInvite(); if (t) dire(t); }
   }
   async function yeux() {
     if (S.settings.camera === false || typeof VISION === 'undefined' || !VISION.supported || VISION.isOn()) return;
@@ -719,25 +734,34 @@ async function vie() {
     const n = N(r);
     dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
     const appele = R.reveil.test(n);
+    if (appele) fx.tone([[1175, 0.05]]); // un petit bip : il a entendu son nom
     const bonjour = ARRIVEE.connu(dlg.qui); // il arrive : on l'accueille (avant de lui répondre, s'il parle à Atlas)
     if (bonjour) { if (appele) { CONV.note('Atlas', bonjour); await say(bonjour); } else { await ARRIVEE.dire(bonjour); if (conv) CONV.note(dlg.qui, r); continue; } }
     if (conv) {
       CONV.note(dlg.qui, r);
       if (/^shadow\b/.test(n)) { CONV.pourShadow(); continue; } // on parle à Shadow (et sa réponse arrive juste après)
       if (!appele && CONV.shadowRepond(dlg.qui)) continue;
-      // c'est pour lui : on l'appelle, ou on lui répond juste après sa réponse (la même personne)
-      const suite = talk && Date.now() - (dlg.repondu || 0) < 12000 && (!dlg.qui || !dlg.quiParlait || dlg.qui === dlg.quiParlait);
-      if (!appele && !suite) {
+      // c'est pour lui : on l'appelle ; on enchaîne juste après sa réponse ; ou personne d'autre ne parle (on est seul avec lui)
+      const memes = !dlg.qui || !dlg.quiParlait || /^invité/.test(dlg.qui) || /^invité/.test(dlg.quiParlait) || dlg.qui === dlg.quiParlait;
+      const suite = talk && Date.now() - (dlg.repondu || 0) < 20000 && memes;
+      const seul = CONV.autres(dlg.qui) === 0 && n.split(' ').length >= 2 && !dlg.discret;
+      if (!appele && !suite && !seul) {
+        journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
         if (dlg.discret) continue;
         dlg.busy = true;
         try { await CONV.peutEtre(r, dlg.qui); } catch (e) { console.warn('conversation', e); } finally { dlg.busy = false; }
         continue;
       }
+      journal(r, dlg.qui, appele ? 'appelé : il répond' : suite ? 'à la suite : il répond' : 'seul avec lui : il répond');
+      CONV.parleAtlas(dlg.qui);
       dlg.discret = false;
-    } else if (!talk && !appele) continue; // en veille : il ne répond qu'à son nom
+    } else if (!talk && !appele) { journal(r, dlg.qui, 'en veille : il attend son nom'); continue; } // en veille : il ne répond qu'à son nom
     dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now(); dlg.quiParlait = dlg.qui;
     dlg.busy = true;
-    try { await handle(r); } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; dlg.repondu = Date.now(); }
+    try {
+      await handle(r);
+      if (/^invité/.test(dlg.qui || '') && !dlg.proposeVoix && !VOIX.own().length && OREILLES.engine() === 'whisper') { dlg.proposeVoix = true; await say("Au fait, je ne reconnais pas encore ta voix. Dis « Atlas, apprends ma voix », et je saurai toujours que c'est toi."); }
+    } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; dlg.repondu = Date.now(); }
   }
 }
 OREILLES.on('bargein', () => { if (!voice.speaking) return; dlg.interrupt = true; voice.stop(); }); // on lui parle pendant qu'il parle : il se tait
@@ -814,6 +838,9 @@ function ouvreReglages() {
   $('#r-camera').checked = s.camera !== false;
   renderNotes(); renderVoix();
   $('#r-sync').textContent = SYNC.etat();
+  const c = AI.cfg ? AI.cfg() : {};
+  $('#r-diag').innerHTML = `<p class="small">Cerveau : ${AI.ready() ? (c.local ? `maison (${esc(c.model || '?')})` : `en ligne (${esc(c.model || '?')})`) : '<b>hors ligne</b>'} · oreilles : ${esc(OREILLES.engine() || 'aucune')}${AI.lastEars ? ` (${esc(AI.lastEars)})` : ''} · voix : ${ELEVEN.usable() ? 'ElevenLabs' : VOIXMAISON.usable() ? `ordinateur (${esc(VOIXMAISON.papa())})` : 'téléphone'} · mode : ${S.settings.conversation === false ? 'il répond à son nom' : dlg.discret ? 'discret' : 'conversation'}</p>`
+    + (entendus.length ? entendus.slice().reverse().map(x => `<div class="item"><span>« ${esc(x.t)} » <small class="muted">${esc(x.qui)}</small></span><small class="muted">${esc(x.quoi)}</small></div>`).join('') : '<p class="small muted">Rien entendu pour l\'instant.</p>');
   $('#dlg-reglages').showModal();
 }
 function renderVoix() {

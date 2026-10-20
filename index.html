@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '7';
+    window.ATLAS_VERSION = '8';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -30,7 +30,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -124,18 +124,23 @@
         <div class="ligne"><button type="button" id="r-importer" class="ghost sm">Reprendre les notes, listes et réglages de Shadow</button></div>
         <p class="small muted" id="r-sync"></p>
       </fieldset>
+      <fieldset>
+        <legend>Diagnostic</legend>
+        <p class="small muted">Ce qu'il a entendu en dernier, et ce qu'il en a fait (rien n'est gardé).</p>
+        <div id="r-diag"></div>
+      </fieldset>
       <menu><button value="ok" class="go">Fermer</button></menu>
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=7"></script>
-  <script src="cerveau.js?v=7"></script>
-  <script src="oreilles.js?v=7"></script>
-  <script src="voix.js?v=7"></script>
-  <script src="empreintes.js?v=7"></script>
-  <script src="yeux.js?v=7"></script>
-  <script src="atlas.js?v=7"></script>
-  <script src="outils.js?v=7"></script>
-  <script src="noyau.js?v=7"></script>
+  <script src="orthographe.js?v=8"></script>
+  <script src="cerveau.js?v=8"></script>
+  <script src="oreilles.js?v=8"></script>
+  <script src="voix.js?v=8"></script>
+  <script src="empreintes.js?v=8"></script>
+  <script src="yeux.js?v=8"></script>
+  <script src="atlas.js?v=8"></script>
+  <script src="outils.js?v=8"></script>
+  <script src="noyau.js?v=8"></script>
 </body>
 </html>
