@@ -129,10 +129,20 @@ const SYNC = (() => {
     out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
     return out;
   }
-  const partage = () => ({ ville: S.settings.ville, voix: S.settings.voix, nom: S.nom });
+  // les réglages qui voyagent d'un appareil à l'autre (jamais la clé Groq : elle reste sur l'appareil où on l'a tapée)
+  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens'];
+  const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
     S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.tomb = m.tomb;
-    if (m.partage) { if (m.partage.ville) S.settings.ville = m.partage.ville; if (m.partage.voix) S.settings.voix = m.partage.voix; if (typeof m.partage.nom === 'string') S.nom = m.partage.nom; }
+    if (m.partage) {
+      if (m.partage.ville) S.settings.ville = m.partage.ville;
+      if (m.partage.voix) S.settings.voix = m.partage.voix;
+      if (typeof m.partage.nom === 'string') S.nom = m.partage.nom;
+      const r = m.partage.reglages || {};
+      COMMUNS.forEach(k => { if (r[k] !== undefined && r[k] !== '' && r[k] !== null) S.settings[k] = r[k]; });
+      // un nouvel appareil sans clé : le cerveau de la maison d'abord (s'il est réglé ailleurs)
+      if (!S.settings.key && S.settings.localModel) S.settings.brain = 'local';
+    }
     try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ }
   }
   async function sync() {
@@ -823,7 +833,7 @@ function lieReglages() {
   bind('#r-nom', el => { S.nom = el.value.trim().slice(0, 30); });
   $('#r-ville').addEventListener('change', e => { const v = e.target.value.trim(); if (v) chercheVille(v); else { S.settings.ville = null; save(); } });
   bind('#r-brain', el => { s().brain = el.value; });
-  bind('#r-local-url', el => { s().localUrl = el.value.trim(); VOIXMAISON.downUntil = 0; });
+  bind('#r-local-url', el => { s().localUrl = el.value.trim(); VOIXMAISON.downUntil = 0; setTimeout(async () => { await SYNC.sync(); LIEN.lire(); ouvreReglages(); toast('Réglages repris de tes autres appareils'); }, 300); });
   bind('#r-local-model', el => { s().localModel = el.value.trim(); });
   bind('#r-key', el => { s().key = el.value.trim(); });
   bind('#r-model', el => { s().model = el.value.trim() || AI.DEFAULT_MODEL; });
