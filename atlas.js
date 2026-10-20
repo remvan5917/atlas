@@ -31,7 +31,7 @@ function fresh() {
     settings: {
       brain: 'groq', key: '', model: AI.DEFAULT_MODEL, localUrl: 'http://localhost:11434/v1', localModel: '',
       voix: 'sombre', sound: true, micSens: 'loin', ears: 'auto', seeCloud: false, visionModel: AI.VISION_MODEL, ville: null, eveil: true,
-      conversation: true, accueil: true,
+      conversation: true, accueil: true, arrivee: true, camera: true,
     },
     notes: [], listes: [], minuteurs: [], chat: [], voices: [], tomb: {}, updatedAt: 0, importe: false,
   };
@@ -177,6 +177,7 @@ const LIEN = (() => {
     ok: () => !!src(),
     prenom: () => { const s = src(); return (s && s.prenom) || ''; },
     voix: () => { const s = src(); return (s && s.voices) || []; },
+    visages: () => { const s = src(); return ((s && s.people) || []).filter(p => p && p.name && p.desc && p.desc.length); },
     minutes: () => { const s = src(); return (s && s.playLog && s.playLog[dayKey()]) || 0; },
     activites: () => { const s = src(); return ((s && s.log) || []).filter(x => x.at >= debut() && x.type !== 'humeur').length; },
     upcoming(max) {
@@ -422,7 +423,7 @@ async function voir(question) {
   NOYAU.etiquette('VISION');
   face.set('think');
   try {
-    const img = await CAMERA.photo();
+    const img = typeof VISION !== 'undefined' && VISION.isOn() ? VISION.snapshot() : await CAMERA.photo();
     if (!img) { face.set('confused'); return say("Ma caméra ne s'ouvre pas. Autorise la caméra pour ce site."); }
     const r = await AI.see(img, `Tu es Atlas, l'assistant d'un adulte. Voici ce que voit ta caméra en ce moment. Réponds en français, en deux à quatre phrases naturelles et précises, à sa question : « ${question} ». Factuel, sans inventer. Ne décris pas le corps des personnes. Pas d'émoji, pas de liste.`);
     face.set('idle');
@@ -572,11 +573,9 @@ const CONV = (() => {
     // un invité : il l'accueille, une fois par soirée
     const g = /^invité/.test(qui) && invites.find(x => `invité ${x.n}` === qui);
     const nq = N(texte), estQuestion = /\?/.test(texte) || QUESTION.test(nq);
-    if (S.settings.accueil !== false && g && g.vu >= 2 && !estQuestion && Date.now() - accueilli > 3 * 3600000 && Date.now() - spontane > 30000) {
-      accueilli = Date.now(); spontane = Date.now();
-      const h = new Date().getHours();
-      const m = `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}. Je ne crois pas qu'on se connaisse : je suis Atlas, l'assistant de la maison. J'écoute la conversation et j'interviens si je peux aider ; il suffit de dire mon nom.`;
-      note('Atlas', m); face.set('idle'); return say(m);
+    if (g && g.vu >= 2 && !estQuestion && Date.now() - spontane > 30000) {
+      const m = accueillirInvite();
+      if (m) { note('Atlas', m); face.set('idle'); return say(m); }
     }
     depuisEval++;
     const n = N(texte), mots = n.split(' ').filter(Boolean).length, question = /\?/.test(texte) || QUESTION.test(n);
@@ -602,7 +601,60 @@ Nous sommes le ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 
     note('Atlas', dit); face.set('idle');
     await say(dit);
   }
-  return { nomPour, note, contexte, presents, nbInvites, pourShadow, shadowRepond, peutEtre, _fil: fil };
+  // accueillir un invité (une fois par soirée) : la phrase, ou '' si c'est déjà fait
+  function accueillirInvite() {
+    if (S.settings.accueil === false || Date.now() - accueilli < 3 * 3600000) return '';
+    accueilli = Date.now(); spontane = Date.now();
+    const h = new Date().getHours();
+    return `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}. Je ne crois pas qu'on se connaisse : je suis Atlas, l'assistant de la maison. J'écoute la conversation et j'interviens si je peux aider ; il suffit de dire mon nom.`;
+  }
+  return { nomPour, note, contexte, presents, nbInvites, pourShadow, shadowRepond, peutEtre, accueillirInvite, _fil: fil };
+})();
+
+/* ---------- l'accueil : quelqu'un arrive dans la pièce (vu à la caméra, ou entendu à la voix) ----------
+   - quelqu'un de la famille qu'il n'a ni vu ni entendu depuis 3 heures : il l'accueille par son prénom ;
+   - un visage ou une voix inconnus : il accueille l'invité (une fois par soirée) ;
+   - au démarrage, ceux qui sont déjà là ne sont pas accueillis ; au plus un accueil par personne toutes les 3 heures. */
+const ARRIVEE = (() => {
+  const vu = {}; // dernière fois qu'on a vu ou entendu chacun (mémoire vive)
+  let inconnuDepuis = 0, dernierAccueil = 0;
+  const ABSENT = 3 * 3600000;
+  function phrase(nom) {
+    const h = new Date().getHours(), enfant = LIEN.prenom() && nom.toLowerCase() === LIEN.prenom().toLowerCase();
+    if (enfant) return pick([`Salut ${nom} ! Content de te voir.`, `Tiens, ${nom} ! Salut.`, `Salut ${nom}. Shadow t'attend sûrement.`]);
+    if (h < 11) return pick([`Bonjour ${nom}.`, `Bonjour ${nom}, bien dormi ?`]);
+    if (h >= 18) return pick([`Bonsoir ${nom}, bon retour.`, `Bonsoir ${nom}.`, `Ah, bonsoir ${nom}. Bonne fin de journée ?`]);
+    return pick([`Bonjour ${nom}, bon retour.`, `Re-bonjour ${nom}.`]);
+  }
+  // renvoie la phrase d'accueil s'il faut accueillir cette personne (sinon '')
+  function connu(nom) {
+    if (!nom || /^invité/.test(nom) || nom === 'Atlas' || S.settings.arrivee === false) { if (nom) vu[nom] = Date.now(); return ''; }
+    const avant = vu[nom] || 0; vu[nom] = Date.now();
+    if (!dlg.started || Date.now() - (dlg.depuis || 0) < 60000) return ''; // ceux qui étaient déjà là au démarrage
+    if (Date.now() - avant < ABSENT) return '';
+    if (Date.now() - dernierAccueil < 15000) { vu[nom] = avant; return ''; } // quelqu'un vient d'être accueilli : son tour viendra à la phrase suivante
+    dernierAccueil = Date.now();
+    return phrase(nom);
+  }
+  async function dire(t) { if (!t || voice.speaking || dlg.busy) return; face.flash('happy', 1200); CONV.note('Atlas', t); await say(t); }
+  // les yeux : chaque seconde, qui est dans la pièce
+  function visages(faces) {
+    if (!dlg.started) return;
+    let accueil = '';
+    for (const f of faces) if (f.name) { const t = connu(f.name); if (t && !accueil) accueil = t; }
+    const inconnu = faces.some(f => !f.name && f.good);
+    if (inconnu) { inconnuDepuis = inconnuDepuis || Date.now(); } else inconnuDepuis = 0;
+    if (accueil) return dire(accueil);
+    // un visage inconnu, bien visible depuis 5 secondes : un invité
+    if (inconnuDepuis && Date.now() - inconnuDepuis > 5000 && Date.now() - (dlg.depuis || 0) > 60000) { inconnuDepuis = 0; const t = CONV.accueillirInvite(); if (t) dire(t); }
+  }
+  async function yeux() {
+    if (S.settings.camera === false || typeof VISION === 'undefined' || !VISION.supported || VISION.isOn()) return;
+    if (!LIEN.visages().length && S.settings.arrivee === false) return;
+    try { await VISION.start($('#cam'), { objects: false }); } catch (e) { console.warn('yeux', e); }
+  }
+  if (typeof VISION !== 'undefined') VISION.on('people', visages);
+  return { connu, dire, yeux };
 })();
 
 /* ---------- apprendre une voix ---------- */
@@ -652,6 +704,8 @@ async function vie() {
     const n = N(r);
     dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
     const appele = R.reveil.test(n);
+    const bonjour = ARRIVEE.connu(dlg.qui); // il arrive : on l'accueille (avant de lui répondre, s'il parle à Atlas)
+    if (bonjour) { if (appele) { CONV.note('Atlas', bonjour); await say(bonjour); } else { await ARRIVEE.dire(bonjour); if (conv) CONV.note(dlg.qui, r); continue; } }
     if (conv) {
       CONV.note(dlg.qui, r);
       if (/^shadow\b/.test(n)) { CONV.pourShadow(); continue; } // on parle à Shadow (et sa réponse arrive juste après)
@@ -735,6 +789,8 @@ function ouvreReglages() {
   $('#r-eveil').checked = s.eveil !== false;
   $('#r-conv').checked = s.conversation !== false;
   $('#r-accueil').checked = s.accueil !== false;
+  $('#r-arrivee').checked = s.arrivee !== false;
+  $('#r-camera').checked = s.camera !== false;
   renderNotes(); renderVoix();
   $('#r-sync').textContent = SYNC.etat();
   $('#dlg-reglages').showModal();
@@ -777,6 +833,8 @@ function lieReglages() {
   bind('#r-son', el => { s().sound = el.checked; });
   bind('#r-conv', el => { s().conversation = el.checked; dlg.discret = false; });
   bind('#r-accueil', el => { s().accueil = el.checked; });
+  bind('#r-arrivee', el => { s().arrivee = el.checked; });
+  bind('#r-camera', el => { s().camera = el.checked; if (el.checked) ARRIVEE.yeux(); else if (typeof VISION !== 'undefined' && VISION.isOn()) VISION.stop(); });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-unvoix]'); if (b && VOIX.forget(b.dataset.unvoix)) renderVoix(); });
   bind('#r-eveil', el => { s().eveil = el.checked; if (el.checked) garderAllume(); else if (verrou) { verrou.release().catch(() => {}); verrou = null; } });
   $('#r-importer').addEventListener('click', async () => { await importerShadow(true); ouvreReglages(); });
@@ -808,7 +866,7 @@ async function verifierMaj() {
 /* ---------- le démarrage ---------- */
 async function demarrer() {
   if (dlg.started) return;
-  dlg.started = true;
+  dlg.started = true; dlg.depuis = Date.now();
   $('#demarrer').hidden = true;
   voice.unlock(); OREILLES.prime(); fx.audio();
   try { await OREILLES.start(); } catch (e) { /* le micro sera demandé plus tard */ }
@@ -819,6 +877,7 @@ async function demarrer() {
   await NOYAU.allume();
   dlg.state = 'talk'; dlg.silence = 0;
   await say(briefing());
+  ARRIVEE.yeux(); // la caméra regarde qui arrive (tout reste sur l'appareil)
 }
 window.addEventListener('load', () => {
   face.el = $('#face');
