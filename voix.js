@@ -182,6 +182,19 @@ const ELEVEN = {
     return { src, duration: buffer.duration, stop() { try { src.stop(); } catch (e) { /* déjà fini */ } oscs.forEach(o => { try { o.stop(); } catch (e) { /* rien */ } }); } };
   },
   prefetch(t) { if (this.usable() && S.settings.sound) this.get(voice.clean(t)).catch(() => {}); },
+  // ce qui ne va pas, en clair (pour le bouton « Essayer la voix » et le diagnostic)
+  explique(e) {
+    const s = S.settings, m = String((e && e.message) || e || ''), k = s.elevenKey || '';
+    if (!k) return "Il manque la clé ElevenLabs (elle commence par « sk_ »). L'identifiant de la voix ne suffit pas.";
+    if (k === s.elevenVoice || (!/^sk_/.test(k) && /^[A-Za-z0-9]{20}$/.test(k))) return "Ce que tu as mis dans « Clé ElevenLabs » ressemble à l'identifiant de la voix. Il faut la clé API, qui commence par « sk_ ».";
+    if (!s.elevenVoice) return "Il manque l'identifiant de la voix (Voice ID).";
+    if (e && e.status === 401) return /permission|missing_permissions/i.test(m) ? "La clé n'a pas le droit « Text to Speech » : coche-le dans ElevenLabs, sur cette clé." : "La clé est refusée : vérifie que tu as copié la clé API en entier.";
+    if (e && (e.status === 402 || /quota|credits|insufficient/i.test(m))) return 'Ton crédit ElevenLabs est épuisé (ou la limite de la clé est atteinte).';
+    if (/free|library|subscription|paid/i.test(m)) return "Cette voix vient de la bibliothèque d'ElevenLabs : pour l'utiliser par l'API, il faut un abonnement payant (ou crée ta voix avec Voice Design).";
+    if ((e && e.status === 404) || /voice.*not.*found|invalid id|voice_not_found/i.test(m)) return "Voix introuvable : vérifie l'identifiant, et ajoute la voix à « My Voices » dans ElevenLabs.";
+    if (e && e.status === 429) return 'ElevenLabs est saturé ou la limite par minute est atteinte : réessaie dans un instant.';
+    return m || 'ElevenLabs ne répond pas.';
+  },
 };
 
 const voice = {

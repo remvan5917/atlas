@@ -828,7 +828,7 @@ function ouvreReglages() {
   $('#r-eleven-voice').value = s.elevenVoice || '';
   $('#r-eleven-model').value = s.elevenModel || 'eleven_v4_turbo';
   $('#r-eleven-effet').value = s.elevenEffet || 'leger';
-  $('#r-eleven-etat').textContent = !s.elevenKey || !s.elevenVoice ? '' : ELEVEN.erreur && Date.now() < ELEVEN.downUntil ? `En pause : ${ELEVEN.erreur}` : 'Prête.';
+  $('#r-eleven-etat').textContent = !s.elevenKey || !/^sk_/.test(s.elevenKey) || !s.elevenVoice ? (s.elevenVoice || s.elevenKey ? ELEVEN.explique('') : '') : ELEVEN.erreur && Date.now() < ELEVEN.downUntil ? `En pause : ${ELEVEN.explique({ message: ELEVEN.erreur, status: +(ELEVEN.erreur.match(/ElevenLabs (\d+)/) || [])[1] })}` : 'Prête.';
   $('#r-micro').value = s.micSens || 'loin';
   $('#r-son').checked = s.sound !== false;
   $('#r-eveil').checked = s.eveil !== false;
@@ -885,8 +885,10 @@ function lieReglages() {
   $('#r-eleven-test').addEventListener('click', async () => {
     ELEVEN.downUntil = 0; fx.audio();
     $('#r-eleven-etat').textContent = 'Essai…';
-    try { await ELEVEN.get(voice.clean("Bonsoir. Je suis Atlas. Tous mes systèmes sont opérationnels.")); $('#r-eleven-etat').textContent = 'Prête.'; await say("Bonsoir. Je suis Atlas. Tous mes systèmes sont opérationnels."); }
-    catch (e) { $('#r-eleven-etat').textContent = `Ça ne marche pas : ${e.message}`; }
+    const k = S.settings.elevenKey || '';
+    if (!k || !/^sk_/.test(k) || !S.settings.elevenVoice) { $('#r-eleven-etat').textContent = ELEVEN.explique(''); return; }
+    try { ELEVEN.cache.clear(); await ELEVEN.get(voice.clean("Bonsoir. Je suis Atlas. Tous mes systèmes sont opérationnels.")); $('#r-eleven-etat').textContent = 'Prête : tu vas l’entendre.'; await say("Bonsoir. Je suis Atlas. Tous mes systèmes sont opérationnels."); }
+    catch (e) { $('#r-eleven-etat').textContent = ELEVEN.explique(e); }
   });
   bind('#r-micro', el => { s().micSens = el.value; });
   bind('#r-son', el => { s().sound = el.checked; });

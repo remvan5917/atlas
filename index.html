@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '8';
+    window.ATLAS_VERSION = '9';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -30,7 +30,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -93,7 +93,7 @@
         <label>Sa voix de l'ordinateur (et de secours)
           <select id="r-voix"><option value="futuriste">Futuriste (calme, net, un reflet de machine)</option><option value="holographique">Holographique (brillant, scintillant)</option><option value="synthetique">Synthétique (voix d'ordinateur, douce)</option><option value="sombre">Robot sombre (grave, métallique)</option><option value="demon">Démon de métal (le plus effrayant)</option><option value="glacial">Robot glacial (calme, façon HAL)</option><option value="pierre">Pierre (voix humaine)</option><option value="jessica">Jessica (voix humaine)</option><option value="tom">Tom</option></select></label>
         <label class="check"><input id="r-eleven" type="checkbox"> Utiliser ma voix ElevenLabs (prioritaire quand elle est réglée)</label>
-        <label>Clé ElevenLabs (gardée sur cet appareil seulement)<input id="r-eleven-key" type="password" autocomplete="off" placeholder="sk_…"></label>
+        <label>Clé API ElevenLabs, celle qui commence par « sk_ » (gardée sur cet appareil seulement)<input id="r-eleven-key" type="password" autocomplete="off" placeholder="sk_…"></label>
         <label>Identifiant de la voix (Voice ID)<input id="r-eleven-voice" type="text" autocomplete="off" placeholder="dans ElevenLabs : My Voices → … → Copy voice ID"></label>
         <label>Modèle
           <select id="r-eleven-model"><option value="eleven_v4_turbo">v4 turbo (naturel et rapide, recommandé)</option><option value="eleven_flash_v2_5">Flash v2.5 (le plus rapide, le moins cher)</option><option value="eleven_v4">v4 (la meilleure qualité, plus lent)</option><option value="eleven_multilingual_v2">Multilingual v2</option></select></label>
@@ -133,14 +133,14 @@
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=8"></script>
-  <script src="cerveau.js?v=8"></script>
-  <script src="oreilles.js?v=8"></script>
-  <script src="voix.js?v=8"></script>
-  <script src="empreintes.js?v=8"></script>
-  <script src="yeux.js?v=8"></script>
-  <script src="atlas.js?v=8"></script>
-  <script src="outils.js?v=8"></script>
-  <script src="noyau.js?v=8"></script>
+  <script src="orthographe.js?v=9"></script>
+  <script src="cerveau.js?v=9"></script>
+  <script src="oreilles.js?v=9"></script>
+  <script src="voix.js?v=9"></script>
+  <script src="empreintes.js?v=9"></script>
+  <script src="yeux.js?v=9"></script>
+  <script src="atlas.js?v=9"></script>
+  <script src="outils.js?v=9"></script>
+  <script src="noyau.js?v=9"></script>
 </body>
 </html>
