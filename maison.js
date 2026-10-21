@@ -92,6 +92,32 @@ const MAISON = (() => {
     return say(pick([`Mode ${sc.nom}.`, `Scène ${sc.nom} : c'est fait.`]));
   }
 
+  /* =================== ce que Shadow a le droit de piloter (vérifié par l'ordinateur) =================== */
+  const regles = () => appel('/maison/shadow', null, 15000);
+  const ecrisRegles = d => appel('/maison/shadow/regles', d);
+  async function autorise(cible, oui) {
+    try { await liste(!pret || !appareils.length); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!appareils.length) return say("Je n'ai encore aucun appareil. Relie d'abord tes prises, puis dis-moi ce que Shadow peut piloter.");
+    const l = trouve(cible);
+    if (!l.length) return say(`Je ne trouve pas « ${cible} ». Tes appareils : ${lesNoms(appareils)}.`);
+    let r; try { r = await regles(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const ids = new Set(r.ids || []);
+    l.forEach(a => (oui ? ids.add(a.id) : ids.delete(a.id)));
+    try { await ecrisRegles({ ids: [...ids], ...(oui ? { actif: true } : {}) }); } catch (e) { return say("Je n'ai pas pu enregistrer."); }
+    fx.ok();
+    return say(oui ? `C'est fait : Shadow peut allumer et éteindre ${lesNoms(l)}. Rien d'autre.` : `Shadow ne peut plus toucher à ${lesNoms(l)}.`);
+  }
+  async function bascule(actif) {
+    try { await ecrisRegles({ actif }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    return say(actif ? 'Shadow a de nouveau le droit de piloter ses lumières.' : "C'est coupé : Shadow ne peut plus rien allumer ni éteindre, jusqu'à ce que tu le lui rendes.");
+  }
+  async function droitsShadow() {
+    let r; try { r = await regles(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!(r.ids || []).length) return say("Shadow ne peut rien piloter pour l'instant. Dis par exemple : autorise Shadow à allumer la lampe de la chambre.");
+    const noms = (r.appareils || []).map(a => a.nom);
+    return say(`${r.actif ? 'Shadow peut piloter' : "C'est coupé pour l'instant, mais Shadow pourrait piloter"} : ${noms.length ? noms.join(', ') : `${r.ids.length} appareil${r.ids.length > 1 ? 's' : ''}`}.${r.coucher ? " Et il l'éteint à la fin de l'histoire du soir." : ''}`);
+  }
+
   /* =================== le messager papa ↔ l'enfant =================== */
   async function envoie(texte) {
     let t = String(texte).trim().replace(/[.!]+$/, '');
@@ -206,6 +232,11 @@ const MAISON = (() => {
 
   /* =================== ce qu'on lui dit =================== */
   const R = {
+    autorise: /^(?:autorise|permets a|laisse) shadow (?:a |d )?(?:allumer|eteindre|piloter|utiliser|gerer|controler|toucher a)?\s*(?:et (?:a |d )?(?:allumer|eteindre))?\s*(.+)$/,
+    interditUn: /^(?:interdis|retire|enleve) (.+?) a shadow$|^shadow ne (?:peut|doit) plus (?:allumer|toucher a|piloter) (.+)$/,
+    coupe: /\b(interdis (les lumieres|la maison|tout) a shadow|coupe (les lumieres|la maison) (de|a) shadow|shadow n a plus le droit|enleve les lumieres a shadow)\b/,
+    rends: /\b(rends (les lumieres|la maison) a shadow|shadow (peut|a) de nouveau|redonne (les lumieres|la maison) a shadow)\b/,
+    droits: /\b(qu est ce que shadow (peut|a le droit d) (allumer|piloter|eteindre)|les droits de shadow|shadow a le droit de quoi)\b/,
     pilote: /^(?:allume|eteins|eteint|coupe|active|desactive|mets en marche|rallume)\s+(?!toi\b)(.+)$/,
     etat: /\b(qu est ce qui est allume|qu est ce qui est (encore )?(branche|en marche)|c est allume ou|est ce que (la |le |les |l )?.+ est (allume|eteint|allumee|eteinte)|etat de la maison|les appareils de la maison)\b/,
     sceneRec: /\b(enregistre|retiens|memorise|cree|sauvegarde) (la |une |cette )?(scene|ambiance)\b|\b(retiens|enregistre) cet etat comme\b/,
@@ -216,6 +247,11 @@ const MAISON = (() => {
     efface: /\b(efface|supprime|enleve|retire)\b.*\b(shadow|le \d|la \d|le (un|deux|trois|quatre|cinq|six|sept|huit)|la (premiere|deuxieme|troisieme|quatrieme|cinquieme))\b|\b(dis|demande) a shadow d oublier\b|\bfais oublier a shadow\b/,
   };
   function route(t, n) {
+    if (R.coupe.test(n)) return () => bascule(false);
+    if (R.rends.test(n)) return () => bascule(true);
+    if (R.droits.test(n)) return droitsShadow;
+    const au = n.match(R.autorise); if (au && au[1]) return () => autorise(au[1], true);
+    const it = n.match(R.interditUn); if (it && (it[1] || it[2])) return () => autorise(it[1] || it[2], false);
     if (R.appris.test(n)) return () => appris(n);
     if (R.efface.test(n) && (derniers.length || /shadow/.test(n))) return () => efface(t, n);
     if (R.mesMsg.test(n)) return mesMessages;
@@ -248,9 +284,19 @@ const MAISON = (() => {
     const box = document.getElementById('r-maison'); if (!box) return;
     box.innerHTML = '<p class="small muted">Je regarde la maison…</p>';
     try { await liste(true); } catch (e) { box.innerHTML = '<p class="small muted">L\'ordinateur de la maison ne répond pas.</p>'; return; }
+    let r = { ids: [], actif: true, coucher: false }; try { r = await regles(); } catch (e) { /* tant pis */ }
     box.innerHTML = appareils.length
-      ? appareils.map(a => `<div class="item"><span>${esc(a.nom)} <small class="muted">${a.type}</small></span><small class="muted">${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}</small></div>`).join('') + (SC().length ? `<p class="small muted">Scènes : ${SC().map(x => esc(x.nom)).join(', ')}</p>` : '')
+      ? appareils.map(a => `<div class="item"><span>${esc(a.nom)} <small class="muted">${a.type} · ${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}</small></span><label class="check small" style="margin:0"><input type="checkbox" data-shadow-ok="${esc(a.id)}"${(r.ids || []).includes(a.id) ? ' checked' : ''}> Shadow</label></div>`).join('')
+        + `<label class="check small"><input type="checkbox" id="r-shadow-actif"${r.actif ? ' checked' : ''}> Shadow peut piloter les appareils cochés (« Shadow, allume ma lampe »). L'ordinateur refuse tout le reste.</label>`
+        + `<label class="check small"><input type="checkbox" id="r-shadow-coucher"${r.coucher ? ' checked' : ''}> À la fin de l'histoire du soir, Shadow éteint ses lampes.</label>`
+        + (SC().length ? `<p class="small muted">Scènes : ${SC().map(x => esc(x.nom)).join(', ')}</p>` : '')
       : '<p class="small muted">Aucun appareil pour l\'instant : branche tes prises, ajoute-les dans Smart Life, puis lance l\'assistant de connexion sur l\'ordinateur (voir LISEZMOI). Atlas les trouvera toutes.</p>';
   }
-  return { route, pilote, etat, envoie, reglages, mesMessages, appris, efface, contexte, liste, _releve: releve, _trouve: trouve, _appareils: () => appareils, _set: l => { appareils = l; pret = true; vusAt = Date.now(); } };
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.matches && t.matches('[data-shadow-ok]')) { const ids = [...document.querySelectorAll('[data-shadow-ok]')].filter(x => x.checked).map(x => x.dataset.shadowOk); ecrisRegles({ ids }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas")); }
+    if (t.id === 'r-shadow-actif') ecrisRegles({ actif: t.checked }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas"));
+    if (t.id === 'r-shadow-coucher') ecrisRegles({ coucher: t.checked }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas"));
+  });
+  return { route, pilote, etat, envoie, reglages, autorise, bascule, mesMessages, appris, efface, contexte, liste, _releve: releve, _trouve: trouve, _appareils: () => appareils, _set: l => { appareils = l; pret = true; vusAt = Date.now(); } };
 })();
