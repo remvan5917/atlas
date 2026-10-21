@@ -37,13 +37,21 @@ const MAISON = (() => {
   setTimeout(() => { if (root()) liste().catch(() => {}); }, 6000);
   const VIDES = new Set(['la', 'le', 'les', 'l', 'de', 'du', 'des', 'd', 'mon', 'ma', 'mes', 'prise', 'lampe', 'lumiere', 'lumieres', 'appareil', 'dans', 'en', 'a', 'au', 'et']);
   const mots = t => N(t).split(' ').filter(w => w.length > 1 && !VIDES.has(w));
-  // les appareils dont parle la phrase : par leur nom (« salon », « lampe du bureau »), ou tout
-  function trouve(cible) {
+  // une prise peut alimenter n'importe quoi : ce qui doit rester allumé n'est jamais coupé par « tout »
+  // (le congélateur, la box, l'ordinateur de la maison — sans lui, plus de maison du tout), et ce qui chauffe
+  // n'est jamais allumé par « tout » ; on ne les pilote que si on les nomme
+  const PROTEGE = /\b(frigo|refrigerateur|congelateur|cave a vin|box|routeur|modem|wifi|repeteur|pc|ordinateur|ordi|serveur|nas|aquarium|pompe|chaudiere|ballon|cumulus|alarme|camera|cameras|freebox|livebox|bbox|onduleur|imprimante 3d)\b/;
+  const CHAUD = /\b(radiateur|chauffage|chauffe|chauffant|chauffante|bouilloire|fer|four|plaque|grille pain|friteuse|seche|cafetiere|machine|perceuse|outil|outils|soudure|fer a souder|plancha|appareil a raclette|couverture chauffante|bain d huile)\b/;
+  const protege = a => PROTEGE.test(N(a.nom)) || (S.settings.proteges || []).includes(a.id);
+  const chaud = a => CHAUD.test(N(a.nom));
+  const lumineux = a => a.type === 'lampe' || /\b(lumi\w*|lamp\w*|led|leds|veilleuse|guirlande|lampadaire|spot|spots|applique|suspension|plafonnier)\b/.test(N(a.nom));
+  // les appareils dont parle la phrase : par leur nom (« salon », « télé du salon »), « les lumières », ou tout
+  function trouve(cible, allume) {
     const c = N(cible);
-    if (/\b(tout|toutes les lumieres|toute la maison|tous les appareils|partout)\b/.test(c)) return /lumieres?/.test(c) ? appareils.filter(a => a.type === 'lampe').concat(appareils.filter(a => a.type !== 'lampe' && /lumi|lamp|led/.test(N(a.nom)))) : appareils.slice();
+    if (/\b(tout|toutes les lumieres|toute la maison|tous les appareils|partout)\b/.test(c)) return (/lumieres?/.test(c) ? appareils.filter(lumineux) : appareils.slice()).filter(a => (allume ? !chaud(a) : !protege(a)));
     const m = mots(c);
     const notes = appareils.map(a => { const n = mots(a.nom); const k = m.filter(w => n.some(x => x === w || (w.length > 3 && x.startsWith(w.slice(0, -1))))).length; return { a, k, tout: k && k === n.length } }).filter(o => o.k);
-    if (!notes.length) return /\b(lumieres?|lampes?)\b/.test(c) && (/\b(les|toutes)\b/.test(c) || appareils.filter(a => a.type === 'lampe').length === 1) ? appareils.filter(a => a.type === 'lampe' || /lumi|lamp|led/.test(N(a.nom))) : [];
+    if (!notes.length) return /\b(lumieres?|lampes?)\b/.test(c) && (/\b(les|toutes)\b/.test(c) || appareils.filter(lumineux).length === 1) ? appareils.filter(a => lumineux(a) && !protege(a)) : [];
     const best = Math.max(...notes.map(o => o.k));
     return notes.filter(o => o.k === best).map(o => o.a);
   }
@@ -51,7 +59,11 @@ const MAISON = (() => {
   async function pilote(cible, allume) {
     try { await liste(!pret || !appareils.length); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je ne peux pas piloter les appareils."); }
     if (!pret || !appareils.length) return say("Je n'ai encore aucun appareil de la maison. Branche tes prises, ajoute-les dans Smart Life, puis relance l'assistant de connexion sur l'ordinateur : je les trouverai toutes.");
-    const l = trouve(cible);
+    const l = trouve(cible, allume), tout = /\b(tout|toute la maison|tous les appareils|partout)\b/.test(N(cible));
+    const gardes = tout ? appareils.filter(a => !l.includes(a) && (allume ? chaud(a) && a.allume === false : protege(a) && a.allume !== false)) : [];
+    // couper par son nom ce qui doit rester allumé : on confirme d'abord
+    const sensibles = !tout && !allume ? l.filter(protege) : [];
+    if (sensibles.length && !(await askYesNo(`${lesNoms(sensibles)} doit normalement rester allumé. Je coupe quand même ?`))) return say("D'accord, je n'y touche pas.");
     if (!l.length) return say(`Je ne trouve pas « ${cible} ». Tes appareils : ${lesNoms(appareils)}.`);
     face.set('think');
     let r;
@@ -61,12 +73,13 @@ const MAISON = (() => {
     const ok = (r.resultats || []).filter(x => x.ok).map(nomDe), ko = (r.resultats || []).filter(x => !x.ok).map(nomDe);
     if (!ok.length) return say(`${lesNoms(l)} ne répond pas. ${l.length > 1 ? 'Ils sont' : 'Il est'} peut-être débranché${l.length > 1 ? 's' : ''}.`);
     fx.tone(allume ? [[660, 0.05], [990, 0.07]] : [[990, 0.05], [660, 0.07]]);
-    return say(`${ok.length === appareils.length && ok.length > 1 ? (allume ? 'Tout est allumé' : 'Tout est éteint') : `${lesNoms(ok)} : ${allume ? 'allumé' : 'éteint'}${ok.length > 1 ? 's' : ''}`}.${ko.length ? ` ${lesNoms(ko)} ne répond pas.` : ''}`);
+    const sauf = gardes.length ? ` Sauf ${lesNoms(gardes)} : je n'y touche que si tu me le demandes par son nom.` : '';
+    return say(`${tout && ok.length > 1 ? (allume ? 'Tout est allumé' : 'Tout est éteint') : `${lesNoms(ok)} : ${allume ? 'allumé' : 'éteint'}${ok.length > 1 ? 's' : ''}`}.${sauf}${ko.length ? ` ${lesNoms(ko)} ne répond pas.` : ''}`);
   }
   async function etat(cible) {
     try { await liste(true); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!pret || !appareils.length) return say("Je n'ai encore aucun appareil de la maison.");
-    const l = cible ? trouve(cible) : appareils;
+    const l = cible ? trouve(cible, false) : appareils;
     if (cible && l.length) return say(l.map(a => `${a.nom} : ${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}`).join('. ') + '.');
     const on = appareils.filter(a => a.allume), hors = appareils.filter(a => a.allume == null);
     return say(`${on.length ? `Allumé${on.length > 1 ? 's' : ''} : ${lesNoms(on)}.` : 'Tout est éteint.'}${hors.length ? ` Injoignable${hors.length > 1 ? 's' : ''} : ${lesNoms(hors)}.` : ''}`);
@@ -83,7 +96,8 @@ const MAISON = (() => {
     return say(`Scène « ${n} » enregistrée : ${sc.etats.filter(e => e.allume).length} allumé${sc.etats.filter(e => e.allume).length > 1 ? 's' : ''}, le reste éteint. Dis « mode ${n} » pour la relancer.`);
   }
   async function scene(sc) {
-    const on = sc.etats.filter(e => e.allume).map(e => e.id), off = sc.etats.filter(e => !e.allume).map(e => e.id);
+    const garde = id => { const a = appareils.find(x => x.id === id); return a && protege(a); }; // une scène ne coupe jamais ce qui doit rester allumé
+    const on = sc.etats.filter(e => e.allume).map(e => e.id), off = sc.etats.filter(e => !e.allume && !garde(e.id)).map(e => e.id);
     try {
       if (on.length) await appel('/maison/commande', { ids: on, allume: true }, 20000);
       if (off.length) await appel('/maison/commande', { ids: off, allume: false }, 20000);
@@ -100,6 +114,8 @@ const MAISON = (() => {
     if (!appareils.length) return say("Je n'ai encore aucun appareil. Relie d'abord tes prises, puis dis-moi ce que Shadow peut piloter.");
     const l = trouve(cible);
     if (!l.length) return say(`Je ne trouve pas « ${cible} ». Tes appareils : ${lesNoms(appareils)}.`);
+    const risque = oui ? l.filter(a => chaud(a) || protege(a)) : [];
+    if (risque.length && !(await askYesNo(`Attention : ${lesNoms(risque)}, ${risque.some(chaud) ? "ça chauffe" : 'ça doit rester allumé'}. Tu es sûr que Shadow peut ${risque.some(chaud) ? "l'allumer" : "l'éteindre"} ?`))) return say("D'accord, je ne lui donne pas.");
     let r; try { r = await regles(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     const ids = new Set(r.ids || []);
     l.forEach(a => (oui ? ids.add(a.id) : ids.delete(a.id)));
@@ -115,7 +131,7 @@ const MAISON = (() => {
     let r; try { r = await regles(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!(r.ids || []).length) return say("Shadow ne peut rien piloter pour l'instant. Dis par exemple : autorise Shadow à allumer la lampe de la chambre.");
     const noms = (r.appareils || []).map(a => a.nom);
-    return say(`${r.actif ? 'Shadow peut piloter' : "C'est coupé pour l'instant, mais Shadow pourrait piloter"} : ${noms.length ? noms.join(', ') : `${r.ids.length} appareil${r.ids.length > 1 ? 's' : ''}`}.${r.coucher ? " Et il l'éteint à la fin de l'histoire du soir." : ''}`);
+    return say(`${r.actif ? 'Shadow peut piloter' : "C'est coupé pour l'instant, mais Shadow pourrait piloter"} : ${noms.length ? noms.join(', ') : `${r.ids.length} appareil${r.ids.length > 1 ? 's' : ''}`}.${r.coucher ? " Et il éteint tout ça à la fin de l'histoire du soir." : ''}`);
   }
 
   /* =================== le messager papa ↔ l'enfant =================== */
@@ -277,7 +293,7 @@ const MAISON = (() => {
   // pour le cerveau : ce qu'il y a dans la maison
   function contexte() {
     if (!appareils.length) return '';
-    return `Les appareils de la maison (tu peux les piloter : réponds [[allume:nom]] ou [[eteins:nom]], ou « tout ») : ${appareils.map(a => `${a.nom} (${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'})`).join(', ')}.${SC().length ? ` Ses scènes : ${SC().map(x => x.nom).join(', ')}.` : ''}`;
+    return `Les appareils de la maison, branchés sur des prises (pas forcément des lampes ; tu peux les piloter : réponds [[allume:nom]] ou [[eteins:nom]], ou « tout » ; ne coupe jamais de toi-même ce qui doit rester allumé, et n'allume jamais de toi-même ce qui chauffe) : ${appareils.map(a => `${a.nom} (${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}${protege(a) ? ', doit rester allumé' : ''}${chaud(a) ? ', chauffe' : ''})`).join(', ')}.${SC().length ? ` Ses scènes : ${SC().map(x => x.nom).join(', ')}.` : ''}`;
   }
   // les réglages : la liste des appareils (ou comment les connecter)
   async function reglages() {
@@ -286,15 +302,17 @@ const MAISON = (() => {
     try { await liste(true); } catch (e) { box.innerHTML = '<p class="small muted">L\'ordinateur de la maison ne répond pas.</p>'; return; }
     let r = { ids: [], actif: true, coucher: false }; try { r = await regles(); } catch (e) { /* tant pis */ }
     box.innerHTML = appareils.length
-      ? appareils.map(a => `<div class="item"><span>${esc(a.nom)} <small class="muted">${a.type} · ${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}</small></span><label class="check small" style="margin:0"><input type="checkbox" data-shadow-ok="${esc(a.id)}"${(r.ids || []).includes(a.id) ? ' checked' : ''}> Shadow</label></div>`).join('')
+      ? appareils.map(a => `<div class="item"><span>${esc(a.nom)} <small class="muted">${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}${chaud(a) ? ' · chauffe' : ''}</small></span><span class="ligne" style="margin:0;gap:12px"><label class="check small" style="margin:0" title="Jamais coupé par « éteins tout » ni par une scène"><input type="checkbox" data-protege="${esc(a.id)}"${protege(a) ? ' checked' : ''}${PROTEGE.test(N(a.nom)) ? ' disabled' : ''}> Toujours allumé</label><label class="check small" style="margin:0"><input type="checkbox" data-shadow-ok="${esc(a.id)}"${(r.ids || []).includes(a.id) ? ' checked' : ''}> Shadow</label></span></div>`).join('')
+        + '<p class="small muted">« Toujours allumé » : jamais coupé par « éteins tout » ni par une scène (le congélateur, la box, l\'ordinateur… sont reconnus tout seuls). Ce qui chauffe n\'est jamais allumé par « allume tout ».</p>'
         + `<label class="check small"><input type="checkbox" id="r-shadow-actif"${r.actif ? ' checked' : ''}> Shadow peut piloter les appareils cochés (« Shadow, allume ma lampe »). L'ordinateur refuse tout le reste.</label>`
-        + `<label class="check small"><input type="checkbox" id="r-shadow-coucher"${r.coucher ? ' checked' : ''}> À la fin de l'histoire du soir, Shadow éteint ses lampes.</label>`
+        + `<label class="check small"><input type="checkbox" id="r-shadow-coucher"${r.coucher ? ' checked' : ''}> À la fin de l'histoire du soir, Shadow éteint ce qu'il a le droit de piloter.</label>`
         + (SC().length ? `<p class="small muted">Scènes : ${SC().map(x => esc(x.nom)).join(', ')}</p>` : '')
       : '<p class="small muted">Aucun appareil pour l\'instant : branche tes prises, ajoute-les dans Smart Life, puis lance l\'assistant de connexion sur l\'ordinateur (voir LISEZMOI). Atlas les trouvera toutes.</p>';
   }
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.matches && t.matches('[data-shadow-ok]')) { const ids = [...document.querySelectorAll('[data-shadow-ok]')].filter(x => x.checked).map(x => x.dataset.shadowOk); ecrisRegles({ ids }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas")); }
+    if (t.matches && t.matches('[data-protege]')) { S.settings.proteges = [...document.querySelectorAll('[data-protege]')].filter(x => x.checked && !x.disabled).map(x => x.dataset.protege); save(); toast('Enregistré'); }
     if (t.id === 'r-shadow-actif') ecrisRegles({ actif: t.checked }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas"));
     if (t.id === 'r-shadow-coucher') ecrisRegles({ coucher: t.checked }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas"));
   });

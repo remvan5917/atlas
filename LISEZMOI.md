@@ -36,6 +36,11 @@ Adresse : https://remvan5917.github.io/atlas/
 - **Alertes** : 5 minutes avant une annonce à fort impact, et avant l'ouverture de Wall Street (9 h 30 à New York, l'heure d'été américaine comprise). Réglage : « Les marchés ».
 
 ## La maison (`maison.js`) — prises et lampes Smart Life
+- **Une prise peut alimenter n'importe quoi** (télé, ventilateur, radiateur, congélateur, box…) :
+  - ce qui doit rester allumé (congélateur, frigo, box, routeur, l'ordinateur de la maison, aquarium, chaudière… reconnus à leur nom, ou la case « Toujours allumé ») n'est **jamais coupé par « éteins tout » ni par une scène** ; le couper par son nom demande une confirmation ;
+  - ce qui chauffe (radiateur, bouilloire, fer, four, plaque…) n'est **jamais allumé par « allume tout »** ;
+  - le cerveau ne coupe ni n'allume jamais ces appareils de lui-même ;
+  - autoriser à Shadow un appareil qui chauffe ou qui doit rester allumé demande une confirmation.
 - L'ordinateur de la maison les pilote **en direct sur le réseau de la maison** (tinytuya, dans `~/.local/share/shadow/venv`), et passe par le cloud Tuya seulement si un appareil ne répond pas. Les clés des appareils restent dans `~/.local/share/shadow/maison/` (droits 700/600), jamais renvoyées aux pages.
 - « Allume la lampe du salon », « éteins tout », « allume les lumières », « qu'est-ce qui est allumé ? », « est-ce que la prise du bureau est allumée ? ».
 - **Les scènes** : « enregistre la scène film » garde l'état de la maison à ce moment ; « mode film » le rejoue. Elles voyagent entre appareils comme les notes.

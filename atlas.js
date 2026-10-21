@@ -31,7 +31,7 @@ function fresh() {
     settings: {
       brain: 'groq', key: '', model: AI.DEFAULT_MODEL, localUrl: 'http://localhost:11434/v1', localModel: '',
       voix: 'futuriste', sound: true, micSens: 'loin', ears: 'auto', seeCloud: false, visionModel: AI.VISION_MODEL, ville: null, eveil: true,
-      conversation: true, accueil: true, arrivee: true, camera: true, proactif: true, marches: true,
+      conversation: true, accueil: true, arrivee: true, camera: true, proactif: true, marches: true, proteges: [],
       eleven: true, elevenKey: '', elevenVoice: '', elevenModel: 'eleven_v4_turbo', elevenEffet: 'leger',
     },
     notes: [], listes: [], minuteurs: [], chat: [], voices: [], memoire: [], tomb: {}, updatedAt: 0, importe: false, voixV6: true,
@@ -135,7 +135,7 @@ const SYNC = (() => {
     return out;
   }
   // les réglages qui voyagent d'un appareil à l'autre (jamais la clé Groq : elle reste sur l'appareil où on l'a tapée)
-  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches'];
+  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches', 'proteges'];
   const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
     S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.tomb = m.tomb;
