@@ -188,9 +188,9 @@ const PC = (() => {
       return say(`Mail de ${m.de}, « ${m.sujet} ». ${m.texte ? m.texte.slice(0, 450) + (m.texte.length > 450 ? '… La suite est dans Gmail.' : '') : '(sans texte)'}`);
     }
     derniersMails = r.mails || [];
-    if (!r.total) return say(o.de ? `Aucun mail${o.quoi === 'nonlus' ? ' non lu' : ''} de ${o.de}.` : 'Aucun nouveau mail.');
+    if (!r.total) return say(o.de ? `Aucun mail${o.quoi === 'nonlus' ? ' non lu' : ''} de ${o.de}.` : 'Aucun nouveau mail depuis hier.');
     const l = derniersMails.slice(0, 3).map((m, i) => `${i ? '' : ''}${m.de}, ${quandMail(m.date)} : « ${m.sujet.slice(0, 70)} »`).join('. ');
-    return say(`${r.total} ${o.quoi === 'nonlus' ? `mail${r.total > 1 ? 's' : ''} non lu${r.total > 1 ? 's' : ''}` : `mail${r.total > 1 ? 's' : ''}`}${o.de ? ` de ${o.de}` : ''}. ${l}.${r.total > 1 ? ' Dis « lis le premier » ou « lis le deuxième ».' : ' Dis « lis-le » pour l\'entendre.'}`);
+    return say(`${r.total} ${o.quoi === 'nonlus' ? `mail${r.total > 1 ? 's' : ''} non lu${r.total > 1 ? 's' : ''}` : `mail${r.total > 1 ? 's' : ''}`}${o.de ? ` de ${o.de}` : ' depuis hier'}. ${l}.${r.total > 1 ? ' Dis « lis le premier » ou « lis le deuxième ».' : ' Dis « lis-le » pour l\'entendre.'}`);
   }
   const RANG = { premier: 0, '1er': 0, un: 0, dernier: 0, deuxieme: 1, second: 1, deux: 1, troisieme: 2, trois: 2 };
 
