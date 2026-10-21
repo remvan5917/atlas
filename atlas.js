@@ -230,7 +230,9 @@ const brainTimes = [];
 async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   dlg.interrupt = false;
   if (face.state !== 'think') face.set(dlg.state === 'standby' ? 'idle' : 'listen');
-  const r = await OREILLES.listen({ prompt: prompt || "Un adulte parle en français à Atlas, l'assistant de la maison. Son fils a un robot, Shadow.", maxWait, cheap, endSilence: 1.0 });
+  // la transcription connaît les noms de la maison (Atlas, Shadow, les caméras, les prises) : elle les reconnaît mieux
+  const noms = [].concat(typeof SECURITE !== 'undefined' ? SECURITE.nomsCameras() : [], typeof MAISON !== 'undefined' ? MAISON._appareils().map(a => a.nom) : []).filter(Boolean).map(x => x.charAt(0).toUpperCase() + x.slice(1));
+  const r = await OREILLES.listen({ prompt: prompt || `Un adulte parle en français à Atlas, l'assistant de la maison. Son fils a un robot, Shadow.${noms.length ? ` Caméras et appareils : ${[...new Set(noms)].join(', ')}.` : ''}`, maxWait, cheap, endSilence: 1.0 });
   if (face.el) face.el.classList.remove('hearing');
   if (r && typeof r === 'object') {
     if (r.error === 'not-allowed') { if (Date.now() - (dlg.micDitAt || 0) > 60000) { dlg.micDitAt = Date.now(); await say("Le micro est bloqué. Autorise le micro pour ce site, puis touche l'écran."); } await wait(5000); return ''; }

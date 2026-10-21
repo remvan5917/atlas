@@ -69,6 +69,13 @@ const SECURITE = (() => {
   setTimeout(relit, 7000); setInterval(relit, 5 * 60000); // une caméra ajoutée est reconnue dans les 5 minutes
   // « la cour » ou « les cours », « le jardin » ou « les jardins » : le s final ne compte pas
   const motsCam = t => N(t).split(' ').filter(w => w.length > 2 && !['camera', 'cameras', 'dans', 'devant', 'les', 'des', 'qui', 'quoi', 'passe', 'montre', 'moi'].includes(w)).map(w => w.replace(/s$/, ''));
+  const lev = (a, b) => { const d = Array.from({ length: a.length + 1 }, (x, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; };
+  const VIDES_CAM = new Set(['moi', 'montre', 'affiche', 'voir', 'fais', 'camera', 'cameras', 'photo', 'image', 'direct', 'heure', 'dans', 'devant', 'quoi', 'passe', 'quelqu', 'regarde', 'tourne', 'oriente', 'gauche', 'droite', 'haut', 'bas', 'vers']);
+  // le nom d'une caméra dans la phrase : exact, au pluriel, ou approchant (« la face » pour Façade, « toitur » pour Toiture)
+  function nommee(n, nom) {
+    const ws = N(n).split(' ').filter(w => w.length > 2 && !VIDES_CAM.has(w)).map(w => w.replace(/s$/, ''));
+    return motsCam(nom).some(c => ws.some(w => w === c || (w.length >= 4 && c.length >= 4 && (lev(w, c) <= (c.length > 5 ? 2 : 1) || (c.startsWith(w) && w.length >= 4)))));
+  }
   const blobVersData = b => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
   let urlImage = '', directT = 0;
   // le direct (vidéo et son) : ses oreilles se coupent le temps du direct (sinon il prendrait les voix de la caméra pour les nôtres)
@@ -101,7 +108,7 @@ const SECURITE = (() => {
     let l; try { l = await listeCams(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!l.length) return say("Je n'ai encore aucune caméra. Sur l'ordinateur, installe ffmpeg, active le flux local dans l'appli EZVIZ, puis lance le script des caméras : je les trouverai.");
     const m = motsCam(cible);
-    const c = l.find(x => motsCam(x.nom).some(w => m.includes(w))) || (l.length === 1 ? l[0] : null);
+    const c = l.find(x => nommee(cible, x.nom) || motsCam(x.nom).some(w => m.includes(w))) || (l.length === 1 ? l[0] : null);
     if (!c) return say(`Quelle caméra ? J'ai : ${l.map(x => x.nom).join(', ')}.`);
     if (!question && !photo) return direct(c); // « montre-moi l'entrée » : le direct, avec le son
     face.set('think');
@@ -207,7 +214,7 @@ const SECURITE = (() => {
     let j; try { j = await appel('/maison/ezviz', null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!j.relie) return say("Tes caméras EZVIZ ne sont pas encore reliées : sur l'ordinateur, lance le script de connexion EZVIZ.");
     const l = j.cameras || [];
-    const c = l.find(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)));
+    const c = l.find(x => nommee(n, x.nom));
     if (!c) return say(`Quelle caméra ? J'ai : ${l.map(x => x.nom).join(', ')}.`);
     const sens = /\bgauche\b/.test(n) ? 'gauche' : /\bdroite\b/.test(n) ? 'droite' : /\b(haut|monte|leve)\b/.test(n) ? 'haut' : /\b(bas|descend|baisse)\b/.test(n) ? 'bas' : '';
     if (!sens) return say('Vers la gauche, la droite, le haut ou le bas ?');
@@ -220,7 +227,7 @@ const SECURITE = (() => {
   let ezCams = [], ezAt = 0;
   async function listeEz() { if (Date.now() - ezAt < 60000) return ezCams; try { const j = await appel('/maison/ezviz', null, 10000); ezCams = j.cameras || []; ezAt = Date.now(); } catch (e) { /* plus tard */ } return ezCams; }
   setTimeout(listeEz, 8000); setInterval(listeEz, 5 * 60000);
-  const ezDe = n => ezCams.find(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)));
+  const ezDe = n => ezCams.find(x => nommee(n, x.nom));
   async function vueEz(c) {
     let j; try { j = await appel('/maison/alertes?depuis=0', null, 10000); } catch (e) { j = { alertes: [] }; }
     const a = (j.alertes || []).filter(x => x.genre === 'ezviz' && x.image && x.texte.includes(`« ${c.nom} »`)).pop();
@@ -253,9 +260,9 @@ const SECURITE = (() => {
     if (R.etat.test(n)) return etatAlarme;
     if (/\b(batterie|batteries|charge)\b.*\bcameras?\b|\bcameras?\b.*\b(batterie|batteries)\b/.test(n)) return batteries;
     const ez = ezDe(n);
-    if (ez && /\b(montre|affiche|fais voir|regarde|photo|image|direct|qu est ce qui se passe|il y a quelqu un|y a quelqu un)\b/.test(n) && !cams.some(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)))) return () => vueEz(ez);
+    if (ez && /\b(montre|affiche|fais voir|regarde|photo|image|direct|qu est ce qui se passe|il y a quelqu un|y a quelqu un)\b/.test(n) && !cams.some(x => nommee(n, x.nom))) return () => vueEz(ez);
     // une caméra : seulement si on dit « caméra » ou le nom d'une de nos caméras (« qu'est-ce qui se passe dans le monde » n'en est pas une)
-    const nomme = /\bcameras?\b/.test(n) || cams.some(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)));
+    const nomme = /\bcameras?\b/.test(n) || cams.some(x => nommee(n, x.nom));
     if ((R.camera.test(n) || /\b(montre|affiche|fais voir|regarde|ecoute|photo|image|direct)\b/.test(n)) && nomme) {
       const question = /\b(qu est ce|il y a|y a|qui est|qui sonne|il se passe)\b/.test(n) ? t : '';
       const photo = /\b(photo|image|capture|cliche)\b/.test(n);
@@ -264,5 +271,6 @@ const SECURITE = (() => {
     }
     return null;
   }
-  return { route, rapport, modeAbsent, releveAlertes, absent: () => absent, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
+  const nomsCameras = () => cams.map(x => x.nom).concat(ezCams.map(x => x.nom));
+  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
 })();
