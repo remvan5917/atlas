@@ -223,7 +223,11 @@ const PC = (() => {
     const yt = String(t).match(/^\s*(?:mets|met|joue|lance|fais[- ]moi écouter|fais moi ecouter|passe)\s+(?:moi\s+)?(?:(?:de la |la |une )?(?:musique|chanson|vidéo|video)\s+(?:de\s+|d['’]\s*)?|du\s+|de la\s+|des\s+|de\s+l['’])?(.+?)\s*(?:sur youtube|sur l['’]ordi(?:nateur)?)?[.!?]*\s*$/i);
     if (yt && (/\b(sur youtube|musique|chanson|video|joue|fais moi ecouter)\b/.test(n) || /^(mets|met) (du|des|de la|de l) /.test(n))
         && !/\b(lumiere|lampe|ambiance|salon|cuisine|chambre|escalier|lingerie|son|volume|ecran|alarme|camera|veilleuse|chauffage|minuteur|rappel|pause|lecture|fenetre)\b/.test(N(yt[1]))) {
-      const q = yt[1].trim();
+      let q = yt[1].trim();
+      // « de la musique romantique », « une musique pour dormir », « du jazz » : une ambiance ou un genre → une longue playlist variée
+      const genre = /^(?:de la |une |la )?(?:musique|chanson)s?\s+(?!de\b|d['’])(.+)$/i.exec(String(t).replace(/^\s*\S+\s+(moi\s+)?/i, '').replace(/\s*(sur youtube|sur l['’]ordi(nateur)?)\s*[.!?]*$/i, '').trim());
+      if (genre) q = `musique ${genre[1]} playlist`;
+      else if (/^(jazz|rock|rap|reggae|classique|lofi|lo fi|lounge|blues|soul|funk|disco|techno|house|electro|pop|variete francaise|chansons francaises|piano|zen|relaxante?|romantique|annees? \d0|80s|90s)$/i.test(N(q))) q = `${q} playlist`;
       if (/^(de la )?musique$|^une chanson$/i.test(q) || !q) return async () => { const a = await ask('Quelle musique ?'); return a ? youtube(a) : say("D'accord, pas de musique."); };
       return () => youtube(q);
     }

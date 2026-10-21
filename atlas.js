@@ -520,6 +520,24 @@ const R = {
   actus: /\b(actualites?|actus|les infos|les nouvelles|quoi de neuf (dans le monde|en france|aujourd hui)|les titres du jour|le journal)\b/,
   voir: /\b(qu est ce que tu vois|tu vois quoi|que vois tu|regarde|regardes|tu me vois|qui est la|decris ce que tu vois|combien de doigts|qu est ce que je tiens|je tiens quoi|c est quoi ca|qu est ce que c est que ca)\b/,
 };
+// une phrase → l'ordre qu'un module sait faire (sans le cerveau)
+function routeUn(t, n) {
+  for (const [nom, M] of [['memoire', typeof MEMOIRE !== 'undefined' && MEMOIRE], ['marche', typeof MARCHE !== 'undefined' && MARCHE], ['pc', typeof PC !== 'undefined' && PC], ['surete', typeof SECURITE !== 'undefined' && SECURITE], ['maison', typeof MAISON !== 'undefined' && MAISON], ['outils', !R.web.test(n) && typeof OUTILS !== 'undefined' && OUTILS]]) {
+    if (!M) continue;
+    const f = M.route(t, n); if (f) return { f, nom };
+  }
+  return null;
+}
+// « … et mets …», « …, puis éteins … » : on coupe avant chaque nouvel ordre (un verbe d'action après « et », « puis », « ensuite »)
+const VERBES_ORDRE = '(?:mets?|allume|rallume|[ée]teins?|[ée]teint|ouvre|lance|joue|baisse|monte|augmente|diminue|coupe|ferme|passe|verrouille|lis|dis|fais|active|montre|affiche|arr[êe]te|remets?|r[ée]duis|agrandis|tamise|envoie|rappelle|note|cherche|regarde|reprends?)';
+function enchaine(t) {
+  const bouts = String(t).replace(/[.!?]+\s*$/, '').split(new RegExp(`\\s*,?\\s+(?:et puis|et ensuite|et|puis|ensuite|après|apres)\\s+(?=${VERBES_ORDRE}(?:[\\s'’-]|$))`, 'i')).map(x => x.trim()).filter(Boolean);
+  if (bouts.length < 2) return null;
+  const ordres = bouts.map(b => { const r = routeUn(b, N(b)); return { t: b, f: r && r.f, nom: r && r.nom }; });
+  if (!ordres.some(o => o.f)) return null; // rien qu'un module sache faire : c'est une phrase pour le cerveau
+  if (ordres.every(o => o.nom === 'maison')) return null; // que la maison : elle sait faire plusieurs lumières en une seule réponse
+  return ordres;
+}
 async function handle(text) {
   let n = N(text);
   cacheEcran();
@@ -535,6 +553,9 @@ async function handle(text) {
     if (k > 0 && !/^(allume|rallume|eteins|eteint|mets|met|baisse|monte|augmente|diminue|coupe|tamise)\b/.test(n)) return handle(phrases.slice(k).join(' '));
   }
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
+  // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
+  const ordres = enchaine(t);
+  if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
   if (R.repete.test(n) && n.split(' ').length <= 5) return say(lastSaid || "Je n'ai encore rien dit.");

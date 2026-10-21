@@ -129,6 +129,7 @@ const MAISON = (() => {
     const pre = LIEN.prenom() ? N(LIEN.prenom()) : '';
     if (l.length > 1 && !(pre && n.split(' ').includes(pre))) { const moi = l.filter(a => /\bpapa\b/.test(N(a.nom))); if (moi.length) l = moi; } // « la chambre », « ma chambre » : celle de papa
     if (/\b(toute la maison|partout|toutes les lumieres|tout)\b/.test(n)) l = lampes;
+    else if (/\bles (lumieres|lampes)\b/.test(n) && l.length > 1 && l.some(a => a.allume)) l = l.filter(a => a.allume); // « les lumières à 30 % » : celles qui sont allumées (pas celle de la chambre où il dort)
     if (!l.length) l = lampes.filter(a => a.allume);
     if (!l.length) {
       const p = await ask(o.amb ? `Dans quelle pièce, l'ambiance ${o.amb} ?` : 'Quelle lumière ?');
