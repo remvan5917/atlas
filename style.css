@@ -112,3 +112,9 @@ menu { display: flex; justify-content: flex-end; gap: 10px; margin: 14px 0 0; pa
 @supports not (width: min(1px, 2px)) { #noyau { width: 88vw; height: 88vw; } .board .papa-txt { width: 80vw; } }
 
 .carnet-h { margin: 12px 0 4px; color: var(--ambre); letter-spacing: .08em; }
+
+/* le graphique des marchés : un zigzag et un canal, rien d'autre */
+.board.graphe-board { padding: 14px 16px; }
+.graphe { width: min(88vw, 860px); display: flex; flex-direction: column; gap: 6px; }
+.graphe small { font-family: ui-monospace, 'DejaVu Sans Mono', monospace; letter-spacing: .4em; font-size: 11px; color: rgba(255, 217, 160, .6); }
+.graphe canvas { width: 100%; height: auto; display: block; }

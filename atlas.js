@@ -31,10 +31,10 @@ function fresh() {
     settings: {
       brain: 'groq', key: '', model: AI.DEFAULT_MODEL, localUrl: 'http://localhost:11434/v1', localModel: '',
       voix: 'futuriste', sound: true, micSens: 'loin', ears: 'auto', seeCloud: false, visionModel: AI.VISION_MODEL, ville: null, eveil: true,
-      conversation: true, accueil: true, arrivee: true, camera: true,
+      conversation: true, accueil: true, arrivee: true, camera: true, proactif: true, marches: true,
       eleven: true, elevenKey: '', elevenVoice: '', elevenModel: 'eleven_v4_turbo', elevenEffet: 'leger',
     },
-    notes: [], listes: [], minuteurs: [], chat: [], voices: [], tomb: {}, updatedAt: 0, importe: false, voixV6: true,
+    notes: [], listes: [], minuteurs: [], chat: [], voices: [], memoire: [], tomb: {}, updatedAt: 0, importe: false, voixV6: true,
   };
 }
 function charge() {
@@ -118,7 +118,7 @@ document.addEventListener('click', e => {
 /* ---------- la mémoire partagée (l'ordinateur de la maison : /atlas/etat) ---------- */
 const SYNC = (() => {
   let sale = false, occupe = false, derniere = 0, erreur = '';
-  const LISTES = ['notes', 'listes', 'voices'];
+  const LISTES = ['notes', 'listes', 'voices', 'memoire'];
   function fusion(a, b) {
     const tombs = {};
     [a.tomb || {}, b.tomb || {}].forEach(src => Object.keys(src).forEach(l => Object.keys(src[l]).forEach(k => { tombs[l] = tombs[l] || {}; tombs[l][k] = Math.max(tombs[l][k] || 0, src[l][k]); })));
@@ -135,10 +135,10 @@ const SYNC = (() => {
     return out;
   }
   // les réglages qui voyagent d'un appareil à l'autre (jamais la clé Groq : elle reste sur l'appareil où on l'a tapée)
-  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet'];
+  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches'];
   const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
-    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.tomb = m.tomb;
+    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.tomb = m.tomb;
     if (m.partage) {
       if (m.partage.ville) S.settings.ville = m.partage.ville;
       if (m.partage.voix) S.settings.voix = m.partage.voix;
@@ -157,10 +157,10 @@ const SYNC = (() => {
     try {
       for (let essai = 0; essai < 3; essai++) {
         const g = await (await fetch(`${root}/atlas/etat`, { cache: 'no-store' })).json();
-        const local = { notes: S.notes, listes: S.listes, voices: S.voices, tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
+        const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
         const m = g && g.data ? fusion(local, g.data) : local;
         applique(m);
-        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
+        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
         if (r.status === 409) continue;
         if (!r.ok) throw new Error(`mémoire ${r.status}`);
         sale = false; derniere = Date.now(); erreur = ''; break;
@@ -298,15 +298,16 @@ COMMANDES (au plus une, à la toute fin) : [[web:recherche]] pour chercher sur I
 Tu as des outils qu'il peut demander directement (ne prétends pas qu'ils n'existent pas) : calculs exacts et TVA, conversions d'unités et de devises, minuteurs nommés, réveil, chrono, Pomodoro, listes (courses, à faire…), météo de n'importe quelle ville, état de son PC, « fais-moi le point », heure dans le monde, jours avant une date, pile ou face, la journée de son fils avec Shadow. S'il en parle, dis-lui la phrase à dire (par exemple « dis : minuteur pâtes 9 minutes »).
 Tu as une caméra : s'il te demande ce que tu vois, de regarder quelque chose ou ce qu'il tient, réponds seulement [[regarder]]. Ne dis jamais que tu n'as pas de caméra.
 Tu as Internet : pour une actualité, une info récente, un prix, un horaire, un résultat, la météo d'un autre endroit ou un fait dont tu n'es pas sûr, réponds seulement [[web:ta recherche en quelques mots]]. N'invente jamais une info récente.
+Tu as une mémoire : tu retiens tout seul ce qu'il te dit de durable (il peut dire « souviens-toi que… », « qu'est-ce que tu sais sur moi ? », « oublie que… »). Tu suis aussi les marchés pour lui (il fait du trading) : « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or » ; tu le préviens 5 minutes avant les annonces importantes et l'ouverture de Wall Street. Sur les marchés, donne seulement des faits : jamais de conseil d'achat ou de vente, jamais de prédiction présentée comme sûre.
 Tu n'as pas accès à ses comptes, ses mails ou sa maison connectée (pas encore) : ne prétends jamais le contraire. Si tu ne sais pas, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
 Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
-${notes ? `Ses notes :\n${notes}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
+${notes ? `Ses notes :\n${notes}\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
 ${CONV.contexte()}`;
 }
 async function repondre(text) {
   if (!AI.ready()) return say("Mon cerveau n'est pas branché : règle-le dans mes réglages. Mes outils marchent quand même : calculs, conversions, minuteurs, réveil, listes, notes, météo, état du PC et le point du jour.");
   const c = S.chat || (S.chat = []);
-  c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now() });
+  c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now(), who: dlg.qui || '' });
   const think = difficile(text);
   const msgs = [{ role: 'system', content: systeme(text) }].concat(c.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 3000) })));
   face.set('think');
@@ -344,6 +345,7 @@ async function repondre(text) {
   c.push({ role: 'assistant', content: `${dit}${detailPropre ? `\n[[ecran]]\n${detailPropre}` : ''}`.slice(0, 4000), at: Date.now() });
   if (c.length > 40) S.chat = c.slice(-40);
   save();
+  MEMOIRE.tour(); // il retient ce qui dure (après quelques échanges)
   if (!cmd) return;
   const a = cmd[1].toLowerCase(), arg = (cmd[2] || '').trim();
   if (a === 'regarder') return voir(text);
@@ -469,14 +471,14 @@ async function effacerNotes() {
 }
 
 /* ---------- le point de situation au démarrage ---------- */
-function briefing() {
+function briefing(fin = true) {
   const h = new Date().getHours(), parts = [`${h < 5 ? 'Bonne nuit' : h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'}${appel()}.`];
   if (LIEN.ok() && LIEN.minutes()) parts.push(`${LIEN.prenom() || 'Ton fils'} a passé ${LIEN.minutes()} minutes avec Shadow aujourd'hui.`);
   if (S.notes.length) parts.push(`Tu as ${S.notes.length} note${S.notes.length > 1 ? 's' : ''}.`);
   const up = LIEN.upcoming(2)[0];
   if (up) parts.push(`${up.e.text.charAt(0).toUpperCase()}${up.e.text.slice(1)} ${up.days === 0 ? "aujourd'hui" : up.days === 1 ? 'demain' : `dans ${up.days} jours`}.`);
   if (!AI.ready()) parts.push('Attention : mon noyau cognitif est hors ligne.');
-  parts.push(pick(["Je t'écoute.", 'À ta disposition.', 'Que puis-je faire pour toi ?']));
+  if (fin) parts.push(pick(["Je t'écoute.", 'À ta disposition.', 'Que puis-je faire pour toi ?']));
   return parts.join(' ');
 }
 
@@ -524,6 +526,10 @@ async function handle(text) {
   if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && VOIX.forget(nom)) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
   if (R.quiParle.test(n)) return say(!dlg.qui ? (OREILLES.engine() === 'whisper' ? "Je ne reconnais pas ta voix. Dis « apprends ma voix », et je la retiendrai." : "Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq.") : /^invité/.test(dlg.qui) ? "Je ne connais pas encore ta voix. Dis « apprends ma voix », et je la retiendrai." : `C'est ${dlg.qui}. Je reconnais ta voix.`);
   if (R.presente.test(n)) return presentation();
+  const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
+  if (souvenir) return souvenir();
+  const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
+  if (bourse) return bourse();
   if (R.rappel.test(n) && (await rappelLocal(t))) return;
   const outil = !R.web.test(n) && OUTILS.route(t, n); // le couteau suisse
   if (outil) return outil();
@@ -638,7 +644,8 @@ Nous sommes le ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 
     const h = new Date().getHours();
     return `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}. Je ne crois pas qu'on se connaisse : je suis Atlas, l'assistant de la maison. J'écoute la conversation et j'interviens si je peux aider ; il suffit de dire mon nom.`;
   }
-  return { nomPour, note, contexte, presents, nbInvites, pourShadow, shadowRepond, peutEtre, accueillirInvite, autres, parleAtlas, _fil: fil };
+  const dernier = () => { for (let i = fil.length - 1; i >= 0; i--) if (fil[i].qui !== 'Atlas') return fil[i].at; return 0; };
+  return { nomPour, note, contexte, presents, nbInvites, pourShadow, shadowRepond, peutEtre, accueillirInvite, autres, parleAtlas, dernier, _fil: fil };
 })();
 
 /* ---------- l'accueil : quelqu'un arrive dans la pièce (vu à la caméra, ou entendu à la voix) ----------
@@ -664,6 +671,7 @@ const ARRIVEE = (() => {
     if (Date.now() - avant < ABSENT) return '';
     if (Date.now() - dernierAccueil < 15000) { vu[nom] = avant; return ''; } // quelqu'un vient d'être accueilli : son tour viendra à la phrase suivante
     dernierAccueil = Date.now();
+    PROACTIF.reconnu(nom); // le matin : le briefing suit l'accueil
     return phrase(nom);
   }
   async function dire(t) { if (!t || voice.occupe() || dlg.busy) return; face.flash('happy', 1200); CONV.note('Atlas', t); await say(t); }
@@ -684,7 +692,7 @@ const ARRIVEE = (() => {
     try { await VISION.start($('#cam'), { objects: false }); } catch (e) { console.warn('yeux', e); }
   }
   if (typeof VISION !== 'undefined') VISION.on('people', visages);
-  return { connu, dire, yeux };
+  return { connu, dire, yeux, dernier: () => Math.max(0, ...Object.values(vu)) };
 })();
 
 /* ---------- apprendre une voix ---------- */
@@ -719,7 +727,7 @@ async function apprendreVoix(text) {
 async function presentation() {
   const p = CONV.presents(), inv = CONV.nbInvites(), h = new Date().getHours();
   const salut = `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}${inv ? ` à tous, et bienvenue à nos invités` : p.length ? ` ${p.join(', ')}` : ''}.`;
-  await say(`${salut} Je suis Atlas, l'assistant de cette maison. J'écoute, je reconnais les voix, je cherche sur Internet, je vois avec ma caméra, je fais les calculs, les conversions et la météo, je gère les minuteurs, les listes et les rappels, et je garde un œil sur l'ordinateur de la maison. Je suis la conversation et j'interviens quand je peux aider. Pour me parler, il suffit de dire mon nom.`);
+  await say(`${salut} Je suis Atlas, l'assistant de cette maison. J'écoute, je reconnais les voix, je cherche sur Internet, je vois avec ma caméra, je fais les calculs, les conversions et la météo, je gère les minuteurs, les listes et les rappels, je suis les marchés, je retiens ce qui compte pour chacun, et je garde un œil sur l'ordinateur de la maison. Je suis la conversation et j'interviens quand je peux aider. Pour me parler, il suffit de dire mon nom.`);
 }
 
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
@@ -760,6 +768,7 @@ async function vie() {
     dlg.busy = true;
     try {
       await handle(r);
+      if (appele) PROACTIF.reconnu(/^invité/.test(dlg.qui || '') || !dlg.qui ? 'toi' : dlg.qui);
       if (/^invité/.test(dlg.qui || '') && !dlg.proposeVoix && !VOIX.own().length && OREILLES.engine() === 'whisper') { dlg.proposeVoix = true; await say("Au fait, je ne reconnais pas encore ta voix. Dis « Atlas, apprends ma voix », et je saurai toujours que c'est toi."); }
     } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; dlg.repondu = Date.now(); }
   }
@@ -836,7 +845,9 @@ function ouvreReglages() {
   $('#r-accueil').checked = s.accueil !== false;
   $('#r-arrivee').checked = s.arrivee !== false;
   $('#r-camera').checked = s.camera !== false;
-  renderNotes(); renderVoix();
+  $('#r-proactif').checked = s.proactif !== false;
+  $('#r-marches').checked = s.marches !== false;
+  renderNotes(); renderVoix(); MEMOIRE.render();
   $('#r-sync').textContent = SYNC.etat();
   const c = AI.cfg ? AI.cfg() : {};
   $('#r-diag').innerHTML = `<p class="small">Cerveau : ${AI.ready() ? (c.local ? `maison (${esc(c.model || '?')})` : `en ligne (${esc(c.model || '?')})`) : '<b>hors ligne</b>'} · oreilles : ${esc(OREILLES.engine() || 'aucune')}${AI.lastEars ? ` (${esc(AI.lastEars)})` : ''} · voix : ${ELEVEN.usable() ? 'ElevenLabs' : VOIXMAISON.usable() ? `ordinateur (${esc(VOIXMAISON.papa())})` : 'téléphone'} · mode : ${S.settings.conversation === false ? 'il répond à son nom' : dlg.discret ? 'discret' : 'conversation'}</p>`
@@ -895,6 +906,8 @@ function lieReglages() {
   bind('#r-conv', el => { s().conversation = el.checked; dlg.discret = false; });
   bind('#r-accueil', el => { s().accueil = el.checked; });
   bind('#r-arrivee', el => { s().arrivee = el.checked; });
+  bind('#r-proactif', el => { s().proactif = el.checked; });
+  bind('#r-marches', el => { s().marches = el.checked; });
   bind('#r-camera', el => { s().camera = el.checked; if (el.checked) ARRIVEE.yeux(); else if (typeof VISION !== 'undefined' && VISION.isOn()) VISION.stop(); });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-unvoix]'); if (b && VOIX.forget(b.dataset.unvoix)) renderVoix(); });
   bind('#r-eveil', el => { s().eveil = el.checked; if (el.checked) garderAllume(); else if (verrou) { verrou.release().catch(() => {}); verrou = null; } });
@@ -985,7 +998,8 @@ async function demarrer() {
   VOIXMAISON.prefetch(briefing());
   await NOYAU.allume();
   dlg.state = 'talk'; dlg.silence = 0;
-  await say(briefing());
+  const duMatin = await PROACTIF.auDemarrage(); // le matin : météo, rappels, agenda, marchés
+  await say(duMatin ? `${briefing(false)} ${duMatin} ${pick(["Je t'écoute.", 'À ta disposition.'])}` : briefing());
   ARRIVEE.yeux(); // la caméra regarde qui arrive (tout reste sur l'appareil)
 }
 window.addEventListener('load', () => {

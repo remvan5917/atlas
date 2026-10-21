@@ -17,6 +17,24 @@ Adresse : https://remvan5917.github.io/atlas/
 - **Notes et rappels** : « note que… », « lis mes notes », « rappelle-moi de sortir le linge dans 20 minutes / à 18 heures ».
 - **La journée de ton fils avec Shadow** et l'agenda de la famille : lus dans la mémoire de Shadow, **sans jamais y écrire**.
 
+## Sa mémoire de toi (`memoire.js`)
+- Après quelques échanges (ou un moment de calme), le cerveau relit la conversation et **retient tout seul ce qui dure** : goûts, habitudes, projets, les gens de ta vie, et les choses prévues à un jour précis (« jeudi, dentiste à 10 h » → la vraie date, prise dans un calendrier tout prêt : les petits cerveaux se trompent en comptant les jours).
+- Il s'en sert naturellement (« la dernière fois, tu disais que… »), sans réciter.
+- « Souviens-toi que… », « qu'est-ce que tu sais sur moi ? », « qu'est-ce que tu as retenu aujourd'hui ? », « oublie que… », « oublie tout ce que tu sais » (avec confirmation).
+- Jamais de mot de passe, de code, de numéro de carte ou de compte, ni de détail de santé. Tout se voit et s'efface dans les réglages (« Ce qu'il sait de toi »). Gardée sur tes appareils et sur l'ordinateur de la maison (`/atlas/etat`), comme les notes.
+
+## Il parle le premier (`proactif.js`)
+- Une file d'annonces : chacune attend qu'il se taise et que personne ne parle, et qu'il y ait quelqu'un (vu ou entendu depuis 20 minutes) ; la nuit (22 h 30 – 7 h), seulement l'urgent. Un petit signal sonore avant. Chaque annonce n'est dite qu'une fois.
+- **Le briefing du matin** : la première fois qu'il te reconnaît le matin (voix, visage, ou quand tu l'appelles), juste après le bonjour : la météo et l'heure de la pluie, tes rappels, ce que tu lui as dit pour aujourd'hui, l'agenda de la famille, l'or et les annonces du jour. Au démarrage le matin, il le dit tout de suite.
+- **La pluie** qui arrive dans 10 à 50 minutes (Open-Meteo, toutes les 10 minutes) ; **l'ordinateur** de la maison qui chauffe (88 °C) ou se remplit (92 %).
+- Réglage : « Il prend la parole de lui-même ».
+
+## Les marchés (`marche.js`) — des infos, jamais des conseils
+- L'ordinateur de la maison relève les cours toutes les 2 minutes et garde 3 jours (`/atlas/marche`, fichier `memoire/marche.json`) : **or et argent au comptant, cuivre** (gold-api.com), **euro-dollar** (déduit de l'or en euros, à un pip près). Pas de source gratuite fiable pour les indices (Yahoo et la bourse CME refusent les programmes) : il le dit.
+- Le **calendrier économique** de la semaine (ForexFactory, toutes les heures) : États-Unis et zone euro, traduit pour l'oral (« les inscriptions hebdomadaires au chômage, prévu 200 mille, précédent 199 mille »).
+- « Le cours de l'or », « où en est l'euro-dollar », « le point des marchés », « les annonces du jour / de demain / de la semaine », « affiche le graphique de l'or » (24 h, ou « sur 3 jours ») : un **zigzag et un canal tracés à la main**, sans signaux ni niveaux.
+- **Alertes** : 5 minutes avant une annonce à fort impact, et avant l'ouverture de Wall Street (9 h 30 à New York, l'heure d'été américaine comprise). Réglage : « Les marchés ».
+
 ## Le mode conversation (activé par défaut)
 - **Il sait qui parle** : empreinte de voix calculée sur l'appareil (que des nombres, jamais d'enregistrement), reprise de Shadow — les voix déjà apprises par Shadow sont reconnues aussi. « Atlas, apprends ma voix », « qui parle ? », « oublie la voix de… ». Une voix inconnue devient « invité 1 », « invité 2 »… le temps de la soirée.
 - **Il suit la discussion** (fil en mémoire vive, 20 minutes au plus, jamais enregistré) et **n'intervient que s'il apporte quelque chose** : une question à laquelle il sait répondre, une erreur sur un fait ; jamais pendant une dispute, une conversation intime, ou avec un enfant qui ne lui parle pas ; au plus une intervention spontanée toutes les deux minutes. Il ne réfléchit pas à chaque phrase (seulement aux questions, ou de temps en temps), pour économiser le cerveau.

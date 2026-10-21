@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '11';
+    window.ATLAS_VERSION = '12';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -30,7 +30,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -119,6 +119,17 @@
         <p class="small muted">Pour ajouter une voix : « Atlas, apprends ma voix ». Les voix déjà apprises par Shadow sont reconnues aussi.</p>
       </fieldset>
       <fieldset>
+        <legend>Il te prévient</legend>
+        <label class="check"><input id="r-proactif" type="checkbox"> Il prend la parole de lui-même, au bon moment : le briefing du matin (la première fois qu'il te reconnaît), la pluie qui arrive, l'ordinateur qui chauffe ou se remplit. Jamais la nuit, et seulement s'il y a quelqu'un.</label>
+        <label class="check"><input id="r-marches" type="checkbox"> Les marchés : il te prévient 5 minutes avant les annonces économiques importantes (États-Unis, zone euro) et avant l'ouverture de Wall Street. Des infos, jamais des conseils.</label>
+        <p class="small muted">Les cours (or, argent, cuivre, euro-dollar) sont relevés par l'ordinateur de la maison toutes les 2 minutes ; le calendrier vient de ForexFactory. « Le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».</p>
+      </fieldset>
+      <fieldset>
+        <legend>Ce qu'il sait de toi</legend>
+        <p class="small muted">Il retient tout seul ce qui dure (tes goûts, tes projets, les gens de ta vie, les dates à venir), jamais de mot de passe ni de numéro. « Souviens-toi que… », « qu'est-ce que tu sais sur moi ? », « oublie que… ». Gardé sur tes appareils et l'ordinateur de la maison.</p>
+        <div id="r-memoire"></div>
+      </fieldset>
+      <fieldset>
         <legend>Tes notes</legend>
         <div id="r-notes"></div>
         <div class="ligne"><button type="button" id="r-importer" class="ghost sm">Reprendre les notes, listes et réglages de Shadow</button></div>
@@ -133,14 +144,17 @@
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=11"></script>
-  <script src="cerveau.js?v=11"></script>
-  <script src="oreilles.js?v=11"></script>
-  <script src="voix.js?v=11"></script>
-  <script src="empreintes.js?v=11"></script>
-  <script src="yeux.js?v=11"></script>
-  <script src="atlas.js?v=11"></script>
-  <script src="outils.js?v=11"></script>
-  <script src="noyau.js?v=11"></script>
+  <script src="orthographe.js?v=12"></script>
+  <script src="cerveau.js?v=12"></script>
+  <script src="oreilles.js?v=12"></script>
+  <script src="voix.js?v=12"></script>
+  <script src="empreintes.js?v=12"></script>
+  <script src="yeux.js?v=12"></script>
+  <script src="atlas.js?v=12"></script>
+  <script src="outils.js?v=12"></script>
+  <script src="memoire.js?v=12"></script>
+  <script src="marche.js?v=12"></script>
+  <script src="proactif.js?v=12"></script>
+  <script src="noyau.js?v=12"></script>
 </body>
 </html>
