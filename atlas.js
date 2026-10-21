@@ -49,6 +49,7 @@ function charge() {
   return fresh();
 }
 let S = charge();
+(S.voices || []).forEach(v => { if (v && typeof v.name === 'string') v.name = v.name.replace(/[.,!?;:«»"]+/g, '').trim(); }); // « Rémi. » → « Rémi »
 function save() { if (voice.endormi) return; S.updatedAt = Date.now(); try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ } SYNC.sale(); }
 function tomb(liste, item) { (S.tomb[liste] = S.tomb[liste] || {})[String(item.id)] = Date.now(); }
 
@@ -722,6 +723,7 @@ async function apprendreVoix(text) {
     if (m.length >= 2 && (await askYesNo(`${m.charAt(0).toUpperCase()}${m.slice(1)}, c'est bien ça ?`))) nom = m;
   }
   if (!nom) return say("Je n'ai pas compris le prénom. On réessaiera.");
+  nom = nom.replace(/[.,!?;:«»"]+/g, '').trim();
   nom = nom.charAt(0).toUpperCase() + nom.slice(1);
   const phrases = [`Très bien, ${nom}. Parle-moi un peu de ta journée, en quelques phrases.`, "Maintenant, dis-moi ce que tu as prévu demain.", 'Et pour finir, compte lentement jusqu\'à quinze.'];
   const prints = [];

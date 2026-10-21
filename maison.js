@@ -136,14 +136,16 @@ const MAISON = (() => {
 
   /* =================== le messager papa ↔ l'enfant =================== */
   async function envoie(texte) {
-    let t = String(texte).trim().replace(/[.!]+$/, '');
+    let t = String(texte).trim().replace(/[.!?]+$/, '').replace(/[\s,.]+(ok|okay|merci|s il te plait|s'il te plaît|stp)[.!]*$/i, '').replace(/[.!?]+$/, '').trim();
     if (!t) return say('Je lui dis quoi ?');
     // s'il parle déjà à son fils (« je rentre à 19 h »), on garde ses mots
     // « de ranger sa chambre » → « Papa te demande de ranger ta chambre » (une règle fixe : le message ne change pas de sens)
     const tu = x => x.replace(/\b(sa)\b/gi, 'ta').replace(/\b(son)\b/gi, 'ton').replace(/\b(ses)\b/gi, 'tes').replace(/\bse\b/gi, 'te').replace(/\bs['’]/gi, "t'").replace(/\blui\b/gi, 'toi');
     const brut = String(texte).trim();
     if (/^(de |d['’])/i.test(brut)) { const x = t.replace(/^(de |d['’])\s*/i, ''); t = `Papa te demande ${/^[aeéèêiouyh]/i.test(x) ? "d'" : 'de '}${tu(x)}`; }
-    else if (/^(il |qu['’]il |que il )/i.test(t) && AI.ready()) { // « qu'il doit… » : à la 2e personne, sans rien ajouter
+    else if (/^(je|j['’]|on|maman|papa|nous)\b/i.test(t)) { // « que je l'aime » : papa parle de son fils → à son fils
+      t = t.replace(/\b(je|on|nous|maman|papa|mamie|papy|il|elle|ils|elles)(\s+(?:ne\s+)?)l['’](?=[aeéèêiîoôuyh])/gi, "$1$2t'").replace(/\b(je|j['’]|on|nous) le\b/gi, '$1 te').replace(/\b(je|on|nous) lui\b/gi, '$1 te').replace(/\bavec lui\b/gi, 'avec toi').replace(/\bpour lui\b/gi, 'pour toi');
+    } else if (/^(il |qu['’]il |que il )/i.test(t) && AI.ready()) { // « qu'il doit… » : à la 2e personne, sans rien ajouter
       try {
         const r = await AI.chat([{ role: 'system', content: 'Mets cette phrase à la 2e personne du singulier (tutoiement), en changeant le moins de mots possible. Ne rajoute rien. Réponds seulement la phrase.' }, { role: 'user', content: t }], { maxTokens: 60, temperature: 0, prefer: 'openai/gpt-oss-20b' });
         const p = nettoie(r).replace(/^["«\s]+|["»\s]+$/g, ''); if (p.length > 2 && p.length < t.length * 1.4 + 10) t = p;
@@ -162,6 +164,13 @@ const MAISON = (() => {
     (j.messages || []).forEach(m => PROACTIF.annonce(`msg-${m.id}`, async () => { await lus([m]); return annonceMsg(m); }, { expire: Date.now() + 6 * 3600000 }));
   }
   setInterval(releve, 30000);
+  async function suiviMessage() {
+    let j; try { j = await appel('/maison/messages'); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const m = (j.recents || []).filter(x => x.de === 'papa').pop();
+    if (!m) return say("Je n'ai pas de message de toi en attente.");
+    if (m.lu) return say(`Oui : Shadow a dit à ${enfant()} « ${m.texte} », à ${hhmm(new Date(m.lu))}.`);
+    return say(`Pas encore. Shadow le dira à ${enfant()} dès qu'il le verra devant lui, ou dès qu'il lui parlera.`);
+  }
   async function mesMessages() {
     let j; try { j = await appel('/maison/messages?pour=papa'); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     const l = j.messages || [];
@@ -258,11 +267,14 @@ const MAISON = (() => {
     sceneRec: /\b(enregistre|retiens|memorise|cree|sauvegarde) (la |une |cette )?(scene|ambiance)\b|\b(retiens|enregistre) cet etat comme\b/,
     sceneGo: /^(?:mode|scene|ambiance|lance la scene|lance le mode|active le mode|passe en mode)\s+(.+)$/,
     message: /^(?:dis|dit|dites|previens|rappelle|explique|demande) (?:a |au )?(?:mon fils|mon garcon|mon petit|mon bonhomme|[a-z]+) (?:que |qu |de |d )(.+)$|^(?:laisse|envoie|transmets?) (?:un |le )?(?:message|mot) (?:a |au )?(?:mon fils|mon garcon|mon petit|[a-z]+)\s*(?:que |qu |de |pour lui dire que |:)?\s*(.+)$/,
+    suiviMsg: /\b(shadow|il|mon fils|[a-z]+) a (bien )?(eu|recu|dit|transmis|lu|entendu|le|mon) (le |mon )?message\b|\ble message (est|a ete) (bien )?(passe|arrive|transmis|dit)\b|\bil l a eu\b/,
     mesMsg: /\b(j ai (des|un) (nouveaux? )?messages?|des messages pour moi|il m a laisse un message|il a repondu|mes messages)\b/,
     appris: /\b(qu est ce que|qu|ce que) (shadow|mon fils|il|on) (a|lui a) (appris|retenu)\b|\bshadow a appris quoi\b|\bce que shadow a (appris|retenu)\b/,
     efface: /\b(efface|supprime|enleve|retire)\b.*\b(shadow|le \d|la \d|le (un|deux|trois|quatre|cinq|six|sept|huit)|la (premiere|deuxieme|troisieme|quatrieme|cinquieme))\b|\b(dis|demande) a shadow d oublier\b|\bfais oublier a shadow\b/,
   };
+  const POLI = /^(ok |bon |alors |et |eh )?(est ce que )?(tu peux|tu pourrais|peux tu|pourrais tu|tu veux bien|tu voudrais bien|sois gentil et|s il te plait) /;
   function route(t, n) {
+    if (POLI.test(n)) n = n.replace(POLI, '').replace(/^dire /, 'dis ').replace(/^transmettre /, 'transmets ').replace(/^envoyer /, 'envoie ');
     if (R.coupe.test(n)) return () => bascule(false);
     if (R.rends.test(n)) return () => bascule(true);
     if (R.droits.test(n)) return droitsShadow;
@@ -271,6 +283,7 @@ const MAISON = (() => {
     if (R.appris.test(n)) return () => appris(n);
     if (R.efface.test(n) && (derniers.length || /shadow/.test(n))) return () => efface(t, n);
     if (R.mesMsg.test(n)) return mesMessages;
+    if (R.suiviMsg.test(n)) return suiviMessage;
     const pre = LIEN.prenom() ? N(LIEN.prenom()) : '';
     const mm = n.match(R.message);
     const pourLui = /\b(mon fils|mon garcon|mon petit|mon bonhomme|fils|shadow)\b/.test(n) || (/\b(message|mot)\b/.test(n) && /\b(chateau|chado|shado|chadow)\b/.test(n)) || (pre && new RegExp(`\\b${pre}\\b`).test(n)); // « Château » : Shadow mal transcrit
