@@ -178,6 +178,30 @@ const SECURITE = (() => {
     return say("Mode absent : je surveille la caméra en continu, le réseau et les prises, et je te préviens au moindre doute. Pense à activer l'alarme si tu veux : dis « active l'alarme en mode total ».");
   }
 
+  /* =================== les notifications sur le téléphone (Web Push) =================== */
+  const versOctets = b => { const s = atob((b + '='.repeat((4 - b.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, c => c.charCodeAt(0)); };
+  const etatNotifs = t => { const el = document.getElementById('r-notifs-etat'); if (el) el.textContent = t; };
+  async function abonne(demander) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) { if (demander) etatNotifs("Ce navigateur ne sait pas recevoir de notifications. Installe Atlas sur l'écran d'accueil, depuis Chrome."); return false; }
+    let perm = Notification.permission;
+    if (perm !== 'granted' && demander) perm = await Notification.requestPermission();
+    if (perm !== 'granted') { if (demander) etatNotifs("Les notifications sont refusées. Autorise-les : Paramètres Android → Applications → Atlas (ou Chrome) → Notifications."); return false; }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const { cle } = await appel('/maison/push/cle', null, 10000);
+      let ab = await reg.pushManager.getSubscription();
+      if (!ab) ab = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: versOctets(cle) });
+      const r = await appel('/maison/push/abonner', { abonnement: ab.toJSON(), appareil: /Android/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur' }, 10000);
+      if (demander) etatNotifs(r.ok ? 'Activées sur ce téléphone. Touche « Essayer » pour en recevoir une.' : "L'ordinateur de la maison n'a pas accepté l'abonnement.");
+      return !!r.ok;
+    } catch (e) { if (demander) etatNotifs(`Impossible d'activer : ${e.message || e}`); return false; }
+  }
+  document.addEventListener('click', async e => {
+    if (e.target.id === 'r-notifs') { etatNotifs('Activation…'); await abonne(true); }
+    if (e.target.id === 'r-notifs-essai') { try { await appel('/maison/push/essai', {}, 10000); etatNotifs("Envoyée : elle arrive d'ici 20 secondes. Tu peux fermer Atlas pour voir."); } catch (er) { etatNotifs("L'ordinateur de la maison ne répond pas."); } }
+  });
+  setTimeout(() => { if ('Notification' in window && Notification.permission === 'granted' && root()) abonne(false); }, 12000); // l'abonnement reste à jour
+
   /* =================== ce qu'on lui dit =================== */
   const R = {
     desactive: /\b(desactive|desactiver|eteins|eteint|coupe|arrete|enleve|retire|debranche) (l |de l )?alarme\b/,
