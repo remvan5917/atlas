@@ -56,6 +56,16 @@ Adresse : https://remvan5917.github.io/atlas/
 - **Une caméra LSC Smart Connect** : l'ajouter dans l'appli **Smart Life** (pas l'appli LSC), relancer `maison/connecter.sh`, et sur iot.tuya.com activer le service « IoT Video Live Stream » du projet : le cloud Tuya donne alors une adresse de flux à l'ordinateur.
   - **Les relier** : installer ffmpeg (`sudo apt install ffmpeg`), activer le flux local (RTSP) de chaque caméra dans l'appli EZVIZ, puis lancer `~/.local/share/shadow/maison/cameras.py` : il trouve les caméras, demande un nom et le code de vérification (étiquette de la caméra), gardé dans `maison/cameras.json` (600).
 
+## La sentinelle — il détecte seul ce qui est suspect
+Un service de l'ordinateur (`shadow-sentinelle`, `~/.local/share/shadow/maison/sentinelle.py`) surveille en continu et écrit ses alertes ; Atlas les relève toutes les 20 secondes et les dit (les urgentes tout de suite, même la nuit ; avec la photo s'il y en a une).
+- **Le réseau** : un appareil jamais vu qui se connecte (avec son fabricant, ou « adresse privée » pour un téléphone) — urgent la nuit ou en mode absent.
+- **Tailscale** : un nouvel appareil dans ton réseau privé (urgent).
+- **L'ordinateur** : des connexions à distance ratées, 3 mots de passe ratés en 3 minutes, un nouveau service ouvert sur le réseau, un programme inconnu qui occupe la machine 10 minutes, une session ouverte à distance.
+- **La caméra** (la nuit de 22 h à 7 h, ou en mode absent) : un mouvement → la vision de la maison regarde s'il y a clairement une personne (pas une voiture, un reflet, un arbre) ; un bruit fort (seulement un niveau sonore : jamais les paroles). Rien n'est enregistré, sauf la photo d'une alerte, 7 jours.
+- **L'alarme** (une fois reliée) : ses changements d'état ; le mode total met la maison en mode absent. **Les prises** : un appareil qui chauffe allumé depuis 3 heures, une prise qui s'allume en mode absent.
+- Ce qu'il apprend au départ (les appareils, les services) devient la référence : il ne signale que ce qui change.
+- « Je pars » / « mode absent », « je suis rentré » ; « il s'est passé quoi ? », « rapport de sécurité », « montre la dernière alerte ».
+
 ## Le lien avec Shadow
 - **Les lumières de Shadow** : tu choisis ce que Shadow peut piloter (« autorise Shadow à allumer la lampe de la chambre », ou une case « Shadow » par appareil dans les réglages). C'est **l'ordinateur de la maison** qui garde la liste et refuse tout le reste (`/maison/shadow`), avec au plus 12 commandes en 10 minutes. « Interdis la veilleuse à Shadow », « interdis les lumières à Shadow » (tout est coupé), « rends les lumières à Shadow », « qu'est-ce que Shadow peut allumer ? ». Option : à la fin de l'histoire du soir, Shadow éteint ses lampes.
 - **Le messager** : « dis à mon fils que je rentre à 19 h », « demande à mon fils de ranger sa chambre » (→ « Papa te demande de ranger ta chambre »), « laisse un message à mon fils : bravo ». Le message attend sur l'ordinateur (`/maison/messages`, 3 jours) ; Shadow le dit dès que l'enfant est là, puis propose de répondre. Sa réponse (« Shadow, dis à papa que… ») arrive chez Atlas, qui te la dit quand tu es là. « J'ai des messages ? ».

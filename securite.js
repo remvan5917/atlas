@@ -128,6 +128,56 @@ const SECURITE = (() => {
     } catch (e) { return say("Voilà l'image, mais je n'arrive pas à l'analyser."); }
   }
 
+  /* =================== la sentinelle : ce qu'elle a vu de suspect (réseau, Tailscale, ordinateur, caméra, alarme, prises) =================== */
+  let vuJusqua = 0, alertesRecentes = [], absent = false;
+  try { vuJusqua = +localStorage.getItem('atlas-alertes-vues') || 0; } catch (e) { /* rien */ }
+  const quand = at => { const d = new Date(at), auj = dayKey() === dayKey(d); return `${auj ? "aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'long' })} à ${hhmm(d)}`; };
+  async function photoAlerte(a) {
+    if (!a.image) return;
+    try {
+      const img = await appel(`/maison/alerte/image?id=${a.id}`, null, 15000);
+      if (!(img instanceof Blob)) return;
+      if (urlImage) URL.revokeObjectURL(urlImage);
+      urlImage = URL.createObjectURL(img);
+      showBoard(`<div class="graphe"><small>ALERTE · ${esc(quand(a.at).toUpperCase())}</small><img src="${urlImage}" alt="" style="width:100%;border-radius:12px;display:block"></div>`, 'graphe-board');
+      clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 120000);
+    } catch (e) { /* pas de photo */ }
+  }
+  async function releveAlertes() {
+    if (!root() || !dlg.started || voice.endormi) return;
+    let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
+    absent = !!j.absent;
+    const l = (j.alertes || []).filter(a => a.id > vuJusqua);
+    if (!l.length) return;
+    if (!vuJusqua) { vuJusqua = Math.max(...l.map(a => a.id)); try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ } return; } // un nouvel appareil : il ne raconte pas toute la semaine
+    alertesRecentes = alertesRecentes.concat(l).slice(-30);
+    vuJusqua = Math.max(...l.map(a => a.id));
+    try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ }
+    l.filter(a => a.gravite !== 'info').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
+  }
+  setInterval(releveAlertes, 20000); setTimeout(releveAlertes, 9000);
+  async function rapport(n) {
+    let j; try { j = await appel('/maison/alertes?depuis=0', null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const depuis = Date.now() - (/\bsemaine\b/.test(n) ? 7 : 1) * 86400000;
+    const l = (j.alertes || []).filter(a => a.at >= depuis && a.gravite !== 'info');
+    if (!l.length) return say(`Rien de suspect ${/\bsemaine\b/.test(n) ? 'cette semaine' : 'depuis hier'}. Je surveille le réseau, Tailscale, l'ordinateur, la caméra la nuit, l'alarme et les prises.${j.absent ? ' La maison est en mode absent.' : ''}`);
+    const derniers = l.slice(-5);
+    return say(`${l.length} alerte${l.length > 1 ? 's' : ''}. ${derniers.map(a => `${quand(a.at)} : ${a.texte}`).join(' ')}`);
+  }
+  async function derniereAlerte() {
+    let j; try { j = await appel('/maison/alertes?depuis=0', null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const a = (j.alertes || []).filter(x => x.image).pop();
+    if (!a) return say("Je n'ai aucune photo d'alerte.");
+    await photoAlerte(a);
+    return say(`${quand(a.at)} : ${a.texte}`);
+  }
+  async function modeAbsent(oui) {
+    try { await appel('/maison/sentinelle', { absent: oui }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    absent = oui; fx.ok();
+    if (!oui) return say('Bon retour. La maison repasse en mode présence : la caméra ne surveille plus que la nuit.');
+    return say("Mode absent : je surveille la caméra en continu, le réseau et les prises, et je te préviens au moindre doute. Pense à activer l'alarme si tu veux : dis « active l'alarme en mode total ».");
+  }
+
   /* =================== ce qu'on lui dit =================== */
   const R = {
     desactive: /\b(desactive|desactiver|eteins|eteint|coupe|arrete|enleve|retire|debranche) (l |de l )?alarme\b/,
@@ -136,6 +186,10 @@ const SECURITE = (() => {
     camera: /\b(montre|affiche|fais voir|regarde|fais moi ecouter|ecoute|direct|photo|image)\b.*\b(camera|entree|jardin|garage|porte|terrasse|portail|salon|allee|devant|cours?)\b|\b(qu est ce qui se passe|qu est ce qu il se passe|il y a quelqu un|y a quelqu un|qui est la|qui sonne|il se passe quoi)\b.*\b(dans|devant|a l|au|sur)\b/,
   };
   function route(t, n) {
+    if (/\b(mode absent|je pars|on part|je m en vais|je sors de la maison|on s en va de la maison|surveille la maison)\b/.test(n) && !/\balarme\b/.test(n)) return () => modeAbsent(true);
+    if (/\b(je suis rentre|je suis de retour|on est rentre|mode presence|je suis a la maison|fin du mode absent)\b/.test(n)) return () => modeAbsent(false);
+    if (/\b(montre|affiche)\b.*\b(derniere|dernieres) alertes?\b|\bla photo de l alerte\b/.test(n)) return derniereAlerte;
+    if (/\b(rapport de securite|il s est passe quoi|qu est ce qui s est passe|des alertes|les alertes|quelque chose de suspect|rien de suspect|tout va bien a la maison|la maison va bien|etat de la securite)\b/.test(n)) return () => rapport(n);
     if (R.desactive.test(n)) return () => say("Je ne désactive jamais l'alarme : c'est ton badge, le clavier ou l'appli Verisure. Comme ça, personne ne peut la couper en parlant.");
     const a = n.match(R.active);
     if (a) { const reste = (a[1] || a[2] || a[3] || ''); const mode = /\btotal/.test(reste) ? 'total' : /\bpartiel/.test(reste) ? 'partiel' : ''; return () => activer(mode, dlg.qui); }
@@ -150,5 +204,5 @@ const SECURITE = (() => {
     }
     return null;
   }
-  return { route, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
+  return { route, rapport, modeAbsent, releveAlertes, absent: () => absent, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
 })();
