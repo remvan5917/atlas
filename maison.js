@@ -220,6 +220,7 @@ const MAISON = (() => {
   // un bout de phrase (« … lumière de la cuisine ») : le début s'est perdu (on lui a parlé pendant qu'il parlait) — il demande
   function fragment(t, n) {
     if (!appareils.length || VERBE.test(n) || n.split(' ').length > 5) return null;
+    if (/\b(shadow|shadoo|chadow|shado|chateau)\b/.test(n)) return null; // c'est pour Shadow
     if (/\b(qui|pourquoi|quand|est ce|c est|il y a|t as|tu as|j ai|on a|laisse|oublie)\b/.test(n)) return null; // une phrase de la conversation
     const l = trouve(t, true); if (!l.length || l.length > 3) return null;
     if (!/\b(lumiere|lumieres|lampe|lampes|prise)\b/.test(n) && !l.some(a => mots(a.nom).join(' ') === mots(t).join(' '))) return null;

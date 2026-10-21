@@ -781,7 +781,7 @@ async function vie() {
     if (bonjour) { if (appele) { CONV.note('Atlas', bonjour); await say(bonjour); } else { await ARRIVEE.dire(bonjour); if (conv) CONV.note(dlg.qui, r); continue; } }
     if (conv) {
       CONV.note(dlg.qui, r);
-      if (/^shadow\b/.test(n)) { CONV.pourShadow(); continue; } // on parle à Shadow (et sa réponse arrive juste après)
+      if (/^((et|eh|hey|dis|ok|bon|alors|oui|non) )?(shadow|shadoo|chadow|shado|chadoo|chateau)\b/.test(n) && !appele) { CONV.pourShadow(); continue; } // on parle à Shadow (et sa réponse arrive juste après) ; Atlas se tait
       if (!appele && CONV.shadowRepond(dlg.qui)) continue;
       // c'est pour lui : on l'appelle ; on enchaîne juste après sa réponse ; ou personne d'autre ne parle (on est seul avec lui)
       // sans son nom, il ne répond qu'à une vraie demande (une question, un ordre), et juste après lui avoir répondu,
