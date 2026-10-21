@@ -524,8 +524,16 @@ async function handle(text) {
   let n = N(text);
   cacheEcran();
   // « Atlas, … » : son nom au début ne compte pas
-  n = n.replace(/^((dis |hey |he |ok |eh )?(l )?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|a classe|atlast|hat last|atia|hathia|atlia))\s*/, '').trim();
-  const t = String(text).replace(/^\s*((dis|hey|hé|ok|eh)[\s,]+)?(l['’]\s*)?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|[àa] classe|atlast|hat last|atia|hathia|atlia)[\s,.!?]*/i, '').trim() || text;
+  // « Non, Atlas, … », « Attends Atlas, … » : un petit mot avant son nom ne compte pas non plus
+  n = n.replace(/^(non|mais|attends|attend|bon|alors|euh|bah|ben|oui|ok|ah|oh|pardon|excuse moi|stop)\s+(?=(l )?(atlas|atlass|atlasse|atla|at las|hatlas|attlas|latlas|a classe|la classe|atlast|atia)\b)/, '');
+  n = n.replace(/^((dis |hey |he |ok |eh )?(l )?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|a classe|la classe|atlast|hat last|atia|hathia|atlia))\s*/, '').trim();
+  const t = String(text).replace(/^\s*(?:(?:non|mais|attends|attend|bon|alors|euh|bah|ben|oui|ok|ah|oh|pardon|excuse-moi|stop)[\s,.!]+(?=(?:l['’]\s*)?(?:atlas|atla|atlass|la classe|[àa] classe)))?((dis|hey|hé|ok|eh)[\s,]+)?(l['’]\s*)?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|la classe|[àa] classe|atlast|hat last|atia|hathia|atlia)[\s,.!?]*/i, '').trim() || text;
+  // un ordre dans une phrase d'après (« Non, Atlas, t'as pas compris. Éteins la cuisine. ») : c'est l'ordre qui compte
+  const phrases = t.split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (phrases.length > 1) {
+    const k = phrases.findIndex((p, i) => i > 0 && /^(allume|rallume|eteins|eteint|mets|met|baisse|monte|augmente|diminue|coupe|tamise|ouvre|ferme|lance|active|montre|affiche)\b/.test(N(p)));
+    if (k > 0 && !/^(allume|rallume|eteins|eteint|mets|met|baisse|monte|augmente|diminue|coupe|tamise)\b/.test(n)) return handle(phrases.slice(k).join(' '));
+  }
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
@@ -753,7 +761,7 @@ async function presentation() {
 
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
 // ce qui ressemble à une demande qu'on lui fait (une question, un ordre) — le reste, sans son nom, ne le concerne pas
-const ADRESSE = /^(et )?(dis|dit|dites|donne|mets|met|allume|eteins|lance|ajoute|rappelle|note|cherche|trouve|montre|affiche|explique|raconte|calcule|convertis|combien|quelle?s?|quel|quels|ou|comment|pourquoi|quand|qui|est ce qu|est ce que|qu est ce|c est quoi|tu peux|tu sais|tu connais|peux tu|sais tu|pourrais tu|j ai besoin|je veux|je voudrais|fais|fait|ouvre|ferme|active|envoie|envoyer|previens|arrete|stop|repete|lis|regarde|aide|traduis|ecris|programme|reveille|minuteur|il fait|il va|ca fait|y a t il|il y a)\b/;
+const ADRESSE = /^(et )?(dis|dit|dites|donne|mets|met|allume|allumes|eteins|eteint|eteindre|baisse|monte|augmente|diminue|coupe|tamise|lance|ajoute|rappelle|note|cherche|trouve|montre|affiche|explique|raconte|calcule|convertis|combien|quelle?s?|quel|quels|ou|comment|pourquoi|quand|qui|est ce qu|est ce que|qu est ce|c est quoi|tu peux|tu sais|tu connais|peux tu|sais tu|pourrais tu|j ai besoin|je veux|je voudrais|fais|fait|ouvre|ferme|active|envoie|envoyer|previens|arrete|stop|repete|lis|regarde|aide|traduis|ecris|programme|reveille|minuteur|il fait|il va|ca fait|y a t il|il y a)\b/;
 async function vie() {
   for (;;) {
     if (dlg.state === 'off' || voice.endormi) { await wait(500); continue; }
@@ -767,7 +775,7 @@ async function vie() {
     if (!r) { if (talk && ++dlg.silence >= 2) { dlg.state = 'standby'; face.set('idle'); } continue; }
     const n = N(r);
     dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
-    const appele = R.reveil.test(n);
+    const appele = R.reveil.test(n) || /^(la classe|l atlas|la tlas|la place)\s+/.test(n) && ADRESSE.test(n.replace(/^(la classe|l atlas|la tlas|la place)\s+/, ''));
     if (appele) fx.tone([[1175, 0.05]]); // un petit bip : il a entendu son nom
     const bonjour = ARRIVEE.connu(dlg.qui); // il arrive : on l'accueille (avant de lui répondre, s'il parle à Atlas)
     if (bonjour) { if (appele) { CONV.note('Atlas', bonjour); await say(bonjour); } else { await ARRIVEE.dire(bonjour); if (conv) CONV.note(dlg.qui, r); continue; } }
