@@ -228,12 +228,32 @@ const SECURITE = (() => {
   async function listeEz() { if (Date.now() - ezAt < 60000) return ezCams; try { const j = await appel('/maison/ezviz', null, 10000); ezCams = j.cameras || []; ezAt = Date.now(); } catch (e) { /* plus tard */ } return ezCams; }
   setTimeout(listeEz, 8000); setInterval(listeEz, 5 * 60000);
   const ezDe = n => ezCams.find(x => nommee(n, x.nom));
-  async function vueEz(c) {
+  async function vueEz(c, question) {
+    // une photo fraîche : le PC réveille la caméra (comme l'appli EZVIZ), elle capture, puis elle se rendort
+    face.set('think'); say(`Je réveille la caméra ${c.nom}, quelques secondes…`);
+    let img; try { img = await appel(`/maison/ezviz/photo?nom=${encodeURIComponent(c.nom)}`, null, 70000); } catch (e) { img = null; }
+    face.set('idle');
+    if (img instanceof Blob && img.size > 1000) {
+      if (urlImage) URL.revokeObjectURL(urlImage);
+      urlImage = URL.createObjectURL(img);
+      showBoard(`<div class="graphe"><small>${esc(c.nom.toUpperCase())} · ${hhmm().replace(' h ', ':')}</small><img src="${urlImage}" alt="" style="width:100%;border-radius:12px;display:block"></div>`, 'graphe-board');
+      clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 60000);
+      if (!question) return say(`Voilà ${/^[aeiouyhé]/i.test(c.nom) ? "l'" : 'la caméra '}${c.nom}, à l'instant.`);
+      if (visionMaison) {
+        face.set('think'); NOYAU.etiquette('VISION');
+        try {
+          const j = await appel('/maison/vision', { image: await blobVersData(img), question, camera: c.nom }, 160000);
+          if (j && j.texte) return say(nettoie(j.texte));
+        } catch (e) { /* plus bas */ } finally { face.set('idle'); NOYAU.etiquette(null); }
+      }
+      return say(`Voilà la caméra ${c.nom}, mais je n'arrive pas à analyser l'image.`);
+    }
+    // la caméra ne se réveille pas : sa dernière détection
     let j; try { j = await appel('/maison/alertes?depuis=0', null, 10000); } catch (e) { j = { alertes: [] }; }
     const a = (j.alertes || []).filter(x => x.genre === 'ezviz' && x.image && x.texte.includes(`« ${c.nom} »`)).pop();
-    if (!a) return say(`La caméra ${c.nom} est sur batterie : pas de direct, pour ne pas la vider. Elle n'a rien détecté récemment ; le direct reste dans l'appli EZVIZ.`);
+    if (!a) return say(`La caméra ${c.nom} ne se réveille pas en ce moment, et elle n'a rien détecté récemment.`);
     await photoAlerte(a);
-    return say(`La caméra ${c.nom} est sur batterie, donc pas de direct. Voici sa dernière détection, ${quand(a.at)}.`);
+    return say(`La caméra ${c.nom} ne se réveille pas en ce moment. Voici sa dernière détection, ${quand(a.at)}.`);
   }
   async function batteries() {
     const l = await listeEz();
@@ -260,7 +280,7 @@ const SECURITE = (() => {
     if (R.etat.test(n)) return etatAlarme;
     if (/\b(batterie|batteries|charge)\b.*\bcameras?\b|\bcameras?\b.*\b(batterie|batteries)\b/.test(n)) return batteries;
     const ez = ezDe(n);
-    if (ez && /\b(montre|affiche|fais voir|regarde|photo|image|direct|qu est ce qui se passe|il y a quelqu un|y a quelqu un)\b/.test(n) && !cams.some(x => nommee(n, x.nom))) return () => vueEz(ez);
+    if (ez && /\b(montre|affiche|fais voir|regarde|photo|image|direct|qu est ce qui se passe|il y a quelqu un|y a quelqu un)\b/.test(n) && !cams.some(x => nommee(n, x.nom))) return () => vueEz(ez, /\b(qu est ce qui se passe|qu est ce qu il se passe|il se passe quoi|il y a quelqu un|y a quelqu un|qui est la|tu vois quoi|qu est ce que tu vois|decris)\b/.test(n) ? t : '');
     // une caméra : seulement si on dit « caméra » ou le nom d'une de nos caméras (« qu'est-ce qui se passe dans le monde » n'en est pas une)
     const nomme = /\bcameras?\b/.test(n) || cams.some(x => nommee(n, x.nom));
     if ((R.camera.test(n) || /\b(montre|affiche|fais voir|regarde|ecoute|photo|image|direct)\b/.test(n)) && nomme) {
