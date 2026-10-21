@@ -558,7 +558,8 @@ async function handle(text) {
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
-  if (R.veille.test(n) && n.split(' ').length <= 6 && !/\b(ecran|ecrans|ordi|ordinateur|pc)\b/.test(n)) { // « mets l'écran en veille » : c'est l'écran (pc.js) dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
+  // « mets l'écran en veille » : c'est l'écran (pc.js), pas lui
+  if (R.veille.test(n) && n.split(' ').length <= 6 && !/\b(ecran|ecrans|ordi|ordinateur|pc)\b/.test(n)) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
   if (R.repete.test(n) && n.split(' ').length <= 5) return say(lastSaid || "Je n'ai encore rien dit.");
   if (R.effacerEcran.test(n)) { hideBoard(); return say('OK.'); }
   const nt = t.match(/^\s*(?:note|prends note|ajoute (?:à|a) mes notes|ajoute dans mes notes|note dans mes notes)\s*(?:que |de |:)?\s*(.+)$/i);
