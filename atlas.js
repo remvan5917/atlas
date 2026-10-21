@@ -946,13 +946,32 @@ async function verifierMaj() {
     if (!m || +m[1] <= +window.ATLAS_VERSION) return;
     let deja = ''; try { deja = sessionStorage.getItem('atlas-maj') || ''; } catch (e) { /* rien */ }
     if (deja === m[1]) return;
+    // on ne se met pas à jour au milieu d'une conversation : seulement au calme (personne depuis 10 minutes)
+    if (dlg.started && (dlg.busy || voice.occupe() || Date.now() - Math.max(dlg.repondu || 0, CONV.dernier() || 0) < 10 * 60000)) return;
     try { sessionStorage.setItem('atlas-maj', m[1]); } catch (e) { /* rien */ }
+    try { if (dlg.started) localStorage.setItem('atlas-reprise', String(Date.now())); } catch (e) { /* rien */ }
     if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => k.startsWith('atlas-app')).map(k => caches.delete(k))); }
     const regs = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [];
     await Promise.all(regs.map(g => g.update().catch(() => {})));
     location.reload();
   } catch (e) { /* plus tard */ }
 }
+
+/* ---------- le diagnostic à distance : l'ordinateur sait s'il écoute, avec quelles oreilles, ce qu'il a entendu ---------- */
+let derniereErreur = '';
+window.addEventListener('error', e => { derniereErreur = `${e.message || 'erreur'} (${(e.filename || '').split('/').pop()}:${e.lineno || ''})`.slice(0, 160); });
+window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.reason && e.reason.message) || e.reason || 'promesse').slice(0, 160); });
+async function diagnostic() {
+  const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
+  const m = OREILLES.meter ? OREILLES.meter() : {};
+  const d = { v: window.ATLAS_VERSION, appareil: /Android/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden,
+    oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
+    cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
+    entendus: entendus.slice(-6).map(x => `${new Date(x.at).toLocaleTimeString('fr-FR')} [${x.qui}] ${x.t} → ${x.quoi}`), erreur: derniereErreur };
+  try { await fetch(`${r0}/atlas/diag`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d), keepalive: true }); } catch (e) { /* plus tard */ }
+}
+setInterval(diagnostic, 30000); setTimeout(diagnostic, 8000);
+document.addEventListener('visibilitychange', diagnostic);
 
 /* ---------- un seul Atlas à la fois sur l'appareil (l'appli et un onglet ouverts ensemble : il répondait deux fois) ---------- */
 const UNIQUE = (() => {
@@ -1006,6 +1025,7 @@ async function demarrer() {
   if (dlg.started) return;
   dlg.started = true; dlg.depuis = Date.now();
   UNIQUE.prends();
+  try { localStorage.setItem('atlas-a-demarre', '1'); } catch (e) { /* rien */ }
   $('#demarrer').hidden = true;
   voice.unlock(); OREILLES.prime(); fx.audio();
   try { await OREILLES.start(); } catch (e) { /* le micro sera demandé plus tard */ }
@@ -1034,8 +1054,22 @@ window.addEventListener('load', () => {
   });
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
-    setTimeout(verifierMaj, 4000);
+    setTimeout(verifierMaj, 4000); setInterval(verifierMaj, 30 * 60000); // et toutes les 30 minutes (au calme)
   }
   window.ATLAS_OK = true;
   vie();
+  // il tournait avant (mise à jour, ou Android l'a fermé en arrière-plan) : il repart tout seul ; le micro est déjà autorisé,
+  // et l'appli installée sur l'écran d'accueil a le droit de parler sans qu'on la touche (sinon : « toucher pour le son »)
+  let reprise = 0; try { reprise = +localStorage.getItem('atlas-reprise') || 0; } catch (e) { /* rien */ }
+  const installee = window.matchMedia && matchMedia('(display-mode: standalone)').matches;
+  if (!window.__BANC && (installee && S.settings.autoDemarrage !== false && localStorage.getItem('atlas-a-demarre') === '1' || Date.now() - reprise < 10 * 60000)) {
+    try { localStorage.removeItem('atlas-reprise'); } catch (e) { /* rien */ }
+    setTimeout(async () => {
+      if (dlg.started) return;
+      await demarrer();
+      setTimeout(() => {
+        if (fx.ctx && fx.ctx.state === 'suspended') { const porte = $('#demarrer'), m = porte.querySelector('small'); m.dataset.avant = m.dataset.avant || m.textContent; m.textContent = "J'ÉCOUTE · TOUCHER POUR ACTIVER LE SON"; porte.hidden = false; porte.addEventListener('click', () => { fx.audio(); voice.unlock(); porte.hidden = true; if (m.dataset.avant) m.textContent = m.dataset.avant; }, { once: true }); }
+      }, 1500);
+    }, 1200);
+  }
 });
