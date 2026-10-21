@@ -497,7 +497,7 @@ function briefing(fin = true) {
 
 /* ---------- ce qu'il comprend ---------- */
 const R = {
-  reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas|a classe|atlase|atlast|hat last)\b/,
+  reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas|a classe|atlase|atlast|hat last|atia|hathia|atlia|atlasse)\b/,
   veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|bonne nuit atlas|repose toi|tu peux te reposer)\b/,
   stop: /^(stop|tais toi|silence|chut|arrete|ca suffit|stoppe)\b/,
   repete: /\b(repete|redis|tu peux repeter|j ai pas compris|pardon)\b/,
@@ -521,8 +521,8 @@ async function handle(text) {
   let n = N(text);
   cacheEcran();
   // « Atlas, … » : son nom au début ne compte pas
-  n = n.replace(/^((dis |hey |he |ok |eh )?(l )?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|a classe|atlast|hat last))\s*/, '').trim();
-  const t = String(text).replace(/^\s*((dis|hey|hé|ok|eh)[\s,]+)?(l['’]\s*)?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|[àa] classe|atlast|hat last)[\s,.!?]*/i, '').trim() || text;
+  n = n.replace(/^((dis |hey |he |ok |eh )?(l )?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|a classe|atlast|hat last|atia|hathia|atlia))\s*/, '').trim();
+  const t = String(text).replace(/^\s*((dis|hey|hé|ok|eh)[\s,]+)?(l['’]\s*)?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|[àa] classe|atlast|hat last|atia|hathia|atlia)[\s,.!?]*/i, '').trim() || text;
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
