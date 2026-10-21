@@ -79,7 +79,10 @@ const SECURITE = (() => {
   }
   async function direct(c) {
     finDirect();
-    const src = `${root()}/maison/direct?nom=${encodeURIComponent(c.nom)}&t=${Date.now()}`;
+    // un ticket à usage unique (30 s) : le lecteur vidéo n'envoie pas d'origine, l'ordinateur ne le laisserait pas passer sinon
+    let j; try { j = await appel(`/maison/direct/jeton?nom=${encodeURIComponent(c.nom)}`, null, 10000); } catch (e) { j = null; }
+    if (!j || !j.jeton) return say(`Le direct de ${c.nom} n'est pas disponible.`);
+    const src = `${root()}/maison/direct?nom=${encodeURIComponent(c.nom)}&jeton=${j.jeton}`;
     await say(`${/^[aeiouyhé]/i.test(c.nom) ? "L'" : 'La caméra '}${c.nom}, en direct.`);
     showBoard(`<div class="graphe"><small>${esc(c.nom.toUpperCase())} · EN DIRECT</small><video autoplay playsinline controls style="width:100%;border-radius:12px;display:block;background:#000" src="${src}"></video><div class="ligne"><button type="button" class="ghost sm" data-fin-direct>Fermer</button><span class="small muted">3 minutes au plus · rien n'est enregistré</span></div></div>`, 'graphe-board');
     clearTimeout(effaceT);
