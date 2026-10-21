@@ -158,6 +158,65 @@ const MAISON = (() => {
     else if (c.teinte != null) dits.push(c.teinte <= 20 ? 'blanc chaud' : c.teinte >= 80 ? 'blanc froid' : 'blanc neutre');
     return say(`${qui} : ${dits.join(', en ') || 'réglé'}.`);
   }
+  /* =================== plusieurs lumières dans une phrase =================== */
+  // « allume le salon et la cuisine », « mets le salon à 30 % et la cuisine à 80 % », « allume l'escalier et éteins la lingerie »,
+  // « ambiance tamisée dans le salon et lecture dans la cuisine » : chaque morceau garde sa consigne, ou reprend celle d'avant
+  const VERBE = /^(allume|rallume|eteins|eteint|coupe|active|desactive|mets|met|baisse|monte|augmente|diminue|tamise|passe|regle|fais)\b/;
+  function morceaux(t) {
+    const p = String(t).replace(/[.!?]+$/, '').split(/\s*(?:,|;|\bet\b|\bpuis\b|\bensuite\b|\bainsi que\b)\s*/i).map(x => x.trim()).filter(Boolean);
+    return p.length > 1 ? p : null;
+  }
+  function plan(t) {
+    const p = morceaux(t); if (!p) return null;
+    const out = []; let action = null, reglage = null;
+    for (const m of p) {
+      const n = N(m);
+      const v = n.match(VERBE);
+      if (v) { action = /^(eteins|eteint|coupe|desactive)$/.test(v[1]) ? 'off' : 'on'; reglage = null; }
+      const amb = AMBIANCES.find(x => x.re.test(n));
+      const o = action === 'off' ? null : lecture(m, n) || (amb ? { lum: amb.lum, teinte: amb.teinte, amb: amb.nom } : null);
+      if (o) reglage = o;
+      const l = trouve(m, action !== 'off');
+      if (!l.length) { if (!out.length) continue; return null; } // un morceau sans appareil : ce n'est pas une liste d'appareils
+      out.push({ l: /\b(ma|mon)\b/.test(n) && l.length > 1 && l.some(a => /\bpapa\b/.test(N(a.nom))) ? l.filter(a => /\bpapa\b/.test(N(a.nom))) : l, action: action || 'on', o: reglage });
+    }
+    return out.length > 1 ? out : null;
+  }
+  async function plusieurs(t) {
+    try { await liste(true); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const pl = plan(t); if (!pl) return null;
+    const sensibles = pl.filter(x => x.action === 'off').flatMap(x => x.l).filter(protege);
+    if (sensibles.length && !(await askYesNo(`${lesNoms(sensibles)} doit normalement rester allumé. Je coupe quand même ?`))) return say("D'accord, je n'y touche pas.");
+    const groupes = {}, quoi = new Map(); // un appareil, une consigne (la dernière dite) ; ceux réglés pareil partent ensemble
+    for (const x of pl) for (const a of x.l) {
+      let c = { allume: x.action !== 'off' };
+      if (c.allume && x.o && reglable(a)) {
+        const o = x.o;
+        const lum = o.lum != null ? o.lum : o.delta ? Math.max(2, Math.min(100, (a.allume ? a.lum || 100 : 50) + o.delta)) : undefined;
+        const teinte = o.teinte != null ? o.teinte : o.dTeinte ? Math.max(0, Math.min(100, (a.teinte == null ? 50 : a.teinte) + o.dTeinte)) : undefined;
+        c = Object.assign(c, { lum: lum == null && teinte != null ? (a.allume && a.lum ? a.lum : 100) : lum, teinte });
+      }
+      quoi.set(a.id, { a, c, o: x.o });
+    }
+    for (const { a, c, o } of quoi.values()) { const k = JSON.stringify(c); (groupes[k] = groupes[k] || { c, o, ids: [], noms: [] }).ids.push(a.id); groupes[k].noms.push(a); }
+    face.set('think');
+    const bons = new Set();
+    try {
+      for (const g of Object.values(groupes)) { const r = await appel('/maison/commande', Object.assign({ ids: g.ids }, g.c), 20000); (r.resultats || []).filter(x => x.ok).forEach(x => bons.add(x.id)); }
+    } catch (e) { face.set('oops'); return say("La commande n'est pas passée : l'ordinateur ne répond pas."); }
+    face.set('idle'); vusAt = 0;
+    if (!bons.size) return say(`${lesNoms([...quoi.values()].map(x => x.a))} ne répond pas.`);
+    fx.ok();
+    const phrase = g => {
+      const l = g.noms.filter(a => bons.has(a.id)); if (!l.length) return '';
+      const c = g.c, o = g.o || {}, pl = l.length > 1 ? 's' : '';
+      const tx = c.teinte == null ? '' : o.dTeinte ? (o.dTeinte < 0 ? 'plus chaud' : 'plus froid') : c.teinte <= 20 ? 'blanc chaud' : c.teinte >= 80 ? 'blanc froid' : 'blanc neutre';
+      const d = !c.allume ? `éteint${pl}` : o.amb ? `ambiance ${o.amb}` : [o.lum != null || o.delta ? `${c.lum} %` : '', tx].filter(Boolean).join(', ') || `allumé${pl}`;
+      return `${lesNoms(l)} : ${d}`;
+    };
+    const ko = [...quoi.values()].map(x => x.a).filter(a => !bons.has(a.id));
+    return say(`${Object.values(groupes).map(phrase).filter(Boolean).join('. ')}.${ko.length ? ` ${lesNoms(ko)} ne répond pas.` : ''}`);
+  }
   // les scènes : l'état de la maison à un moment, rejoué d'un mot (« mode film », « bonne nuit »)
   const SC = () => (S.scenes = S.scenes || []);
   async function enregistreScene(nom) {
@@ -377,6 +436,8 @@ const MAISON = (() => {
     const sg = n.match(R.sceneGo);
     if (sg) { const sc = SC().find(x => N(x.nom) === sg[1].trim() || N(sg[1]).includes(N(x.nom))); if (sc) return () => scene(sc); }
     if (R.etat.test(n)) { const m = n.match(/est ce que (?:la |le |les |l )?(.+?) est (allume|eteint)/); return () => etat(m ? m[1] : ''); }
+    // plusieurs appareils, chacun sa consigne : « allume le salon et éteins la cuisine », « le salon à 30 % et la cuisine à 80 % »
+    if ((VERBE.test(n) || /\b(ambiance|lumiere|mode)\b/.test(n)) && morceaux(t) && !/\b(son|volume|musique de|radio|chauffage|temperature|camera|cameras|alarme|message|dis|dit)\b/.test(n) && appareils.length && plan(t)) return async () => { const r = await plusieurs(t); if (r === null) return pilote(String(t).replace(/^\s*\S+\s+/, ''), !/^(eteins|eteint|coupe|desactive)\b/.test(n)); return r; };
     // l'intensité, la teinte, les ambiances : seulement s'il parle de lumière (ou nomme une ampoule réglable)
     const lumiere = /\b(lumiere|lumieres|lampe|lampes|eclairage|ampoule|ampoules|ambiance|veilleuse|tamis\w*)\b/.test(n) || (/\bmode\b/.test(n) && AMBIANCES.some(x => x.re.test(n))) || appareils.some(a => reglable(a) && trouve(t, true).includes(a));
     if (lumiere && !/^(eteins|eteint|coupe|desactive)\b/.test(n) && !/\b(son|volume|musique|radio|enceinte|chauffage|temperature|thermostat|store|stores|volet|volets|camera|cameras|alarme)\b/.test(n)) {
