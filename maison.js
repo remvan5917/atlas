@@ -1,0 +1,256 @@
+/* =========================================================
+   ATLAS — la maison, et le lien avec Shadow
+   - Les prises et lampes (Tuya / Smart Life) : l'ordinateur de la maison les pilote en direct
+     (/maison/appareils, /maison/commande) ; les clés restent sur l'ordinateur.
+     « Allume la lampe du salon », « éteins tout », « qu'est-ce qui est allumé ? »,
+     « enregistre la scène film » (l'état de la maison en ce moment), puis « mode film ».
+   - Le messager : « dis à mon fils que je rentre à 19 h » → Shadow le lui dit dès qu'il est là ;
+     sa réponse (« Shadow, dis à papa que… ») arrive ici (/maison/messages).
+   - Ce que Shadow a appris aujourd'hui, et l'effacer à la voix : c'est le seul cas où Atlas écrit
+     dans la mémoire de Shadow, et seulement pour oublier (une « pierre tombale » qui voyage
+     vers tous les appareils de Shadow).
+   ========================================================= */
+'use strict';
+
+const MAISON = (() => {
+  const root = () => VOIXMAISON.root();
+  async function appel(chemin, corps, ms = 9000) {
+    const r0 = root(); if (!r0) throw new Error('pas de maison');
+    const ctl = window.AbortController ? new AbortController() : null;
+    const tm = setTimeout(() => ctl && ctl.abort(), ms);
+    try {
+      const r = await fetch(`${r0}${chemin}`, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl ? ctl.signal : undefined });
+      if (!r.ok) throw new Error(`maison ${r.status}`);
+      return await r.json();
+    } finally { clearTimeout(tm); }
+  }
+  const enfant = () => LIEN.prenom() || 'ton fils';
+
+  /* =================== les appareils =================== */
+  let appareils = [], vusAt = 0, pret = false;
+  async function liste(frais) {
+    if (!frais && Date.now() - vusAt < 20000) return appareils;
+    const j = await appel('/maison/appareils', null, 15000);
+    appareils = j.appareils || []; pret = !!j.pret; vusAt = Date.now();
+    return appareils;
+  }
+  setTimeout(() => { if (root()) liste().catch(() => {}); }, 6000);
+  const VIDES = new Set(['la', 'le', 'les', 'l', 'de', 'du', 'des', 'd', 'mon', 'ma', 'mes', 'prise', 'lampe', 'lumiere', 'lumieres', 'appareil', 'dans', 'en', 'a', 'au', 'et']);
+  const mots = t => N(t).split(' ').filter(w => w.length > 1 && !VIDES.has(w));
+  // les appareils dont parle la phrase : par leur nom (« salon », « lampe du bureau »), ou tout
+  function trouve(cible) {
+    const c = N(cible);
+    if (/\b(tout|toutes les lumieres|toute la maison|tous les appareils|partout)\b/.test(c)) return /lumieres?/.test(c) ? appareils.filter(a => a.type === 'lampe').concat(appareils.filter(a => a.type !== 'lampe' && /lumi|lamp|led/.test(N(a.nom)))) : appareils.slice();
+    const m = mots(c);
+    const notes = appareils.map(a => { const n = mots(a.nom); const k = m.filter(w => n.some(x => x === w || (w.length > 3 && x.startsWith(w.slice(0, -1))))).length; return { a, k, tout: k && k === n.length } }).filter(o => o.k);
+    if (!notes.length) return /\b(lumieres?|lampes?)\b/.test(c) && (/\b(les|toutes)\b/.test(c) || appareils.filter(a => a.type === 'lampe').length === 1) ? appareils.filter(a => a.type === 'lampe' || /lumi|lamp|led/.test(N(a.nom))) : [];
+    const best = Math.max(...notes.map(o => o.k));
+    return notes.filter(o => o.k === best).map(o => o.a);
+  }
+  const lesNoms = l => (l.length === 1 ? l[0].nom : `${l.slice(0, -1).map(a => a.nom).join(', ')} et ${l[l.length - 1].nom}`);
+  async function pilote(cible, allume) {
+    try { await liste(!pret || !appareils.length); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je ne peux pas piloter les appareils."); }
+    if (!pret || !appareils.length) return say("Je n'ai encore aucun appareil de la maison. Branche tes prises, ajoute-les dans Smart Life, puis relance l'assistant de connexion sur l'ordinateur : je les trouverai toutes.");
+    const l = trouve(cible);
+    if (!l.length) return say(`Je ne trouve pas « ${cible} ». Tes appareils : ${lesNoms(appareils)}.`);
+    face.set('think');
+    let r;
+    try { r = await appel('/maison/commande', { ids: l.map(a => a.id), allume }, 20000); } catch (e) { face.set('oops'); return say("La commande n'est pas passée : l'ordinateur ne répond pas."); }
+    face.set('idle'); vusAt = 0;
+    const nomDe = x => Object.assign({}, x, { nom: (appareils.find(a => a.id === x.id) || x).nom });
+    const ok = (r.resultats || []).filter(x => x.ok).map(nomDe), ko = (r.resultats || []).filter(x => !x.ok).map(nomDe);
+    if (!ok.length) return say(`${lesNoms(l)} ne répond pas. ${l.length > 1 ? 'Ils sont' : 'Il est'} peut-être débranché${l.length > 1 ? 's' : ''}.`);
+    fx.tone(allume ? [[660, 0.05], [990, 0.07]] : [[990, 0.05], [660, 0.07]]);
+    return say(`${ok.length === appareils.length && ok.length > 1 ? (allume ? 'Tout est allumé' : 'Tout est éteint') : `${lesNoms(ok)} : ${allume ? 'allumé' : 'éteint'}${ok.length > 1 ? 's' : ''}`}.${ko.length ? ` ${lesNoms(ko)} ne répond pas.` : ''}`);
+  }
+  async function etat(cible) {
+    try { await liste(true); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!pret || !appareils.length) return say("Je n'ai encore aucun appareil de la maison.");
+    const l = cible ? trouve(cible) : appareils;
+    if (cible && l.length) return say(l.map(a => `${a.nom} : ${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}`).join('. ') + '.');
+    const on = appareils.filter(a => a.allume), hors = appareils.filter(a => a.allume == null);
+    return say(`${on.length ? `Allumé${on.length > 1 ? 's' : ''} : ${lesNoms(on)}.` : 'Tout est éteint.'}${hors.length ? ` Injoignable${hors.length > 1 ? 's' : ''} : ${lesNoms(hors)}.` : ''}`);
+  }
+  // les scènes : l'état de la maison à un moment, rejoué d'un mot (« mode film », « bonne nuit »)
+  const SC = () => (S.scenes = S.scenes || []);
+  async function enregistreScene(nom) {
+    try { await liste(true); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!appareils.length) return say("Je n'ai encore aucun appareil à mettre dans une scène.");
+    const n = nom.trim().replace(/^(la |le |l )/i, '');
+    const sc = { id: Date.now(), nom: n, etats: appareils.filter(a => a.allume != null).map(a => ({ id: a.id, allume: a.allume })), at: Date.now() };
+    const old = SC().find(x => N(x.nom) === N(n)); if (old) { tomb('scenes', old); S.scenes = SC().filter(x => x !== old); }
+    SC().push(sc); save(); fx.ok();
+    return say(`Scène « ${n} » enregistrée : ${sc.etats.filter(e => e.allume).length} allumé${sc.etats.filter(e => e.allume).length > 1 ? 's' : ''}, le reste éteint. Dis « mode ${n} » pour la relancer.`);
+  }
+  async function scene(sc) {
+    const on = sc.etats.filter(e => e.allume).map(e => e.id), off = sc.etats.filter(e => !e.allume).map(e => e.id);
+    try {
+      if (on.length) await appel('/maison/commande', { ids: on, allume: true }, 20000);
+      if (off.length) await appel('/maison/commande', { ids: off, allume: false }, 20000);
+    } catch (e) { return say("La scène n'est pas passée : l'ordinateur ne répond pas."); }
+    vusAt = 0; fx.ok();
+    return say(pick([`Mode ${sc.nom}.`, `Scène ${sc.nom} : c'est fait.`]));
+  }
+
+  /* =================== le messager papa ↔ l'enfant =================== */
+  async function envoie(texte) {
+    let t = String(texte).trim().replace(/[.!]+$/, '');
+    if (!t) return say('Je lui dis quoi ?');
+    // s'il parle déjà à son fils (« je rentre à 19 h »), on garde ses mots
+    // « de ranger sa chambre » → « Papa te demande de ranger ta chambre » (une règle fixe : le message ne change pas de sens)
+    const tu = x => x.replace(/\b(sa)\b/gi, 'ta').replace(/\b(son)\b/gi, 'ton').replace(/\b(ses)\b/gi, 'tes').replace(/\bse\b/gi, 'te').replace(/\bs['’]/gi, "t'").replace(/\blui\b/gi, 'toi');
+    const brut = String(texte).trim();
+    if (/^(de |d['’])/i.test(brut)) { const x = t.replace(/^(de |d['’])\s*/i, ''); t = `Papa te demande ${/^[aeéèêiouyh]/i.test(x) ? "d'" : 'de '}${tu(x)}`; }
+    else if (/^(il |qu['’]il |que il )/i.test(t) && AI.ready()) { // « qu'il doit… » : à la 2e personne, sans rien ajouter
+      try {
+        const r = await AI.chat([{ role: 'system', content: 'Mets cette phrase à la 2e personne du singulier (tutoiement), en changeant le moins de mots possible. Ne rajoute rien. Réponds seulement la phrase.' }, { role: 'user', content: t }], { maxTokens: 60, temperature: 0, prefer: 'openai/gpt-oss-20b' });
+        const p = nettoie(r).replace(/^["«\s]+|["»\s]+$/g, ''); if (p.length > 2 && p.length < t.length * 1.4 + 10) t = p;
+      } catch (e) { /* tel quel */ }
+    }
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    try { await appel('/maison/messages', { de: 'papa', pour: 'enfant', texte: t }); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison : le message n'est pas parti."); }
+    fx.ok();
+    return say(`C'est transmis. Shadow dira à ${enfant()} : « ${t} », dès qu'il le verra.`);
+  }
+  const annonceMsg = m => `Message de ${enfant()} : « ${m.texte} ».`;
+  async function lus(ms) { for (const m of ms) { try { await appel('/maison/messages', { lu: m.id }); } catch (e) { /* plus tard */ } } }
+  async function releve() {
+    if (!root() || !dlg.started || voice.endormi) return;
+    let j; try { j = await appel('/maison/messages?pour=papa'); } catch (e) { return; }
+    (j.messages || []).forEach(m => PROACTIF.annonce(`msg-${m.id}`, async () => { await lus([m]); return annonceMsg(m); }, { expire: Date.now() + 6 * 3600000 }));
+  }
+  setInterval(releve, 30000);
+  async function mesMessages() {
+    let j; try { j = await appel('/maison/messages?pour=papa'); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const l = j.messages || [];
+    const envoyes = (j.recents || []).filter(m => m.de === 'papa').slice(-1)[0];
+    if (!l.length) return say(`Pas de nouveau message.${envoyes ? ` Ton dernier message à ${enfant()} ${envoyes.lu ? 'lui a été dit' : "attend qu'il passe devant Shadow"}.` : ''}`);
+    await lus(l);
+    return say(l.map(annonceMsg).join(' '));
+  }
+
+  /* =================== ce que Shadow a appris (et l'oublier) =================== */
+  const normS = t => String(t || '').toLowerCase().replace(/\s+/g, ' ').trim(); // la même clé que Shadow (sync.js)
+  const SOURCES = [
+    { path: 'memory.facts', get: d => (d.memory && d.memory.facts) || [], cle: x => x.id, quand: x => x.at, dire: x => String(x.text).replace(/[.\s]+$/, ''), quoi: 'souvenir' },
+    { path: 'memory.rules', get: d => (d.memory && d.memory.rules) || [], cle: x => normS(x.text), quand: x => x.at, dire: x => `la consigne « ${String(x.text).replace(/[.\s]+$/, '')} »${x.who ? `, de ${x.who}` : ''}`, quoi: 'consigne' },
+    { path: 'jeuxAppris', get: d => d.jeuxAppris || [], cle: x => x.id, quand: x => x.at || x.id, dire: x => `le jeu « ${x.nom} »${x.par ? `, appris par ${x.par}` : ''}`, quoi: 'jeu' },
+    { path: 'devAppris', get: d => d.devAppris || [], cle: x => x.id, quand: x => x.id, dire: x => `la devinette « ${x.q} »`, quoi: 'devinette' },
+  ];
+  let derniers = []; // la dernière liste lue à voix haute (« efface le deux »)
+  async function memoireShadow() {
+    await LIEN.lire();
+    const r0 = root(); if (!r0) return null;
+    return (await (await fetch(`${r0}/shadow/etat`, { cache: 'no-store' })).json()) || null;
+  }
+  async function appris(n) {
+    let g; try { g = await memoireShadow(); } catch (e) { g = null; }
+    if (!g || !g.data) return say("Je n'arrive pas à lire la mémoire de Shadow : l'ordinateur de la maison doit être allumé.");
+    const semaine = /\bsemaine\b/.test(n), debut = semaine ? Date.now() - 7 * 86400000 : new Date(new Date().setHours(0, 0, 0, 0)).getTime();
+    derniers = [];
+    SOURCES.forEach(s => s.get(g.data).filter(x => (s.quand(x) || 0) >= debut).forEach(x => derniers.push({ s, x })));
+    derniers.sort((a, b) => (a.s.quand(a.x) || 0) - (b.s.quand(b.x) || 0));
+    if (!derniers.length) return say(`Shadow n'a rien appris de nouveau ${semaine ? 'cette semaine' : "aujourd'hui"}.`);
+    const NUM = ['un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit'];
+    const l = derniers.slice(0, 8);
+    return say(`${semaine ? 'Cette semaine' : "Aujourd'hui"}, Shadow a retenu ${derniers.length} chose${derniers.length > 1 ? 's' : ''}. ${l.map((d, i) => `${NUM[i]} : ${d.s.dire(d.x)}`).join('. ')}.${derniers.length > 8 ? ` Et ${derniers.length - 8} autres.` : ''} Pour en effacer, dis par exemple « efface le deux », ou « efface tout ce que Shadow a appris aujourd'hui ».`);
+  }
+  // l'oubli : on retire de la mémoire centrale de Shadow, avec une pierre tombale (ses appareils oublient à leur tour)
+  async function oublie(items) {
+    const r0 = root(); if (!r0 || !items.length) return false;
+    for (let essai = 0; essai < 3; essai++) {
+      const g = await (await fetch(`${r0}/shadow/etat`, { cache: 'no-store' })).json();
+      if (!g || !g.data) return false;
+      const d = g.data, now = Date.now();
+      d.tomb = d.tomb || {};
+      items.forEach(({ s, x }) => {
+        const k = String(s.cle(x));
+        (d.tomb[s.path] = d.tomb[s.path] || {})[k] = now;
+        const parts = s.path.split('.'), parent = parts.length > 1 ? d[parts[0]] : d, nom = parts[parts.length - 1];
+        if (parent && Array.isArray(parent[nom])) parent[nom] = parent[nom].filter(y => String(s.cle(y)) !== k);
+      });
+      d.updatedAt = now;
+      const r = await fetch(`${r0}/shadow/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: g.rev || 0, par: 'Atlas (oubli demandé par papa)', data: d }) });
+      if (r.status === 409) continue;
+      if (r.ok) { LIEN.lire(); return true; }
+      return false;
+    }
+    return false;
+  }
+  const NUMS = { un: 1, une: 1, premier: 1, premiere: 1, deux: 2, deuxieme: 2, second: 2, seconde: 2, trois: 3, troisieme: 3, quatre: 4, quatrieme: 4, cinq: 5, cinquieme: 5, six: 6, sixieme: 6, sept: 7, septieme: 7, huit: 8, huitieme: 8 };
+  async function efface(t, n) {
+    if (/\btout\b/.test(n)) {
+      if (!derniers.length) { await appris(n); if (!derniers.length) return; }
+      if (!(await askYesNo(`J'efface les ${derniers.length} choses que Shadow a apprises ${/\bsemaine\b/.test(n) ? 'cette semaine' : "aujourd'hui"} ?`))) return say('Je ne touche à rien.');
+      const ok = await oublie(derniers).catch(() => false); derniers = [];
+      return say(ok ? "C'est effacé. Shadow oubliera sur tous ses appareils d'ici une minute." : "Je n'ai pas réussi à écrire dans la mémoire de Shadow.");
+    }
+    const num = (n.match(/\b(\d|un|une|premier|premiere|deux|deuxieme|second|seconde|trois|troisieme|quatre|quatrieme|cinq|cinquieme|six|sixieme|sept|septieme|huit|huitieme)\b/) || [])[1];
+    let cible = null;
+    if (num && derniers.length) cible = derniers[(+num || NUMS[num]) - 1];
+    if (!cible) { // « dis à Shadow d'oublier que le guépard est rose » : on cherche dans toute sa mémoire
+      const quoi = (t.match(/(?:oublier|oublie|efface|supprime)\s+(?:que |qu['’]|la consigne |le jeu |la devinette |le souvenir )?(.+)$/i) || [])[1] || '';
+      let g; try { g = await memoireShadow(); } catch (e) { g = null; }
+      if (!g || !g.data || !quoi) return say("Dis-moi ce que Shadow doit oublier, ou demande d'abord « qu'est-ce que Shadow a appris aujourd'hui ? ».");
+      const m = new Set(N(quoi).split(' ').filter(w => w.length > 3));
+      const tous = []; SOURCES.forEach(s => s.get(g.data).forEach(x => tous.push({ s, x })));
+      const best = tous.map(d => ({ d, k: N(d.s.dire(d.x)).split(' ').filter(w => m.has(w)).length })).sort((a, b) => b.k - a.k)[0];
+      if (!best || best.k < Math.min(2, m.size)) return say("Je ne trouve pas ça dans la mémoire de Shadow.");
+      cible = best.d;
+    }
+    if (!(await askYesNo(`Shadow oublie ${cible.s.dire(cible.x)} ?`))) return say('Je ne touche à rien.');
+    const ok = await oublie([cible]).catch(() => false);
+    derniers = derniers.filter(d => d !== cible);
+    return say(ok ? 'Effacé. Shadow oubliera sur tous ses appareils.' : "Je n'ai pas réussi à écrire dans la mémoire de Shadow.");
+  }
+
+  /* =================== ce qu'on lui dit =================== */
+  const R = {
+    pilote: /^(?:allume|eteins|eteint|coupe|active|desactive|mets en marche|rallume)\s+(?!toi\b)(.+)$/,
+    etat: /\b(qu est ce qui est allume|qu est ce qui est (encore )?(branche|en marche)|c est allume ou|est ce que (la |le |les |l )?.+ est (allume|eteint|allumee|eteinte)|etat de la maison|les appareils de la maison)\b/,
+    sceneRec: /\b(enregistre|retiens|memorise|cree|sauvegarde) (la |une |cette )?(scene|ambiance)\b|\b(retiens|enregistre) cet etat comme\b/,
+    sceneGo: /^(?:mode|scene|ambiance|lance la scene|lance le mode|active le mode|passe en mode)\s+(.+)$/,
+    message: /^(?:dis|previens|rappelle|explique|demande) (?:a |au )?(?:mon fils|mon garcon|mon petit|mon bonhomme|[a-z]+) (?:que |qu |de |d )(.+)$|^(?:laisse|envoie|transmets?) (?:un |le )?(?:message|mot) (?:a |au )?(?:mon fils|mon garcon|mon petit|[a-z]+)\s*(?:que |qu |de |pour lui dire que |:)?\s*(.+)$/,
+    mesMsg: /\b(j ai (des|un) (nouveaux? )?messages?|des messages pour moi|il m a laisse un message|il a repondu|mes messages)\b/,
+    appris: /\b(qu est ce que|qu|ce que) (shadow|mon fils|il|on) (a|lui a) (appris|retenu)\b|\bshadow a appris quoi\b|\bce que shadow a (appris|retenu)\b/,
+    efface: /\b(efface|supprime|enleve|retire)\b.*\b(shadow|le \d|la \d|le (un|deux|trois|quatre|cinq|six|sept|huit)|la (premiere|deuxieme|troisieme|quatrieme|cinquieme))\b|\b(dis|demande) a shadow d oublier\b|\bfais oublier a shadow\b/,
+  };
+  function route(t, n) {
+    if (R.appris.test(n)) return () => appris(n);
+    if (R.efface.test(n) && (derniers.length || /shadow/.test(n))) return () => efface(t, n);
+    if (R.mesMsg.test(n)) return mesMessages;
+    const pre = LIEN.prenom() ? N(LIEN.prenom()) : '';
+    const mm = n.match(R.message);
+    if (mm && (/\b(mon fils|mon garcon|mon petit|mon bonhomme|fils)\b/.test(n) || (pre && new RegExp(`\\b${pre}\\b`).test(n)))) {
+      const raw = String(t).match(/(?:fils|garçon|garcon|petit|bonhomme|message|mot|[A-Za-zÀ-ÿ]+)(?:\s*,?\s+(pour lui dire que(?=\s)|que(?=\s)|qu['’]|de(?=\s)|d['’])|\s*(:))\s*(.+)$/i);
+      const sep = raw ? raw[1] || raw[2] || '' : '';
+      return () => envoie(raw ? `${/^d/i.test(sep) ? `${sep}${/['’]$/.test(sep) ? '' : ' '}` : ''}${raw[3]}` : (mm[1] || mm[2])); // « de… » : c'est une demande
+    }
+    if (R.sceneRec.test(n)) { const m = String(t).match(/(?:sc[eè]ne|ambiance|comme)\s+(?:«\s*)?([^»]+?)\s*»?\s*[.!]?$/i); return () => (m ? enregistreScene(m[1]) : say('Quel nom pour cette scène ? Dis par exemple : enregistre la scène film.')); }
+    const sg = n.match(R.sceneGo);
+    if (sg) { const sc = SC().find(x => N(x.nom) === sg[1].trim() || N(sg[1]).includes(N(x.nom))); if (sc) return () => scene(sc); }
+    if (R.etat.test(n)) { const m = n.match(/est ce que (?:la |le |les |l )?(.+?) est (allume|eteint)/); return () => etat(m ? m[1] : ''); }
+    const p = n.match(R.pilote);
+    if (p) {
+      const allume = !/^(eteins|eteint|coupe|desactive)\b/.test(n);
+      const cible = String(t).replace(/^\s*(allume|éteins|eteins|éteint|eteint|coupe|active|désactive|desactive|mets en marche|rallume)\s+/i, '').replace(/[.!?]+$/, '').trim();
+      return () => pilote(cible, allume);
+    }
+    return null;
+  }
+  // pour le cerveau : ce qu'il y a dans la maison
+  function contexte() {
+    if (!appareils.length) return '';
+    return `Les appareils de la maison (tu peux les piloter : réponds [[allume:nom]] ou [[eteins:nom]], ou « tout ») : ${appareils.map(a => `${a.nom} (${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'})`).join(', ')}.${SC().length ? ` Ses scènes : ${SC().map(x => x.nom).join(', ')}.` : ''}`;
+  }
+  // les réglages : la liste des appareils (ou comment les connecter)
+  async function reglages() {
+    const box = document.getElementById('r-maison'); if (!box) return;
+    box.innerHTML = '<p class="small muted">Je regarde la maison…</p>';
+    try { await liste(true); } catch (e) { box.innerHTML = '<p class="small muted">L\'ordinateur de la maison ne répond pas.</p>'; return; }
+    box.innerHTML = appareils.length
+      ? appareils.map(a => `<div class="item"><span>${esc(a.nom)} <small class="muted">${a.type}</small></span><small class="muted">${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}</small></div>`).join('') + (SC().length ? `<p class="small muted">Scènes : ${SC().map(x => esc(x.nom)).join(', ')}</p>` : '')
+      : '<p class="small muted">Aucun appareil pour l\'instant : branche tes prises, ajoute-les dans Smart Life, puis lance l\'assistant de connexion sur l\'ordinateur (voir LISEZMOI). Atlas les trouvera toutes.</p>';
+  }
+  return { route, pilote, etat, envoie, reglages, mesMessages, appris, efface, contexte, liste, _releve: releve, _trouve: trouve, _appareils: () => appareils, _set: l => { appareils = l; pret = true; vusAt = Date.now(); } };
+})();

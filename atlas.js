@@ -118,7 +118,7 @@ document.addEventListener('click', e => {
 /* ---------- la mémoire partagée (l'ordinateur de la maison : /atlas/etat) ---------- */
 const SYNC = (() => {
   let sale = false, occupe = false, derniere = 0, erreur = '';
-  const LISTES = ['notes', 'listes', 'voices', 'memoire'];
+  const LISTES = ['notes', 'listes', 'voices', 'memoire', 'scenes'];
   function fusion(a, b) {
     const tombs = {};
     [a.tomb || {}, b.tomb || {}].forEach(src => Object.keys(src).forEach(l => Object.keys(src[l]).forEach(k => { tombs[l] = tombs[l] || {}; tombs[l][k] = Math.max(tombs[l][k] || 0, src[l][k]); })));
@@ -138,7 +138,7 @@ const SYNC = (() => {
   const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches'];
   const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
-    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.tomb = m.tomb;
+    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.tomb = m.tomb;
     if (m.partage) {
       if (m.partage.ville) S.settings.ville = m.partage.ville;
       if (m.partage.voix) S.settings.voix = m.partage.voix;
@@ -157,10 +157,10 @@ const SYNC = (() => {
     try {
       for (let essai = 0; essai < 3; essai++) {
         const g = await (await fetch(`${root}/atlas/etat`, { cache: 'no-store' })).json();
-        const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
+        const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
         const m = g && g.data ? fusion(local, g.data) : local;
         applique(m);
-        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
+        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
         if (r.status === 409) continue;
         if (!r.ok) throw new Error(`mémoire ${r.status}`);
         sale = false; derniere = Date.now(); erreur = ''; break;
@@ -299,9 +299,10 @@ Tu as des outils qu'il peut demander directement (ne prétends pas qu'ils n'exis
 Tu as une caméra : s'il te demande ce que tu vois, de regarder quelque chose ou ce qu'il tient, réponds seulement [[regarder]]. Ne dis jamais que tu n'as pas de caméra.
 Tu as Internet : pour une actualité, une info récente, un prix, un horaire, un résultat, la météo d'un autre endroit ou un fait dont tu n'es pas sûr, réponds seulement [[web:ta recherche en quelques mots]]. N'invente jamais une info récente.
 Tu as une mémoire : tu retiens tout seul ce qu'il te dit de durable (il peut dire « souviens-toi que… », « qu'est-ce que tu sais sur moi ? », « oublie que… »). Tu suis aussi les marchés pour lui (il fait du trading) : « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or » ; tu le préviens 5 minutes avant les annonces importantes et l'ouverture de Wall Street. Sur les marchés, donne seulement des faits : jamais de conseil d'achat ou de vente, jamais de prédiction présentée comme sûre.
-Tu n'as pas accès à ses comptes, ses mails ou sa maison connectée (pas encore) : ne prétends jamais le contraire. Si tu ne sais pas, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
+Tu pilotes les prises et lampes de la maison (« allume la lampe du salon », « éteins tout », « mode film »), tu transmets ses messages à son fils par Shadow (« dis à mon fils que… ») et tu lui dis ce que Shadow a appris (« qu'est-ce que Shadow a appris aujourd'hui ? », pour effacer les bêtises).
+Tu n'as pas accès à ses comptes ni à ses mails : ne prétends jamais le contraire. Si tu ne sais pas, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
 Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
-${notes ? `Ses notes :\n${notes}\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
+${notes ? `Ses notes :\n${notes}\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
 ${CONV.contexte()}`;
 }
 async function repondre(text) {
@@ -334,8 +335,8 @@ async function repondre(text) {
   await queue;
   raw = String(raw || '').replace(/<think>[\s\S]*?<\/think>/g, '');
   const [oral, detail] = raw.split(/\[\[ecran\]\]/i);
-  const cmd = raw.match(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo)\s*(?::\s*([^\]]*))?\]\]/i);
-  const detailPropre = String(detail || '').replace(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo)[^\]]*\]\]/gi, '').trim();
+  const cmd = raw.match(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo|allume|eteins)\s*(?::\s*([^\]]*))?\]\]/i);
+  const detailPropre = String(detail || '').replace(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo|allume|eteins)[^\]]*\]\]/gi, '').trim();
   const montrer = /\b(affiche|afficher|montre|montrer|ecris|ecrire|a l ecran|sur l ecran)\b/.test(N(text));
   if (detailPropre && montrer) ecran('', detailPropre);
   let dit = String(oral || '').replace(/\[\[[^\]]*\]\]/g, '').trim();
@@ -354,6 +355,7 @@ async function repondre(text) {
   if (a === 'note' && arg) return noter(arg);
   if (a === 'minuteur') return OUTILS.minuteur(arg ? `minuteur ${arg}` : text);
   if (a === 'meteo') return OUTILS.meteo(text);
+  if ((a === 'allume' || a === 'eteins') && arg) return MAISON.pilote(arg, a === 'allume');
 }
 
 /* ---------- les rappels ([[rappel:AAAA-MM-JJ HH:MM|texte]], « rappelle-moi de… dans 20 minutes / à 18 h ») ---------- */
@@ -530,6 +532,8 @@ async function handle(text) {
   if (souvenir) return souvenir();
   const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
   if (bourse) return bourse();
+  const maison = MAISON.route(t, n); // la maison (prises, lampes, scènes), le messager et ce que Shadow a appris
+  if (maison) return maison();
   if (R.rappel.test(n) && (await rappelLocal(t))) return;
   const outil = !R.web.test(n) && OUTILS.route(t, n); // le couteau suisse
   if (outil) return outil();
@@ -727,7 +731,7 @@ async function apprendreVoix(text) {
 async function presentation() {
   const p = CONV.presents(), inv = CONV.nbInvites(), h = new Date().getHours();
   const salut = `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}${inv ? ` à tous, et bienvenue à nos invités` : p.length ? ` ${p.join(', ')}` : ''}.`;
-  await say(`${salut} Je suis Atlas, l'assistant de cette maison. J'écoute, je reconnais les voix, je cherche sur Internet, je vois avec ma caméra, je fais les calculs, les conversions et la météo, je gère les minuteurs, les listes et les rappels, je suis les marchés, je retiens ce qui compte pour chacun, et je garde un œil sur l'ordinateur de la maison. Je suis la conversation et j'interviens quand je peux aider. Pour me parler, il suffit de dire mon nom.`);
+  await say(`${salut} Je suis Atlas, l'assistant de cette maison. J'écoute, je reconnais les voix, je cherche sur Internet, je vois avec ma caméra, je fais les calculs, les conversions et la météo, je gère les minuteurs, les listes et les rappels, je suis les marchés, je pilote les lumières, je retiens ce qui compte pour chacun, et je garde un œil sur l'ordinateur de la maison. Je suis la conversation et j'interviens quand je peux aider. Pour me parler, il suffit de dire mon nom.`);
 }
 
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
@@ -847,7 +851,7 @@ function ouvreReglages() {
   $('#r-camera').checked = s.camera !== false;
   $('#r-proactif').checked = s.proactif !== false;
   $('#r-marches').checked = s.marches !== false;
-  renderNotes(); renderVoix(); MEMOIRE.render();
+  renderNotes(); renderVoix(); MEMOIRE.render(); MAISON.reglages();
   $('#r-sync').textContent = SYNC.etat();
   const c = AI.cfg ? AI.cfg() : {};
   $('#r-diag').innerHTML = `<p class="small">Cerveau : ${AI.ready() ? (c.local ? `maison (${esc(c.model || '?')})` : `en ligne (${esc(c.model || '?')})`) : '<b>hors ligne</b>'} · oreilles : ${esc(OREILLES.engine() || 'aucune')}${AI.lastEars ? ` (${esc(AI.lastEars)})` : ''} · voix : ${ELEVEN.usable() ? 'ElevenLabs' : VOIXMAISON.usable() ? `ordinateur (${esc(VOIXMAISON.papa())})` : 'téléphone'} · mode : ${S.settings.conversation === false ? 'il répond à son nom' : dlg.discret ? 'discret' : 'conversation'}</p>`

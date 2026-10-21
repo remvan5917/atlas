@@ -15,7 +15,7 @@ Adresse : https://remvan5917.github.io/atlas/
 - **La vue** (option « vision détaillée ») : « qu'est-ce que tu vois ? », « qu'est-ce que je tiens ? » — une photo de la caméra est envoyée à Groq pour la décrire, la caméra se referme toute seule après une minute.
 - **Le couteau suisse** (`outils.js`, sans le grand cerveau) : calculs exacts et HT/TTC, conversions d'unités et de devises (BCE), minuteurs nommés, réveil, chrono, Pomodoro, listes partagées, météo de n'importe quelle ville, état du PC, « fais-moi le point », heure dans le monde, jours avant une date, pile ou face.
 - **Notes et rappels** : « note que… », « lis mes notes », « rappelle-moi de sortir le linge dans 20 minutes / à 18 heures ».
-- **La journée de ton fils avec Shadow** et l'agenda de la famille : lus dans la mémoire de Shadow, **sans jamais y écrire**.
+- **La journée de ton fils avec Shadow** et l'agenda de la famille : lus dans la mémoire de Shadow (Atlas n'y écrit que pour effacer, quand tu le demandes).
 
 ## Sa mémoire de toi (`memoire.js`)
 - Après quelques échanges (ou un moment de calme), le cerveau relit la conversation et **retient tout seul ce qui dure** : goûts, habitudes, projets, les gens de ta vie, et les choses prévues à un jour précis (« jeudi, dentiste à 10 h » → la vraie date, prise dans un calendrier tout prêt : les petits cerveaux se trompent en comptant les jours).
@@ -34,6 +34,17 @@ Adresse : https://remvan5917.github.io/atlas/
 - Le **calendrier économique** de la semaine (ForexFactory, toutes les heures) : États-Unis et zone euro, traduit pour l'oral (« les inscriptions hebdomadaires au chômage, prévu 200 mille, précédent 199 mille »).
 - « Le cours de l'or », « où en est l'euro-dollar », « le point des marchés », « les annonces du jour / de demain / de la semaine », « affiche le graphique de l'or » (24 h, ou « sur 3 jours ») : un **zigzag et un canal tracés à la main**, sans signaux ni niveaux.
 - **Alertes** : 5 minutes avant une annonce à fort impact, et avant l'ouverture de Wall Street (9 h 30 à New York, l'heure d'été américaine comprise). Réglage : « Les marchés ».
+
+## La maison (`maison.js`) — prises et lampes Smart Life
+- L'ordinateur de la maison les pilote **en direct sur le réseau de la maison** (tinytuya, dans `~/.local/share/shadow/venv`), et passe par le cloud Tuya seulement si un appareil ne répond pas. Les clés des appareils restent dans `~/.local/share/shadow/maison/` (droits 700/600), jamais renvoyées aux pages.
+- « Allume la lampe du salon », « éteins tout », « allume les lumières », « qu'est-ce qui est allumé ? », « est-ce que la prise du bureau est allumée ? ».
+- **Les scènes** : « enregistre la scène film » garde l'état de la maison à ce moment ; « mode film » le rejoue. Elles voyagent entre appareils comme les notes.
+- Le cerveau peut aussi piloter tout seul (« il fait sombre ici » → [[allume:…]]).
+- **Les relier (une fois, puis à chaque nouvel appareil)** : brancher les prises et les ajouter dans Smart Life ; créer un projet sur iot.tuya.com (Cloud → Create Cloud Project, Smart Home, data center *Central Europe*), y lier le compte Smart Life (Devices → Link App Account → scanner le QR avec Smart Life), copier l'Access ID et l'Access Secret ; puis lancer sur l'ordinateur `~/.local/share/shadow/maison/connecter.sh` (l'assistant de tinytuya demande ces deux clés et la région `eu`). Atlas trouve les appareils dans la minute.
+
+## Le lien avec Shadow
+- **Le messager** : « dis à mon fils que je rentre à 19 h », « demande à mon fils de ranger sa chambre » (→ « Papa te demande de ranger ta chambre »), « laisse un message à mon fils : bravo ». Le message attend sur l'ordinateur (`/maison/messages`, 3 jours) ; Shadow le dit dès que l'enfant est là, puis propose de répondre. Sa réponse (« Shadow, dis à papa que… ») arrive chez Atlas, qui te la dit quand tu es là. « J'ai des messages ? ».
+- **Ce que Shadow a appris** : « qu'est-ce que Shadow a appris aujourd'hui / cette semaine ? » (souvenirs, consignes, jeux et devinettes appris, numérotés) ; « efface le deux », « efface tout ce que Shadow a appris aujourd'hui », « dis à Shadow d'oublier que… » (avec confirmation). C'est le **seul** cas où Atlas écrit dans la mémoire de Shadow, et seulement pour oublier : une pierre tombale, que tous les appareils de Shadow appliquent à leur synchronisation.
 
 ## Le mode conversation (activé par défaut)
 - **Il sait qui parle** : empreinte de voix calculée sur l'appareil (que des nombres, jamais d'enregistrement), reprise de Shadow — les voix déjà apprises par Shadow sont reconnues aussi. « Atlas, apprends ma voix », « qui parle ? », « oublie la voix de… ». Une voix inconnue devient « invité 1 », « invité 2 »… le temps de la soirée.
