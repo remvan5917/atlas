@@ -4,6 +4,8 @@
      (/maison/appareils, /maison/commande) ; les clés restent sur l'ordinateur.
      « Allume la lampe du salon », « éteins tout », « qu'est-ce qui est allumé ? »,
      « enregistre la scène film » (l'état de la maison en ce moment), puis « mode film ».
+   - Les ampoules réglables : « mets le salon à 30 % », « baisse la lumière », « lumière chaude »,
+     et les ambiances (« ambiance tamisée », « mode cinéma », « lumière de lecture », « veilleuse »).
    - Le messager : « dis à mon fils que je rentre à 19 h » → Shadow le lui dit dès qu'il est là ;
      sa réponse (« Shadow, dis à papa que… ») arrive ici (/maison/messages).
    - Ce que Shadow a appris aujourd'hui, et l'effacer à la voix : c'est le seul cas où Atlas écrit
@@ -84,22 +86,96 @@ const MAISON = (() => {
     const on = appareils.filter(a => a.allume), hors = appareils.filter(a => a.allume == null);
     return say(`${on.length ? `Allumé${on.length > 1 ? 's' : ''} : ${lesNoms(on)}.` : 'Tout est éteint.'}${hors.length ? ` Injoignable${hors.length > 1 ? 's' : ''} : ${lesNoms(hors)}.` : ''}`);
   }
+  /* =================== l'intensité, la teinte et les ambiances (les ampoules réglables) =================== */
+  // lum : 1 à 100 % ; teinte : 0 = blanc chaud (jaune, le soir), 100 = blanc froid (bleuté, pour travailler)
+  const reglable = a => a.lum != null || a.teinte != null;
+  const AMBIANCES = [
+    { re: /\b(tamise|tamisee|tamisees|tamiser|tamisez)\b/, nom: 'tamisée', lum: 25, teinte: 0 },
+    { re: /\b(cosy|cocooning|douce|doux|chaleureuse|chaleureux|soiree|romantique|detente|relax|zen|calme|apero)\b/, nom: 'douce', lum: 45, teinte: 0 },
+    { re: /\b(cinema|film|films|serie|netflix)\b/, nom: 'cinéma', lum: 8, teinte: 0 },
+    { re: /\b(lecture|lire|travail|travailler|concentration|devoirs)\b/, nom: 'lecture', lum: 100, teinte: 65 },
+    { re: /\b(nuit|veilleuse|dodo)\b/, nom: 'nuit', lum: 2, teinte: 0 },
+    { re: /\b(reveil|matin|energie|dynamique|tonique)\b/, nom: 'réveil', lum: 85, teinte: 90 },
+    { re: /\b(pleine lumiere|a fond|au maximum|au max|plein pot|grand jour)\b/, nom: 'pleine lumière', lum: 100, teinte: 50 },
+  ];
+  const COULEUR = /\b(bleu|bleue|rouge|vert|verte|violet|violette|rose|jaune|orange|turquoise|multicolore|couleur|couleurs|arc en ciel|disco)\b/;
+  // ce que la phrase veut : une ambiance, un pourcentage, plus ou moins fort, plus chaud ou plus froid
+  function lecture(t, n) {
+    const o = {};
+    const amb = /\b(ambiance|mode|lumiere|lumieres|eclairage|lampes?|mets|met|fais|passe)\b/.test(n) || /\btamis/.test(n) ? AMBIANCES.find(x => x.re.test(n)) : null;
+    if (amb) Object.assign(o, { lum: amb.lum, teinte: amb.teinte, amb: amb.nom });
+    const pc = String(t).match(/(\d{1,3})\s*(?:%|pour\s?cents?|pourcent)/i) || n.match(/\b(?:mets|met|regle|passe|baisse|monte)\b.*\ba (\d{1,3})\b/);
+    if (pc) o.lum = Math.max(1, Math.min(100, +pc[1]));
+    else if (/\ba (la )?moitie\b/.test(n)) o.lum = 50;
+    else if (/\b(au minimum|au plus bas|tout doucement)\b/.test(n)) o.lum = 1;
+    else if (!amb && /\b(au maximum|au max|a fond|plein pot)\b/.test(n)) o.lum = 100;
+    if (o.lum == null && /\b(baisse|diminue|reduis|attenue|moins fort|moins forte|moins lumineux|moins lumineuse|moins de lumiere|trop fort|trop forte|trop lumineux|eblouit)\b/.test(n)) o.delta = /\b(un peu|legerement|un poil|un chouia)\b/.test(n) ? -15 : -30;
+    if (o.lum == null && /\b(augmente|remonte|monte|plus fort|plus forte|plus lumineux|plus lumineuse|plus de lumiere|pas assez|trop sombre|on voit rien|on y voit rien)\b/.test(n)) o.delta = /\b(un peu|legerement|un poil|un chouia)\b/.test(n) ? 15 : 30;
+    if (!amb) {
+      if (/\b(plus chaud|plus chaude|plus jaune|moins froid|moins froide|moins blanc|moins bleu)\b/.test(n)) o.dTeinte = -35;
+      else if (/\b(plus froid|plus froide|plus blanc|plus blanche|moins chaud|moins chaude|moins jaune)\b/.test(n)) o.dTeinte = 35;
+      else if (/\b(blanc |lumiere |en |couleur )?(chaud|chaude|chaleureuse|jaune)\b/.test(n) && /\b(blanc|lumiere|eclairage|mets|met|passe|en)\b/.test(n)) o.teinte = 0;
+      else if (/\b(blanc |lumiere |en )?(froid|froide|bleute|bleutee)\b/.test(n) && /\b(blanc|lumiere|eclairage|mets|met|passe|en)\b/.test(n)) o.teinte = 100;
+      else if (/\b(neutre|naturel|naturelle|blanc normal)\b/.test(n)) o.teinte = 50;
+    }
+    return Object.keys(o).length ? o : null;
+  }
+  async function regle(t, n, o) {
+    try { await liste(true); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const lampes = appareils.filter(a => reglable(a) && a.allume != null);
+    if (!lampes.length) return say("Je n'ai pas d'ampoule réglable joignable en ce moment.");
+    // lesquelles : celles qu'on nomme ; sinon celles qui sont allumées ; sinon on demande
+    let l = trouve(t, true).filter(reglable);
+    const pre = LIEN.prenom() ? N(LIEN.prenom()) : '';
+    if (l.length > 1 && !(pre && n.split(' ').includes(pre))) { const moi = l.filter(a => /\bpapa\b/.test(N(a.nom))); if (moi.length) l = moi; } // « la chambre », « ma chambre » : celle de papa
+    if (/\b(toute la maison|partout|toutes les lumieres|tout)\b/.test(n)) l = lampes;
+    if (!l.length) l = lampes.filter(a => a.allume);
+    if (!l.length) {
+      const p = await ask(o.amb ? `Dans quelle pièce, l'ambiance ${o.amb} ?` : 'Quelle lumière ?');
+      l = p ? trouve(p, true).filter(reglable) : [];
+      if (!l.length) return say(`Je ne trouve pas cette lumière. J'ai : ${lesNoms(lampes)}.`);
+    }
+    const cible = a => {
+      const lum = o.lum != null ? o.lum : o.delta ? Math.max(2, Math.min(100, (a.allume ? a.lum || 100 : 50) + o.delta)) : undefined;
+      const teinte = o.teinte != null ? o.teinte : o.dTeinte ? Math.max(0, Math.min(100, (a.teinte == null ? 50 : a.teinte) + o.dTeinte)) : undefined;
+      return { lum: lum == null && teinte != null ? (a.allume && a.lum ? a.lum : 100) : lum, teinte };
+    };
+    const groupes = {};
+    for (const a of l) { const c = cible(a); const k = JSON.stringify(c); (groupes[k] = groupes[k] || { c, ids: [] }).ids.push(a.id); }
+    face.set('think');
+    let ok = [];
+    try {
+      for (const g of Object.values(groupes)) { const r = await appel('/maison/commande', Object.assign({ ids: g.ids, allume: true }, g.c), 20000); ok = ok.concat((r.resultats || []).filter(x => x.ok).map(x => x.id)); }
+    } catch (e) { face.set('oops'); return say("La commande n'est pas passée : l'ordinateur ne répond pas."); }
+    face.set('idle'); vusAt = 0;
+    if (!ok.length) return say(`${lesNoms(l)} ne répond pas.`);
+    fx.ok();
+    const qui = lesNoms(l.filter(a => ok.includes(a.id)));
+    if (o.amb) return say(pick([`Ambiance ${o.amb} : ${qui}.`, `C'est fait, ambiance ${o.amb}.`]));
+    const c = cible(l[0]), dits = [];
+    if (o.lum != null || o.delta) dits.push(`${c.lum} %`);
+    if (o.dTeinte) dits.push(o.dTeinte < 0 ? 'plus chaud' : 'plus froid');
+    else if (c.teinte != null) dits.push(c.teinte <= 20 ? 'blanc chaud' : c.teinte >= 80 ? 'blanc froid' : 'blanc neutre');
+    return say(`${qui} : ${dits.join(', en ') || 'réglé'}.`);
+  }
   // les scènes : l'état de la maison à un moment, rejoué d'un mot (« mode film », « bonne nuit »)
   const SC = () => (S.scenes = S.scenes || []);
   async function enregistreScene(nom) {
     try { await liste(true); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!appareils.length) return say("Je n'ai encore aucun appareil à mettre dans une scène.");
     const n = nom.trim().replace(/^(la |le |l )/i, '');
-    const sc = { id: Date.now(), nom: n, etats: appareils.filter(a => a.allume != null).map(a => ({ id: a.id, allume: a.allume })), at: Date.now() };
+    const sc = { id: Date.now(), nom: n, etats: appareils.filter(a => a.allume != null).map(a => Object.assign({ id: a.id, allume: a.allume }, a.allume && reglable(a) ? { lum: a.lum, teinte: a.teinte } : {})), at: Date.now() };
     const old = SC().find(x => N(x.nom) === N(n)); if (old) { tomb('scenes', old); S.scenes = SC().filter(x => x !== old); }
     SC().push(sc); save(); fx.ok();
     return say(`Scène « ${n} » enregistrée : ${sc.etats.filter(e => e.allume).length} allumé${sc.etats.filter(e => e.allume).length > 1 ? 's' : ''}, le reste éteint. Dis « mode ${n} » pour la relancer.`);
   }
   async function scene(sc) {
     const garde = id => { const a = appareils.find(x => x.id === id); return a && protege(a); }; // une scène ne coupe jamais ce qui doit rester allumé
-    const on = sc.etats.filter(e => e.allume).map(e => e.id), off = sc.etats.filter(e => !e.allume && !garde(e.id)).map(e => e.id);
+    const off = sc.etats.filter(e => !e.allume && !garde(e.id)).map(e => e.id);
     try {
-      if (on.length) await appel('/maison/commande', { ids: on, allume: true }, 20000);
+      const simples = sc.etats.filter(e => e.allume && e.lum == null && e.teinte == null).map(e => e.id);
+      if (simples.length) await appel('/maison/commande', { ids: simples, allume: true }, 20000);
+      for (const e of sc.etats.filter(x => x.allume && (x.lum != null || x.teinte != null))) await appel('/maison/commande', { ids: [e.id], allume: true, lum: e.lum, teinte: e.teinte }, 20000);
       if (off.length) await appel('/maison/commande', { ids: off, allume: false }, 20000);
     } catch (e) { return say("La scène n'est pas passée : l'ordinateur ne répond pas."); }
     vusAt = 0; fx.ok();
@@ -301,6 +377,13 @@ const MAISON = (() => {
     const sg = n.match(R.sceneGo);
     if (sg) { const sc = SC().find(x => N(x.nom) === sg[1].trim() || N(sg[1]).includes(N(x.nom))); if (sc) return () => scene(sc); }
     if (R.etat.test(n)) { const m = n.match(/est ce que (?:la |le |les |l )?(.+?) est (allume|eteint)/); return () => etat(m ? m[1] : ''); }
+    // l'intensité, la teinte, les ambiances : seulement s'il parle de lumière (ou nomme une ampoule réglable)
+    const lumiere = /\b(lumiere|lumieres|lampe|lampes|eclairage|ampoule|ampoules|ambiance|veilleuse|tamis\w*)\b/.test(n) || (/\bmode\b/.test(n) && AMBIANCES.some(x => x.re.test(n))) || appareils.some(a => reglable(a) && trouve(t, true).includes(a));
+    if (lumiere && !/^(eteins|eteint|coupe|desactive)\b/.test(n) && !/\b(son|volume|musique|radio|enceinte|chauffage|temperature|thermostat|store|stores|volet|volets|camera|cameras|alarme)\b/.test(n)) {
+      if (COULEUR.test(n) && /\b(mets|met|passe|en|couleur|lumiere|ambiance|disco)\b/.test(n)) return () => say("Tes ampoules ne font que du blanc : du blanc chaud, jaune, au blanc froid, bleuté. Dis par exemple « lumière chaude dans le salon ».");
+      const o = lecture(t, n);
+      if (o) return () => regle(t, n, o);
+    }
     const p = n.match(R.pilote);
     if (p) {
       const allume = !/^(eteins|eteint|coupe|desactive)\b/.test(n);
@@ -312,7 +395,7 @@ const MAISON = (() => {
   // pour le cerveau : ce qu'il y a dans la maison
   function contexte() {
     if (!appareils.length) return '';
-    return `Les appareils de la maison, branchés sur des prises (pas forcément des lampes ; tu peux les piloter : réponds [[allume:nom]] ou [[eteins:nom]], ou « tout » ; ne coupe jamais de toi-même ce qui doit rester allumé, et n'allume jamais de toi-même ce qui chauffe) : ${appareils.map(a => `${a.nom} (${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}${protege(a) ? ', doit rester allumé' : ''}${chaud(a) ? ', chauffe' : ''})`).join(', ')}.${SC().length ? ` Ses scènes : ${SC().map(x => x.nom).join(', ')}.` : ''}`;
+    return `Les appareils de la maison, branchés sur des prises (pas forcément des lampes ; tu peux les piloter : réponds [[allume:nom]] ou [[eteins:nom]], ou « tout » ; ne coupe jamais de toi-même ce qui doit rester allumé, et n'allume jamais de toi-même ce qui chauffe) : ${appareils.map(a => `${a.nom} (${a.allume == null ? 'injoignable' : a.allume ? 'allumé' : 'éteint'}${a.allume && a.lum != null ? `, ${a.lum} %` : ''}${protege(a) ? ', doit rester allumé' : ''}${chaud(a) ? ', chauffe' : ''})`).join(', ')}.${SC().length ? ` Ses scènes : ${SC().map(x => x.nom).join(', ')}.` : ''}`;
   }
   // les réglages : la liste des appareils (ou comment les connecter)
   async function reglages() {
