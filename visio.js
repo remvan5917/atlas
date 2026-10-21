@@ -6,6 +6,8 @@
    - « présente-toi à mes invités », « mode science-fiction », « fais ton show » : il présente son inventeur et la maison, en séquence de
      science-fiction (sons, lumières qui parcourent les pièces — jamais les chambres —, caméras en direct) ; en visio, la version courte.
    - « coupe mon micro » / « remets mon micro » (le micro de l'ordi), « montre le graphique de l'or à l'écran ».
+   - « je vais me coucher » : en bas tout s'éteint (jamais les chambres), l'escalier éclairé 90 s, la musique coupée, la sentinelle
+     en garde de nuit tout de suite, l'ordi verrouillé et l'écran noir.
    ========================================================= */
 'use strict';
 
@@ -196,7 +198,29 @@ const VISIO = (() => {
     fx.ok(); return say(`Voilà ${nom}, en grand sur l'écran.`);
   }
 
+  /* ---------- « je vais me coucher » : la maison se met en nuit ---------- */
+  async function coucher() {
+    let l = []; try { l = (await appel('/maison/appareils', null, 15000)).appareils || []; } catch (e) { return say("L'ordinateur de la maison ne répond pas. Bonne nuit quand même."); }
+    const enfant = N((typeof LIEN !== 'undefined' && LIEN.prenom()) || '');
+    // en bas, tout s'éteint ; jamais les chambres (ni celle du petit, ni la tienne : tu y vas) ; la télé aussi
+    const eteindre = l.filter(a => a.allume && ((a.type === 'lampe' && !/\bchambres?\b/.test(N(a.nom))) || /\b(tele|television|tv)\b/.test(N(a.nom))));
+    const escalier = l.find(a => a.type === 'lampe' && /\bescaliers?\b/.test(N(a.nom)));
+    try {
+      const ids = eteindre.filter(a => a !== escalier).map(a => a.id);
+      if (ids.length) await regle(ids, false);
+      if (escalier) { await regle([escalier.id], true, 15, 0); setTimeout(() => regle([escalier.id], false).catch(() => {}), 90000); } // l'escalier éclairé le temps de monter
+    } catch (e) { /* tant pis */ }
+    await Promise.all([pc({ action: 'musique', quoi: 'pause' }).catch(() => {}), pc({ action: 'radio_stop' }).catch(() => {}), appel('/maison/sentinelle', { dodo: true }).catch(() => {})]);
+    let cams = 0; try { cams = ((await appel('/maison/ezviz', null, 8000)).cameras || []).length + ((await appel('/maison/cameras', null, 8000)).cameras || []).length; } catch (e) { /* rien */ }
+    fx.ok();
+    await say(`Bonne nuit. ${eteindre.length ? 'Tout est éteint en bas' : 'Rien n\'était resté allumé en bas'}${escalier ? ", je t'éclaire l'escalier une minute et demie" : ''}. La sentinelle passe en garde de nuit${cams ? ` avec ${cams} caméras` : ''} : si quelque chose ne va pas, je te réveille sur ton téléphone.`);
+    // l'ordi : verrouillé, écran noir (après avoir parlé)
+    try { await pc({ action: 'verrouille' }); await wait(1500); await pc({ action: 'ecran' }); } catch (e) { /* tant pis */ }
+    dlg.state = 'standby'; face.set('idle');
+  }
+
   function route(t, n) {
+    if (!/\bchez\b/.test(n) && /\b(je (vais|pars|monte|file) (me coucher|dormir|au lit|au dodo)|je (me couche|vais au lit)|on (va|part) (se coucher|dormir)|on se couche|c est l heure de dormir|bonne nuit (atlas|la maison|tout le monde))\b/.test(n)) return coucher;
     if (/\b(mode visio|mode visioconference|je (suis|vais etre|passe|pars) en visio|je commence (une|ma) visio|j ai une visio|on commence la visio)\b/.test(n) && !/\b(fin|sors|arrete|quitte)\b/.test(n)) return () => visio(true);
     if (/\b(fin (du mode |de la |de ma )?visio|j ai fini (la|ma) visio|la visio est (finie|terminee)|sors du mode visio|arrete le mode visio|quitte le mode visio)\b/.test(n)) return () => visio(false);
     if (/\b(presente toi|dis bonjour|salue)\b.*\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie|participants)\b/.test(n) || /\b(mode science fiction|sequence de presentation|fais (le|ton) (show|spectacle)|fais ta demo|montre leur ce que tu sais faire|montre (a|aux) (mes |nos )?invites ce que tu sais faire)\b/.test(n)) return () => spectacle(t, n);

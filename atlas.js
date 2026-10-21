@@ -502,7 +502,7 @@ function briefing(fin = true) {
 /* ---------- ce qu'il comprend ---------- */
 const R = {
   reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas|a classe|atlase|atlast|hat last|atia|hathia|atlia|atlasse)\b/,
-  veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|bonne nuit atlas|repose toi|tu peux te reposer)\b/,
+  veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|repose toi|tu peux te reposer)\b/, // « bonne nuit Atlas » : la routine du coucher (visio.js)
   stop: /^(stop|tais toi|silence|chut|arrete|ca suffit|stoppe)\b/,
   repete: /\b(repete|redis|tu peux repeter|j ai pas compris|pardon)\b/,
   noter: /^(?:note|prends note|ajoute a mes notes|ajoute dans mes notes|note dans mes notes)\b\s*(?:que |de |:)?\s*(.+)$/,
@@ -558,7 +558,7 @@ async function handle(text) {
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
-  if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
+  if (R.veille.test(n) && n.split(' ').length <= 6 && !/\b(ecran|ecrans|ordi|ordinateur|pc)\b/.test(n)) { // « mets l'écran en veille » : c'est l'écran (pc.js) dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
   if (R.repete.test(n) && n.split(' ').length <= 5) return say(lastSaid || "Je n'ai encore rien dit.");
   if (R.effacerEcran.test(n)) { hideBoard(); return say('OK.'); }
   const nt = t.match(/^\s*(?:note|prends note|ajoute (?:à|a) mes notes|ajoute dans mes notes|note dans mes notes)\s*(?:que |de |:)?\s*(.+)$/i);
