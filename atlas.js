@@ -84,7 +84,7 @@ const face = {
 
 /* ---------- le détail à l'écran (seulement si papa le demande) ---------- */
 function showBoard(html, cls) { const b = $('#board'); b.className = `board ${cls || ''}`; b.innerHTML = html; b.hidden = false; }
-function hideBoard() { const b = $('#board'); b.hidden = true; b.innerHTML = ''; }
+function hideBoard() { if (typeof SECURITE !== 'undefined' && SECURITE._enDirect) SECURITE.finDirect(); const b = $('#board'); b.hidden = true; b.innerHTML = ''; }
 function md(t) {
   const blocs = [];
   let h = esc(String(t || '').trim()).replace(/```([a-z0-9+-]*)\n?([\s\S]*?)```/gi, (m, lang, code) => { blocs.push(code.replace(/\n$/, '')); return `\u0000${blocs.length - 1}\u0000`; });
@@ -441,12 +441,22 @@ async function internet(question, recherche, actus) {
 
 /* ---------- il regarde (vision détaillée) ---------- */
 async function voir(question) {
-  if (!S.settings.seeCloud || !S.settings.key) return say("Pour que je voie, active la vision détaillée dans mes réglages : une photo de la caméra est alors envoyée à Groq pour la décrire.");
+  const maison = typeof SECURITE !== 'undefined' && SECURITE.visionMaison(); // un modèle de vision à la maison : l'image ne sort pas de chez nous
+  if (!maison && (!S.settings.seeCloud || !S.settings.key)) return say("Pour que je voie, il faut le modèle de vision de la maison, ou la vision détaillée dans mes réglages : une photo de la caméra est alors envoyée à Groq pour la décrire.");
   NOYAU.etiquette('VISION');
   face.set('think');
   try {
     const img = typeof VISION !== 'undefined' && VISION.isOn() ? VISION.snapshot() : await CAMERA.photo();
     if (!img) { face.set('confused'); return say("Ma caméra ne s'ouvre pas. Autorise la caméra pour ce site."); }
+    if (maison) {
+      try {
+        const ctl = window.AbortController ? new AbortController() : null; const tm = setTimeout(() => ctl && ctl.abort(), 160000);
+        const j = await (await fetch(`${VOIXMAISON.root()}/maison/vision`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: img, question }), signal: ctl ? ctl.signal : undefined })).json();
+        clearTimeout(tm);
+        if (j && j.texte) { face.set('idle'); return say(nettoie(j.texte)); }
+      } catch (e) { /* la vision de la maison ne répond pas : Groq, s'il est permis */ }
+      if (!S.settings.seeCloud || !S.settings.key) { face.set('confused'); return say("La vision de la maison ne répond pas pour le moment."); }
+    }
     const r = await AI.see(img, `Tu es Atlas, l'assistant d'un adulte. Voici ce que voit ta caméra en ce moment. Réponds en français, en deux à quatre phrases naturelles et précises, à sa question : « ${question} ». Factuel, sans inventer. Ne décris pas le corps des personnes. Pas d'émoji, pas de liste.`);
     face.set('idle');
     return say(nettoie(r) || "Je ne vois rien de clair.");

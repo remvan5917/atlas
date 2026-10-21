@@ -60,22 +60,46 @@ const SECURITE = (() => {
   }
 
   /* =================== les caméras =================== */
-  let cams = [], camsAt = 0;
+  let cams = [], camsAt = 0, visionMaison = false;
   async function listeCams() {
     if (Date.now() - camsAt < 60000) return cams;
-    const j = await appel('/maison/cameras', null, 10000); cams = j.cameras || []; camsAt = Date.now(); return cams;
+    const j = await appel('/maison/cameras', null, 10000); cams = j.cameras || []; visionMaison = !!j.vision; camsAt = Date.now(); return cams;
   }
   const relit = () => { if (root()) { camsAt = 0; listeCams().catch(() => {}); } };
   setTimeout(relit, 7000); setInterval(relit, 5 * 60000); // une caméra ajoutée est reconnue dans les 5 minutes
   const motsCam = t => N(t).split(' ').filter(w => w.length > 2 && !['camera', 'cameras', 'dans', 'devant', 'les', 'des', 'qui', 'quoi', 'passe', 'montre', 'moi'].includes(w));
   const blobVersData = b => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
-  let urlImage = '';
-  async function regarde(cible, question) {
+  let urlImage = '', directT = 0;
+  // le direct (vidéo et son) : ses oreilles se coupent le temps du direct (sinon il prendrait les voix de la caméra pour les nôtres)
+  function finDirect() {
+    clearTimeout(directT);
+    const v = document.querySelector('#board video');
+    if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+    if (SECURITE._enDirect) { SECURITE._enDirect = false; OREILLES.mute(false); }
+  }
+  async function direct(c) {
+    finDirect();
+    const src = `${root()}/maison/direct?nom=${encodeURIComponent(c.nom)}&t=${Date.now()}`;
+    await say(`${/^[aeiouyhé]/i.test(c.nom) ? "L'" : 'La caméra '}${c.nom}, en direct.`);
+    showBoard(`<div class="graphe"><small>${esc(c.nom.toUpperCase())} · EN DIRECT</small><video autoplay playsinline controls style="width:100%;border-radius:12px;display:block;background:#000" src="${src}"></video><div class="ligne"><button type="button" class="ghost sm" data-fin-direct>Fermer</button><span class="small muted">3 minutes au plus · rien n'est enregistré</span></div></div>`, 'graphe-board');
+    clearTimeout(effaceT);
+    SECURITE._enDirect = true; OREILLES.mute(true);
+    const v = document.querySelector('#board video');
+    if (v) {
+      v.onended = () => { finDirect(); hideBoard(); };
+      v.onerror = () => { finDirect(); hideBoard(); say(`Le direct de ${c.nom} ne passe pas. Essaie « une photo de ${c.nom} ».`); };
+      v.play().catch(() => { v.muted = true; v.play().catch(() => {}); }); // sans geste récent, Chrome lance d'abord sans le son
+    }
+    directT = setTimeout(() => { finDirect(); hideBoard(); }, 185000);
+  }
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-fin-direct]')) { finDirect(); hideBoard(); } });
+  async function regarde(cible, question, photo) {
     let l; try { l = await listeCams(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!l.length) return say("Je n'ai encore aucune caméra. Sur l'ordinateur, installe ffmpeg, active le flux local dans l'appli EZVIZ, puis lance le script des caméras : je les trouverai.");
     const m = motsCam(cible);
     const c = l.find(x => motsCam(x.nom).some(w => m.includes(w))) || (l.length === 1 ? l[0] : null);
     if (!c) return say(`Quelle caméra ? J'ai : ${l.map(x => x.nom).join(', ')}.`);
+    if (!question && !photo) return direct(c); // « montre-moi l'entrée » : le direct, avec le son
     face.set('think');
     let img; try { img = await appel(`/maison/camera?nom=${encodeURIComponent(c.nom)}`, null, 20000); } catch (e) { img = null; }
     face.set('idle');
@@ -85,7 +109,15 @@ const SECURITE = (() => {
     showBoard(`<div class="graphe"><small>${esc(c.nom.toUpperCase())} · ${hhmm().replace(' h ', ':')}</small><img src="${urlImage}" alt="" style="width:100%;border-radius:12px;display:block"></div>`, 'graphe-board');
     clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 60000);
     if (!question) return say(`Voilà ${/^[aeiouyhé]/i.test(c.nom) ? "l'" : 'la caméra '}${c.nom}.`);
-    if (!S.settings.seeCloud || !S.settings.key) return say("Voilà l'image. Pour que je la décrive, active la vision détaillée dans mes réglages : l'image partirait alors chez Groq.");
+    // la vision de la maison d'abord : l'image ne sort pas de chez nous
+    if (visionMaison) {
+      face.set('think'); NOYAU.etiquette('VISION');
+      try {
+        const j = await appel(`/maison/camera/decris?nom=${encodeURIComponent(c.nom)}&question=${encodeURIComponent(question)}`, null, 160000);
+        if (j && j.texte) return say(nettoie(j.texte));
+      } catch (e) { /* on essaie autrement */ } finally { face.set('idle'); NOYAU.etiquette(null); }
+    }
+    if (!S.settings.seeCloud || !S.settings.key) return say(visionMaison ? "Voilà l'image, mais la vision de la maison ne répond pas." : "Voilà l'image. Pour que je la décrive, il faut le modèle de vision de la maison, ou la vision détaillée dans mes réglages.");
     try {
       const r = await AI.see(await blobVersData(img), `Tu es Atlas, l'assistant d'une maison. Voici l'image de la caméra « ${c.nom} » de la maison, à l'instant. Réponds en français, en deux ou trois phrases naturelles, à la question : « ${question} ». Factuel : dis s'il y a quelqu'un, un animal, un véhicule, un colis, ou rien de particulier. Ne décris pas le corps des personnes. Pas d'émoji, pas de liste.`);
       return say(nettoie(r) || "Je ne vois rien de particulier.");
@@ -97,7 +129,7 @@ const SECURITE = (() => {
     desactive: /\b(desactive|desactiver|eteins|eteint|coupe|arrete|enleve|retire|debranche) (l |de l )?alarme\b/,
     active: /^(?:active|activer|mets|met|enclenche|branche|lance|allume|arme)\s+(?:l |de l )?alarme\b(.*)$|^(?:mets |passe )?(?:l alarme )?en mode (total|totale|partiel|partielle)$|^alarme (totale?|partielle?)$/,
     etat: /\b(l alarme|alarme) (est|est elle|elle est|c est|tu peux me dire si) .*\b(activee|active|allumee|mise|en marche|branchee|desactivee|coupee)\b|\b(etat de l alarme|est ce que l alarme|elle est mise l alarme|l alarme elle est)\b|^(et )?l alarme( \?)?$/,
-    camera: /\b(montre|affiche|fais voir|regarde)\b.*\b(camera|entree|jardin|garage|porte|terrasse|portail|salon|allee|devant)\b|\b(qu est ce qui se passe|qu est ce qu il se passe|il y a quelqu un|y a quelqu un|qui est la|qui sonne|il se passe quoi)\b.*\b(dans|devant|a l|au|sur)\b/,
+    camera: /\b(montre|affiche|fais voir|regarde|fais moi ecouter|ecoute|direct|photo|image)\b.*\b(camera|entree|jardin|garage|porte|terrasse|portail|salon|allee|devant)\b|\b(qu est ce qui se passe|qu est ce qu il se passe|il y a quelqu un|y a quelqu un|qui est la|qui sonne|il se passe quoi)\b.*\b(dans|devant|a l|au|sur)\b/,
   };
   function route(t, n) {
     if (R.desactive.test(n)) return () => say("Je ne désactive jamais l'alarme : c'est ton badge, le clavier ou l'appli Verisure. Comme ça, personne ne peut la couper en parlant.");
@@ -108,10 +140,11 @@ const SECURITE = (() => {
     const nomme = /\bcameras?\b/.test(n) || cams.some(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}\\b`).test(n)));
     if (R.camera.test(n) && nomme) {
       const question = /\b(qu est ce|il y a|y a|qui est|qui sonne|il se passe)\b/.test(n) ? t : '';
+      const photo = /\b(photo|image|capture|cliche)\b/.test(n);
       const cible = n.replace(/^.*?\b(?:camera|dans|devant|a l|au|sur|montre moi|montre|affiche|fais voir|regarde)\b/, '');
-      return () => regarde(cible || n, question);
+      return () => regarde(cible || n, question, photo);
     }
     return null;
   }
-  return { route, etatAlarme, activer, regarde, _relit: () => { camsAt = 0; return listeCams(); } };
+  return { route, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
 })();
