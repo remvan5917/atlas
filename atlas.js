@@ -246,7 +246,8 @@ async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   }
   return r;
 }
-const say = t => voice.say(t);
+const dits = []; // le diagnostic : ce qu'il a répondu (mémoire vive)
+const say = t => { if (t) { dits.push(`${new Date().toLocaleTimeString('fr-FR')} ${String(t).slice(0, 110)}`); if (dits.length > 10) dits.shift(); } return voice.say(t); };
 async function ask(text, { wait: w = 20000 } = {}) {
   await say(text);
   const a = await hear({ maxWait: w });
@@ -1021,7 +1022,8 @@ async function diagnostic() {
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',
       erreur: ELEVEN.erreur ? `${new Date(ELEVEN.erreurAt || Date.now()).toLocaleTimeString('fr-FR')} ${ELEVEN.explique({ message: ELEVEN.erreur, status: ELEVEN.erreurStatus })}` : '', repos: ELEVEN.downUntil > Date.now() ? Math.round((ELEVEN.downUntil - Date.now()) / 60000) + ' min' : '',
       son: (() => { try { return fx.audio().state; } catch (e) { return '?'; } })() },
-    entendus: entendus.slice(-6).map(x => `${new Date(x.at).toLocaleTimeString('fr-FR')} [${x.qui}] ${x.t} → ${x.quoi}`), erreur: derniereErreur };
+    dits: dits.slice(),
+    entendus: entendus.slice(-12).map(x => `${new Date(x.at).toLocaleTimeString('fr-FR')} [${x.qui}] ${x.t} → ${x.quoi}`), erreur: derniereErreur };
   try { await fetch(`${r0}/atlas/diag`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d), keepalive: true }); } catch (e) { /* plus tard */ }
 }
 setInterval(diagnostic, 30000); setTimeout(diagnostic, 8000);

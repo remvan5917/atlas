@@ -119,9 +119,9 @@ const VISIO = (() => {
     if (/\b(mode visio|mode visioconference|je (suis|vais etre|passe|pars) en visio|je commence (une|ma) visio|j ai une visio|on commence la visio)\b/.test(n) && !/\b(fin|sors|arrete|quitte)\b/.test(n)) return () => visio(true);
     if (/\b(fin (du mode |de la |de ma )?visio|j ai fini (la|ma) visio|la visio est (finie|terminee)|sors du mode visio|arrete le mode visio|quitte le mode visio)\b/.test(n)) return () => visio(false);
     if (/\b(presente toi|dis bonjour|salue)\b.*\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return spectacle;
-    if (/\b(fondu au noir|eteins en douceur|eteins doucement|eteins les lumieres doucement|baisse doucement|fais le noir)\b/.test(n)) return () => fondu(t, 'noir');
-    if (/\b(rallume en douceur|allume en douceur|allume doucement|rallume doucement|lever de soleil|leve le soleil|que la lumiere soit)\b/.test(n)) return () => fondu(t, 'jour');
-    if (/\b(effet orage|effet eclair|fais un eclair|fais l orage|un orage|fais clignoter)\b/.test(n)) return () => orage(t);
+    if (/\b(fondu au noir|fondu a noir|fondu noir|eteins en douceur|eteins doucement|eteins les lumieres doucement|baisse doucement|fais le noir)\b/.test(n)) return () => fondu(t, 'noir');
+    if (/\b(rallume en douceur|allume en douceur|allume doucement|rallume doucement|lever de soleil|leve le soleil|que la lumiere soit)\b/.test(n) || (/\bdouceur\b/.test(n) && /^(ral|ra |re|al)/.test(n) && n.split(' ').length <= 5 && !/\b(eteins|baisse)\b/.test(n))) return () => fondu(t, 'jour'); // « Rallez mon douceur »
+    if (/\b(effet orage|effet eclair|fais un eclair|fais l orage|fais un orage|fais clignoter)\b/.test(n) || (/\b(orage|orages|eclairs?)\b/.test(n) && n.split(' ').length <= 5 && !/\b(va|risque|prevu|demain|meteo|y a|il y)\b/.test(n))) return () => orage(t); // « est fait orage »
     if (/\b(effet projecteur|mode projecteur|lumiere de studio|mode studio|eclaire moi|mets moi en lumiere)\b/.test(n)) return () => studio(t);
     if (/\b(coupe|desactive|eteins|mute) (mon|le) micro\b/.test(n)) return () => micro(true);
     if (/\b(remets|rallume|reactive|active|ouvre) (mon|le) micro\b/.test(n)) return () => micro(false);
