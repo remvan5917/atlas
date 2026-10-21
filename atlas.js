@@ -522,7 +522,7 @@ const R = {
 };
 // une phrase → l'ordre qu'un module sait faire (sans le cerveau)
 function routeUn(t, n) {
-  for (const [nom, M] of [['memoire', typeof MEMOIRE !== 'undefined' && MEMOIRE], ['marche', typeof MARCHE !== 'undefined' && MARCHE], ['pc', typeof PC !== 'undefined' && PC], ['surete', typeof SECURITE !== 'undefined' && SECURITE], ['maison', typeof MAISON !== 'undefined' && MAISON], ['outils', !R.web.test(n) && typeof OUTILS !== 'undefined' && OUTILS]]) {
+  for (const [nom, M] of [['memoire', typeof MEMOIRE !== 'undefined' && MEMOIRE], ['visio', typeof VISIO !== 'undefined' && VISIO], ['pc', typeof PC !== 'undefined' && PC], ['marche', typeof MARCHE !== 'undefined' && MARCHE], ['surete', typeof SECURITE !== 'undefined' && SECURITE], ['maison', typeof MAISON !== 'undefined' && MAISON], ['outils', !R.web.test(n) && typeof OUTILS !== 'undefined' && OUTILS]]) {
     if (!M) continue;
     const f = M.route(t, n); if (f) return { f, nom };
   }
@@ -570,13 +570,15 @@ async function handle(text) {
   if (R.apprendVoix.test(n)) return apprendreVoix(t);
   if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && VOIX.forget(nom)) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
   if (R.quiParle.test(n)) return say(!dlg.qui ? (OREILLES.engine() === 'whisper' ? "Je ne reconnais pas ta voix. Dis « apprends ma voix », et je la retiendrai." : "Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq.") : /^invité/.test(dlg.qui) ? "Je ne connais pas encore ta voix. Dis « apprends ma voix », et je la retiendrai." : `C'est ${dlg.qui}. Je reconnais ta voix.`);
-  if (R.presente.test(n)) return presentation();
+  if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
   if (souvenir) return souvenir();
+  const visio = VISIO.route(t, n); // les visios et les effets de lumière (« mode visio », « fondu au noir », « présente-toi à mes invités »)
+  if (visio) return visio();
+  const ordi = PC.route(t, n); // l'ordinateur : le son, la musique, l'écran, les fenêtres, les applis, Gmail (une liste fermée d'actions)
+  if (ordi) return ordi();
   const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
   if (bourse) return bourse();
-  const ordi = PC.route(t, n); // l'ordinateur : le son, la musique, l'écran, les fenêtres (une liste fermée d'actions)
-  if (ordi) return ordi();
   const surete = SECURITE.route(t, n); // l'alarme (lire, activer — jamais désactiver) et les caméras
   if (surete) return surete();
   const maison = MAISON.route(t, n); // la maison (prises, lampes, scènes), le messager et ce que Shadow a appris
