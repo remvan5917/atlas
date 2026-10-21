@@ -151,7 +151,7 @@ const ELEVEN = {
       return r.arrayBuffer();
     }).then(buf => new Promise((res, rej) => fx.audio().decodeAudioData(buf, res, rej)));
     p.catch(e => {
-      this.cache.delete(key); this.erreur = e.message;
+      this.cache.delete(key); this.erreur = e.message; this.erreurAt = Date.now(); this.erreurStatus = e.status || 0;
       // crédit épuisé ou clé refusée : on n'insiste pas pendant 30 min ; un souci réseau : 2 min
       this.downUntil = Date.now() + ((e.status === 401 || e.status === 402 || e.status === 429 || /quota/i.test(e.message)) ? 30 * 60000 : 120000);
     });
@@ -243,7 +243,7 @@ const voice = {
   _dire(t) {
     lastSaid = t;
     const maison = () => (VOIXMAISON.usable() ? this.sayMaison(t).catch(() => this.saySynth(t)) : this.saySynth(t));
-    if (ELEVEN.usable()) return this.sayMaison(t, ELEVEN).catch(maison); // la voix ElevenLabs d'abord
+    if (ELEVEN.usable()) return this.sayMaison(t, ELEVEN).catch(e => { ELEVEN.erreur = String((e && e.message) || e || 'lecture impossible'); ELEVEN.erreurAt = Date.now(); return maison(); }); // la voix ElevenLabs d'abord
     return maison();
   },
   sayMaison(t, moteur = VOIXMAISON) {

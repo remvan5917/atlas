@@ -993,6 +993,9 @@ async function diagnostic() {
   const d = { v: window.ATLAS_VERSION, appareil: /Android/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden,
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
     cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
+    eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',
+      erreur: ELEVEN.erreur ? `${new Date(ELEVEN.erreurAt || Date.now()).toLocaleTimeString('fr-FR')} ${ELEVEN.explique({ message: ELEVEN.erreur, status: ELEVEN.erreurStatus })}` : '', repos: ELEVEN.downUntil > Date.now() ? Math.round((ELEVEN.downUntil - Date.now()) / 60000) + ' min' : '',
+      son: (() => { try { return fx.audio().state; } catch (e) { return '?'; } })() },
     entendus: entendus.slice(-6).map(x => `${new Date(x.at).toLocaleTimeString('fr-FR')} [${x.qui}] ${x.t} → ${x.quoi}`), erreur: derniereErreur };
   try { await fetch(`${r0}/atlas/diag`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d), keepalive: true }); } catch (e) { /* plus tard */ }
 }
