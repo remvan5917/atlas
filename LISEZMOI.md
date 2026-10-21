@@ -57,6 +57,7 @@ Adresse : https://remvan5917.github.io/atlas/
   - **Les relier** : installer ffmpeg (`sudo apt install ffmpeg`), activer le flux local (RTSP) de chaque caméra dans l'appli EZVIZ, puis lancer `~/.local/share/shadow/maison/cameras.py` : il trouve les caméras, demande un nom et le code de vérification (étiquette de la caméra), gardé dans `maison/cameras.json` (600).
 
 ## La sentinelle — il détecte seul ce qui est suspect
+- **Les caméras EZVIZ** (solaires, sur batterie : pas de flux local) : reliées par ton compte EZVIZ (`maison/ezviz-connecter.py`, session et codes de vérification dans `maison/ezviz.json`, 600, bibliothèque pyezvizapi). La sentinelle lit leur dernière détection toutes les minutes sur le cloud EZVIZ (sans les réveiller), déchiffre la photo, et la vision de la maison vérifie s'il y a quelqu'un : urgent la nuit ou en mode absent, sinon noté au journal. « Montre-moi la façade » : sa dernière détection (pas de direct, pour ne pas vider la batterie) ; « tourne la caméra de la façade à gauche » ; « la batterie des caméras ».
 Un service de l'ordinateur (`shadow-sentinelle`, `~/.local/share/shadow/maison/sentinelle.py`) surveille en continu et écrit ses alertes ; Atlas les relève toutes les 20 secondes et les dit (les urgentes tout de suite, même la nuit ; avec la photo s'il y en a une).
 - **Le réseau** : un appareil jamais vu qui se connecte (avec son fabricant, ou « adresse privée » pour un téléphone) — urgent la nuit ou en mode absent.
 - **Tailscale** : un nouvel appareil dans ton réseau privé (urgent).

@@ -202,6 +202,38 @@ const SECURITE = (() => {
   });
   setTimeout(() => { if ('Notification' in window && Notification.permission === 'granted' && root()) abonne(false); }, 12000); // l'abonnement reste à jour
 
+  /* =================== les caméras EZVIZ : les orienter à la voix =================== */
+  async function oriente(t, n) {
+    let j; try { j = await appel('/maison/ezviz', null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!j.relie) return say("Tes caméras EZVIZ ne sont pas encore reliées : sur l'ordinateur, lance le script de connexion EZVIZ.");
+    const l = j.cameras || [];
+    const c = l.find(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)));
+    if (!c) return say(`Quelle caméra ? J'ai : ${l.map(x => x.nom).join(', ')}.`);
+    const sens = /\bgauche\b/.test(n) ? 'gauche' : /\bdroite\b/.test(n) ? 'droite' : /\b(haut|monte|leve)\b/.test(n) ? 'haut' : /\b(bas|descend|baisse)\b/.test(n) ? 'bas' : '';
+    if (!sens) return say('Vers la gauche, la droite, le haut ou le bas ?');
+    const beaucoup = /\b(beaucoup|bien|completement|a fond|tout)\b/.test(n);
+    let r; try { r = await appel('/maison/ezviz', { nom: c.nom, sens, duree: beaucoup ? 2 : 0.7 }, 30000); } catch (e) { r = { ok: false }; }
+    return say(r.ok ? `C'est fait : la caméra ${c.nom} tourne vers ${sens === 'haut' || sens === 'bas' ? 'le ' : 'la '}${sens}.` : `La caméra ${c.nom} ne répond pas. Sur batterie, elle dort peut-être : ouvre-la une fois dans l'appli EZVIZ.`);
+  }
+
+  // les EZVIZ (sur batterie) : pas de direct — leur dernière détection, et leurs batteries
+  let ezCams = [], ezAt = 0;
+  async function listeEz() { if (Date.now() - ezAt < 60000) return ezCams; try { const j = await appel('/maison/ezviz', null, 10000); ezCams = j.cameras || []; ezAt = Date.now(); } catch (e) { /* plus tard */ } return ezCams; }
+  setTimeout(listeEz, 8000); setInterval(listeEz, 5 * 60000);
+  const ezDe = n => ezCams.find(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)));
+  async function vueEz(c) {
+    let j; try { j = await appel('/maison/alertes?depuis=0', null, 10000); } catch (e) { j = { alertes: [] }; }
+    const a = (j.alertes || []).filter(x => x.genre === 'ezviz' && x.image && x.texte.includes(`« ${c.nom} »`)).pop();
+    if (!a) return say(`La caméra ${c.nom} est sur batterie : pas de direct, pour ne pas la vider. Elle n'a rien détecté récemment ; le direct reste dans l'appli EZVIZ.`);
+    await photoAlerte(a);
+    return say(`La caméra ${c.nom} est sur batterie, donc pas de direct. Voici sa dernière détection, ${quand(a.at)}.`);
+  }
+  async function batteries() {
+    const l = await listeEz();
+    if (!l.length) return say("Je n'ai pas de caméra sur batterie reliée.");
+    return say(l.map(c => `${c.nom} : ${c.batterie != null ? `${c.batterie} %` : 'batterie inconnue'}${c.en_ligne ? '' : ', hors ligne'}`).join('. ') + '.');
+  }
+
   /* =================== ce qu'on lui dit =================== */
   const R = {
     desactive: /\b(desactive|desactiver|eteins|eteint|coupe|arrete|enleve|retire|debranche) (l |de l )?alarme\b/,
@@ -214,10 +246,14 @@ const SECURITE = (() => {
     if (/\b(je suis rentre|je suis de retour|on est rentre|mode presence|je suis a la maison|fin du mode absent)\b/.test(n)) return () => modeAbsent(false);
     if (/\b(montre|affiche)\b.*\b(derniere|dernieres) alertes?\b|\bla photo de l alerte\b/.test(n)) return derniereAlerte;
     if (/\b(rapport de securite|il s est passe quoi|qu est ce qui s est passe|des alertes|les alertes|quelque chose de suspect|rien de suspect|tout va bien a la maison|la maison va bien|etat de la securite)\b/.test(n)) return () => rapport(n);
+    if (/\b(tourne|oriente|pivote|bouge|deplace|monte|descends|baisse|leve)\b.*\b(camera|cameras)\b|\b(oriente|tourne|pivote)\b.*\b(vers|a) (la |le )?(gauche|droite|haut|bas)\b/.test(n)) return () => oriente(t, n);
     if (R.desactive.test(n)) return () => say("Je ne désactive jamais l'alarme : c'est ton badge, le clavier ou l'appli Verisure. Comme ça, personne ne peut la couper en parlant.");
     const a = n.match(R.active);
     if (a) { const reste = (a[1] || a[2] || a[3] || ''); const mode = /\btotal/.test(reste) ? 'total' : /\bpartiel/.test(reste) ? 'partiel' : ''; return () => activer(mode, dlg.qui); }
     if (R.etat.test(n)) return etatAlarme;
+    if (/\b(batterie|batteries|charge)\b.*\bcameras?\b|\bcameras?\b.*\b(batterie|batteries)\b/.test(n)) return batteries;
+    const ez = ezDe(n);
+    if (ez && /\b(montre|affiche|fais voir|regarde|photo|image|direct|qu est ce qui se passe|il y a quelqu un|y a quelqu un)\b/.test(n) && !cams.some(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)))) return () => vueEz(ez);
     // une caméra : seulement si on dit « caméra » ou le nom d'une de nos caméras (« qu'est-ce qui se passe dans le monde » n'en est pas une)
     const nomme = /\bcameras?\b/.test(n) || cams.some(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)));
     if ((R.camera.test(n) || /\b(montre|affiche|fais voir|regarde|ecoute|photo|image|direct)\b/.test(n)) && nomme) {
