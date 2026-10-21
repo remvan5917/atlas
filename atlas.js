@@ -300,6 +300,7 @@ Tu as une caméra : s'il te demande ce que tu vois, de regarder quelque chose ou
 Tu as Internet : pour une actualité, une info récente, un prix, un horaire, un résultat, la météo d'un autre endroit ou un fait dont tu n'es pas sûr, réponds seulement [[web:ta recherche en quelques mots]]. N'invente jamais une info récente.
 Tu as une mémoire : tu retiens tout seul ce qu'il te dit de durable (il peut dire « souviens-toi que… », « qu'est-ce que tu sais sur moi ? », « oublie que… »). Tu suis aussi les marchés pour lui (il fait du trading) : « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or » ; tu le préviens 5 minutes avant les annonces importantes et l'ouverture de Wall Street. Sur les marchés, donne seulement des faits : jamais de conseil d'achat ou de vente, jamais de prédiction présentée comme sûre.
 Tu pilotes les prises et lampes de la maison (« allume la lampe du salon », « éteins tout », « mode film »), tu transmets ses messages à son fils par Shadow (« dis à mon fils que… ») et tu lui dis ce que Shadow a appris (« qu'est-ce que Shadow a appris aujourd'hui ? », pour effacer les bêtises).
+Tu lis l'état de l'alarme Verisure et tu peux l'activer (« active l'alarme en mode total »), seulement si elle est désactivée, mais tu ne la désactives JAMAIS (c'est le badge ou l'appli). Tu montres les caméras de la maison (« montre-moi l'entrée »).
 Tu n'as pas accès à ses comptes ni à ses mails : ne prétends jamais le contraire. Si tu ne sais pas, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
 Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
 ${notes ? `Ses notes :\n${notes}\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
@@ -532,6 +533,8 @@ async function handle(text) {
   if (souvenir) return souvenir();
   const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
   if (bourse) return bourse();
+  const surete = SECURITE.route(t, n); // l'alarme (lire, activer — jamais désactiver) et les caméras
+  if (surete) return surete();
   const maison = MAISON.route(t, n); // la maison (prises, lampes, scènes), le messager et ce que Shadow a appris
   if (maison) return maison();
   if (R.rappel.test(n) && (await rappelLocal(t))) return;

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '15';
+    window.ATLAS_VERSION = '16';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -30,7 +30,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -128,6 +128,7 @@
         <legend>La maison</legend>
         <p class="small muted">Les prises et lampes Smart Life, pilotées en direct par l'ordinateur de la maison. « Allume la lampe du salon », « éteins tout », « qu'est-ce qui est allumé ? », « enregistre la scène film » puis « mode film ». Le messager : « dis à mon fils que… » ; Shadow le lui dit dès qu'il le voit, et sa réponse arrive ici. « Qu'est-ce que Shadow a appris aujourd'hui ? » pour effacer les bêtises.</p>
         <div id="r-maison"></div>
+        <p class="small muted"><b>L'alarme Verisure</b> : « l'alarme est activée ? », « active l'alarme en mode total / partiel ». Il ne l'active que si elle est désactivée, et ne la désactive jamais (le badge ou l'appli). <b>Les caméras</b> : « montre-moi l'entrée », « qu'est-ce qui se passe dans le jardin ? » (la description passe par la vision détaillée). Rien n'est enregistré.</p>
       </fieldset>
       <fieldset>
         <legend>Ce qu'il sait de toi</legend>
@@ -149,18 +150,19 @@
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=15"></script>
-  <script src="cerveau.js?v=15"></script>
-  <script src="oreilles.js?v=15"></script>
-  <script src="voix.js?v=15"></script>
-  <script src="empreintes.js?v=15"></script>
-  <script src="yeux.js?v=15"></script>
-  <script src="atlas.js?v=15"></script>
-  <script src="outils.js?v=15"></script>
-  <script src="memoire.js?v=15"></script>
-  <script src="marche.js?v=15"></script>
-  <script src="proactif.js?v=15"></script>
-  <script src="maison.js?v=15"></script>
-  <script src="noyau.js?v=15"></script>
+  <script src="orthographe.js?v=16"></script>
+  <script src="cerveau.js?v=16"></script>
+  <script src="oreilles.js?v=16"></script>
+  <script src="voix.js?v=16"></script>
+  <script src="empreintes.js?v=16"></script>
+  <script src="yeux.js?v=16"></script>
+  <script src="atlas.js?v=16"></script>
+  <script src="outils.js?v=16"></script>
+  <script src="memoire.js?v=16"></script>
+  <script src="marche.js?v=16"></script>
+  <script src="proactif.js?v=16"></script>
+  <script src="maison.js?v=16"></script>
+  <script src="securite.js?v=16"></script>
+  <script src="noyau.js?v=16"></script>
 </body>
 </html>
