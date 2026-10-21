@@ -217,6 +217,22 @@ const MAISON = (() => {
     const ko = [...quoi.values()].map(x => x.a).filter(a => !bons.has(a.id));
     return say(`${Object.values(groupes).map(phrase).filter(Boolean).join('. ')}.${ko.length ? ` ${lesNoms(ko)} ne répond pas.` : ''}`);
   }
+  // un bout de phrase (« … lumière de la cuisine ») : le début s'est perdu (on lui a parlé pendant qu'il parlait) — il demande
+  function fragment(t, n) {
+    if (!appareils.length || VERBE.test(n) || n.split(' ').length > 5) return null;
+    if (/\b(qui|pourquoi|quand|est ce|c est|il y a|t as|tu as|j ai|on a|laisse|oublie)\b/.test(n)) return null; // une phrase de la conversation
+    const l = trouve(t, true); if (!l.length || l.length > 3) return null;
+    if (!/\b(lumiere|lumieres|lampe|lampes|prise)\b/.test(n) && !l.some(a => mots(a.nom).join(' ') === mots(t).join(' '))) return null;
+    return async () => {
+      const brut = await ask(`${lesNoms(l)} : j'allume ou j'éteins ?`), r = N(brut);
+      if (/\b(eteins|eteint|eteindre|eteignez|coupe|couper)\b/.test(r)) return pilote(lesNoms(l), false);
+      if (/\b(allume|allumer|allumez|rallume)\b/.test(r)) return pilote(lesNoms(l), true);
+      const pc = r.match(/\b(\d{1,3})\b/);
+      const o = lecture(brut, r) || (pc ? { lum: Math.max(1, Math.min(100, +pc[1])) } : null);
+      if (o) return regle(lesNoms(l), N(lesNoms(l)), o);
+      return say("D'accord, je n'y touche pas.");
+    };
+  }
   // les scènes : l'état de la maison à un moment, rejoué d'un mot (« mode film », « bonne nuit »)
   const SC = () => (S.scenes = S.scenes || []);
   async function enregistreScene(nom) {
@@ -451,7 +467,7 @@ const MAISON = (() => {
       const cible = String(t).replace(/^\s*(allume|éteins|eteins|éteint|eteint|coupe|active|désactive|desactive|mets en marche|rallume)\s+/i, '').replace(/[.!?]+$/, '').trim();
       return () => pilote(cible, allume);
     }
-    return null;
+    return fragment(t, n);
   }
   // pour le cerveau : ce qu'il y a dans la maison
   function contexte() {
@@ -479,5 +495,5 @@ const MAISON = (() => {
     if (t.id === 'r-shadow-actif') ecrisRegles({ actif: t.checked }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas"));
     if (t.id === 'r-shadow-coucher') ecrisRegles({ coucher: t.checked }).then(() => toast('Enregistré'), () => toast("L'ordinateur ne répond pas"));
   });
-  return { route, pilote, etat, envoie, reglages, autorise, bascule, mesMessages, appris, efface, contexte, liste, _releve: releve, _trouve: trouve, _appareils: () => appareils, _set: l => { appareils = l; pret = true; vusAt = Date.now(); } };
+  return { route, fragment, pilote, etat, envoie, reglages, autorise, bascule, mesMessages, appris, efface, contexte, liste, _releve: releve, _trouve: trouve, _appareils: () => appareils, _set: l => { appareils = l; pret = true; vusAt = Date.now(); } };
 })();

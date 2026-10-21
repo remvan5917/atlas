@@ -160,7 +160,13 @@ const SECURITE = (() => {
     alertesRecentes = alertesRecentes.concat(l).slice(-30);
     vuJusqua = Math.max(...l.map(a => a.id));
     try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ }
-    l.filter(a => a.gravite !== 'info').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
+    // plusieurs « nouvel appareil » d'un coup (des ampoules, des prises qu'on installe) : une seule annonce, pas une liste
+    const res = l.filter(a => a.genre === 'reseau' && a.gravite !== 'info');
+    if (res.length > 1) {
+      const der = res[res.length - 1];
+      PROACTIF.annonce(`alerte-${der.id}`, async () => `${res.length} nouveaux appareils se sont connectés au réseau de la maison. Si ce sont tes nouvelles prises ou ampoules, relance la connexion des appareils sur l'ordinateur : je les reconnaîtrai. Sinon, dis « rapport de sécurité ».`, { urgent: res.some(a => a.gravite === 'urgent'), expire: Date.now() + 6 * 3600000 });
+    }
+    l.filter(a => a.gravite !== 'info' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
   }
   setInterval(releveAlertes, 20000); setTimeout(releveAlertes, 9000);
   async function rapport(n) {

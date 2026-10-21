@@ -785,14 +785,16 @@ async function vie() {
       const bout = n.split(' ').filter(Boolean).length < 2 || /(\.\.\.|…)\s*$/.test(String(r).trim());
       const suite = talk && Date.now() - (dlg.repondu || 0) < 15000 && memes && !bout && (dlg.suites || 0) < 2;
       const seul = CONV.autres(dlg.qui) === 0 && adresse && n.split(' ').length >= 2 && !bout && !dlg.discret;
-      if (!appele && !suite && !seul) {
+      // « … lumière de la cuisine » : le début s'est perdu (on lui a parlé pendant qu'il parlait) ; il demande « j'allume ou j'éteins ? »
+      const frag = !appele && !suite && !seul && !dlg.discret && !!MAISON.fragment(r, n);
+      if (!appele && !suite && !seul && !frag) {
         journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
         if (dlg.discret) continue;
         dlg.busy = true;
         try { await CONV.peutEtre(r, dlg.qui); } catch (e) { console.warn('conversation', e); } finally { dlg.busy = false; }
         continue;
       }
-      journal(r, dlg.qui, appele ? 'appelé : il répond' : suite ? 'à la suite : il répond' : 'seul avec lui : il répond');
+      journal(r, dlg.qui, appele ? 'appelé : il répond' : suite ? 'à la suite : il répond' : frag ? 'un bout de phrase sur la maison : il demande' : 'seul avec lui : il répond');
       dlg.suites = appele ? 0 : (dlg.suites || 0) + 1;
       CONV.parleAtlas(dlg.qui);
       dlg.discret = false;
