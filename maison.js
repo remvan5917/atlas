@@ -257,7 +257,7 @@ const MAISON = (() => {
     etat: /\b(qu est ce qui est allume|qu est ce qui est (encore )?(branche|en marche)|c est allume ou|est ce que (la |le |les |l )?.+ est (allume|eteint|allumee|eteinte)|etat de la maison|les appareils de la maison)\b/,
     sceneRec: /\b(enregistre|retiens|memorise|cree|sauvegarde) (la |une |cette )?(scene|ambiance)\b|\b(retiens|enregistre) cet etat comme\b/,
     sceneGo: /^(?:mode|scene|ambiance|lance la scene|lance le mode|active le mode|passe en mode)\s+(.+)$/,
-    message: /^(?:dis|previens|rappelle|explique|demande) (?:a |au )?(?:mon fils|mon garcon|mon petit|mon bonhomme|[a-z]+) (?:que |qu |de |d )(.+)$|^(?:laisse|envoie|transmets?) (?:un |le )?(?:message|mot) (?:a |au )?(?:mon fils|mon garcon|mon petit|[a-z]+)\s*(?:que |qu |de |pour lui dire que |:)?\s*(.+)$/,
+    message: /^(?:dis|dit|dites|previens|rappelle|explique|demande) (?:a |au )?(?:mon fils|mon garcon|mon petit|mon bonhomme|[a-z]+) (?:que |qu |de |d )(.+)$|^(?:laisse|envoie|transmets?) (?:un |le )?(?:message|mot) (?:a |au )?(?:mon fils|mon garcon|mon petit|[a-z]+)\s*(?:que |qu |de |pour lui dire que |:)?\s*(.+)$/,
     mesMsg: /\b(j ai (des|un) (nouveaux? )?messages?|des messages pour moi|il m a laisse un message|il a repondu|mes messages)\b/,
     appris: /\b(qu est ce que|qu|ce que) (shadow|mon fils|il|on) (a|lui a) (appris|retenu)\b|\bshadow a appris quoi\b|\bce que shadow a (appris|retenu)\b/,
     efface: /\b(efface|supprime|enleve|retire)\b.*\b(shadow|le \d|la \d|le (un|deux|trois|quatre|cinq|six|sept|huit)|la (premiere|deuxieme|troisieme|quatrieme|cinquieme))\b|\b(dis|demande) a shadow d oublier\b|\bfais oublier a shadow\b/,
@@ -273,7 +273,13 @@ const MAISON = (() => {
     if (R.mesMsg.test(n)) return mesMessages;
     const pre = LIEN.prenom() ? N(LIEN.prenom()) : '';
     const mm = n.match(R.message);
-    if (mm && (/\b(mon fils|mon garcon|mon petit|mon bonhomme|fils)\b/.test(n) || (pre && new RegExp(`\\b${pre}\\b`).test(n)))) {
+    const pourLui = /\b(mon fils|mon garcon|mon petit|mon bonhomme|fils|shadow)\b/.test(n) || (/\b(message|mot)\b/.test(n) && /\b(chateau|chado|shado|chadow)\b/.test(n)) || (pre && new RegExp(`\\b${pre}\\b`).test(n)); // « Château » : Shadow mal transcrit
+    // « tu peux envoyer un message à Shadow / à mon fils ? » (sans le message) : il demande quoi
+    if (!mm && pourLui && /\b(envoie|envoies|envoyer|transmets|transmettre|laisse|laisser|passe|passer)\b.*\b(message|mot)\b/.test(n)) {
+      const apres = String(t).match(/(?:message|mot)\b[^:]*?(?:\s(?:que|qu['’]|de|d['’])\s*|:\s*)(.+)$/i);
+      return async () => { if (apres && apres[1].trim().length > 2) return envoie(apres[1]); const a = await ask('Je lui dis quoi ?'); return a ? envoie(a) : say("Je n'ai rien entendu. Redis-moi le message quand tu veux."); };
+    }
+    if (mm && pourLui) {
       const raw = String(t).match(/(?:fils|garçon|garcon|petit|bonhomme|message|mot|[A-Za-zÀ-ÿ]+)(?:\s*,?\s+(pour lui dire que(?=\s)|que(?=\s)|qu['’]|de(?=\s)|d['’])|\s*(:))\s*(.+)$/i);
       const sep = raw ? raw[1] || raw[2] || '' : '';
       return () => envoie(raw ? `${/^d/i.test(sep) ? `${sep}${/['’]$/.test(sep) ? '' : ' '}` : ''}${raw[3]}` : (mm[1] || mm[2])); // « de… » : c'est une demande

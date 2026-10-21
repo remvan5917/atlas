@@ -229,7 +229,7 @@ const brainTimes = [];
 async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   dlg.interrupt = false;
   if (face.state !== 'think') face.set(dlg.state === 'standby' ? 'idle' : 'listen');
-  const r = await OREILLES.listen({ prompt: prompt || 'Un adulte parle en français à Atlas, son assistant.', maxWait, cheap, endSilence: 1.0 });
+  const r = await OREILLES.listen({ prompt: prompt || "Un adulte parle en français à Atlas, l'assistant de la maison. Son fils a un robot, Shadow.", maxWait, cheap, endSilence: 1.0 });
   if (face.el) face.el.classList.remove('hearing');
   if (r && typeof r === 'object') {
     if (r.error === 'not-allowed') { if (Date.now() - (dlg.micDitAt || 0) > 60000) { dlg.micDitAt = Date.now(); await say("Le micro est bloqué. Autorise le micro pour ce site, puis touche l'écran."); } await wait(5000); return ''; }
@@ -497,7 +497,7 @@ function briefing(fin = true) {
 
 /* ---------- ce qu'il comprend ---------- */
 const R = {
-  reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas)\b/,
+  reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas|a classe|atlase|atlast|hat last)\b/,
   veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|bonne nuit atlas|repose toi|tu peux te reposer)\b/,
   stop: /^(stop|tais toi|silence|chut|arrete|ca suffit|stoppe)\b/,
   repete: /\b(repete|redis|tu peux repeter|j ai pas compris|pardon)\b/,
@@ -521,8 +521,8 @@ async function handle(text) {
   let n = N(text);
   cacheEcran();
   // « Atlas, … » : son nom au début ne compte pas
-  n = n.replace(/^((dis |hey |he |ok |eh )?(l )?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas))\s*/, '').trim();
-  const t = String(text).replace(/^\s*((dis|hey|hé|ok|eh)[\s,]+)?(l['’]\s*)?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas)[\s,.!?]*/i, '').trim() || text;
+  n = n.replace(/^((dis |hey |he |ok |eh )?(l )?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|a classe|atlast|hat last))\s*/, '').trim();
+  const t = String(text).replace(/^\s*((dis|hey|hé|ok|eh)[\s,]+)?(l['’]\s*)?(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|latlas|a tlas|[àa] classe|atlast|hat last)[\s,.!?]*/i, '').trim() || text;
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (R.veille.test(n) && n.split(' ').length <= 6) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
@@ -748,13 +748,18 @@ async function presentation() {
 }
 
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
+// ce qui ressemble à une demande qu'on lui fait (une question, un ordre) — le reste, sans son nom, ne le concerne pas
+const ADRESSE = /^(et )?(dis|dit|dites|donne|mets|met|allume|eteins|lance|ajoute|rappelle|note|cherche|trouve|montre|affiche|explique|raconte|calcule|convertis|combien|quelle?s?|quel|quels|ou|comment|pourquoi|quand|qui|est ce qu|est ce que|qu est ce|c est quoi|tu peux|tu sais|tu connais|peux tu|sais tu|pourrais tu|j ai besoin|je veux|je voudrais|fais|fait|ouvre|ferme|active|envoie|envoyer|previens|arrete|stop|repete|lis|regarde|aide|traduis|ecris|programme|reveille|minuteur|il fait|il va|ca fait|y a t il|il y a)\b/;
 async function vie() {
   for (;;) {
     if (dlg.state === 'off' || voice.endormi) { await wait(500); continue; }
     const talk = dlg.state === 'talk', conv = S.settings.conversation !== false;
     // en mode conversation, il écoute la pièce avec les oreilles de la maison (le son ne sort pas de la maison)
-    const r = await hear({ maxWait: talk ? 25000 : 60000, cheap: conv || !talk, prompt: talk ? '' : 'Atlas.' });
-    if (r === null || voice.endormi) continue; // un autre Atlas a pris la main pendant qu'il écoutait
+    const r0 = await hear({ maxWait: talk ? 25000 : 60000, cheap: conv || !talk, prompt: talk ? '' : 'Atlas. Shadow.' });
+    if (r0 === null || voice.endormi) continue; // un autre Atlas a pris la main pendant qu'il écoutait
+    // les bruits que la transcription écrit entre étoiles ou crochets (« *Bruit de porte* », « [Musique] ») ne sont pas des phrases
+    const r = typeof r0 === 'string' ? r0.replace(/\*[^*]*\*|\[[^\]]*\]|\([^)]*\)|♪+/g, ' ').replace(/\s+/g, ' ').trim() : r0;
+    if (r0 && !r) { journal(r0, '', 'un bruit : ignoré'); continue; }
     if (!r) { if (talk && ++dlg.silence >= 2) { dlg.state = 'standby'; face.set('idle'); } continue; }
     const n = N(r);
     dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
@@ -767,11 +772,15 @@ async function vie() {
       if (/^shadow\b/.test(n)) { CONV.pourShadow(); continue; } // on parle à Shadow (et sa réponse arrive juste après)
       if (!appele && CONV.shadowRepond(dlg.qui)) continue;
       // c'est pour lui : on l'appelle ; on enchaîne juste après sa réponse ; ou personne d'autre ne parle (on est seul avec lui)
-      const memes = !dlg.qui || !dlg.quiParlait || /^invité/.test(dlg.qui) || /^invité/.test(dlg.quiParlait) || dlg.qui === dlg.quiParlait;
+      // sans son nom, il ne répond qu'à une vraie demande (une question, un ordre), et juste après lui avoir répondu,
+      // à la même voix — au plus deux fois d'affilée (sinon il répondrait à toute la pièce, et à la télé)
+      const adresse = /\?/.test(r) || ADRESSE.test(n);
+      const memeVoix = dlg.qui ? dlg.qui === dlg.quiParlait : !dlg.quiParlait;
+      const memes = memeVoix || adresse;
       // un bout de phrase (« C'est… ») : sans doute l'écho de sa voix, ou une phrase coupée — il attend la suite
       const bout = n.split(' ').filter(Boolean).length < 2 || /(\.\.\.|…)\s*$/.test(String(r).trim());
-      const suite = talk && Date.now() - (dlg.repondu || 0) < 20000 && memes && !bout;
-      const seul = CONV.autres(dlg.qui) === 0 && n.split(' ').length >= 2 && !dlg.discret;
+      const suite = talk && Date.now() - (dlg.repondu || 0) < 15000 && memes && !bout && (dlg.suites || 0) < 2;
+      const seul = CONV.autres(dlg.qui) === 0 && adresse && n.split(' ').length >= 2 && !bout && !dlg.discret;
       if (!appele && !suite && !seul) {
         journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
         if (dlg.discret) continue;
@@ -780,6 +789,7 @@ async function vie() {
         continue;
       }
       journal(r, dlg.qui, appele ? 'appelé : il répond' : suite ? 'à la suite : il répond' : 'seul avec lui : il répond');
+      dlg.suites = appele ? 0 : (dlg.suites || 0) + 1;
       CONV.parleAtlas(dlg.qui);
       dlg.discret = false;
     } else if (!talk && !appele) { journal(r, dlg.qui, 'en veille : il attend son nom'); continue; } // en veille : il ne répond qu'à son nom
