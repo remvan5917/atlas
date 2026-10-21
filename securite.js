@@ -223,12 +223,13 @@ const SECURITE = (() => {
     return say(r.ok ? `C'est fait : la caméra ${c.nom} tourne vers ${sens === 'haut' || sens === 'bas' ? 'le ' : 'la '}${sens}.` : `La caméra ${c.nom} ne répond pas. Sur batterie, elle dort peut-être : ouvre-la une fois dans l'appli EZVIZ.`);
   }
 
-  // les EZVIZ (sur batterie) : pas de direct — leur dernière détection, et leurs batteries
+  // les EZVIZ (sur batterie) : le direct et la photo passent par le cloud EZVIZ (qui les réveille) ; leurs batteries
   let ezCams = [], ezAt = 0;
   async function listeEz() { if (Date.now() - ezAt < 60000) return ezCams; try { const j = await appel('/maison/ezviz', null, 10000); ezCams = j.cameras || []; ezAt = Date.now(); } catch (e) { /* plus tard */ } return ezCams; }
   setTimeout(listeEz, 8000); setInterval(listeEz, 5 * 60000);
   const ezDe = n => ezCams.find(x => nommee(n, x.nom));
-  async function vueEz(c, question) {
+  async function vueEz(c, question, photo) {
+    if (!question && !photo) return direct(c); // « montre-moi la façade » : le direct, avec le son (le flux réveille la caméra)
     // une photo fraîche : le PC réveille la caméra (comme l'appli EZVIZ), elle capture, puis elle se rendort
     face.set('think'); say(`Je réveille la caméra ${c.nom}, quelques secondes…`);
     let img; try { img = await appel(`/maison/ezviz/photo?nom=${encodeURIComponent(c.nom)}`, null, 70000); } catch (e) { img = null; }
@@ -280,7 +281,7 @@ const SECURITE = (() => {
     if (R.etat.test(n)) return etatAlarme;
     if (/\b(batterie|batteries|charge)\b.*\bcameras?\b|\bcameras?\b.*\b(batterie|batteries)\b/.test(n)) return batteries;
     const ez = ezDe(n);
-    if (ez && /\b(montre|affiche|fais voir|regarde|photo|image|direct|qu est ce qui se passe|il y a quelqu un|y a quelqu un)\b/.test(n) && !cams.some(x => nommee(n, x.nom))) return () => vueEz(ez, /\b(qu est ce qui se passe|qu est ce qu il se passe|il se passe quoi|il y a quelqu un|y a quelqu un|qui est la|tu vois quoi|qu est ce que tu vois|decris)\b/.test(n) ? t : '');
+    if (ez && /\b(montre|affiche|fais voir|regarde|photo|image|direct|qu est ce qui se passe|il y a quelqu un|y a quelqu un)\b/.test(n) && !cams.some(x => nommee(n, x.nom))) return () => vueEz(ez, /\b(qu est ce qui se passe|qu est ce qu il se passe|il se passe quoi|il y a quelqu un|y a quelqu un|qui est la|tu vois quoi|qu est ce que tu vois|decris)\b/.test(n) ? t : '', /\b(photo|image)\b/.test(n));
     // une caméra : seulement si on dit « caméra » ou le nom d'une de nos caméras (« qu'est-ce qui se passe dans le monde » n'en est pas une)
     const nomme = /\bcameras?\b/.test(n) || cams.some(x => nommee(n, x.nom));
     if ((R.camera.test(n) || /\b(montre|affiche|fais voir|regarde|ecoute|photo|image|direct)\b/.test(n)) && nomme) {
