@@ -782,7 +782,8 @@ async function apprendreVoix(text) {
 async function presentation() {
   const p = CONV.presents(), inv = CONV.nbInvites(), h = new Date().getHours();
   const salut = `${h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour'}${inv ? ` à tous, et bienvenue à nos invités` : p.length ? ` ${p.join(', ')}` : ''}.`;
-  await say(`${salut} Je suis Atlas, l'assistant de cette maison. J'écoute, je reconnais les voix, je cherche sur Internet, je vois avec ma caméra, je fais les calculs, les conversions et la météo, je gère les minuteurs, les listes et les rappels, je suis les marchés, je pilote les lumières, je retiens ce qui compte pour chacun, et je garde un œil sur l'ordinateur de la maison. Je suis la conversation et j'interviens quand je peux aider. Pour me parler, il suffit de dire mon nom.`);
+  const inv2 = typeof VISIO !== 'undefined' ? VISIO.inventeurs() : '';
+  await say(`${salut} Je suis Atlas, l'assistant de cette maison${inv2 ? `, inventé par ${inv2}` : ''}. J'écoute, je reconnais les voix, je cherche sur Internet, je vois avec ma caméra, je fais les calculs, les conversions et la météo, je gère les minuteurs, les listes et les rappels, je suis les marchés, je pilote les lumières, je retiens ce qui compte pour chacun, et je garde un œil sur l'ordinateur de la maison. Je suis la conversation et j'interviens quand je peux aider. Pour me parler, il suffit de dire mon nom.`);
 }
 
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */

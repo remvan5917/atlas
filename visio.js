@@ -3,7 +3,8 @@
    - « mode visio » : lumière de studio dans le salon, la musique et la radio coupées, plus de notifications sur l'écran,
      et Atlas ne répond plus qu'à son nom (il ne coupe pas la parole aux invités). « fin de la visio » : tout revient comme avant.
    - Les effets, à la caméra : « fondu au noir », « rallume en douceur », « effet orage », « lumière de studio ».
-   - « présente-toi à mes invités » : il se présente, et les lumières jouent avec lui.
+   - « présente-toi à mes invités », « mode science-fiction », « fais ton show » : il présente son inventeur et la maison, en séquence de
+     science-fiction (sons, lumières qui parcourent les pièces — jamais les chambres —, caméras en direct) ; en visio, la version courte.
    - « coupe mon micro » / « remets mon micro » (le micro de l'ordi), « montre le graphique de l'or à l'écran ».
    ========================================================= */
 'use strict';
@@ -88,17 +89,97 @@ const VISIO = (() => {
     return say(v ? "Fin de la visio : les lumières sont comme avant, et les notifications reviennent." : "Les notifications sont revenues.");
   }
 
-  /* ---------- le spectacle : « présente-toi à mes invités » ---------- */
-  async function spectacle() {
-    let l = []; try { l = await cibles('', true); } catch (e) { /* sans lumières, il parle quand même */ }
-    const ids = l.map(a => a.id), avant = l.map(a => ({ id: a.id, allume: a.allume, lum: a.lum, teinte: a.teinte }));
-    const moi = S.nom || '';
-    await say(`Bonsoir à tous. Je suis Atlas, l'assistant de cette maison${moi ? `, et de ${moi}` : ''}. Je vois que nous avons des invités : laissez-moi installer l'ambiance.`);
-    if (ids.length) { try { for (const v of [80, 55, 35, 20]) { await regle(ids, true, v, 0); await wait(250); } } catch (e) { /* tant pis */ } }
-    await say("Voilà, c'est mieux. Je règle les lumières, je surveille les caméras jour et nuit, je suis les marchés à la seconde, et je lis même ses mails. Rassurez-vous : je garde ses secrets.");
-    if (ids.length) { try { for (const v of [35, 60, 85, 100]) { await regle(ids, true, v, 45); await wait(200); } } catch (e) { /* tant pis */ } }
-    await say('Et la lumière revient. Bonne réunion à tous.');
-    if (S.visio == null && avant.length) { await wait(1500); for (const a of avant) { try { await regle([a.id], a.allume, a.allume ? a.lum : undefined, a.allume ? a.teinte : undefined); } catch (e) { /* tant pis */ } } }
+  /* ---------- le spectacle : « présente-toi à mes invités » (à la maison : la grande séquence ; en visio : la version courte) ---------- */
+  // des sons de science-fiction, fabriqués sur place (aucun fichier)
+  function sfx(quoi) {
+    if (!S.settings.sound) return;
+    try {
+      const c = fx.audio(), t0 = c.currentTime, out = c.createGain(); out.gain.value = 0.16; out.connect(c.destination);
+      const note = (type, f1, f2, debut, duree, vol, filtre) => {
+        const o = c.createOscillator(), g = c.createGain(); o.type = type;
+        o.frequency.setValueAtTime(f1, t0 + debut); o.frequency.exponentialRampToValueAtTime(f2, t0 + debut + duree);
+        g.gain.setValueAtTime(0.0001, t0 + debut); g.gain.exponentialRampToValueAtTime(vol, t0 + debut + Math.min(0.4, duree / 3)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + debut + duree);
+        let n = o; if (filtre) { const b = c.createBiquadFilter(); b.type = 'lowpass'; b.frequency.setValueAtTime(filtre[0], t0 + debut); b.frequency.exponentialRampToValueAtTime(filtre[1], t0 + debut + duree); o.connect(b); n = b; }
+        n.connect(g); g.connect(out); o.start(t0 + debut); o.stop(t0 + debut + duree + 0.05);
+      };
+      if (quoi === 'demarrage') { // un réacteur qui s'allume : un grondement qui monte, puis des carillons
+        note('sawtooth', 45, 180, 0, 3.2, 0.5, [120, 2400]); note('sawtooth', 45.5, 181, 0, 3.2, 0.35, [120, 2400]);
+        [523, 659, 784, 1047, 1319].forEach((f, k) => note('sine', f, f, 2.6 + k * 0.12, 1.4, 0.25));
+      } else if (quoi === 'scan') { // un balayage, des bips
+        note('square', 1800, 2600, 0, 0.5, 0.06, [3000, 1500]); [0.55, 0.75, 0.95].forEach(d => note('sine', 1568, 1568, d, 0.12, 0.2));
+      } else if (quoi === 'final') { // un accord qui s'ouvre
+        [261.6, 329.6, 392, 523.3, 784].forEach(f => note('sawtooth', f, f, 0, 3.5, 0.12, [300, 4000]));
+      }
+    } catch (e) { /* pas de son */ }
+  }
+  const inventeur = () => {
+    const enfant = N((typeof LIEN !== 'undefined' && LIEN.prenom()) || '');
+    if (S.nom) return S.nom;
+    if (dlg.qui && !/^invit/i.test(dlg.qui) && N(dlg.qui) !== enfant) return dlg.qui;
+    const v = (typeof VOIX !== 'undefined' ? VOIX.people() : []).map(p => p.name).find(x => !/^invit/i.test(x) && N(x) !== enfant);
+    return v || '';
+  };
+  const remets = async avant => { for (const a of avant) { try { await regle([a.id], a.allume, a.allume ? a.lum : undefined, a.allume ? a.teinte : undefined); } catch (e) { /* tant pis */ } } };
+  async function cameras() {
+    const l = [];
+    try { (await appel('/maison/ezviz', null, 8000)).cameras.forEach(c => l.push(c.nom)); } catch (e) { /* rien */ }
+    try { ((await appel('/maison/cameras', null, 8000)).cameras || []).forEach(c => l.push(c.nom.charAt(0).toUpperCase() + c.nom.slice(1))); } catch (e) { /* rien */ }
+    return l;
+  }
+  const liste = l => (l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : l[0] || '');
+  async function spectacle(t, n) {
+    const enVisio = !!S.visio || /\b(visio|collegues|clients|reunion|en ligne|participants)\b/.test(n || '');
+    // les deux inventeurs : papa et son fils
+    const nom = inventeur(), enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || '';
+    const deux = !!(nom && enfant);
+    const inventeurs = deux ? `${nom} et ${enfant}, mes deux inventeurs` : nom ? `${nom}, mon inventeur` : 'mon inventeur';
+    const ont = deux ? 'qui m\'ont' : 'qui m\'a', ils = deux ? 'Ils m\'ont' : 'Il m\'a';
+    let l = []; try { l = await lampes(); } catch (e) { /* sans lumières, il parle quand même */ }
+    const avant = l.map(a => ({ id: a.id, allume: a.allume, lum: a.lum, teinte: a.teinte }));
+    const salon = l.filter(a => PIECE.test(N(a.nom))), sIds = salon.map(a => a.id);
+    // jamais les chambres (quelqu'un dort peut-être)
+    const pieces = l.filter(a => !/\bchambres?\b/.test(N(a.nom))).sort((a, b) => (PIECE.test(N(a.nom)) ? 1 : 0) - (PIECE.test(N(b.nom)) ? 1 : 0));
+    const pIds = pieces.map(a => a.id);
+    const essaie = async f => { try { await f(); } catch (e) { /* la lumière ne suit pas : le spectacle continue */ } };
+
+    if (enVisio) {
+      sfx('demarrage');
+      if (sIds.length) await essaie(async () => { for (const v of [70, 40, 15]) { await regle(sIds, true, v, 0); await wait(250); } });
+      await wait(1800);
+      await say(`Bonjour à tous. Non, je ne suis pas un effet spécial. Je m'appelle Atlas : je suis l'intelligence artificielle de cette maison. Ce sont ${inventeurs}, ${ont} imaginé, puis construit de A à Z.`.replace('Ce sont ' + inventeurs + ', qui m\'a', 'C\'est ' + inventeurs + ', qui m\'a'));
+      if (sIds.length) await essaie(async () => { for (const v of [40, 75, 100, 60, 100]) { await regle(sIds, true, v, 45); await wait(180); } });
+      await say("Je pilote la maison : la lumière derrière lui, par exemple. Je surveille ses caméras, je suis les marchés en temps réel, je lis ses mails, et je commande son ordinateur, à la voix.");
+      sfx('scan');
+      await say('Rassurez-vous : ce que j\'entends pendant cette réunion reste ici. Je vous le laisse. Bonne réunion à tous.');
+      sfx('final');
+      if (!S.visio) { await wait(1500); await remets(avant.filter(a => sIds.includes(a.id))); }
+      return;
+    }
+
+    // à la maison : la grande séquence
+    sfx('demarrage');
+    if (pIds.length) await essaie(async () => { for (const v of [60, 30, 10]) { await regle(pIds, true, v, 0); await wait(220); } await regle(pIds, false); });
+    await wait(1500);
+    await say('Séquence de présentation. Initialisation.');
+    sfx('scan'); await wait(1200);
+    await say(`Bonsoir à tous. Je m'appelle Atlas. Je suis l'intelligence de cette maison. Il y a encore quelques semaines, je n'existais pas. ${deux ? 'Ce sont' : 'C\'est'} ${inventeurs}, ${ont} imaginé, puis construit, ligne après ligne, ici même. ${ils} donné une voix, des yeux, et une mission : veiller sur cette maison, et sur tous ceux qui l'habitent.`);
+    await say("Laissez-moi vous montrer. D'abord : la lumière.");
+    if (pIds.length) await essaie(async () => {
+      for (const a of pieces) { await regle([a.id], true, 100, 70); await wait(450); } // les pièces s'allument une à une
+      await wait(300); await regle(pIds, false); await wait(500);
+      await regle(pIds, true, 100, 100); await wait(400); // un flash, toutes ensemble
+      for (const v of [70, 45, 30]) { await regle(pIds, true, v, 10); await wait(200); }
+    });
+    const cams = await cameras();
+    sfx('scan');
+    await say(`Ensuite : mes yeux. ${cams.length ? `En ce moment, ${cams.length} caméras veillent sur la maison : ${liste(cams)}. ` : ''}Le jour, je vous les montre en direct, avec le son. La nuit, pendant que tout le monde dort, ma sentinelle analyse chaque mouvement, chaque bruit, chaque appareil qui ose se connecter au réseau. Et si quelque chose ne va pas, je réveille ${nom || 'mon inventeur'}.`);
+    await say("Je suis aussi connecté au reste du monde : je suis les marchés à la seconde, je lis ses mails, je pilote son ordinateur, sa musique, la radio. Il me suffit d'une phrase.");
+    await say(`Et je ne suis pas seul. J'ai un petit frère : Shadow, le robot ${enfant ? `de ${enfant}` : 'de la famille'}. ${deux ? 'Lui aussi, ils l\'ont inventé ensemble, tous les deux.' : `Lui aussi, c'est ${nom || 'mon inventeur'} qui l'a créé.`} Nous nous parlons, lui et moi, tous les jours.`);
+    await say('Mais assez parlé de moi. Ce soir, vous êtes les invités de cette maison. Bienvenue.');
+    sfx('final');
+    if (pIds.length) await essaie(async () => { for (const v of [35, 50, 65]) { await regle(sIds.length ? sIds : pIds, true, v, 0); await wait(250); } });
+    await wait(1200);
+    await remets(avant.filter(a => pIds.includes(a.id) && !sIds.includes(a.id))); // les pièces du spectacle comme avant (les chambres n'ont jamais bougé) ; le salon en lumière chaude, pour la soirée
   }
 
   /* ---------- le micro de l'ordi, un graphique à l'écran ---------- */
@@ -118,7 +199,7 @@ const VISIO = (() => {
   function route(t, n) {
     if (/\b(mode visio|mode visioconference|je (suis|vais etre|passe|pars) en visio|je commence (une|ma) visio|j ai une visio|on commence la visio)\b/.test(n) && !/\b(fin|sors|arrete|quitte)\b/.test(n)) return () => visio(true);
     if (/\b(fin (du mode |de la |de ma )?visio|j ai fini (la|ma) visio|la visio est (finie|terminee)|sors du mode visio|arrete le mode visio|quitte le mode visio)\b/.test(n)) return () => visio(false);
-    if (/\b(presente toi|dis bonjour|salue)\b.*\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return spectacle;
+    if (/\b(presente toi|dis bonjour|salue)\b.*\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie|participants)\b/.test(n) || /\b(mode science fiction|sequence de presentation|fais (le|ton) (show|spectacle)|fais ta demo|montre leur ce que tu sais faire|montre (a|aux) (mes |nos )?invites ce que tu sais faire)\b/.test(n)) return () => spectacle(t, n);
     if (/\b(fondu au noir|fondu a noir|fondu noir|eteins en douceur|eteins doucement|eteins les lumieres doucement|baisse doucement|fais le noir)\b/.test(n)) return () => fondu(t, 'noir');
     if (/\b(rallume en douceur|allume en douceur|allume doucement|rallume doucement|lever de soleil|leve le soleil|que la lumiere soit)\b/.test(n) || (/\bdouceur\b/.test(n) && /^(ral|ra |re|al)/.test(n) && n.split(' ').length <= 5 && !/\b(eteins|baisse)\b/.test(n))) return () => fondu(t, 'jour'); // « Rallez mon douceur »
     if (/\b(effet orage|effet eclair|fais un eclair|fais l orage|fais un orage|fais clignoter)\b/.test(n) || (/\b(orage|orages|eclairs?)\b/.test(n) && n.split(' ').length <= 5 && !/\b(va|risque|prevu|demain|meteo|y a|il y)\b/.test(n))) return () => orage(t); // « est fait orage »
@@ -131,5 +212,6 @@ const VISIO = (() => {
     }
     return null;
   }
-  return { route, visio, actif: () => !!S.visio };
+  const qui = () => { const a = inventeur(), b = (typeof LIEN !== 'undefined' && LIEN.prenom()) || ''; return a && b ? `${a} et ${b}` : a || b; };
+  return { route, visio, actif: () => !!S.visio, inventeurs: qui };
 })();
