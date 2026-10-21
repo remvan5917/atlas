@@ -40,7 +40,7 @@ const MAISON = (() => {
   // une prise peut alimenter n'importe quoi : ce qui doit rester allumé n'est jamais coupé par « tout »
   // (le congélateur, la box, l'ordinateur de la maison — sans lui, plus de maison du tout), et ce qui chauffe
   // n'est jamais allumé par « tout » ; on ne les pilote que si on les nomme
-  const PROTEGE = /\b(frigo|refrigerateur|congelateur|cave a vin|box|routeur|modem|wifi|repeteur|pc|ordinateur|ordi|serveur|nas|aquarium|pompe|chaudiere|ballon|cumulus|alarme|camera|cameras|freebox|livebox|bbox|onduleur|imprimante 3d)\b/;
+  const PROTEGE = /\b(frigo|refrigerateur|congelateur|cave a vin|box|routeur|modem|wifi|repeteur|pc|ordinateur|ordi|serveur|nas|aquarium|pompe|chaudiere|ballon|cumulus|alarme|camera|cameras|freebox|livebox|bbox|onduleur|imprimante 3d|station de trading|trading|poste de travail|bureau pc|ecran pc|ecrans)\b/;
   const CHAUD = /\b(radiateur|chauffage|chauffe|chauffant|chauffante|bouilloire|fer|four|plaque|grille pain|friteuse|seche|cafetiere|machine|perceuse|outil|outils|soudure|fer a souder|plancha|appareil a raclette|couverture chauffante|bain d huile)\b/;
   const protege = a => PROTEGE.test(N(a.nom)) || (S.settings.proteges || []).includes(a.id);
   const chaud = a => CHAUD.test(N(a.nom));
