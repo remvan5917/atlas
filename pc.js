@@ -6,6 +6,10 @@
      « éteins l'ordi », « redémarre l'ordi » (il demande d'abord : sans l'ordi, plus de maison).
    - Les fenêtres : « ferme cette fenêtre », « réduis tout », « agrandis la fenêtre », « passe sur Chrome »,
      « quelles fenêtres sont ouvertes ? » (par la petite extension GNOME « atlas-fenetres@maison »).
+   - Ouvrir : « ouvre feedsniffer », « lance TopstepX », « ouvre YouTube », « ouvre leboncoin point fr » (les applis installées, des sites).
+   - La musique : « mets du Daft Punk », « joue Bohemian Rhapsody » (YouTube, qui enchaîne) ; la radio : « mets France Info »,
+     « mets les infos », « mets FIP », « arrête la radio ».
+   - Gmail, en lecture seule : « j'ai des mails ? », « des mails de Topstep ? », « lis le premier » (rien n'est effacé ni envoyé).
    ========================================================= */
 'use strict';
 
@@ -121,10 +125,114 @@ const PC = (() => {
     return say({ active: `Voilà ${appliDe(f)}.`, reduis: `${appliDe(f)} : réduite.`, agrandis: `${appliDe(f)} : en grand.`, ferme: `${appliDe(f)} : fermée.` }[quoi]);
   }
 
+  /* ---------- ouvrir une appli ou un site ---------- */
+  let applis = [];
+  const charge = () => pc({ action: 'applis' }).then(r => { applis = (r && r.applis) || []; }).catch(() => {});
+  setTimeout(() => { if (root()) charge(); }, 7000); setInterval(() => { if (root()) charge(); }, 10 * 60000);
+  // les applis de GNOME ont souvent un nom anglais : ce qu'on dit en français
+  const ALIAS = { calculatrice: 'calculator', calculette: 'calculator', fichiers: 'files', explorateur: 'files', parametres: 'settings', reglages: 'settings',
+    'editeur de texte': 'text editor', 'bloc notes': 'text editor', horloge: 'clocks', horloges: 'clocks', 'visionneuse': 'image viewer', 'lecteur pdf': 'document viewer',
+    'moniteur systeme': 'resources', ressources: 'resources', 'tableur': 'libreoffice 26 2 calc', calc: 'libreoffice 26 2 calc', 'traitement de texte': 'libreoffice 26 2 writer', word: 'libreoffice 26 2 writer', excel: 'libreoffice 26 2 calc', vlc: 'lecteur multimedia vlc', whatsapp: 'whatsie', drive: 'google drive', 'la rue du financement': 'la rue du financement', lrf: 'la rue du financement', topstep: 'topstepx', 'pro real time': 'prorealtime web', prorealtime: 'prorealtime web', 'feed sniffer': 'feedsniffer', fidsniffer: 'feedsniffer', 'feed sniper': 'feedsniffer', ibkr: 'trader workstation', tws: 'trader workstation', chicku: 'chicku espace de travail' };
+  const SITES = { youtube: 'https://www.youtube.com', gmail: 'https://mail.google.com', 'mes mails': 'https://mail.google.com', google: 'https://www.google.fr', netflix: 'https://www.netflix.com', wikipedia: 'https://fr.wikipedia.org',
+    amazon: 'https://www.amazon.fr', leboncoin: 'https://www.leboncoin.fr', 'google maps': 'https://maps.google.com', maps: 'https://maps.google.com', 'la meteo': 'https://meteofrance.com', meteo: 'https://meteofrance.com', twitter: 'https://x.com', x: 'https://x.com', chatgpt: 'https://chatgpt.com', claude: 'https://claude.ai', 'youtube music': 'https://music.youtube.com', deezer: 'https://www.deezer.com', spotify: 'https://open.spotify.com', 'google agenda': 'https://calendar.google.com', agenda: 'https://calendar.google.com', 'forex factory': 'https://www.forexfactory.com', investing: 'https://fr.investing.com' };
+  function trouveAppli(cible) {
+    let c = N(cible).replace(/^(l |la |le |les |mon |ma |mes |l appli |l application |le logiciel |le programme )+/, '').replace(/\b(sur l ordi|sur le pc|de l ordi|stp|s il te plait)\b/g, '').trim();
+    if (!c) return null;
+    c = ALIAS[c] || c;
+    const nom = a => N(a.nom);
+    return applis.find(a => nom(a) === c) || applis.find(a => nom(a).startsWith(c + ' ') || c.startsWith(nom(a) + ' ')) || (c.length >= 5 ? applis.find(a => nom(a).includes(c)) : null) || null;
+  }
+  function trouveSite(cible) {
+    const c = N(cible).replace(/^(le site( de)? |la page( de)? |l |la |le |les |le site internet )+/, '').replace(/\b(sur l ordi|sur le pc|stp)\b/g, '').trim();
+    if (SITES[c]) return { url: SITES[c], nom: cible.replace(/^(le site( de)? |la page( de)? )/i, '') };
+    const dom = c.match(/^([a-z0-9-]+(?: [a-z0-9-]+)?) point (com|fr|org|net|io|ai|eu|be|ch|tv)$/);
+    if (dom) return { url: `https://${dom[1].replace(/ /g, '')}.${dom[2]}`, nom: `${dom[1].replace(/ /g, '')}.${dom[2]}` };
+    const d2 = String(cible).match(/\b([a-z0-9-]+\.(?:com|fr|org|net|io|ai|eu|be|ch|tv))\b/i);
+    if (d2) return { url: `https://${d2[1].toLowerCase()}`, nom: d2[1].toLowerCase() };
+    return null;
+  }
+  async function ouvre(a, site) {
+    let r; try { r = await pc(a ? { action: 'lance', id: a.id } : { action: 'site', url: site.url }); } catch (e) { return injoignable(); }
+    if (!r.ok) return say(`${a ? a.nom : site.nom} ne s'ouvre pas.`);
+    fx.ok(); return say(`J'ouvre ${a ? a.nom.replace(/ /g, ' ') : site.nom}.`);
+  }
+  /* ---------- la musique : YouTube, et la radio ---------- */
+  async function youtube(q) {
+    face.set('think');
+    let r; try { r = await pc({ action: 'youtube', q }); } catch (e) { r = null; } finally { face.set('idle'); }
+    if (!r) return injoignable();
+    if (!r.ok) return say(r.raison === 'rien trouvé' ? `Je ne trouve rien pour « ${q} » sur YouTube.` : 'YouTube ne répond pas.');
+    fx.ok(); return say(r.titre ? `Je mets « ${r.titre.slice(0, 80)} », sur l'ordi.` : `Je mets ${q}, sur l'ordi.`);
+  }
+  const RADIOS = [[/\b(france ?info|les infos|les informations|info en continu)\b/, 'franceinfo', 'France Info'], [/\bfrance inter\b|^(mets |met |allume |lance )?la radio$/, 'franceinter', 'France Inter'], [/\bfip\b/, 'fip', 'FIP'],
+    [/\bfrance culture\b/, 'franceculture', 'France Culture'], [/\bfrance musique\b/, 'francemusique', 'France Musique'], [/\bmouv\b/, 'mouv', 'Mouv']];
+  async function radio(cle, nom) {
+    let r; try { r = await pc({ action: 'radio', cle }); } catch (e) { return injoignable(); }
+    if (!r.ok) return say(`${nom} ne passe pas.`);
+    fx.ok(); return say(`${nom}, sur l'ordi.`);
+  }
+  async function radioStop() {
+    let r; try { r = await pc({ action: 'radio_stop' }); } catch (e) { return injoignable(); }
+    return say(r.nom ? `${r.nom} : arrêtée.` : "Il n'y avait pas de radio.");
+  }
+  /* ---------- Gmail (lecture seule) ---------- */
+  let derniersMails = [];
+  const quandMail = d => { const t = Date.parse(d); if (!t) return ''; const j = new Date(t), auj = new Date(); return j.toDateString() === auj.toDateString() ? `à ${j.getHours()} h ${String(j.getMinutes()).padStart(2, '0')}` : `le ${j.getDate()}/${j.getMonth() + 1}`; };
+  async function mails(o) {
+    face.set('think');
+    let r; try { r = await pc(Object.assign({ action: 'mails' }, o)); } catch (e) { r = null; } finally { face.set('idle'); }
+    if (!r) return injoignable();
+    if (!r.ok) return say(r.raison === 'pas relié' ? "Gmail n'est pas encore relié. Sur l'ordi, lance le script de connexion à Gmail : je ne fais que lire, rien d'autre." : `${r.raison}.`);
+    if (r.mail) {
+      const m = r.mail;
+      return say(`Mail de ${m.de}, « ${m.sujet} ». ${m.texte ? m.texte.slice(0, 450) + (m.texte.length > 450 ? '… La suite est dans Gmail.' : '') : '(sans texte)'}`);
+    }
+    derniersMails = r.mails || [];
+    if (!r.total) return say(o.de ? `Aucun mail${o.quoi === 'nonlus' ? ' non lu' : ''} de ${o.de}.` : 'Aucun nouveau mail.');
+    const l = derniersMails.slice(0, 3).map((m, i) => `${i ? '' : ''}${m.de}, ${quandMail(m.date)} : « ${m.sujet.slice(0, 70)} »`).join('. ');
+    return say(`${r.total} ${o.quoi === 'nonlus' ? `mail${r.total > 1 ? 's' : ''} non lu${r.total > 1 ? 's' : ''}` : `mail${r.total > 1 ? 's' : ''}`}${o.de ? ` de ${o.de}` : ''}. ${l}.${r.total > 1 ? ' Dis « lis le premier » ou « lis le deuxième ».' : ' Dis « lis-le » pour l\'entendre.'}`);
+  }
+  const RANG = { premier: 0, '1er': 0, un: 0, dernier: 0, deuxieme: 1, second: 1, deux: 1, troisieme: 2, trois: 2 };
+
   /* ---------- ce qu'on lui dit ---------- */
   const PEU = /\b(un peu|legerement|un poil|un chouia)\b/, BCP = /\b(beaucoup|a fond|fort)\b/;
   function route(t, n) {
     const ordi = /\b(ordi|ordinateur|pc)\b/.test(n);
+    // Gmail (lecture seule)
+    if (/\b(mails?|e mails?|emails?|courriels?|gmail|boite mail|boite de reception)\b/.test(n) && !/^(ouvre|lance|affiche)\b/.test(n)) {
+      const de = (String(t).match(/\b(?:mails?|e-?mails?|courriels?)\s+(?:de|d['’]|du|venant de)\s+(.+?)[?.!]*\s*$/i) || [])[1];
+      const rang = n.match(/\b(premier|1er|dernier|deuxieme|second|troisieme)\b/);
+      if (/\b(lis|lire|relis|ouvre|c est quoi|que dit|qu est ce que dit)\b/.test(n) && (rang || /\b(le dernier|ce mail|le mail)\b/.test(n)) && !de) {
+        return async () => { if (!derniersMails.length) { await mails({ quoi: /\bnon lus?\b|\bnouveaux?\b/.test(n) ? 'nonlus' : 'tous', n: 3 }); if (!derniersMails.length) return; }
+          const m = derniersMails[rang ? RANG[rang[1]] : 0]; return m ? mails({ id: m.id }) : say("Je n'ai pas ce mail-là."); };
+      }
+      if (de && /\b(lis|lire)\b/.test(n)) return async () => { await mails({ quoi: 'tous', de: de.trim(), n: 1 }); if (derniersMails[0]) return mails({ id: derniersMails[0].id }); };
+      return () => mails({ quoi: /\b(tous|derniers|recus aujourd hui|recents?)\b/.test(n) && !/\bnon lus?\b/.test(n) ? 'tous' : 'nonlus', de: de ? de.trim() : '', n: 5 });
+    }
+    if (/^(lis le|lis la|lis-le|lis le moi|lis moi le|lis moi la)\b|^(lis le|lis)\s+(premier|deuxieme|troisieme|dernier)$/.test(n) && derniersMails.length) {
+      const rang = n.match(/\b(premier|1er|dernier|deuxieme|second|troisieme)\b/);
+      return () => mails({ id: derniersMails[rang ? RANG[rang[1]] : 0].id });
+    }
+    // la radio
+    if (/\b(arrete|coupe|eteins|stop) (la radio|france ?info|france inter|fip|les infos)\b/.test(n)) return radioStop;
+    if (/^(mets|met|allume|lance|joue|fais moi ecouter|branche)\b/.test(n)) {
+      const ra = RADIOS.find(([re]) => re.test(n));
+      if (ra) return () => radio(ra[1], ra[2]);
+    }
+    // la musique par YouTube : « mets du Daft Punk », « joue Bohemian Rhapsody », « mets la chanson X », « mets X sur YouTube »
+    const yt = String(t).match(/^\s*(?:mets|met|joue|lance|fais[- ]moi écouter|fais moi ecouter|passe)\s+(?:moi\s+)?(?:(?:de la |la |une )?(?:musique|chanson|vidéo|video)\s+(?:de\s+|d['’]\s*)?|du\s+|de la\s+|des\s+|de\s+l['’])?(.+?)\s*(?:sur youtube|sur l['’]ordi(?:nateur)?)?[.!?]*\s*$/i);
+    if (yt && (/\b(sur youtube|musique|chanson|video|joue|fais moi ecouter)\b/.test(n) || /^(mets|met) (du|des|de la|de l) /.test(n))
+        && !/\b(lumiere|lampe|ambiance|salon|cuisine|chambre|escalier|lingerie|son|volume|ecran|alarme|camera|veilleuse|chauffage|minuteur|rappel|pause|lecture|fenetre)\b/.test(N(yt[1]))) {
+      const q = yt[1].trim();
+      if (/^(de la )?musique$|^une chanson$/i.test(q) || !q) return async () => { const a = await ask('Quelle musique ?'); return a ? youtube(a) : say("D'accord, pas de musique."); };
+      return () => youtube(q);
+    }
+    // ouvrir une appli ou un site
+    const ov = String(t).match(/^\s*(?:ouvre|lance|démarre|demarre|affiche|ouvrir)\s+(.+?)[.!?]*\s*$/i);
+    if (ov) {
+      const a = trouveAppli(ov[1]); if (a) return () => ouvre(a);
+      const si = trouveSite(ov[1]); if (si) return () => ouvre(null, si);
+    }
     // le son
     if (/\b(son|volume)\b/.test(n) && !/\b(lumiere|lampe|camera|alarme|shadow)\b/.test(n)) {
       const pc100 = String(t).match(/(\d{1,3})\s*(?:%|pour\s?cents?)/i) || n.match(/\b(?:son|volume)\b.*\ba (\d{1,3})\b/);
@@ -161,5 +269,5 @@ const PC = (() => {
     if (va && /^(passe|va|bascule|reviens|retourne)\b/.test(n) && !/\b(chanson|musique|video|suivante?|precedente?)\b/.test(n)) return () => fenetre('active', va[1].replace(/\b(sur l['’]ordi(nateur)?|du pc)\b/i, '').trim());
     return null;
   }
-  return { route };
+  return { route, _charge: charge };
 })();
