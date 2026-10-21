@@ -67,7 +67,8 @@ const SECURITE = (() => {
   }
   const relit = () => { if (root()) { camsAt = 0; listeCams().catch(() => {}); } };
   setTimeout(relit, 7000); setInterval(relit, 5 * 60000); // une caméra ajoutée est reconnue dans les 5 minutes
-  const motsCam = t => N(t).split(' ').filter(w => w.length > 2 && !['camera', 'cameras', 'dans', 'devant', 'les', 'des', 'qui', 'quoi', 'passe', 'montre', 'moi'].includes(w));
+  // « la cour » ou « les cours », « le jardin » ou « les jardins » : le s final ne compte pas
+  const motsCam = t => N(t).split(' ').filter(w => w.length > 2 && !['camera', 'cameras', 'dans', 'devant', 'les', 'des', 'qui', 'quoi', 'passe', 'montre', 'moi'].includes(w)).map(w => w.replace(/s$/, ''));
   const blobVersData = b => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
   let urlImage = '', directT = 0;
   // le direct (vidéo et son) : ses oreilles se coupent le temps du direct (sinon il prendrait les voix de la caméra pour les nôtres)
@@ -132,7 +133,7 @@ const SECURITE = (() => {
     desactive: /\b(desactive|desactiver|eteins|eteint|coupe|arrete|enleve|retire|debranche) (l |de l )?alarme\b/,
     active: /^(?:active|activer|mets|met|enclenche|branche|lance|allume|arme)\s+(?:l |de l )?alarme\b(.*)$|^(?:mets |passe )?(?:l alarme )?en mode (total|totale|partiel|partielle)$|^alarme (totale?|partielle?)$/,
     etat: /\b(l alarme|alarme) (est|est elle|elle est|c est|tu peux me dire si) .*\b(activee|active|allumee|mise|en marche|branchee|desactivee|coupee)\b|\b(etat de l alarme|est ce que l alarme|elle est mise l alarme|l alarme elle est)\b|^(et )?l alarme( \?)?$/,
-    camera: /\b(montre|affiche|fais voir|regarde|fais moi ecouter|ecoute|direct|photo|image)\b.*\b(camera|entree|jardin|garage|porte|terrasse|portail|salon|allee|devant)\b|\b(qu est ce qui se passe|qu est ce qu il se passe|il y a quelqu un|y a quelqu un|qui est la|qui sonne|il se passe quoi)\b.*\b(dans|devant|a l|au|sur)\b/,
+    camera: /\b(montre|affiche|fais voir|regarde|fais moi ecouter|ecoute|direct|photo|image)\b.*\b(camera|entree|jardin|garage|porte|terrasse|portail|salon|allee|devant|cours?)\b|\b(qu est ce qui se passe|qu est ce qu il se passe|il y a quelqu un|y a quelqu un|qui est la|qui sonne|il se passe quoi)\b.*\b(dans|devant|a l|au|sur)\b/,
   };
   function route(t, n) {
     if (R.desactive.test(n)) return () => say("Je ne désactive jamais l'alarme : c'est ton badge, le clavier ou l'appli Verisure. Comme ça, personne ne peut la couper en parlant.");
@@ -140,8 +141,8 @@ const SECURITE = (() => {
     if (a) { const reste = (a[1] || a[2] || a[3] || ''); const mode = /\btotal/.test(reste) ? 'total' : /\bpartiel/.test(reste) ? 'partiel' : ''; return () => activer(mode, dlg.qui); }
     if (R.etat.test(n)) return etatAlarme;
     // une caméra : seulement si on dit « caméra » ou le nom d'une de nos caméras (« qu'est-ce qui se passe dans le monde » n'en est pas une)
-    const nomme = /\bcameras?\b/.test(n) || cams.some(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}\\b`).test(n)));
-    if (R.camera.test(n) && nomme) {
+    const nomme = /\bcameras?\b/.test(n) || cams.some(x => motsCam(x.nom).some(w => new RegExp(`\\b${w}s?\\b`).test(n)));
+    if ((R.camera.test(n) || /\b(montre|affiche|fais voir|regarde|ecoute|photo|image|direct)\b/.test(n)) && nomme) {
       const question = /\b(qu est ce|il y a|y a|qui est|qui sonne|il se passe)\b/.test(n) ? t : '';
       const photo = /\b(photo|image|capture|cliche)\b/.test(n);
       const cible = n.replace(/^.*?\b(?:camera|dans|devant|a l|au|sur|montre moi|montre|affiche|fais voir|regarde)\b/, '');
