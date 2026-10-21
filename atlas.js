@@ -554,6 +554,8 @@ async function handle(text) {
   if (souvenir) return souvenir();
   const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
   if (bourse) return bourse();
+  const ordi = PC.route(t, n); // l'ordinateur : le son, la musique, l'écran, les fenêtres (une liste fermée d'actions)
+  if (ordi) return ordi();
   const surete = SECURITE.route(t, n); // l'alarme (lire, activer — jamais désactiver) et les caméras
   if (surete) return surete();
   const maison = MAISON.route(t, n); // la maison (prises, lampes, scènes), le messager et ce que Shadow a appris
