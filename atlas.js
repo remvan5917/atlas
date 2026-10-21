@@ -768,7 +768,9 @@ async function vie() {
       if (!appele && CONV.shadowRepond(dlg.qui)) continue;
       // c'est pour lui : on l'appelle ; on enchaîne juste après sa réponse ; ou personne d'autre ne parle (on est seul avec lui)
       const memes = !dlg.qui || !dlg.quiParlait || /^invité/.test(dlg.qui) || /^invité/.test(dlg.quiParlait) || dlg.qui === dlg.quiParlait;
-      const suite = talk && Date.now() - (dlg.repondu || 0) < 20000 && memes;
+      // un bout de phrase (« C'est… ») : sans doute l'écho de sa voix, ou une phrase coupée — il attend la suite
+      const bout = n.split(' ').filter(Boolean).length < 2 || /(\.\.\.|…)\s*$/.test(String(r).trim());
+      const suite = talk && Date.now() - (dlg.repondu || 0) < 20000 && memes && !bout;
       const seul = CONV.autres(dlg.qui) === 0 && n.split(' ').length >= 2 && !dlg.discret;
       if (!appele && !suite && !seul) {
         journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
