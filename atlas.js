@@ -253,6 +253,7 @@ async function ask(text, { wait: w = 20000 } = {}) {
   const a = await hear({ maxWait: w });
   return a || '';
 }
+const ORDRE_DIRECT = /^(mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
 const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
 const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
 async function askYesNo(text) {
@@ -847,14 +848,16 @@ async function vie() {
       const seul = CONV.autres(dlg.qui) === 0 && adresse && n.split(' ').length >= 2 && !bout && !dlg.discret;
       // « … lumière de la cuisine » : le début s'est perdu (on lui a parlé pendant qu'il parlait) ; il demande « j'allume ou j'éteins ? »
       const frag = !appele && !suite && !seul && !dlg.discret && !!MAISON.fragment(r, n);
-      if (!appele && !suite && !seul && !frag) {
+      // les ordres évidents de la maison (« mode cockpit », « fin du film », « pause » au cinéma) : pas besoin de dire son nom
+      const direct = !appele && n.split(' ').length <= 5 && ORDRE_DIRECT.test(n);
+      if (!appele && !suite && !seul && !frag && !direct) {
         journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
         if (dlg.discret) continue;
         dlg.busy = true;
         try { await CONV.peutEtre(r, dlg.qui); } catch (e) { console.warn('conversation', e); } finally { dlg.busy = false; }
         continue;
       }
-      journal(r, dlg.qui, appele ? 'appelé : il répond' : suite ? 'à la suite : il répond' : frag ? 'un bout de phrase sur la maison : il demande' : 'seul avec lui : il répond');
+      journal(r, dlg.qui, appele ? 'appelé : il répond' : direct ? 'un ordre de la maison : il répond' : suite ? 'à la suite : il répond' : frag ? 'un bout de phrase sur la maison : il demande' : 'seul avec lui : il répond');
       dlg.suites = appele ? 0 : (dlg.suites || 0) + 1;
       CONV.parleAtlas(dlg.qui);
       dlg.discret = false;
