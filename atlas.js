@@ -863,6 +863,8 @@ async function vie() {
     dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
     const appele = R.reveil.test(n) || /^(la classe|l atlas|la tlas|la place)\s+/.test(n) && ADRESSE.test(n.replace(/^(la classe|l atlas|la tlas|la place)\s+/, ''));
     if (appele) fx.tone([[1175, 0.05]]); // un petit bip : il a entendu son nom
+    // la radio joue ici : les voix de la radio ne sont pas pour lui — seulement son nom, ou les ordres de la radio elle-même
+    if (!appele && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci() && !/^(pause|stop|reprends|arrete la radio|coupe la radio|eteins la radio|baisse le son|monte le son|moins fort|plus fort|change de radio)$/.test(n)) { journal(r, dlg.qui, 'la radio joue : il attend son nom'); continue; }
     const bonjour = ARRIVEE.connu(dlg.qui); // il arrive : on l'accueille (avant de lui répondre, s'il parle à Atlas)
     if (bonjour) { if (appele) { CONV.note('Atlas', bonjour); await say(bonjour); } else { await ARRIVEE.dire(bonjour); if (conv) CONV.note(dlg.qui, r); continue; } }
     if (conv) {

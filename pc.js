@@ -32,7 +32,7 @@ const PC = (() => {
 
   /* ---------- la radio ici : sur l'appareil où Atlas tourne (la tablette et sa sono, le téléphone) ; sur l'ordinateur, le lecteur de l'ordi ---------- */
   const ici = () => typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role !== 'ordinateur';
-  let lecteur = null, lecteurNom = '', lecteurVol = 0.8;
+  let lecteur = null, lecteurNom = '', lecteurVol = 0.8, radioPC = false;
   // quand Atlas parle, la radio baisse (puis remonte doucement)
   setInterval(() => { if (!lecteur) return; const cible = voice.occupe() ? lecteurVol * 0.2 : lecteurVol; lecteur.volume = Math.max(0, Math.min(1, lecteur.volume + (cible - lecteur.volume) * 0.5)); }, 200);
   async function radioIci(cle, nom) {
@@ -62,6 +62,7 @@ const PC = (() => {
   }
   /* ---------- la musique ---------- */
   async function musique(quoi) {
+    if (radioPC && (quoi === 'pause' || quoi === 'stop')) radioPC = false;
     if (lecteur) { // la radio d'ici
       if (quoi === 'pause' || quoi === 'stop' || (quoi === 'bascule' && !lecteur.paused)) { lecteur.pause(); fx.ok(); return quoi === 'stop' ? (lecteur = null, say(`${lecteurNom} : arrêtée.`)) : say('Pause.'); }
       if (quoi === 'lecture' || quoi === 'bascule') { try { await lecteur.play(); } catch (e) { /* rien */ } fx.ok(); return say(`${lecteurNom}.`); }
@@ -197,10 +198,12 @@ const PC = (() => {
     if (ici()) return radioIci(cle, nom); // ici : la tablette (et sa sono), le téléphone
     let r; try { r = await pc({ action: 'radio', cle }); } catch (e) { return injoignable(); }
     if (!r.ok) return say(`${nom} ne passe pas.`);
+    radioPC = true; // la radio de l'ordi : il ne prend pas ses voix pour des ordres
     fx.ok(); return say(`${nom}, sur l'ordi.`);
   }
   async function radioStop() {
     if (lecteur) { lecteur.pause(); lecteur = null; fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
+    radioPC = false;
     let r; try { r = await pc({ action: 'radio_stop' }); } catch (e) { return injoignable(); }
     return say(r.nom ? `${r.nom} : arrêtée.` : "Il n'y avait pas de radio.");
   }
@@ -316,5 +319,5 @@ const PC = (() => {
     if (va && /^(passe|va|bascule|reviens|retourne)\b/.test(n) && !/\b(chanson|musique|video|suivante?|precedente?)\b/.test(n)) return () => fenetre('active', va[1].replace(/\b(sur l['’]ordi(nateur)?|du pc)\b/i, '').trim());
     return null;
   }
-  return { route, _charge: charge };
+  return { route, _charge: charge, radioIci: () => !!(lecteur && !lecteur.paused) || radioPC };
 })();
