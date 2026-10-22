@@ -14,6 +14,8 @@
      tout seul vers 21 h 30 s'il y a quelqu'un.
    - Il apprend tes habitudes : 4 jours sur 14 à la même heure (± 25 min) → il propose, « oui » → automatique (seulement si tu es là) ;
      « quelles habitudes as-tu remarquées ? », « supprime les automatismes ».
+   - Les visiteurs : « qui est passé aujourd'hui / cette semaine ? » (livreurs déjà venus, véhicules qui reviennent, photos) ;
+     la sentinelle prévient seule d'un même véhicule 3 fois en 24 h, ou de quelqu'un qui repasse 3 fois en 30 min.
    - La veille d'actualités : « surveille les infos sur la Fed », « préviens-moi s'il y a du nouveau sur l'or », « mes veilles »,
      « arrête de surveiller la Fed » (Google Actualités toutes les 20 min, 7 h–23 h, trié par le cerveau de la maison).
    - Les réveils : « réveille-moi à 7 h », « réveille-moi en semaine à 6 h 45 » (lever de soleil 15 min avant, sur l'ordinateur,
@@ -449,7 +451,43 @@ const SCIFI = (() => {
   // une tablette au mur : elle se rallume en mode cockpit
   setTimeout(() => { try { if (localStorage.getItem('atlas-cockpit') === '1') modeCockpit(true); } catch (e) { /* rien */ } }, 1500);
 
+  /* ---------- les visiteurs : qui est passé, les livreurs (déjà venus ?), les véhicules qui reviennent ---------- */
+  async function visiteurs(jours) {
+    let r; try { r = await appel(`/maison/passages?jours=${jours}&historique=1`, null, 15000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const l = r.passages || [], tous = r.tous || [];
+    const h = at => hhmm(new Date(at * 1000));
+    const jourDe = at => new Date(at * 1000).toLocaleDateString('fr-FR', { weekday: 'long' });
+    const debut = Date.now() / 1000 - jours * 86400;
+    const pers = l.filter(x => x.personne), livr = pers.filter(x => x.a && (x.a.livreur || x.a.transporteur)), autres = pers.filter(x => !(x.a && (x.a.livreur || x.a.transporteur)));
+    const parts = [], L = [];
+    if (!l.length) return say(`Personne n'est passé devant les caméras ${jours === 1 ? "aujourd'hui" : 'cette semaine'}, en tout cas rien qu'elles aient vu.`);
+    // les livreurs : déjà venus ?
+    const dl = livr.map(x => {
+      const t = (x.a.transporteur || 'un livreur');
+      const avant = tous.filter(y => y.at < debut && y.a && _n(y.a.transporteur) && _n(y.a.transporteur) === _n(x.a.transporteur)).pop();
+      return `${h(x.at)}, ${x.a.transporteur ? `un livreur ${t}` : 'un livreur'}${x.a.colis ? ' avec un colis' : ''}${avant ? ` (déjà venu ${jourDe(avant.at)})` : ''}`;
+    });
+    if (dl.length) { parts.push(`${dl.length} livraison${dl.length > 1 ? 's' : ''} : ${dl.slice(-4).join(' ; ')}`); L.push(['Livreurs', `${dl.length}`, 'ok']); }
+    if (autres.length) {
+      const parCam = {}; autres.forEach(x => { parCam[x.camera] = (parCam[x.camera] || 0) + 1; });
+      parts.push(`${autres.length} autre${autres.length > 1 ? 's' : ''} passage${autres.length > 1 ? 's' : ''} de personnes : ${Object.entries(parCam).map(([c, k]) => `${k} devant la caméra ${c}`).join(', ')}, la dernière fois à ${h(autres[autres.length - 1].at)}`);
+      L.push(['Personnes', `${autres.length}`, 'attente']);
+    }
+    // les véhicules : ceux qui reviennent
+    const sig = a => [_n(a.vehicule_marque) || _n(a.vehicule_type), _n(a.vehicule_couleur)].join(' ').trim();
+    const veh = {}; l.filter(x => x.a && x.a.vehicule && sig(x.a)).forEach(x => { const k = sig(x.a); (veh[k] = veh[k] || []).push(x); });
+    const rev = Object.entries(veh).map(([k, v]) => [k, v.filter((x, i) => !i || x.at - v[i - 1].at >= 300)]).filter(([, v]) => v.length >= 2).sort((a, b) => b[1].length - a[1].length);
+    if (rev.length) { parts.push(`Véhicules qui reviennent : ${rev.slice(0, 3).map(([k, v]) => `${k}${v[0].a.vitres_teintees ? ' aux vitres teintées' : ''}, ${v.length} fois (${v.slice(-3).map(x => h(x.at)).join(', ')})`).join(' ; ')}`); rev.forEach(([k, v]) => L.push([`Véhicule : ${k}`, `${v.length} passages`, v.length >= 3 ? 'alerte' : 'attente'])); }
+    else if (Object.keys(veh).length) L.push(['Véhicules', `${Object.keys(veh).length} différents`, 'ok']);
+    const imgs = [];
+    for (const x of pers.filter(y => y.alerte).slice(-4)) { try { const b = await appel(`/maison/alerte/image?id=${x.alerte}`, null, 10000); if (b instanceof Blob) imgs.push({ nom: h(x.at), blob: b, etat: x.a && x.a.livreur ? 'ok' : 'attente' }); } catch (e) { /* rien */ } }
+    hud(jours === 1 ? "Visiteurs d'aujourd'hui" : 'Visiteurs de la semaine', L.length ? L : [['Passages', `${l.length}`, 'ok']], imgs);
+    return say(`${jours === 1 ? "Aujourd'hui" : 'Cette semaine'} : ${parts.length ? parts.join('. ') : `${l.length} détections, sans personne ni véhicule notable`}.`);
+  }
+  const _n = v => N(v || '');
+
   function route(t, n) {
+    if (/\b(qui est passe|qui est venu|les visiteurs|des visiteurs|le livreur est (passe|venu)|est ce que le (livreur|facteur) est (passe|venu)|qui a sonne|des passages|les passages)\b/.test(n) && !/\bshadow\b/.test(n)) return () => visiteurs(/\bsemaine\b/.test(n) ? 7 : 1);
     { // « surveille les infos sur la Fed », « préviens-moi s'il y a du nouveau sur l'or », « arrête de surveiller la Fed », « mes veilles »
       const aj = String(t).match(/(?:surveille|suis|garde un (?:œil|oeil) sur|fais (?:une |la )?veille sur)\s+(?:l['’]actu(?:alité)?|les (?:infos|actualités|actus|nouvelles))?\s*(?:sur|de|à propos de|concernant|autour de)?\s*(.+?)\s*[.!?]*$/i)
         || String(t).match(/préviens[- ]moi\s+(?:s['’]il y a|quand il y a|dès qu['’]il y a)\s+(?:du nouveau|des nouvelles|une info|de l['’]actu)\s+(?:sur|à propos de|concernant)\s+(.+?)\s*[.!?]*$/i);
