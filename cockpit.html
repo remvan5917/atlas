@@ -126,6 +126,7 @@ function plan() {
   const etage = a => /\b(chambres?|salle de bains?|premier etage|etage|bureau|grenier)\b/.test(N(a.nom));
   const niveaux = [['ÉTAGE', lampes.filter(etage)], ['REZ-DE-CHAUSSÉE', lampes.filter(a => !etage(a))]];
   const W = 1000, M = 130, Hn = 150, gap = 26, top = 70;
+  const boites = {};
   let svg = `<svg viewBox="0 0 ${W} ${top + niveaux.length * (Hn + gap) + 80}" xmlns="http://www.w3.org/2000/svg">
     <defs><filter id="lueur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
     <pattern id="grille" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="rgba(255,181,71,.06)"/></pattern></defs>
@@ -136,6 +137,7 @@ function plan() {
     svg += `<text x="${M - 8}" y="${y - 6}" font-size="11" fill="rgba(255,217,160,.5)" letter-spacing="3">${nom}</text>`;
     l.forEach((a, i) => {
       const x = M + i * (w + 10), on = a.allume, lum = on ? (a.lum != null ? a.lum : 100) / 100 : 0, hs = a.allume == null;
+      boites[N(a.nom)] = { x: x + w / 2, y };
       const chaud = a.teinte == null ? 30 : a.teinte; const col = `hsl(${38 - chaud * 0.18}, 100%, ${55 + chaud * 0.25}%)`;
       svg += `<g class="piece" data-id="${esc(a.id)}">
         ${on ? `<rect x="${x + 8}" y="${y + 8}" width="${w - 16}" height="${Hn - 16}" rx="10" fill="${col}" opacity="${0.15 + lum * 0.45}" filter="url(#lueur)"/>` : ''}
@@ -146,14 +148,17 @@ function plan() {
   });
   // les caméras autour de la maison : la toiture en haut, la cour derrière, la façade devant (la rue), l'intérieur au centre
   const yBas = top + niveaux.length * (Hn + gap) + 30;
-  const place = c => /toit/.test(N(c.nom)) ? [W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - 62, top + Hn / 2] : /facade|rue|portail/.test(N(c.nom)) ? [W / 2, yBas] : [62, top + Hn + gap / 2];
+  // la toiture regarde le velux de la chambre de papa ; la cour et le plateau sont à l'arrière (la LSC filme le plateau derrière une fenêtre)
+  const papa = Object.entries(boites).find(([k]) => /papa/.test(k));
+  const place = c => /toit/.test(N(c.nom)) ? [papa ? papa[1].x : W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - 62, top + Hn / 2] : /plateau/.test(N(c.nom)) ? [W - 62, top + Hn + gap + Hn / 2] : /facade|rue|portail/.test(N(c.nom)) ? [W / 2, yBas] : [62, top + Hn + gap / 2];
   cams.forEach(c => {
     const [x, y] = place(c), recent = alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000);
     const col = !c.en_ligne ? '#ff7a45' : recent ? '#ffcf8a' : '#7ee2b8';
     svg += `${recent ? `<circle class="onde" cx="${x}" cy="${y}" r="8" fill="none" stroke="${col}" stroke-width="2"/>` : ''}
-      <circle cx="${x}" cy="${y}" r="7" fill="${col}"/><text x="${x}" y="${y + (y > top ? 22 : -12)}" text-anchor="middle" font-size="${x < 120 || x > W - 120 ? 10 : 11}" fill="${col}" letter-spacing="1">${esc(c.nom.toUpperCase())}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 36 : -24)}" text-anchor="middle" font-size="10" fill="${col}">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
+      <circle cx="${x}" cy="${y}" r="7" fill="${col}"/><text x="${x}" y="${y + (y > top ? 22 : -12)}" text-anchor="middle" font-size="${x < 120 || x > W - 120 ? 10 : 11}" fill="${col}" letter-spacing="1">${esc(c.nom.toUpperCase())}${/toit/.test(N(c.nom)) ? ' · VELUX' : ''}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 36 : -24)}" text-anchor="middle" font-size="10" fill="${col}">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
   });
-  svg += `<text x="${W / 2}" y="${yBas + 40}" text-anchor="middle" font-size="11" fill="rgba(255,217,160,.35)" letter-spacing="4">— LA RUE —</text></svg>`;
+  svg += `<text x="${W / 2}" y="${yBas + 40}" text-anchor="middle" font-size="11" fill="rgba(255,217,160,.35)" letter-spacing="4">— LA RUE —</text>
+    <text x="${W - 18}" y="${top + Hn + gap / 2}" text-anchor="middle" font-size="10" fill="rgba(255,217,160,.3)" letter-spacing="3" transform="rotate(90 ${W - 18} ${top + Hn + gap / 2})">ARRIÈRE · COUR</text></svg>`;
   el.innerHTML = svg;
   el.querySelectorAll('.piece').forEach(g => g.addEventListener('click', () => bascule(g.dataset.id)));
 }
