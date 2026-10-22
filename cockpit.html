@@ -3,110 +3,164 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#07080a">
+<meta name="theme-color" content="#04060a">
 <title>Cockpit Atlas</title>
 <style>
-  :root { --bg: #06070a; --carte: rgba(18,19,24,.92); --carte2: rgba(26,27,34,.92); --ambre: #ffb547; --ambre2: #ffcf8a; --texte: #f4ece0; --doux: rgba(255, 217, 160, .58);
-    --ligne: rgba(255, 181, 71, .2); --ok: #7ee2b8; --alerte: #ff7a45; --froid: #9cc8ff; color-scheme: dark; }
+  :root { --bg: #04060a; --carte: rgba(10, 14, 20, .94); --ambre: #ffb547; --ambre2: #ffd9a0; --cyan: #5fd3ff; --texte: #eef3f8; --doux: rgba(190, 215, 235, .55);
+    --ligne: rgba(95, 211, 255, .16); --ligneA: rgba(255, 181, 71, .28); --ok: #6ef0b8; --alerte: #ff6b4a; color-scheme: dark; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; background: var(--bg); color: var(--texte); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-  body { padding: 12px 14px; background: radial-gradient(60% 40% at 50% 0%, rgba(255, 181, 71, .08), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(156, 200, 255, .05), transparent 70%), var(--bg); min-height: 100vh; }
-  body.nuit::after { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, .45); pointer-events: none; z-index: 8; }
+  body { padding: 10px 14px 12px; min-height: 100vh; overflow-x: hidden;
+    background: radial-gradient(55% 45% at 50% -5%, rgba(95, 211, 255, .09), transparent 70%), radial-gradient(45% 40% at 0% 100%, rgba(255, 181, 71, .05), transparent 70%), var(--bg); }
+  body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 7; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .018) 0 1px, transparent 1px 3px); }
+  body.nuit::after { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, .5); pointer-events: none; z-index: 8; }
   .mono { font-family: ui-monospace, 'DejaVu Sans Mono', 'Roboto Mono', monospace; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
-  .titre { letter-spacing: .35em; font-size: 12px; color: var(--ambre2); }
-  .horloge { display: flex; align-items: baseline; gap: 14px; }
-  .heure { font-size: clamp(34px, 4.2vw, 52px); font-weight: 250; letter-spacing: .03em; line-height: 1; }
-  .date { font-size: 14px; color: var(--doux); text-transform: capitalize; }
-  .etat { display: flex; gap: 8px; flex-wrap: wrap; }
-  .pastille { border: 1px solid var(--ligne); border-radius: 999px; padding: 7px 13px; font-size: 13px; color: var(--doux); background: rgba(255, 181, 71, .05); white-space: nowrap; }
-  .pastille b { color: var(--texte); font-weight: 600; }
-  .pastille.ok b { color: var(--ok); } .pastille.al { border-color: rgba(255, 122, 69, .6); } .pastille.al b { color: var(--alerte); }
-  main { display: grid; gap: 12px; grid-template-columns: minmax(250px, 285px) minmax(0, 1fr) minmax(280px, 335px); height: calc(100vh - 90px); }
-  .col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-  .carte { background: linear-gradient(180deg, var(--carte2), var(--carte)); border: 1px solid var(--ligne); border-radius: 18px; padding: 12px 14px 14px; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* l'en-tête */
+  header { display: grid; grid-template-columns: auto 1fr; grid-template-areas: 'titre etat' 'bandeau bandeau'; align-items: center; gap: 8px 14px; margin-bottom: 8px; }
+  header > div:first-child { grid-area: titre; } .etat { grid-area: etat; } .bandeau { grid-area: bandeau; }
+  .marque { font: 600 11px ui-monospace, monospace; letter-spacing: .38em; color: var(--cyan); }
+  .marque b { color: var(--ambre); font-weight: 600; }
+  .horloge { display: flex; align-items: baseline; gap: 12px; margin-top: 2px; }
+  .heure { font: 200 clamp(34px, 4vw, 50px)/1 ui-monospace, monospace; letter-spacing: .02em; color: #fff; text-shadow: 0 0 18px rgba(95, 211, 255, .35); }
+  .heure small { font-size: .42em; color: var(--cyan); margin-left: 2px; }
+  .date { font: 12px ui-monospace, monospace; letter-spacing: .2em; color: var(--doux); text-transform: uppercase; }
+  .bandeau { border: 1px solid var(--ligne); border-radius: 4px; padding: 5px 12px; font: 12px ui-monospace, monospace; letter-spacing: .14em; color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: rgba(95, 211, 255, .04); }
+  .bandeau span { transition: opacity .5s; }
+  .bandeau::before { content: '▸ '; color: var(--ambre); }
+  .etat { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .puce { display: flex; align-items: center; gap: 7px; border: 1px solid var(--ligne); border-radius: 8px; padding: 6px 9px; font: 10.5px ui-monospace, monospace; letter-spacing: .08em; color: var(--doux); text-transform: uppercase; white-space: nowrap; }
+  .puce b { color: var(--texte); font-weight: 600; }
+  .led { width: 7px; height: 7px; border-radius: 50%; background: var(--doux); flex: 0 0 auto; }
+  .led.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); } .led.al { background: var(--alerte); box-shadow: 0 0 8px var(--alerte); animation: clig 1.2s steps(2) infinite; } .led.am { background: var(--ambre); box-shadow: 0 0 8px var(--ambre); }
+  @keyframes clig { 50% { opacity: .25; } }
+
+  /* la grille : trois colonnes, sans défilement (tablette en paysage) */
+  main { display: grid; gap: 10px; grid-template-columns: minmax(250px, 285px) minmax(0, 1fr) minmax(280px, 335px); height: calc(100vh - 112px); }
+  .col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .carte { position: relative; background: var(--carte); border: 1px solid var(--ligne); border-radius: 6px; padding: 12px 13px 13px; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  .carte::before, .carte::after { content: ''; position: absolute; width: 12px; height: 12px; border-color: var(--cyan); border-style: solid; opacity: .8; pointer-events: none; }
+  .carte::before { left: -1px; top: -1px; border-width: 2px 0 0 2px; border-top-left-radius: 6px; }
+  .carte::after { right: -1px; bottom: -1px; border-width: 0 2px 2px 0; border-bottom-right-radius: 6px; }
   .carte.grand { flex: 1; }
-  .carte h2 { margin: 0 0 10px; font: 600 11px ui-monospace, monospace; letter-spacing: .3em; color: var(--ambre); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex: 0 0 auto; }
-  .carte h2 span { color: var(--doux); letter-spacing: .08em; font-weight: 400; }
+  .carte h2 { margin: 0 0 10px; font: 600 10.5px ui-monospace, monospace; letter-spacing: .32em; color: var(--cyan); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .carte h2 i { font-style: normal; color: var(--ambre); margin-right: 8px; }
+  .carte h2 span { color: var(--doux); letter-spacing: .12em; font-weight: 400; font-size: 10px; }
   .defile { overflow-y: auto; min-height: 0; scrollbar-width: none; } .defile::-webkit-scrollbar { display: none; }
+
+  /* les scènes */
   .scenes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-  .scene { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 62px; padding: 8px 4px; border-radius: 14px; border: 1px solid var(--ligne); background: rgba(255, 181, 71, .06); color: var(--texte); font: 600 12px system-ui; text-align: center; line-height: 1.15; cursor: pointer; transition: transform .1s, background .2s; }
-  .scene i { font-style: normal; font-size: 22px; line-height: 1; }
-  .scene:active { transform: scale(.97); background: rgba(255, 181, 71, .2); }
-  .scene.danger { border-color: rgba(255, 122, 69, .7); background: rgba(255, 122, 69, .12); color: #ffd2c2; }
-  .scene.fait { background: rgba(126, 226, 184, .18); border-color: rgba(126, 226, 184, .6); }
-  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
-  .carte.lum { flex: 0 1 auto; max-height: 44%; }
-  .tuile { border: 1px solid var(--ligne); border-radius: 14px; padding: 9px 11px; background: rgba(255, 255, 255, .02); cursor: pointer; user-select: none; min-height: 58px; display: flex; flex-direction: column; justify-content: space-between; transition: background .25s, border-color .25s, box-shadow .25s; }
-  .tuile .nom { font-size: 14px; line-height: 1.2; }
-  .tuile .val { font: 12px ui-monospace, monospace; color: var(--doux); }
-  .tuile.on { background: rgba(255, 181, 71, .17); border-color: rgba(255, 181, 71, .7); box-shadow: 0 0 22px rgba(255, 181, 71, .2) inset; }
-  .tuile.on .val { color: var(--ambre2); }
-  .tuile.hs { opacity: .4; }
-  .tuile input[type=range] { width: 100%; accent-color: var(--ambre); margin: 8px 0 0; height: 22px; }
-  .ligne { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255, 181, 71, .08); font-size: 14px; }
-  .ligne:last-child { border-bottom: 0; }
-  .ligne .k { color: var(--doux); } .ligne .v { text-align: right; } .v.ok { color: var(--ok); } .v.al { color: var(--alerte); }
-  .rdv { display: flex; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid rgba(255, 181, 71, .08); font-size: 14px; }
-  .rdv:last-child { border-bottom: 0; } .rdv .h { font: 600 14px ui-monospace, monospace; color: var(--ambre2); flex: 0 0 50px; } .rdv.passe { opacity: .4; }
-  .rdv .jour { font-size: 11px; color: var(--doux); letter-spacing: .15em; }
-  .cams { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; flex: 0 0 auto; }
-  .cam { position: relative; border: 1px solid var(--ligne); border-radius: 12px; overflow: hidden; background: #020304; aspect-ratio: 16 / 10; cursor: pointer; }
-  .cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .cam .lab { position: absolute; left: 7px; top: 6px; font: 10px ui-monospace, monospace; letter-spacing: .14em; text-shadow: 0 0 4px #000; }
-  .cam .info { position: absolute; right: 7px; bottom: 6px; font: 10px ui-monospace, monospace; color: var(--doux); text-shadow: 0 0 4px #000; }
-  .cam .vide { position: absolute; inset: 0; display: grid; place-items: center; font: 11px ui-monospace, monospace; color: var(--doux); text-align: center; padding: 6px; }
-  .cam.mouv { border-color: var(--ambre2); box-shadow: 0 0 14px rgba(255, 207, 138, .35); }
-  .alerte { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255, 181, 71, .08); font-size: 13px; align-items: flex-start; }
-  .alerte:last-child { border-bottom: 0; }
-  .alerte .h { font: 12px ui-monospace, monospace; color: var(--doux); flex: 0 0 42px; padding-top: 1px; }
-  .alerte.urgent .t { color: var(--alerte); }
-  .alerte img { width: 60px; height: 38px; object-fit: cover; border-radius: 6px; flex: 0 0 auto; }
-  .marche { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .prix { border: 1px solid var(--ligne); border-radius: 12px; padding: 8px 10px; }
-  .prix .s { font: 11px ui-monospace, monospace; color: var(--doux); letter-spacing: .1em; }
-  .prix .p { font-size: 18px; margin-top: 2px; } .haut { color: var(--ok); } .bas { color: var(--alerte); }
+  .scene { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 60px; padding: 8px 4px; border-radius: 4px; border: 1px solid var(--ligne); background: linear-gradient(180deg, rgba(95, 211, 255, .07), rgba(95, 211, 255, .02)); color: var(--cyan); cursor: pointer; transition: background .15s, transform .1s; }
+  .scene span { font: 600 9.5px ui-monospace, monospace; letter-spacing: .14em; color: var(--texte); text-transform: uppercase; text-align: center; line-height: 1.25; }
+  .scene:active { transform: scale(.96); background: rgba(95, 211, 255, .2); }
+  .scene.danger { border-color: rgba(255, 107, 74, .6); color: var(--alerte); background: linear-gradient(180deg, rgba(255, 107, 74, .14), rgba(255, 107, 74, .04)); }
+  .scene.fait { background: rgba(110, 240, 184, .2); border-color: var(--ok); color: var(--ok); }
+
+  /* l'agenda : une ligne de temps */
+  .rdv { position: relative; display: grid; grid-template-columns: 46px 1fr; gap: 8px; padding: 6px 0; font-size: 13.5px; }
+  .rdv .h { font: 600 12.5px ui-monospace, monospace; color: var(--ambre2); }
+  .rdv .t { border-left: 1px solid var(--ligneA); padding-left: 10px; position: relative; }
+  .rdv .t::before { content: ''; position: absolute; left: -4px; top: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--bg); border: 1px solid var(--ambre); }
+  .rdv.prochain .t::before { background: var(--ambre); box-shadow: 0 0 8px var(--ambre); }
+  .rdv.passe { opacity: .35; }
+  .jour { font: 10px ui-monospace, monospace; letter-spacing: .3em; color: var(--doux); margin: 10px 0 2px; }
+
+  /* les marchés */
+  .marche { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .prix { border: 1px solid var(--ligne); border-radius: 4px; padding: 7px 9px 5px; }
+  .prix .s { display: flex; justify-content: space-between; font: 10px ui-monospace, monospace; color: var(--doux); letter-spacing: .14em; }
+  .prix .p { font: 500 16px ui-monospace, monospace; margin-top: 2px; }
+  .prix svg { width: 100%; height: 22px; display: block; margin-top: 3px; }
+  .haut { color: var(--ok); } .bas { color: var(--alerte); }
+
+  /* le plan */
   #plan { flex: 1; min-height: 0; display: flex; } #plan svg { width: 100%; height: 100%; display: block; }
-  #plan .piece { cursor: pointer; transition: fill .4s, stroke .4s; }
+  #plan .piece { cursor: pointer; }
   #plan text { font-family: ui-monospace, monospace; pointer-events: none; }
-  @keyframes pulse { 0% { r: 8; opacity: .9; } 100% { r: 28; opacity: 0; } }
-  #plan .onde { animation: pulse 1.6s ease-out infinite; }
+  @keyframes onde { 0% { r: 7; opacity: .9; } 100% { r: 26; opacity: 0; } }
+  #plan .onde { animation: onde 1.6s ease-out infinite; }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+  #plan .radar { transform-box: fill-box; transform-origin: center; animation: tourne 7s linear infinite; }
+
+  /* les lumières */
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 7px; }
+  .carte.lum { flex: 0 1 auto; max-height: 44%; }
+  .tuile { position: relative; border: 1px solid var(--ligne); border-radius: 4px; padding: 8px 10px; background: rgba(255, 255, 255, .015); cursor: pointer; user-select: none; min-height: 56px; display: flex; flex-direction: column; justify-content: space-between; transition: background .25s, border-color .25s; }
+  .tuile .nom { font-size: 13px; line-height: 1.2; }
+  .tuile .val { font: 10.5px ui-monospace, monospace; letter-spacing: .1em; color: var(--doux); text-transform: uppercase; }
+  .tuile.on { background: linear-gradient(180deg, rgba(255, 181, 71, .2), rgba(255, 181, 71, .07)); border-color: rgba(255, 181, 71, .7); }
+  .tuile.on .val { color: var(--ambre2); }
+  .tuile.on::after { content: ''; position: absolute; right: 8px; top: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--ambre); box-shadow: 0 0 8px var(--ambre); }
+  .tuile.hs { opacity: .35; }
+  .tuile input[type=range] { width: 100%; accent-color: var(--ambre); margin: 6px 0 0; height: 20px; }
+
+  /* les caméras */
+  .cams { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; flex: 0 0 auto; }
+  .cam { position: relative; border: 1px solid var(--ligne); border-radius: 4px; overflow: hidden; background: #010203; aspect-ratio: 16 / 10; cursor: pointer; }
+  .cam img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(.85) contrast(1.05); }
+  .cam .lab { position: absolute; left: 7px; top: 6px; font: 9.5px ui-monospace, monospace; letter-spacing: .16em; color: var(--texte); text-shadow: 0 0 4px #000; }
+  .cam .info { position: absolute; right: 7px; bottom: 6px; font: 9.5px ui-monospace, monospace; letter-spacing: .1em; color: var(--doux); text-shadow: 0 0 4px #000; }
+  .cam .vide { position: absolute; inset: 0; display: grid; place-items: center; font: 10px ui-monospace, monospace; letter-spacing: .14em; color: var(--doux); text-align: center; padding: 6px; background: repeating-linear-gradient(45deg, rgba(95, 211, 255, .03) 0 6px, transparent 6px 12px); }
+  .cam .rec { position: absolute; right: 7px; top: 6px; font: 600 9.5px ui-monospace, monospace; color: var(--alerte); letter-spacing: .14em; animation: clig 1s steps(2) infinite; }
+  .cam.mouv { border-color: var(--alerte); }
+  .cam.hs .lab { color: var(--alerte); }
+
+  /* le journal d'alertes */
+  .log { font: 12px/1.45 ui-monospace, monospace; }
+  .entree { display: grid; grid-template-columns: auto 1fr; gap: 8px; padding: 6px 0 6px 8px; border-left: 2px solid var(--ligne); margin-bottom: 4px; }
+  .entree .h { color: var(--doux); }
+  .entree .g { color: var(--cyan); letter-spacing: .1em; }
+  .entree .t { grid-column: 1 / -1; color: var(--texte); font-family: system-ui, sans-serif; font-size: 12.5px; }
+  .entree.urgent { border-left-color: var(--alerte); background: rgba(255, 107, 74, .06); } .entree.urgent .g { color: var(--alerte); }
+  .entree.attention { border-left-color: var(--ambre); }
+  .entree img { width: 100%; max-height: 90px; object-fit: cover; border-radius: 3px; grid-column: 1 / -1; opacity: .9; }
+  .muted { color: var(--doux); font: 11px ui-monospace, monospace; letter-spacing: .1em; }
   .reserve { height: 150px; flex: 0 0 auto; } /* le coin d'Atlas (son visage, en bas à droite) */
+
+  /* le démarrage */
+  #boot { position: fixed; inset: 0; z-index: 20; background: var(--bg); display: grid; place-items: center; transition: opacity .6s; }
+  #boot div { font: 12px/2 ui-monospace, monospace; letter-spacing: .25em; color: var(--cyan); min-width: 340px; }
+  #boot p { margin: 0; opacity: 0; transition: opacity .3s; } #boot p.v { opacity: 1; } #boot b { color: var(--ok); font-weight: 400; float: right; }
+  .toast { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 9; padding: 9px 16px; border-radius: 6px; background: rgba(4, 6, 10, .96); border: 1px solid var(--cyan); color: var(--cyan); font: 12px ui-monospace, monospace; letter-spacing: .14em; opacity: 0; transition: opacity .3s; pointer-events: none; text-transform: uppercase; }
   .config { max-width: 520px; margin: 40px auto; }
-  .config input { width: 100%; font: inherit; padding: 12px; border-radius: 10px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); margin: 8px 0; }
-  .config button { font: inherit; color: var(--texte); background: rgba(255, 181, 71, .1); border: 1px solid var(--ligne); border-radius: 10px; padding: 10px 14px; }
-  .muted { color: var(--doux); font-size: 12px; }
-  .toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 9; padding: 10px 16px; border-radius: 999px; background: rgba(18, 19, 24, .95); border: 1px solid var(--ambre); color: var(--ambre2); font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .config input { width: 100%; font: inherit; padding: 12px; border-radius: 6px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); margin: 8px 0; }
+  .config button { font: inherit; color: var(--texte); background: rgba(95, 211, 255, .1); border: 1px solid var(--ligne); border-radius: 6px; padding: 10px 14px; }
   /* en portrait, ou sur un téléphone : une seule colonne qui défile */
   @media (max-width: 980px), (orientation: portrait) {
+    header { grid-template-columns: 1fr; grid-template-areas: 'titre' 'etat' 'bandeau'; } .etat { justify-content: flex-start; }
     main { grid-template-columns: 1fr; height: auto; }
-    .carte.grand { flex: 0 0 auto; } #plan { min-height: 300px; } .defile { max-height: none; overflow: visible; } .reserve { height: 140px; }
+    .carte.grand, .carte.lum { flex: 0 0 auto; max-height: none; } #plan { min-height: 300px; } .defile { overflow: visible; } .reserve { height: 140px; }
   }
 </style>
 </head>
 <body>
+<div id="boot"><div id="boot-l"></div></div>
 <header>
   <div>
-    <div class="titre mono">◢ COCKPIT · ATLAS</div>
-    <div class="horloge"><div class="heure mono" id="heure">--:--</div><div class="date" id="date"></div></div>
+    <div class="marque">ATLAS <b>//</b> COCKPIT DE LA MAISON</div>
+    <div class="horloge"><div class="heure" id="heure">--:--</div><div class="date" id="date"></div></div>
   </div>
+  <div class="bandeau"><span id="bandeau">SYSTÈMES EN LIGNE</span></div>
   <div class="etat" id="etat"></div>
 </header>
 <main id="main"></main>
 <div class="toast" id="toast"></div>
 <div id="config" class="config" hidden>
-  <div class="titre mono">◢ ADRESSE DE LA MAISON</div>
+  <div class="marque">ADRESSE DE LA MAISON</div>
   <p class="muted">Ouvre d'abord Atlas sur cet appareil (le cockpit reprend son adresse), ou tape l'adresse de l'ordinateur de la maison :</p>
   <input id="adresse" placeholder="https://….ts.net" autocomplete="off">
   <button id="adresse-ok">Enregistrer</button>
 </div>
 <script>
 'use strict';
-/* Le cockpit de la maison : lumières, prises, caméras, alertes, marchés, Shadow, énergie, système — en temps réel.
-   Il reprend l'adresse de la maison des réglages d'Atlas (même appareil) ; tout passe par l'ordinateur de la maison (Tailscale). */
+/* Le cockpit de la maison, façon salle de contrôle : scènes, agenda, marchés, plan (avec le radar), lumières et prises,
+   caméras, journal des alertes — en direct. Il reprend l'adresse de la maison des réglages d'Atlas (même appareil) ;
+   tout passe par l'ordinateur de la maison (Tailscale). Pensé pour une tablette au mur : léger, sans émoji. */
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const N = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const propre = t => String(t || '').replace(/[\p{Extended_Pictographic}️‍]/gu, '').replace(/\s+/g, ' ').trim(); // sans émoji
 let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
 const reglages = S.settings || {};
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
@@ -121,86 +175,102 @@ async function appel(chemin, corps, ms = 15000) {
   } finally { clearTimeout(tm); }
 }
 const hh = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-const nf = (v, d = 2) => Number(v).toLocaleString('fr-FR', { maximumFractionDigits: d });
+const nf = (v, d = 2) => Number(v).toLocaleString('fr-FR', { maximumFractionDigits: d, minimumFractionDigits: d });
 
-/* ---------- la mise en page ---------- */
-// les scènes passent par Atlas (le cockpit vit dans Atlas) : comme si on les lui disait
+/* ---------- les icônes (des traits, pas d'émoji) ---------- */
+const IC = {
+  power: '<path d="M12 3v8"/><path d="M6.3 6.6a8 8 0 1 0 11.4 0"/>',
+  porte: '<path d="M6 21V3h11v18"/><path d="M14 12h.01"/><path d="M3 21h18"/>',
+  maison: '<path d="M3 11l9-7 9 7v10H3z"/><path d="M9 21v-6h6v6"/>',
+  lune: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  soleil: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  film: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/>',
+  musique: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  bouclier: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+  radar: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6.4-6.4"/>',
+  manette: '<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4M15.5 11.5h.01M18 13.5h.01"/>',
+  robot: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/>',
+  alerte: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+};
+const ic = k => `<svg class="ic" viewBox="0 0 24 24">${IC[k]}</svg>`;
+
+/* ---------- les scènes : elles passent par Atlas (le cockpit vit dans Atlas), comme si on les lui disait ---------- */
 const ATLAS = (() => { try { return window.parent !== window && typeof window.parent.handle === 'function' ? window.parent.handle : null; } catch (e) { return null; } })();
+function toast(t) { const el = $('#toast'); el.textContent = t; el.style.opacity = '1'; clearTimeout(el._f); el._f = setTimeout(() => { el.style.opacity = '0'; }, 2200); }
 function dis(texte, bouton) {
   if (!ATLAS) return;
   try { ATLAS(texte); } catch (e) { /* rien */ }
   if (bouton) { bouton.classList.add('fait'); setTimeout(() => bouton.classList.remove('fait'), 1500); }
-  const t = $('#toast'); t.textContent = `« ${texte} »`; t.style.opacity = '1'; clearTimeout(t._f); t._f = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+  toast(`Commande : ${texte}`);
 }
-const SCENES = [['🌙', 'Bonne nuit', 'je vais me coucher'], ['☀️', 'Réveil', 'je viens de me réveiller'], ['🎬', 'Cinéma', 'mode cinéma'], ['🎉', 'Soirée', 'mode soirée'],
-  ['🛡️', 'Scan sécurité', 'scan de sécurité'], ['🌃', 'Rapport de nuit', 'rapport de nuit'], ['🎮', 'Jeu télévisé', 'lance le jeu télévisé'], ['🤖', 'Duo Shadow', 'discute avec Shadow']];
+const SCENES = [['lune', 'Bonne nuit', 'je vais me coucher'], ['soleil', 'Réveil', 'je viens de me réveiller'], ['film', 'Cinéma', 'mode cinéma'], ['musique', 'Soirée', 'mode soirée'],
+  ['bouclier', 'Scan sécurité', 'scan de sécurité'], ['radar', 'Rapport de nuit', 'rapport de nuit'], ['manette', 'Jeu télévisé', 'lance le jeu télévisé'], ['robot', 'Duo Shadow', 'discute avec Shadow']];
+let sc = [];
 function cartes() {
   $('#main').innerHTML = `
     <div class="col">
-      <section class="carte"><h2>SCÈNES <span>${ATLAS ? 'un toucher' : ''}</span></h2><div class="scenes" id="scenes"></div></section>
-      <section class="carte grand"><h2>AUJOURD'HUI <span id="ag-res"></span></h2><div class="defile" id="agenda"></div></section>
-      <section class="carte"><h2>MARCHÉS</h2><div class="marche" id="marche"></div><div id="annonces" class="muted" style="margin-top:8px"></div></section>
+      <section class="carte"><h2><div><i>01</i>SCÈNES</div><span>${ATLAS ? 'UN TOUCHER' : ''}</span></h2><div class="scenes" id="scenes"></div></section>
+      <section class="carte grand"><h2><div><i>02</i>AUJOURD'HUI</div><span id="ag-res"></span></h2><div class="defile" id="agenda"></div></section>
+      <section class="carte"><h2><div><i>03</i>MARCHÉS</div><span>24 H</span></h2><div class="marche" id="marche"></div></section>
     </div>
     <div class="col">
-      <section class="carte grand"><h2>LA MAISON <span>toucher une pièce : allumer / éteindre</span></h2><div id="plan"></div></section>
-      <section class="carte lum"><h2>LUMIÈRES & PRISES <span id="lum-res"></span></h2><div class="grille defile" id="lumieres"></div></section>
+      <section class="carte grand"><h2><div><i>04</i>LA MAISON</div><span>TOUCHER UNE PIÈCE : ALLUMER / ÉTEINDRE</span></h2><div id="plan"></div></section>
+      <section class="carte lum"><h2><div><i>05</i>LUMIÈRES ET PRISES</div><span id="lum-res"></span></h2><div class="grille defile" id="lumieres"></div></section>
     </div>
     <div class="col">
-      <section class="carte"><h2>CAMÉRAS <span>toucher : photo fraîche</span></h2><div class="cams" id="cams"></div></section>
-      <section class="carte grand"><h2>ALERTES <span id="al-res"></span></h2><div class="defile" id="alertes"></div></section>
-      <section class="carte" style="display:none"><h2>MAISON</h2><div id="maison"></div></section>
-      <section class="carte" style="display:none"><h2>SYSTÈMES</h2><div id="systeme"></div></section>
+      <section class="carte"><h2><div><i>06</i>CAMÉRAS</div><span>TOUCHER : IMAGE FRAÎCHE</span></h2><div class="cams" id="cams"></div></section>
+      <section class="carte grand"><h2><div><i>07</i>JOURNAL</div><span id="al-res"></span></h2><div class="defile log" id="alertes"></div></section>
       <div class="reserve"></div>
     </div>`;
-  const sc = [['💡', 'Tout éteindre', null, toutEteindre], [absent ? '🏠' : '🚪', absent ? 'Je suis rentré' : 'Je pars', null, basculeAbsent]]
-    .concat(ATLAS ? SCENES : []).concat([['⚠️', 'Danger', null, danger, 'danger']]);
-  $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}"><i>${i}</i>${esc(t)}</button>`).join('');
+  sc = [['power', 'Tout éteindre', null, toutEteindre], [absent ? 'maison' : 'porte', absent ? 'Je suis rentré' : 'Je pars', null, basculeAbsent]]
+    .concat(ATLAS ? SCENES : []).concat([['alerte', 'Danger', null, danger, 'danger']]);
+  $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}">${ic(i)}<span>${esc(t)}</span></button>`).join('');
   document.querySelectorAll('.scene').forEach(b => b.onclick = () => { const x = sc[+b.dataset.k]; if (x[3]) x[3](b); else dis(x[2], b); });
 }
-const ligne = (k, v, cls = '') => `<div class="ligne"><span class="k">${esc(k)}</span><span class="v ${cls}">${esc(v)}</span></div>`;
 
-/* ---------- le plan holographique : les pièces s'allument comme les vraies lampes, les caméras autour ---------- */
+/* ---------- le plan : les pièces s'allument comme les vraies lampes, les caméras autour, le radar qui balaie ---------- */
 let alertesRecentes = [];
+const vuRecemment = c => alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000);
 function plan() {
   const el = $('#plan'); if (!el) return;
   const lampes = appareils.filter(a => a.type === 'lampe');
   const etage = a => /\b(chambres?|salle de bains?|premier etage|etage|bureau|grenier)\b/.test(N(a.nom));
   const niveaux = [['ÉTAGE', lampes.filter(etage)], ['REZ-DE-CHAUSSÉE', lampes.filter(a => !etage(a))]];
-  const W = 1000, M = 130, Hn = 150, gap = 26, top = 70;
+  const W = 1000, M = 120, Hn = 150, gap = 26, top = 70, Ht = top + niveaux.length * (Hn + gap) + 80, R = Ht / 2 - 6;
+  let svg = `<svg viewBox="0 0 ${W} ${Ht}" xmlns="http://www.w3.org/2000/svg">
+    <defs><pattern id="grille" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="rgba(95,211,255,.06)"/></pattern>
+    <linearGradient id="balaye" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(95,211,255,0)"/><stop offset="1" stop-color="rgba(95,211,255,.22)"/></linearGradient></defs>
+    <rect x="0" y="0" width="${W}" height="${Ht}" fill="url(#grille)"/>
+    <g class="radar"><circle cx="${W / 2}" cy="${Ht / 2}" r="${R}" fill="none" stroke="rgba(95,211,255,.08)"/><path d="M${W / 2} ${Ht / 2} L${W / 2 + R} ${Ht / 2} A${R} ${R} 0 0 0 ${(W / 2 + R * Math.cos(0.5)).toFixed(1)} ${(Ht / 2 - R * Math.sin(0.5)).toFixed(1)} Z" fill="url(#balaye)"/></g>
+    <circle cx="${W / 2}" cy="${Ht / 2}" r="${Ht / 4}" fill="none" stroke="rgba(95,211,255,.06)"/>
+    <path d="M${M - 10} ${top - 6} L${W / 2} 14 L${W - M + 10} ${top - 6}" fill="none" stroke="rgba(95,211,255,.4)" stroke-width="1.5"/>`;
   const boites = {};
-  let svg = `<svg viewBox="0 0 ${W} ${top + niveaux.length * (Hn + gap) + 80}" xmlns="http://www.w3.org/2000/svg">
-    <defs><filter id="lueur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
-    <pattern id="grille" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="rgba(255,181,71,.06)"/></pattern></defs>
-    <rect x="0" y="0" width="${W}" height="100%" fill="url(#grille)"/>
-    <path d="M${M - 10} ${top - 6} L${W / 2} 12 L${W - M + 10} ${top - 6}" fill="none" stroke="rgba(255,181,71,.45)" stroke-width="2"/>`;
   niveaux.forEach(([nom, l], k) => {
     const y = top + k * (Hn + gap), n = Math.max(1, l.length), w = (W - 2 * M - (n - 1) * 10) / n;
-    svg += `<text x="${M - 8}" y="${y - 6}" font-size="11" fill="rgba(255,217,160,.5)" letter-spacing="3">${nom}</text>`;
+    svg += `<text x="${M - 8}" y="${y - 7}" font-size="11" fill="rgba(95,211,255,.55)" letter-spacing="4">${nom}</text>`;
     l.forEach((a, i) => {
       const x = M + i * (w + 10), on = a.allume, lum = on ? (a.lum != null ? a.lum : 100) / 100 : 0, hs = a.allume == null;
       boites[N(a.nom)] = { x: x + w / 2, y };
-      const chaud = a.teinte == null ? 30 : a.teinte; const col = `hsl(${38 - chaud * 0.18}, 100%, ${55 + chaud * 0.25}%)`;
       svg += `<g class="piece" data-id="${esc(a.id)}">
-        ${on ? `<rect x="${x + 4}" y="${y + 4}" width="${w - 8}" height="${Hn - 8}" rx="9" fill="${col}" opacity="${0.1 + lum * 0.3}"/>` : ''}
-        <rect x="${x}" y="${y}" width="${w}" height="${Hn}" rx="10" fill="${on ? `rgba(255,181,71,${0.06 + lum * 0.16})` : 'rgba(255,255,255,.02)'}" stroke="${hs ? 'rgba(255,122,69,.5)' : on ? col : 'rgba(255,181,71,.25)'}" stroke-width="${on ? 2 : 1}" ${hs ? 'stroke-dasharray="6 5"' : ''}/>
-        <text x="${x + w / 2}" y="${y + Hn / 2 - 4}" text-anchor="middle" font-size="${w < 130 || a.nom.length > 18 ? 12 : 15}" fill="${on ? '#fff3dd' : 'rgba(244,236,224,.55)'}">${esc(a.nom)}</text>
-        <text x="${x + w / 2}" y="${y + Hn / 2 + 16}" text-anchor="middle" font-size="11" fill="${hs ? '#ff7a45' : 'rgba(255,217,160,.6)'}">${hs ? 'SANS COURANT' : on ? `${a.lum != null ? a.lum + ' %' : 'allumée'}` : 'éteinte'}</text></g>`;
+        <rect x="${x}" y="${y}" width="${w}" height="${Hn}" rx="4" fill="${on ? `rgba(255,181,71,${(0.1 + lum * 0.3).toFixed(2)})` : 'rgba(95,211,255,.025)'}" stroke="${hs ? 'rgba(255,107,74,.55)' : on ? '#ffb547' : 'rgba(95,211,255,.28)'}" stroke-width="${on ? 2 : 1}" ${hs ? 'stroke-dasharray="6 5"' : ''}/>
+        ${on ? `<rect x="${x + 6}" y="${y + Hn - 10}" width="${((w - 12) * lum).toFixed(1)}" height="3" fill="#ffb547"/>` : ''}
+        <text x="${x + w / 2}" y="${y + Hn / 2 - 4}" text-anchor="middle" font-size="${w < 130 || a.nom.length > 18 ? 12 : 15}" fill="${on ? '#fff4e0' : 'rgba(238,243,248,.6)'}">${esc(a.nom.toUpperCase())}</text>
+        <text x="${x + w / 2}" y="${y + Hn / 2 + 16}" text-anchor="middle" font-size="11" letter-spacing="2" fill="${hs ? '#ff6b4a' : on ? '#ffd9a0' : 'rgba(190,215,235,.45)'}">${hs ? 'SANS COURANT' : on ? (a.lum != null ? `${a.lum} %` : 'ACTIVE') : 'VEILLE'}</text></g>`;
     });
   });
-  // les caméras autour de la maison : la toiture en haut, la cour derrière, la façade devant (la rue), l'intérieur au centre
+  // les caméras autour : la toiture en haut (le velux de papa), la cour et le plateau derrière, la façade devant (la rue)
   const yBas = top + niveaux.length * (Hn + gap) + 30;
-  // la toiture regarde le velux de la chambre de papa ; la cour et le plateau sont à l'arrière (la LSC filme le plateau derrière une fenêtre)
   const papa = Object.entries(boites).find(([k]) => /papa/.test(k));
-  const place = c => /toit/.test(N(c.nom)) ? [papa ? papa[1].x : W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - 62, top + Hn / 2] : /plateau/.test(N(c.nom)) ? [W - 62, top + Hn + gap + Hn / 2] : /facade|rue|portail/.test(N(c.nom)) ? [W / 2, yBas] : [62, top + Hn + gap / 2];
+  const place = c => /toit/.test(N(c.nom)) ? [papa ? papa[1].x : W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - 58, top + Hn / 2] : /plateau/.test(N(c.nom)) ? [W - 58, top + Hn + gap + Hn / 2] : /facade|rue|portail/.test(N(c.nom)) ? [W / 2, yBas] : [58, top + Hn + gap / 2];
   cams.forEach(c => {
-    const [x, y] = place(c), recent = alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000);
-    const col = !c.en_ligne ? '#ff7a45' : recent ? '#ffcf8a' : '#7ee2b8';
-    svg += `${recent ? `<circle class="onde" cx="${x}" cy="${y}" r="8" fill="none" stroke="${col}" stroke-width="2"/>` : ''}
-      <circle cx="${x}" cy="${y}" r="7" fill="${col}"/><text x="${x}" y="${y + (y > top ? 22 : -12)}" text-anchor="middle" font-size="${x < 120 || x > W - 120 ? 10 : 11}" fill="${col}" letter-spacing="1">${esc(c.nom.toUpperCase())}${/toit/.test(N(c.nom)) ? ' · VELUX' : ''}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 36 : -24)}" text-anchor="middle" font-size="10" fill="${col}">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
+    const [x, y] = place(c), recent = vuRecemment(c), col = !c.en_ligne ? '#ff6b4a' : recent ? '#ffb547' : '#6ef0b8';
+    svg += `${recent ? `<circle class="onde" cx="${x}" cy="${y}" r="7" fill="none" stroke="${col}" stroke-width="2"/>` : ''}
+      <circle cx="${x}" cy="${y}" r="6" fill="${col}"/><circle cx="${x}" cy="${y}" r="11" fill="none" stroke="${col}" stroke-opacity=".4"/>
+      <text x="${x}" y="${y + (y > top ? 24 : -14)}" text-anchor="middle" font-size="${x < 120 || x > W - 120 ? 10 : 11}" fill="${col}" letter-spacing="2">${esc(c.nom.toUpperCase())}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 38 : -26)}" text-anchor="middle" font-size="10" fill="${col}" letter-spacing="2">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
   });
-  svg += `<text x="${W / 2}" y="${yBas + 40}" text-anchor="middle" font-size="11" fill="rgba(255,217,160,.35)" letter-spacing="4">— LA RUE —</text>
-    <text x="${W - 18}" y="${top + Hn + gap / 2}" text-anchor="middle" font-size="10" fill="rgba(255,217,160,.3)" letter-spacing="3" transform="rotate(90 ${W - 18} ${top + Hn + gap / 2})">ARRIÈRE · COUR</text></svg>`;
-  if (el._svg === svg) return; el._svg = svg; // rien n'a changé : on ne redessine pas
+  svg += `<text x="${W / 2}" y="${yBas + 42}" text-anchor="middle" font-size="11" fill="rgba(95,211,255,.35)" letter-spacing="6">LA RUE</text>
+    <text x="${W - 16}" y="${top + Hn + gap / 2}" text-anchor="middle" font-size="10" fill="rgba(95,211,255,.3)" letter-spacing="4" transform="rotate(90 ${W - 16} ${top + Hn + gap / 2})">ARRIÈRE · COUR</text></svg>`;
+  if (el._svg === svg) return; el._svg = svg; // rien n'a changé : on ne redessine pas (le radar continue de tourner)
   el.innerHTML = svg;
   el.querySelectorAll('.piece').forEach(g => g.addEventListener('click', () => bascule(g.dataset.id)));
 }
@@ -212,22 +282,22 @@ async function chargeAppareils() {
   const sig = JSON.stringify(l.map(a => [a.id, a.allume, a.lum, a.watts && Math.round(a.watts)]));
   if (sig === chargeAppareils._sig && appareils.length) return; chargeAppareils._sig = sig; appareils = l;
   const lampes = appareils.filter(a => a.type === 'lampe'), prises = appareils.filter(a => a.type !== 'lampe');
-  $('#lum-res').textContent = `${lampes.filter(a => a.allume).length} allumée(s) sur ${lampes.length}`;
+  $('#lum-res').textContent = `${lampes.filter(a => a.allume).length} / ${lampes.length} ACTIVES`;
   $('#lumieres').innerHTML = lampes.map(a => `<div class="tuile ${a.allume ? 'on' : ''} ${a.allume == null ? 'hs' : ''}" data-id="${esc(a.id)}">
-      <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'sans courant' : a.allume ? `${a.lum != null ? a.lum + ' %' : 'allumée'}` : 'éteinte'}</div>
-      ${a.lum != null && a.allume ? `<input type="range" min="2" max="100" value="${a.lum}" data-lum="${esc(a.id)}">` : ''}</div>`).join('');
-  $('#lumieres').innerHTML += prises.map(a => `<div class="tuile ${a.allume ? 'on' : ''} ${a.allume == null ? 'hs' : ''}" data-id="${esc(a.id)}">
-      <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'débranchée' : a.watts != null ? `${a.allume ? 'allumée' : 'éteinte'} · ${nf(a.watts, 0)} W` : a.allume ? 'allumée' : 'éteinte'}</div></div>`).join('');
+      <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'sans courant' : a.allume ? `${a.lum != null ? a.lum + ' %' : 'active'}` : 'veille'}</div>
+      ${a.lum != null && a.allume ? `<input type="range" min="2" max="100" value="${a.lum}" data-lum="${esc(a.id)}">` : ''}</div>`).join('')
+    + prises.map(a => `<div class="tuile ${a.allume ? 'on' : ''} ${a.allume == null ? 'hs' : ''}" data-id="${esc(a.id)}">
+      <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'débranchée' : a.watts != null ? `${a.allume ? 'active' : 'veille'} · ${nf(a.watts, 0)} W` : a.allume ? 'active' : 'veille'}</div></div>`).join('');
   document.querySelectorAll('.tuile[data-id]').forEach(el => el.addEventListener('click', e => { if (e.target.matches('input')) return; bascule(el.dataset.id); }));
   document.querySelectorAll('input[data-lum]').forEach(el => el.addEventListener('change', () => commande([el.dataset.lum], true, +el.value)));
-  majMaison(); plan();
+  plan(); bandeauMaj();
 }
 async function commande(ids, allume, lum) {
   try { await appel('/maison/commande', Object.assign({ ids, allume }, lum != null ? { lum } : {}), 20000); } catch (e) { /* rien */ }
   setTimeout(chargeAppareils, 400);
 }
 function bascule(id) { const a = appareils.find(x => x.id === id); if (!a || a.allume == null) return; commande([id], !a.allume); }
-function toutEteindre() { const l = appareils.filter(a => a.allume && a.type === 'lampe' && !/\bchambres?\b/.test(N(a.nom))); if (l.length) commande(l.map(a => a.id), false); }
+function toutEteindre(b) { const l = appareils.filter(a => a.allume && a.type === 'lampe' && !/\bchambres?\b/.test(N(a.nom))); if (l.length) commande(l.map(a => a.id), false); if (b) { b.classList.add('fait'); setTimeout(() => b.classList.remove('fait'), 1500); } toast('Extinction du rez-de-chaussée'); }
 async function danger() {
   if (!confirm('Protocole danger : toutes les lumières à fond, une photo de chaque caméra gardée comme preuve, et une alerte urgente sur ton téléphone. On y va ?')) return;
   const l = appareils.filter(a => a.type === 'lampe' && a.allume != null);
@@ -236,10 +306,13 @@ async function danger() {
   chargeAppareils(); chargeAlertes();
 }
 
-/* ---------- le mode absent, la sentinelle ---------- */
+/* ---------- le mode absent ---------- */
 let absent = false;
-async function chargeSentinelle() { const avant = absent; try { absent = !!(await appel('/maison/sentinelle')).absent; } catch (e) { /* rien */ } majEtat(); if (avant !== absent) cartes2(); }
-function cartes2() { const b = document.querySelector('.scene[data-k="1"]'); if (b) b.innerHTML = absent ? '<i>🏠</i>Je suis rentré' : '<i>🚪</i>Je pars'; }
+async function chargeSentinelle() {
+  const avant = absent; try { absent = !!(await appel('/maison/sentinelle')).absent; } catch (e) { /* rien */ }
+  majEtat();
+  if (avant !== absent && sc[1]) { sc[1][0] = absent ? 'maison' : 'porte'; sc[1][1] = absent ? 'Je suis rentré' : 'Je pars'; const b = document.querySelector('.scene[data-k="1"]'); if (b) b.innerHTML = `${ic(sc[1][0])}<span>${sc[1][1]}</span>`; }
+}
 async function basculeAbsent(b) { if (ATLAS) { dis(absent ? 'je suis rentré' : 'je pars', b); setTimeout(chargeSentinelle, 4000); return; } try { await appel('/maison/sentinelle', { absent: !absent }); } catch (e) { /* rien */ } setTimeout(chargeSentinelle, 500); }
 
 /* ---------- les caméras ---------- */
@@ -248,17 +321,17 @@ async function chargeCams() {
   const l = [];
   try { ((await appel('/maison/ezviz')).cameras || []).forEach(c => l.push({ nom: c.nom, ezviz: true, en_ligne: c.en_ligne !== false, batterie: c.batterie })); } catch (e) { /* rien */ }
   try { ((await appel('/maison/cameras')).cameras || []).forEach(c => l.push({ nom: c.nom.charAt(0).toUpperCase() + c.nom.slice(1), cle: c.nom, en_ligne: true })); } catch (e) { /* rien */ }
-  cams = l; dessineCams(); plan();
+  cams = l; dessineCams(); plan(); bandeauMaj();
   cams.filter(c => !c.ezviz).forEach(photo); // les caméras branchées : une image toutes les 30 s ; celles sur batterie : à la demande
 }
 function dessineCams() {
-  $('#cams').innerHTML = cams.map((c, i) => `<div class="cam ${alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000) ? 'mouv' : ''}" data-i="${i}">${urls[c.nom] ? `<img src="${urls[c.nom]}" alt="">` : `<div class="vide">${c.en_ligne ? (c.ezviz ? 'sur batterie<br>toucher pour une photo' : 'chargement…') : 'SIGNAL PERDU'}</div>`}
-    <span class="lab" style="color:${c.en_ligne ? 'var(--texte)' : 'var(--alerte)'}">${esc(c.nom.toUpperCase())}</span><span class="info">${c.ezviz && c.batterie != null ? `🔋 ${c.batterie} %` : ''}${c.at ? ` · ${c.at}` : ''}</span></div>`).join('');
+  $('#cams').innerHTML = cams.map((c, i) => `<div class="cam ${vuRecemment(c) ? 'mouv' : ''} ${c.en_ligne ? '' : 'hs'}" data-i="${i}">${urls[c.nom] ? `<img src="${urls[c.nom]}" alt="">` : `<div class="vide">${c.en_ligne ? (c.ezviz ? 'EN VEILLE<br>TOUCHER POUR UNE IMAGE' : 'LIAISON…') : 'SIGNAL PERDU'}</div>`}
+    <span class="lab">CAM ${String(i + 1).padStart(2, '0')} · ${esc(c.nom.toUpperCase())}</span>${vuRecemment(c) ? '<span class="rec">● REC</span>' : ''}<span class="info">${c.ezviz && c.batterie != null ? `BAT ${c.batterie} %` : ''}${c.at ? ` · ${c.at}` : ''}</span></div>`).join('');
   document.querySelectorAll('.cam').forEach(el => el.onclick = () => photo(cams[+el.dataset.i]));
 }
 async function photo(c) {
   if (!c || !c.en_ligne) return;
-  if (c.ezviz) { const el = document.querySelector(`.cam[data-i="${cams.indexOf(c)}"] .info`); if (el) el.textContent = 'réveil…'; }
+  if (c.ezviz) { const el = document.querySelector(`.cam[data-i="${cams.indexOf(c)}"] .info`); if (el) el.textContent = 'RÉVEIL…'; }
   try {
     const b = await appel(c.ezviz ? `/maison/ezviz/photo?nom=${encodeURIComponent(c.nom)}` : `/maison/camera?nom=${encodeURIComponent(c.cle)}`, null, c.ezviz ? 70000 : 20000);
     if (b instanceof Blob && b.size > 1000) { if (urls[c.nom]) URL.revokeObjectURL(urls[c.nom]); urls[c.nom] = URL.createObjectURL(b); c.at = hh(new Date()); }
@@ -266,102 +339,116 @@ async function photo(c) {
   dessineCams();
 }
 
-/* ---------- les alertes ---------- */
-let photosAlertes = {};
+/* ---------- le journal des alertes ---------- */
+const GENRES = { reseau: 'RÉSEAU', tailscale: 'TAILSCALE', camera: 'CAMÉRA', ezviz: 'CAMÉRA', agenda: 'AGENDA', presence: 'PRÉSENCE', marche: 'MARCHÉS', lien: 'LIEN', accueil: 'ACCUEIL', defense: 'DÉFENSE', ordinateur: 'SYSTÈME', fantome: 'FANTÔME', hologramme: 'HOLOGRAMME', reveil: 'RÉVEIL', veille: 'VEILLE', 'boite-noire': 'TRADING' };
+let photosAlertes = {}, nbAlertes = 0;
 async function chargeAlertes() {
   let l = []; try { l = (await appel('/maison/alertes?depuis=0')).alertes || []; } catch (e) { return; }
   alertesRecentes = l.filter(a => a.genre === 'ezviz' || a.genre === 'camera'); plan();
-  l = l.filter(a => a.gravite !== 'info').slice(-8).reverse();
-  $('#al-res').textContent = l.length ? `${l.length} récentes` : '';
-  $('#alertes').innerHTML = l.length ? l.map(a => `<div class="alerte ${a.gravite === 'urgent' ? 'urgent' : ''}"><span class="h">${hh(new Date(a.at))}</span>${a.image ? `<img data-al="${a.id}" alt="">` : ''}<span class="t">${esc(a.texte)}</span></div>`).join('') : '<div class="muted">Rien à signaler.</div>';
-  for (const a of l.filter(x => x.image)) {
+  l = l.filter(a => a.gravite !== 'info').slice(-10).reverse();
+  nbAlertes = l.filter(a => a.gravite === 'urgent' && Date.now() - a.at < 12 * 3600000).length;
+  $('#al-res').textContent = l.length ? `${l.length} ENTRÉES` : '';
+  $('#alertes').innerHTML = l.length ? l.map(a => `<div class="entree ${a.gravite}"><span class="h">[${hh(new Date(a.at))}]</span><span class="g">${GENRES[a.genre] || String(a.genre || '').toUpperCase()}</span>${a.image ? `<img data-al="${a.id}" alt="">` : ''}<span class="t">${esc(propre(a.texte))}</span></div>`).join('') : '<div class="muted">AUCUN ÉVÉNEMENT. PÉRIMÈTRE CALME.</div>';
+  for (const a of l.filter(x => x.image).slice(0, 3)) {
     if (!photosAlertes[a.id]) { try { const b = await appel(`/maison/alerte/image?id=${a.id}`); if (b instanceof Blob) photosAlertes[a.id] = URL.createObjectURL(b); } catch (e) { /* rien */ } }
     const img = document.querySelector(`img[data-al="${a.id}"]`); if (img && photosAlertes[a.id]) img.src = photosAlertes[a.id];
   }
+  dessineCams(); majEtat(); bandeauMaj();
 }
 
-/* ---------- l'agenda (Google, lecture seule) ---------- */
+/* ---------- l'agenda (Google, lecture seule) : une ligne de temps ---------- */
+let rdvProchain = null;
 async function chargeAgenda() {
   let r; try { r = await appel('/maison/agenda?jours=2'); } catch (e) { return; }
   const el = $('#agenda'); if (!el) return;
-  if (!r.relie) { el.innerHTML = '<div class="muted">Agenda pas encore relié.</div>'; return; }
+  if (!r.relie) { el.innerHTML = '<div class="muted">AGENDA NON RELIÉ.</div>'; return; }
   const now = Date.now() / 1000, auj = new Date().toDateString(), dem = new Date(Date.now() + 86400000).toDateString();
   const l = (r.evenements || []).filter(e => e.fin > now - 1800);
   const a = l.filter(e => new Date(e.debut * 1000).toDateString() === auj || (e.journee && e.debut < now)), d = l.filter(e => new Date(e.debut * 1000).toDateString() === dem).slice(0, 3);
-  const un = e => `<div class="rdv ${e.fin < now ? 'passe' : ''}"><span class="h">${e.journee ? '—' : hh(new Date(e.debut * 1000))}</span><span>${esc(e.titre)}</span></div>`;
-  $('#ag-res').textContent = a.length ? `${a.filter(e => !e.journee && e.debut > now).length} à venir` : '';
-  el.innerHTML = (a.length ? a.map(un).join('') : '<div class="muted">Rien de prévu aujourd\'hui.</div>') + (d.length ? `<div class="jour" style="margin:10px 0 2px">DEMAIN</div>${d.map(un).join('')}` : '');
+  rdvProchain = a.find(e => !e.journee && e.debut > now) || null;
+  const un = e => `<div class="rdv ${e.fin < now ? 'passe' : ''} ${e === rdvProchain ? 'prochain' : ''}"><span class="h">${e.journee ? 'JOUR' : hh(new Date(e.debut * 1000))}</span><span class="t">${esc(propre(e.titre))}</span></div>`;
+  $('#ag-res').textContent = a.length ? `${a.filter(e => !e.journee && e.debut > now).length} À VENIR` : '';
+  el.innerHTML = (a.length ? a.map(un).join('') : '<div class="muted">RIEN DE PRÉVU AUJOURD\'HUI.</div>') + (d.length ? `<div class="jour">DEMAIN</div>${d.map(un).join('')}` : '');
+  bandeauMaj();
 }
 
-/* ---------- les marchés ---------- */
+/* ---------- les marchés : le cours et sa courbe sur 24 h ---------- */
+const COURS = [['XAU', 'OR', 1], ['XAG', 'ARGENT', 2], ['HG', 'CUIVRE', 3], ['EURUSD', 'EUR/USD', 4]];
 async function chargeMarche() {
-  let m; try { m = await appel('/atlas/marche?h=24'); } catch (e) { return; }
-  const noms = { XAU: 'OR', XAG: 'ARGENT', HG: 'CUIVRE', EURUSD: 'EUR/USD' };
-  $('#marche').innerHTML = Object.entries(m.cours || {}).map(([k, c]) => `<div class="prix"><div class="s">${noms[k] || k}</div><div class="p">${nf(c.prix, k === 'EURUSD' ? 4 : 2)}</div>${c.var24 != null ? `<div class="${c.var24 >= 0 ? 'haut' : 'bas'} mono" style="font-size:12px">${c.var24 >= 0 ? '▲' : '▼'} ${nf(Math.abs(c.var24))} %</div>` : ''}</div>`).join('');
-  const prochaines = (m.annonces || []).filter(a => a.impact === 'High' && Date.parse(a.date) > Date.now()).slice(0, 3);
-  $('#annonces').innerHTML = prochaines.length ? 'Annonces fortes : ' + prochaines.map(a => `${esc(a.pays)} ${esc(a.titre)} (${new Date(a.date).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })})`).join(' · ') : '';
+  const res = await Promise.all(COURS.map(([k]) => appel(`/atlas/marche?serie=${k}&h=24`).catch(() => null)));
+  $('#marche').innerHTML = COURS.map(([k, nom, dec], i) => {
+    const m = res[i], c = m && m.cours && m.cours[k]; if (!c) return '';
+    const pts = ((m.serie || []).map(x => x[1])).filter(v => v != null), lo = Math.min(...pts), hi = Math.max(...pts);
+    const ligne = pts.length > 3 ? pts.map((v, j) => `${(j / (pts.length - 1) * 100).toFixed(1)},${(20 - (v - lo) / ((hi - lo) || 1) * 18).toFixed(1)}`).join(' ') : '';
+    const sens = c.var24 == null ? '' : c.var24 >= 0 ? 'haut' : 'bas';
+    return `<div class="prix"><div class="s"><span>${nom}</span><span class="${sens}">${c.var24 != null ? `${c.var24 >= 0 ? '+' : '−'}${nf(Math.abs(c.var24))} %` : ''}</span></div><div class="p">${nf(c.prix, dec)}</div>${ligne ? `<svg viewBox="0 0 100 22" preserveAspectRatio="none"><polyline points="${ligne}" fill="none" stroke="${sens === 'bas' ? '#ff6b4a' : '#6ef0b8'}" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>` : ''}</div>`;
+  }).join('');
 }
 
-/* ---------- la maison : Shadow, la Fusée, l'énergie, la météo ---------- */
-let diag = {}, energie = null, meteo = null;
-async function chargeDiag() { try { diag = await appel('/atlas/diag'); } catch (e) { /* rien */ } majMaison(); majEtat(); }
-async function chargeEnergie() { try { energie = await appel('/maison/energie'); } catch (e) { /* rien */ } majMaison(); }
+/* ---------- Shadow, l'énergie, la météo, les systèmes ---------- */
+let diag = {}, energie = null, meteo = null, sys = null;
+async function chargeDiag() { try { diag = await appel('/atlas/diag'); } catch (e) { /* rien */ } majEtat(); }
+async function chargeEnergie() { try { energie = await appel('/maison/energie'); } catch (e) { /* rien */ } bandeauMaj(); }
 async function chargeMeteo() {
   const v = reglages.ville; if (!v || !v.lat) return;
-  try { meteo = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${v.lat}&longitude=${v.lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1`)).json(); } catch (e) { /* rien */ }
-  majEtat();
+  try { meteo = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${v.lat}&longitude=${v.lon}&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1`)).json(); } catch (e) { /* rien */ }
+  majEtat(); bandeauMaj();
 }
+async function chargeSysteme() { try { sys = await appel('/maison/pc', { action: 'systeme' }); } catch (e) { /* rien */ } majEtat(); bandeauMaj(); }
 const recent = x => { if (!x || !x.recu) return false; const [h, m, s] = x.recu.split(':').map(Number), t = new Date(); t.setHours(h, m, s || 0, 0); return Date.now() - t < 3 * 60000; };
-function majMaison() {
-  const el = $('#maison'); if (!el) return;
-  const sh = Object.entries(diag).find(([k]) => /^shadow/.test(k)), s = sh && recent(sh[1]) ? sh[1] : null;
-  const fu = appareils.find(a => /\bfusee\b/.test(N(a.nom)));
-  const h = new Date().getHours();
-  const atlas = Object.entries(diag).filter(([k, v]) => !/^shadow/.test(k) && recent(v)).map(([k]) => k);
-  const tot = energie ? Object.values(energie.aujourdhui || {}).reduce((a, b) => a + b, 0) : null;
-  el.innerHTML = ligne('Shadow', s ? (s.enfantVu ? 'réveillé · il le voit' : 'réveillé') : 'endormi ou fermé', s ? 'ok' : '')
-    + (fu ? ligne('La Fusée', fu.allume ? ((h >= 20 || h < 8) ? 'allumée · il dort ici' : 'allumée') : 'éteinte', fu.allume ? 'ok' : '') : '')
-    + ligne('Atlas allumés', atlas.length ? atlas.join(', ') : 'aucun')
-    + (tot != null ? ligne("Énergie aujourd'hui", `${nf(tot)} kWh · ${nf(tot * (energie.prix_kwh || 0.25))} €`) : '');
-}
+function sysPb() { if (!sys) return null; const off = Object.entries(sys.services || {}).filter(([, v]) => !v).map(([k]) => k); return off.length || sys.cpu_temp >= 85 || sys.disque >= 90 ? (off.length ? `${off.join(', ')} arrêté` : 'surchauffe ou disque plein') : ''; }
 function majEtat() {
-  const c = meteo && meteo.current, d = meteo && meteo.daily;
-  $('#etat').innerHTML = `<span class="pastille ${absent ? 'al' : 'ok'}">Maison <b>${absent ? 'mode absent' : 'présence'}</b></span>`
-    + (c ? `<span class="pastille">${esc(reglages.ville.name || '')} <b>${Math.round(c.temperature_2m)}°</b>${d ? ` · ${Math.round(d.temperature_2m_min[0])}/${Math.round(d.temperature_2m_max[0])}° · pluie ${d.precipitation_probability_max[0]} %` : ''}</span>` : '')
-    + (() => { const sh = Object.entries(diag).find(([k]) => /^shadow/.test(k)), ok = sh && recent(sh[1]); return `<span class="pastille ${ok ? 'ok' : ''}">Shadow <b>${ok ? (sh[1].enfantVu ? 'avec lui' : 'réveillé') : 'endormi'}</b></span>`; })()
-    + `<span class="pastille" id="p-sys">Systèmes <b>…</b></span>`;
-  if (sys) majSysteme();
+  const sh = Object.entries(diag).find(([k]) => /^shadow/.test(k)), shOk = sh && recent(sh[1]), pb = sysPb();
+  $('#etat').innerHTML = `<span class="puce"><span class="led ${absent ? 'am' : 'ok'}"></span>MAISON <b>${absent ? 'ABSENT' : 'OCCUPÉE'}</b></span>`
+    + `<span class="puce"><span class="led ${nbAlertes ? 'al' : 'ok'}"></span>PÉRIMÈTRE <b>${nbAlertes ? `${nbAlertes} ALERTE${nbAlertes > 1 ? 'S' : ''}` : 'CALME'}</b></span>`
+    + `<span class="puce"><span class="led ${shOk ? 'ok' : ''}"></span>SHADOW <b>${shOk ? (sh[1].enfantVu ? 'AVEC LUI' : 'EN LIGNE') : 'EN VEILLE'}</b></span>`
+    + `<span class="puce"><span class="led ${pb == null ? '' : pb ? 'al' : 'ok'}"></span>SYSTÈMES <b>${pb == null ? '…' : pb ? 'À VÉRIFIER' : 'NOMINAUX'}</b></span>`;
 }
-
-/* ---------- les systèmes ---------- */
-let sys = null;
-async function chargeSysteme() { try { sys = await appel('/maison/pc', { action: 'systeme' }); } catch (e) { /* rien */ } majSysteme(); }
-function majSysteme() {
-  if (!sys) return;
-  const off = Object.entries(sys.services || {}).filter(([, v]) => !v).map(([k]) => k);
-  const pb = off.length || sys.cpu_temp >= 85 || sys.disque >= 90;
-  const p = $('#p-sys'); if (p) { p.className = `pastille ${pb ? 'al' : 'ok'}`; p.innerHTML = `Systèmes <b>${pb ? 'à vérifier' : 'opérationnels'}</b>`; }
-  $('#systeme').innerHTML = ligne('Processeur', `${sys.cpu_temp ?? '?'} °C · charge ${nf(sys.charge, 1)}`, sys.cpu_temp >= 85 ? 'al' : 'ok') + ligne('Carte graphique', `${sys.gpu_temp ?? '?'} °C`, sys.gpu_temp >= 85 ? 'al' : 'ok')
-    + ligne('Mémoire', `${sys.ram} %`, sys.ram >= 90 ? 'al' : 'ok') + ligne('Disque', `${sys.disque} % · ${sys.disque_libre_go} Go libres`, sys.disque >= 90 ? 'al' : 'ok')
-    + Object.entries(sys.services || {}).map(([k, v]) => ligne(k.charAt(0).toUpperCase() + k.slice(1), v ? 'en ligne' : 'ARRÊTÉ', v ? 'ok' : 'al')).join('')
-    + ligne('Réseau', `${sys.reseau.presents} appareils`) + (sys.tailscale || []).map(t => ligne(t.nom, t.en_ligne ? 'connecté' : 'hors ligne', t.en_ligne ? 'ok' : '')).join('');
+// la ligne d'état qui défile : une information à la fois
+let bandeauL = [], bandeauI = 0;
+function bandeauMaj() {
+  const l = [];
+  const lampes = appareils.filter(a => a.type === 'lampe');
+  l.push(nbAlertes ? `${nbAlertes} alerte${nbAlertes > 1 ? 's' : ''} urgente${nbAlertes > 1 ? 's' : ''} en 12 heures` : 'Périmètre sécurisé, aucune alerte urgente');
+  if (cams.length) l.push(`${cams.filter(c => c.en_ligne).length} caméras sur ${cams.length} en surveillance`);
+  if (lampes.length) l.push(`${lampes.filter(a => a.allume).length} lumières actives sur ${lampes.length}`);
+  if (rdvProchain) l.push(`Prochain rendez-vous : ${propre(rdvProchain.titre)} à ${hh(new Date(rdvProchain.debut * 1000))}`);
+  const c = meteo && meteo.current; if (c) l.push(`Extérieur : ${Math.round(c.temperature_2m)} degrés`);
+  const d = meteo && meteo.daily; if (d) l.push(`Météo : ${Math.round(d.temperature_2m_min[0])} à ${Math.round(d.temperature_2m_max[0])} degrés, pluie ${d.precipitation_probability_max[0]} %`);
+  if (energie) { const tot = Object.values(energie.aujourdhui || {}).reduce((a, b) => a + b, 0); l.push(`Énergie aujourd'hui : ${nf(tot)} kWh, ${nf(tot * (energie.prix_kwh || 0.25))} €`); }
+  if (sys) l.push(`Ordinateur de la maison : ${sys.cpu_temp ?? '?'} °C, mémoire ${sys.ram} %, ${sys.reseau ? sys.reseau.presents : '?'} appareils sur le réseau`);
+  l.push(absent ? 'Mode absent : protocole fantôme prêt pour la soirée' : 'Atlas à l\'écoute');
+  bandeauL = l;
 }
+setInterval(() => { if (!bandeauL.length) return; const el = $('#bandeau'); el.style.opacity = '0'; setTimeout(() => { bandeauI = (bandeauI + 1) % bandeauL.length; el.textContent = bandeauL[bandeauI].toUpperCase(); el.style.opacity = '1'; }, 500); }, 6000);
 
-/* ---------- le démarrage ---------- */
-function horloge() { const d = new Date(); $('#heure').textContent = hh(d); $('#date').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); const h = d.getHours(); document.body.classList.toggle('nuit', h >= 22 || h < 6); }
+/* ---------- l'heure, la nuit, le démarrage ---------- */
+function horloge() {
+  const d = new Date();
+  $('#heure').innerHTML = `${hh(d)}<small>:${String(d.getSeconds()).padStart(2, '0')}</small>`;
+  $('#date').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const h = d.getHours(); document.body.classList.toggle('nuit', h >= 22 || h < 6);
+}
 setInterval(horloge, 1000); horloge();
+function boot() {
+  const lignes = ['LIAISON AVEC LA MAISON', 'ÉCLAIRAGE', 'CAMÉRAS', 'SENTINELLE', 'AGENDA', 'MARCHÉS', 'COCKPIT EN LIGNE'];
+  const el = $('#boot-l');
+  el.innerHTML = lignes.map(t => `<p>${t}<b>OK</b></p>`).join('');
+  el.querySelectorAll('p').forEach((p, i) => setTimeout(() => p.classList.add('v'), 180 + i * 230));
+  setTimeout(() => { const b = $('#boot'); if (!b) return; b.style.opacity = '0'; setTimeout(() => b.remove(), 700); }, 180 + lignes.length * 230 + 500);
+}
 async function veille() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) { /* rien */ } } // l'écran reste allumé (tablette au mur)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { veille(); tout(); } });
 function tout() { chargeAppareils(); chargeSentinelle(); chargeCams(); chargeAlertes(); chargeMarche(); chargeDiag(); chargeEnergie(); chargeSysteme(); chargeMeteo(); chargeAgenda(); }
 function demarre() {
-  cartes(); majEtat(); tout(); veille();
+  boot(); cartes(); majEtat(); tout(); veille();
   setInterval(chargeAppareils, 20000); setInterval(chargeSentinelle, 30000); setInterval(chargeAlertes, 30000); setInterval(chargeDiag, 30000);
   setInterval(() => cams.filter(c => !c.ezviz).forEach(photo), 30000); setInterval(chargeCams, 5 * 60000);
-  setInterval(chargeMarche, 120000); setInterval(chargeAgenda, 5 * 60000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000);
+  setInterval(chargeMarche, 120000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000); setInterval(chargeAgenda, 5 * 60000);
 }
 if (ROOT) demarre();
 else {
-  $('#config').hidden = false;
+  $('#boot').remove(); $('#config').hidden = false;
   $('#adresse-ok').onclick = () => { const v = $('#adresse').value.trim().replace(/\/+$/, '').replace(/\/v1$/, ''); if (!/^https:\/\//.test(v)) return; try { localStorage.setItem('cockpit-adresse', v); } catch (e) { /* rien */ } location.reload(); };
 }
 </script>

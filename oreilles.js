@@ -64,7 +64,8 @@ const OREILLES = (() => {
       const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 170; hp.Q.value = 0.7;
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4800; lp.Q.value = 0.7;
       src.connect(hp); hp.connect(lp); lp.connect(proc);
-      proc.connect(ctx.destination); // sortie muette, nécessaire pour que le micro « tourne »
+      const muet = ctx.createGain(); muet.gain.value = 0; // vraiment muet : sur certaines tablettes, le micro repartait dans la sono (larsen)
+      proc.connect(muet); muet.connect(ctx.destination); // sortie muette, nécessaire pour que le micro « tourne »
       proc.onaudioprocess = e => onAudio(e.inputBuffer.getChannelData(0));
     }
     if (ctx.state === 'suspended') await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 1500))]);
