@@ -442,11 +442,24 @@ const SCIFI = (() => {
   }
 
   /* ---------- le mode cockpit : le tableau de bord en grand, et Atlas en petit dans le coin (il écoute et parle toujours) ---------- */
+  function pleinEcran() {
+    if (!document.body.classList.contains('cockpit') || document.fullscreenElement) return;
+    document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => { const h = document.getElementById('cockpit-pe'); if (h) h.remove(); }).catch(() => {});
+  }
   function modeCockpit(on) {
     document.body.classList.toggle('cockpit', on);
     let f = document.getElementById('cockpit-cadre');
-    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = 'cockpit.html'; f.title = 'Cockpit de la maison'; document.body.appendChild(f); }
+    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = 'cockpit.html'; f.title = 'Cockpit de la maison'; document.body.appendChild(f); f.addEventListener('load', () => { try { f.contentDocument.addEventListener('pointerdown', pleinEcran); } catch (e) { /* rien */ } }); }
     if (!on && f) f.remove();
+    // le plein écran (sans les barres d'Android) : le navigateur l'accorde au premier toucher de l'écran
+    if (on && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+      document.addEventListener('pointerdown', pleinEcran);
+      const h = document.createElement('div'); h.id = 'cockpit-pe';
+      h.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;padding:10px 18px;border-radius:999px;background:rgba(14,116,144,.85);color:#e0f2fe;font:600 15px system-ui;pointer-events:none';
+      h.textContent = '⛶ Touche l\'écran pour le plein écran';
+      document.body.appendChild(h); setTimeout(() => h.remove(), 8000);
+    }
+    if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     try { localStorage.setItem('atlas-cockpit', on ? '1' : '0'); } catch (e) { /* rien */ }
     window.dispatchEvent(new Event('resize'));
   }
