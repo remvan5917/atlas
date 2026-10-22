@@ -150,6 +150,13 @@ const SECURITE = (() => {
       clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 120000);
     } catch (e) { /* pas de photo */ }
   }
+  // la lueur du lien : l'écran respire en bleu, comme les lampes de la maison
+  function lueurLien() {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:55;pointer-events:none;background:radial-gradient(60% 60% at 50% 50%,rgba(56,189,248,.55),rgba(2,12,27,0) 70%);opacity:0;transition:opacity 1.4s';
+    document.body.appendChild(el);
+    let k = 0; const t = setInterval(() => { el.style.opacity = k % 2 ? '0.15' : '1'; if (++k > 6) { clearInterval(t); el.style.opacity = '0'; setTimeout(() => el.remove(), 1500); } }, 1500);
+  }
   async function releveAlertes() {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
@@ -170,7 +177,8 @@ const SECURITE = (() => {
     l.filter(a => a.genre === 'reveil' && a.gravite === 'attention').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[1319, 0.12], [1047, 0.12], [1319, 0.12], [1047, 0.12], [1568, 0.3]]); await wait(1600); fx.tone([[1319, 0.12], [1047, 0.12], [1568, 0.3]]); await wait(900); if (dlg.state === 'standby' || dlg.state === 'sleep') dlg.state = 'talk'; return a.texte; }, { urgent: true, expire: Date.now() + 20 * 60000 }));
     // « qui sonne à la porte » (gravité annonce) : un ding-dong, la photo, et il le dit tout de suite — ça ne vaut que 3 minutes
     l.filter(a => a.gravite === 'annonce').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
-    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
+    l.filter(a => a.genre === 'lien' && a.gravite === 'attention').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { lueurLien(); fx.tone([[659, 0.15], [880, 0.15], [1319, 0.35]]); await wait(700); return a.texte; }, { urgent: true, expire: Date.now() + 6 * 3600000 }));
+    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && a.genre !== 'lien' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
   }
   setInterval(releveAlertes, 20000); setTimeout(releveAlertes, 9000);
   async function rapport(n) {

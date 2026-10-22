@@ -611,7 +611,16 @@ const SCIFI = (() => {
     return say(resume);
   }
 
+  /* ---------- le lien lumineux : son fils pense à lui (les lampes respirent), papa répond (l'écran de Shadow s'illumine) ---------- */
+  async function lienFils(t) {
+    const enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    const m = String(t).match(/dis[- ]lui (?:que |qu['’])?(.+?)\s*[.!?]*$/i);
+    try { await appel('/maison/lien', { de: 'papa', mot: m ? m[1] : '' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    sfx('scan');
+    return say(`C'est parti. L'écran de Shadow va s'illuminer pour ${enfant}${m ? `, avec ton message` : ''}, chez toi ou chez sa mère, dès qu'il sera devant.`);
+  }
   function route(t, n) {
+    if ((/\b(bisous?|calins?|coeurs?|rayons?) lumineux\b|\bsignal lumineux\b|\bje pense a lui (aussi|fort|tres fort)\b/.test(n) || /\b(envoie|envoi|renvoie|fais)( lui| a mon fils| au petit| a shadow)? (un |des |plein de |gros |un gros )*(bisous?|calins?|coeurs?)\b/.test(n)) && !/\b(maman|sa mere|ma mere)\b/.test(n)) return () => lienFils(t);
     if (/\b(rapport de (la )?nuit|qu est ce qui s est passe (cette nuit|la nuit derniere|pendant la nuit|pendant que je dormais)|comment s est passee la nuit|la nuit (a ete|s est passee)|il s est passe quoi cette nuit|bilan de (la )?nuit)\b/.test(n)) return () => rapportNuit(false);
     if (/\b(rejoue|remets|repasse|revoir)\b.*\b(message|hologramme)\b/.test(n) && holoFils) return () => projetteFils(holoFils, true);
     if (/\b(message (holographique|video|hologramme)|hologramme|enregistre (un|moi un) message (video )?pour|filme moi pour|laisse un message video)\b/.test(n) && !/\b(rejoue|lis|ecoute)\b/.test(n)) return hologramme;

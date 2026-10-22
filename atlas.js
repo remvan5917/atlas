@@ -575,6 +575,8 @@ async function handle(text) {
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
   if (souvenir) return souvenir();
+  const trade = TRADING.route(t, n); // le copilote de trading : « mode trading », « je suis à moins 300 », « fin de session »
+  if (trade) return trade();
   const visio = VISIO.route(t, n); // les visios et les effets de lumière (« mode visio », « fondu au noir », « présente-toi à mes invités »)
   if (visio) return visio();
   const proto = SCIFI.route(t, n); // les protocoles : scan de sécurité, départ, retour, état des systèmes, présences, la fusée
