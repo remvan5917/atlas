@@ -7,7 +7,13 @@
    - « je suis rentré » / « protocole retour » : la maison s'allume, fin du mode absent, et ce qui s'est passé pendant l'absence.
    - « état des systèmes » / « diagnostic » : l'ordinateur (températures, mémoire, disque), les services de la maison, le réseau.
    - « qui est à la maison ? » : les téléphones, Shadow (réveillé ? il voit le petit ?), les voix entendues, le réseau.
+   - « protocole danger » / « alerte intrusion » : toutes les lumières, la sirène, une photo de chaque caméra gardée comme preuve,
+     une alerte urgente sur le téléphone, et les boutons 17 / 112 / SMS 114 à l'écran.
    - « lance la fusée » / « compte à rebours » : 10, 9, 8… la Fusée s'allume au décollage.
+   - « résumé de la journée » : départs et retours, passages devant les caméras (photos), alertes, Shadow, marchés ;
+     tout seul vers 21 h 30 s'il y a quelqu'un.
+   - Il apprend tes habitudes : 4 jours sur 14 à la même heure (± 25 min) → il propose, « oui » → automatique (seulement si tu es là) ;
+     « quelles habitudes as-tu remarquées ? », « supprime les automatismes ».
    - Les réveils : « réveille-moi à 7 h », « réveille-moi en semaine à 6 h 45 » (lever de soleil 15 min avant, sur l'ordinateur,
      même téléphone fermé), « mes réveils », « annule mes réveils », « désactive / active le réveil de l'école ».
    - Les alertes de prix : « préviens-moi si l'or passe 4 150 », « si l'argent perd 1 % », « mes alertes de prix »,
@@ -28,7 +34,7 @@ const SCIFI = (() => {
     } finally { clearTimeout(tm); }
   }
   const pc = d => appel('/maison/pc', d);
-  const regle = (ids, allume, lum, teinte, pendant) => appel('/maison/commande', Object.assign({ ids, allume }, lum != null ? { lum } : {}, teinte != null ? { teinte } : {}, pendant ? { pendant } : {}), 20000);
+  const regle = (ids, allume, lum, teinte, pendant) => appel('/maison/commande', Object.assign({ ids, allume, source: 'routine' }, lum != null ? { lum } : {}, teinte != null ? { teinte } : {}, pendant ? { pendant } : {}), 20000);
   const sfx = q => { try { VISIO.sfx(q); } catch (e) { /* pas de son */ } };
   const liste = l => (l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : l[0] || '');
   const chambre = a => /\bchambres?\b/.test(N(a.nom));
@@ -286,7 +292,118 @@ const SCIFI = (() => {
     return say(actif ? `Réveil d'école activé : à 7 h 30, les jours d'école hors vacances, si la Fusée est allumée, je l'éteins et j'allume doucement la lumière de ${p}.` : `Réveil d'école de ${p} désactivé.`);
   }
 
+  /* ---------- le journal de la journée : départs et retours, passages devant les caméras, alertes, Shadow, marchés ---------- */
+  async function journal(auto) {
+    const minuit = new Date(); minuit.setHours(0, 0, 0, 0);
+    let al = []; try { al = ((await appel(`/maison/alertes?depuis=${+minuit}`, null, 10000)).alertes || []).filter(a => a.at >= +minuit); } catch (e) { return auto ? '' : say("L'ordinateur de la maison ne répond pas."); }
+    const h = at => hhmm(new Date(at));
+    const parts = [], L = [];
+    // départs et retours
+    const pres = al.filter(a => a.genre === 'presence' && /^(Départ|Retour|Je t'ai vu partir|Bon retour)/.test(a.texte));
+    const dep = pres.filter(a => /^(Départ|Je t'ai vu partir)/.test(a.texte)), ret = pres.filter(a => /^(Retour|Bon retour)/.test(a.texte));
+    if (dep.length || ret.length) {
+      const seq = pres.sort((a, b) => a.at - b.at).map(a => `${/^(Départ|Je t'ai vu partir)/.test(a.texte) ? 'parti' : 'rentré'} à ${h(a.at)}`);
+      parts.push(`Tu es ${seq.join(', puis ')}`); L.push(['Départs / retours', seq.join(' · '), 'ok']);
+    } else { parts.push('Tu n\'as pas quitté la maison, ou je ne t\'ai pas vu partir'); L.push(['Départs / retours', 'aucun', 'ok']); }
+    // les passages devant les caméras (une personne vue)
+    const pass = al.filter(a => a.genre === 'ezviz' && /^Quelqu'un devant/.test(a.texte));
+    const det = al.filter(a => a.genre === 'ezviz' && /^Détection/.test(a.texte)).length + al.filter(a => a.genre === 'camera').length;
+    if (pass.length) {
+      const desc = pass.slice(-3).map(a => { const m = a.texte.match(/« ([^»]+) »\s*:\s*(.*)$/); return `${h(a.at)} devant la caméra ${m ? m[1] : ''}${m && m[2] ? ` : ${m[2].replace(/\.$/, '')}` : ''}`; });
+      parts.push(`${pass.length} passage${pass.length > 1 ? 's' : ''} devant les caméras. ${desc.join('. ')}`);
+    }
+    L.push(['Passages (personne vue)', `${pass.length}`, pass.length ? 'attente' : 'ok'], ['Mouvements détectés', `${det}`, 'ok']);
+    // les alertes qui comptaient
+    const vraies = al.filter(a => (a.gravite === 'attention' || a.gravite === 'urgent') && !['presence', 'reveil', 'coucher', 'marche'].includes(a.genre) && a.genre !== 'ezviz' || (a.genre === 'ezviz' && a.gravite === 'urgent'));
+    parts.push(vraies.length ? `${vraies.length} alerte${vraies.length > 1 ? 's' : ''} : ${vraies.slice(-2).map(a => `${h(a.at)}, ${a.texte.replace(/\.$/, '')}`).join('. ')}` : 'Aucune alerte de sécurité');
+    L.push(['Alertes', vraies.length ? `${vraies.length}` : 'aucune', vraies.length ? 'alerte' : 'ok']);
+    // les routines de la journée
+    const rv = al.filter(a => a.genre === 'reveil'), co = al.filter(a => a.genre === 'coucher' && /^Coucher du petit/.test(a.texte));
+    if (rv.length) L.push(['Réveils', rv.map(a => h(a.at)).join(' · '), 'ok']);
+    if (co.length) L.push(['Coucher', h(co[co.length - 1].at), 'ok']);
+    const prix = al.filter(a => a.genre === 'marche');
+    if (prix.length) { parts.push(`${prix.length} alerte${prix.length > 1 ? 's' : ''} de prix déclenchée${prix.length > 1 ? 's' : ''}`); L.push(['Alertes de prix', `${prix.length}`, 'attente']); }
+    // Shadow et le petit
+    const enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    const min = typeof LIEN !== 'undefined' && LIEN.minutes ? LIEN.minutes() : 0;
+    if (min) { parts.push(`${enfant} a passé ${min} minutes avec Shadow`); L.push(['Shadow', `${min} min avec ${enfant}`, 'ok']); }
+    // les marchés du jour
+    try {
+      const c = (await appel('/atlas/marche?h=24', null, 8000)).cours || {};
+      const m = [['XAU', "l'or"], ['XAG', "l'argent"]].filter(([k]) => c[k] && c[k].var24 != null).map(([k, nom]) => `${nom} ${c[k].var24 >= 0 ? 'prend' : 'perd'} ${Math.abs(c[k].var24).toLocaleString('fr-FR')} %, à ${c[k].prix.toLocaleString('fr-FR')}`);
+      if (m.length) { parts.push(`Sur 24 heures, ${m.join(', et ')}`); m.forEach(x => L.push(['Marché', x, 'ok'])); }
+    } catch (e) { /* rien */ }
+    // les photos des derniers passages
+    const imgs = [];
+    for (const a of pass.filter(x => x.image).slice(-4)) { try { const b = await appel(`/maison/alerte/image?id=${a.id}`, null, 10000); if (b instanceof Blob) imgs.push({ nom: h(a.at), blob: b, etat: 'ok' }); } catch (e) { /* rien */ } }
+    hud(`Journal du ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}`, L, imgs);
+    const texte = `${auto ? 'Le résumé de ta journée. ' : 'Voici ta journée. '}${parts.join('. ')}.`;
+    return auto ? texte : say(texte);
+  }
+  // le résumé automatique du soir, vers 21 h 30, s'il y a quelqu'un (une fois par jour)
+  setInterval(() => {
+    const d = new Date(), hm = d.getHours() * 60 + d.getMinutes();
+    if (hm >= 21 * 60 + 30 && hm < 22 * 60 + 15 && typeof PROACTIF !== 'undefined' && root()) PROACTIF.annonce(`journal-${dayKey()}`, () => journal(true), { expire: Date.now() + 40 * 60000 });
+  }, 60000);
+
+  /* ---------- il apprend tes habitudes : il propose, tu dis oui, c'est automatique ---------- */
+  const JOURS2 = j => (j.length === 7 ? 'tous les jours' : j.join() === '0,1,2,3,4' ? 'du lundi au vendredi' : j.join() === '5,6' ? 'le week-end' : 'certains jours');
+  const habTxt = x => `tu ${x.allume ? 'allumes' : 'éteins'} ${liste(x.noms.map(v => v.charAt(0).toLowerCase() + v.slice(1)))}${x.allume && x.lum != null ? ` à ${x.lum} %` : ''} vers ${hTxt(x.heure)}, ${JOURS2(x.jours)}`;
+  let enAttente = null; // la proposition à laquelle il attend un oui ou un non
+  async function habitudesVerifie() {
+    if (!root()) return;
+    let r; try { r = await appel('/maison/habitudes', null, 10000); } catch (e) { return; }
+    const vues = S.habVues = S.habVues || [];
+    const x = (r.suggestions || []).find(y => !vues.includes(y.id));
+    if (!x) return;
+    PROACTIF.annonce(`habitude-${x.id}`, async () => { enAttente = { id: x.id, x, at: Date.now() }; if (!vues.includes(x.id)) { vues.push(x.id); save(); } return `J'ai remarqué quelque chose : ${habTxt(x)}. Tu veux que je le fasse tout seul ? Dis oui, ou non merci.`; }, { expire: Date.now() + 3 * 3600000 });
+  }
+  setTimeout(habitudesVerifie, 60000); setInterval(habitudesVerifie, 30 * 60000);
+  async function habitudeReponse(oui) {
+    const p = enAttente; enAttente = null;
+    try { await appel('/maison/habitudes', oui ? { accepte: p.id } : { refuse: p.id }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok();
+    return say(oui ? `C'est noté : désormais, je le fais tout seul, ${JOURS2(p.x.jours)} à ${hTxt(p.x.heure)}, quand tu es là.` : "D'accord, je ne te le proposerai plus.");
+  }
+  async function automatismes(effacer) {
+    let r; try { r = await appel('/maison/habitudes', effacer ? { supprime: 'tout' } : null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (effacer) { fx.ok(); return say('Tous les automatismes sont supprimés. Je continue à observer, et je te proposerai de nouvelles idées.'); }
+    const a = r.auto || [], s2 = r.suggestions || [];
+    hud('Habitudes', [...a.map(x => ['Automatique', habTxt(x), 'ok']), ...s2.map(x => ['Remarqué', habTxt(x), 'attente'])], []);
+    if (!a.length && !s2.length) return say("Je n'ai encore rien remarqué de régulier. J'observe ce que tu me demandes chaque jour : il me faut au moins quatre jours pareils.");
+    return say(`${a.length ? `Je fais tout seul : ${a.map(habTxt).join(' ; ')}. ` : ''}${s2.length ? `J'ai aussi remarqué : ${s2.map(habTxt).join(' ; ')}.` : ''}`);
+  }
+
+  /* ---------- le protocole danger : toutes les lumières, la sirène, les preuves, et les numéros d'urgence à portée de doigt ---------- */
+  async function danger() {
+    let l = []; try { l = ((await appel('/maison/appareils', null, 10000)).appareils || []).filter(a => a.type === 'lampe' && a.allume != null); } catch (e) { /* tant pis */ }
+    const tout = Promise.all([
+      l.length ? regle(l.map(a => a.id), true, 100, 50).catch(() => {}) : null, // toute la maison en pleine lumière (chambres comprises)
+      appel('/maison/danger', {}, 10000).catch(() => {}),                       // preuves : une photo de chaque caméra + alerte urgente sur le téléphone
+    ]);
+    for (let k = 0; k < 3; k++) { fx.tone([[880, 0.35], [660, 0.35], [880, 0.35], [660, 0.35]]); await wait(1500); }
+    showBoard(`<div style="font-family:ui-monospace,Menlo,monospace;background:#1a0505;border:2px solid #ef4444;border-radius:14px;padding:14px;color:#fee2e2">
+      <div style="font-size:12px;letter-spacing:.2em;color:#fca5a5">◢ PROTOCOLE DANGER · ${hhmm().replace(' h ', ':')}</div>
+      <div style="margin:10px 0 12px;font-size:14px">Toutes les lumières sont allumées. Une photo de chaque caméra est gardée comme preuve, et l'alerte est sur ton téléphone.</div>
+      <div style="display:grid;gap:8px">
+        <a href="tel:17" style="display:block;text-align:center;padding:14px;border-radius:10px;background:#dc2626;color:#fff;font-size:18px;font-weight:700;text-decoration:none">📞 Appeler le 17 (police)</a>
+        <a href="tel:112" style="display:block;text-align:center;padding:12px;border-radius:10px;background:#7f1d1d;color:#fff;font-size:16px;text-decoration:none">📞 Appeler le 112</a>
+        <a href="sms:114" style="display:block;text-align:center;padding:12px;border-radius:10px;background:#450a0a;color:#fff;font-size:15px;text-decoration:none">✉️ SMS au 114 (si tu ne peux pas parler)</a>
+      </div></div>`, 'graphe-board');
+    clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 15 * 60000);
+    await say("Protocole de sécurité activé. Toutes les caméras enregistrent, et les images partent hors de la maison. La police peut être prévenue à tout instant.");
+    await tout;
+  }
+
   function route(t, n) {
+    if (/\b(protocole danger|protocole d urgence|alerte intrusion|mode panique|declenche l alerte|il y a des intrus|on essaie d entrer|quelqu un essaie d entrer)\b/.test(n)) return danger;
+    if (enAttente && Date.now() - enAttente.at < 4 * 60000) {
+      if (/^(oui|ouais|ok|d accord|vas y|carrement|avec plaisir|oui merci|bien sur|fais le|oui fais le)\b/.test(n)) return () => habitudeReponse(true);
+      if (/^(non|non merci|pas la peine|laisse|surtout pas|jamais)\b/.test(n)) return () => habitudeReponse(false);
+    }
+    if (/\b(quelles habitudes|mes habitudes|mes automatismes|qu est ce que tu as remarque|tu as remarque quoi|ce que tu fais tout seul)\b/.test(n)) return () => automatismes(false);
+    if (/\b(supprime|efface|arrete|annule|enleve)\b.*\b(automatismes|habitudes)\b/.test(n)) return () => automatismes(true);
+    if (/\b(resume de (la|ma) journee|journal (de la journee|du jour)|comment s est passee? (la|ma) journee|bilan de (la|ma) journee|qu est ce qui s est passe aujourd hui|ma journee)\b/.test(n) && !/\b(shadow|mon fils|il|le petit)\b/.test(n)) return () => journal(false);
     if (/\bcoucher (automatique|de 20 h|de 20 heures|du soir)\b/.test(n) && /\b(desactive|coupe|arrete|annule|supprime|enleve)\b/.test(n)) return () => coucherAuto(false);
     if (/\bcoucher (automatique|de 20 h|de 20 heures|du soir)\b/.test(n) && /\b(active|remets|reactive)\b/.test(n)) return () => coucherAuto(true);
     if (/\breveil\b.*\b(ecole|classe)\b|\b(ecole|classe)\b.*\breveil\b/.test(n) && /\b(desactive|coupe|arrete|annule|supprime|enleve)\b/.test(n)) return () => ecole(false);

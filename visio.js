@@ -30,7 +30,7 @@ const VISIO = (() => {
   }
   const lampes = async () => ((await appel('/maison/appareils', null, 15000)).appareils || []).filter(a => a.type === 'lampe' && a.allume != null);
   // pendant : en secondes, puis l'ordinateur de la maison éteint tout seul (même si le téléphone est fermé)
-  const regle = (ids, allume, lum, teinte, pendant) => appel('/maison/commande', Object.assign({ ids, allume }, lum != null ? { lum } : {}, teinte != null ? { teinte } : {}, pendant ? { pendant } : {}), 20000);
+  const regle = (ids, allume, lum, teinte, pendant) => appel('/maison/commande', Object.assign({ ids, allume, source: 'routine' }, lum != null ? { lum } : {}, teinte != null ? { teinte } : {}, pendant ? { pendant } : {}), 20000);
   const pc = d => appel('/maison/pc', d);
   // lesquelles : celles qu'on nomme, sinon celles qui sont allumées, sinon le salon
   async function cibles(t, salonDabord) {

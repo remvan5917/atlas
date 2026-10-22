@@ -9,7 +9,8 @@
    - Ouvrir : « ouvre feedsniffer », « lance TopstepX », « ouvre YouTube », « ouvre leboncoin point fr » (les applis installées, des sites).
    - La musique : « mets du Daft Punk », « joue Bohemian Rhapsody » (YouTube, qui enchaîne) ; la radio : « mets France Info »,
      « mets les infos », « mets FIP », « arrête la radio ».
-   - Gmail, en lecture seule : « j'ai des mails ? », « des mails de Topstep ? », « lis le premier » (rien n'est effacé ni envoyé).
+   - Gmail, en lecture seule : « j'ai des mails ? », « des mails de Topstep ? », « lis le premier » (rien n'est effacé ni envoyé),
+     « qu'est-ce qu'il y a d'important dans mes mails ? » (trié par le cerveau de la maison, refait toutes les 20 minutes).
    ========================================================= */
 'use strict';
 
@@ -192,6 +193,19 @@ const PC = (() => {
     const l = derniersMails.slice(0, 3).map((m, i) => `${i ? '' : ''}${m.de}, ${quandMail(m.date)} : « ${m.sujet.slice(0, 70)} »`).join('. ');
     return say(`${r.total} ${o.quoi === 'nonlus' ? `mail${r.total > 1 ? 's' : ''} non lu${r.total > 1 ? 's' : ''}` : `mail${r.total > 1 ? 's' : ''}`}${o.de ? ` de ${o.de}` : ' depuis hier'}. ${l}.${r.total > 1 ? ' Dis « lis le premier » ou « lis le deuxième ».' : ' Dis « lis-le » pour l\'entendre.'}`);
   }
+  // le tri : « qu'est-ce qu'il y a d'important dans mes mails ? » (le cerveau de la maison, sur l'ordi ; refait toutes les 20 minutes)
+  async function importants(frais) {
+    face.set('think');
+    let r; try { r = await appel('/maison/pc', { action: 'mails_importants', frais }, 120000); } catch (e) { r = null; } finally { face.set('idle'); }
+    if (!r) return injoignable();
+    if (!r.ok) return say(r.raison === 'pas relié' ? "Gmail n'est pas encore relié." : `${r.raison}.`);
+    const l = r.importants || [];
+    derniersMails = l.map(x => ({ id: x.id, de: x.de, sujet: x.sujet, date: x.date }));
+    if (!r.tous) return say('Aucun nouveau mail depuis hier.');
+    if (!l.length) return say(`${r.tous} nouveau${r.tous > 1 ? 'x' : ''} mail${r.tous > 1 ? 's' : ''}, mais rien d'important : de la pub et des notifications.`);
+    if (typeof SCIFI !== 'undefined') SCIFI.hud('Mails importants', l.slice(0, 8).map(x => [x.de.slice(0, 22), x.resume.slice(0, 70), 'attente']), []);
+    return say(`Sur ${r.tous} nouveaux mails, ${l.length} compte${l.length > 1 ? 'nt' : ''}. ${l.slice(0, 5).map((x, i) => `${i ? '' : ''}${x.de} : ${x.resume.replace(/\.$/, '')}`).join('. ')}. Le reste, c'est de la pub et des notifications.${l.length ? ' Dis « lis le premier » pour l\'entendre en entier.' : ''}`);
+  }
   const RANG = { premier: 0, '1er': 0, un: 0, dernier: 0, deuxieme: 1, second: 1, deux: 1, troisieme: 2, trois: 2 };
 
   /* ---------- ce qu'on lui dit ---------- */
@@ -199,6 +213,7 @@ const PC = (() => {
   function route(t, n) {
     const ordi = /\b(ordi|ordinateur|pc)\b/.test(n);
     // Gmail (lecture seule)
+    if (/\b(mails?|e mails?|emails?|courriels?|boite mail)\b/.test(n) && /\b(important|importants|importantes|qui compte|trie|tri|urgent|urgents|a faire|ce qui compte)\b/.test(n)) return () => importants(/\b(maintenant|a jour|refais|relance)\b/.test(n));
     if (/\b(mails?|e mails?|emails?|courriels?|gmail|boite mail|boite de reception)\b/.test(n) && !/^(ouvre|lance|affiche)\b/.test(n)) {
       const de = (String(t).match(/\b(?:mails?|e-?mails?|courriels?)\s+(?:de|d['’]|du|venant de)\s+(.+?)[?.!]*\s*$/i) || [])[1];
       const rang = n.match(/\b(premier|1er|dernier|deuxieme|second|troisieme)\b/);
