@@ -10,8 +10,8 @@
     --ligne: rgba(255, 181, 71, .2); --ok: #7ee2b8; --alerte: #ff7a45; --froid: #9cc8ff; color-scheme: dark; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; background: var(--bg); color: var(--texte); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-  body { padding: 12px 14px; background: radial-gradient(60% 40% at 50% 0%, rgba(255, 181, 71, .08), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(156, 200, 255, .05), transparent 70%), var(--bg); min-height: 100vh; transition: filter 1s; }
-  body.nuit { filter: brightness(.55) saturate(.8); }
+  body { padding: 12px 14px; background: radial-gradient(60% 40% at 50% 0%, rgba(255, 181, 71, .08), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(156, 200, 255, .05), transparent 70%), var(--bg); min-height: 100vh; }
+  body.nuit::after { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, .45); pointer-events: none; z-index: 8; }
   .mono { font-family: ui-monospace, 'DejaVu Sans Mono', 'Roboto Mono', monospace; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
   .titre { letter-spacing: .35em; font-size: 12px; color: var(--ambre2); }
@@ -181,7 +181,7 @@ function plan() {
       boites[N(a.nom)] = { x: x + w / 2, y };
       const chaud = a.teinte == null ? 30 : a.teinte; const col = `hsl(${38 - chaud * 0.18}, 100%, ${55 + chaud * 0.25}%)`;
       svg += `<g class="piece" data-id="${esc(a.id)}">
-        ${on ? `<rect x="${x + 8}" y="${y + 8}" width="${w - 16}" height="${Hn - 16}" rx="10" fill="${col}" opacity="${0.15 + lum * 0.45}" filter="url(#lueur)"/>` : ''}
+        ${on ? `<rect x="${x + 4}" y="${y + 4}" width="${w - 8}" height="${Hn - 8}" rx="9" fill="${col}" opacity="${0.1 + lum * 0.3}"/>` : ''}
         <rect x="${x}" y="${y}" width="${w}" height="${Hn}" rx="10" fill="${on ? `rgba(255,181,71,${0.06 + lum * 0.16})` : 'rgba(255,255,255,.02)'}" stroke="${hs ? 'rgba(255,122,69,.5)' : on ? col : 'rgba(255,181,71,.25)'}" stroke-width="${on ? 2 : 1}" ${hs ? 'stroke-dasharray="6 5"' : ''}/>
         <text x="${x + w / 2}" y="${y + Hn / 2 - 4}" text-anchor="middle" font-size="${w < 130 || a.nom.length > 18 ? 12 : 15}" fill="${on ? '#fff3dd' : 'rgba(244,236,224,.55)'}">${esc(a.nom)}</text>
         <text x="${x + w / 2}" y="${y + Hn / 2 + 16}" text-anchor="middle" font-size="11" fill="${hs ? '#ff7a45' : 'rgba(255,217,160,.6)'}">${hs ? 'SANS COURANT' : on ? `${a.lum != null ? a.lum + ' %' : 'allumée'}` : 'éteinte'}</text></g>`;
@@ -200,6 +200,7 @@ function plan() {
   });
   svg += `<text x="${W / 2}" y="${yBas + 40}" text-anchor="middle" font-size="11" fill="rgba(255,217,160,.35)" letter-spacing="4">— LA RUE —</text>
     <text x="${W - 18}" y="${top + Hn + gap / 2}" text-anchor="middle" font-size="10" fill="rgba(255,217,160,.3)" letter-spacing="3" transform="rotate(90 ${W - 18} ${top + Hn + gap / 2})">ARRIÈRE · COUR</text></svg>`;
+  if (el._svg === svg) return; el._svg = svg; // rien n'a changé : on ne redessine pas
   el.innerHTML = svg;
   el.querySelectorAll('.piece').forEach(g => g.addEventListener('click', () => bascule(g.dataset.id)));
 }
@@ -207,7 +208,9 @@ function plan() {
 /* ---------- les lumières et les prises ---------- */
 let appareils = [];
 async function chargeAppareils() {
-  try { appareils = (await appel('/maison/appareils')).appareils || []; } catch (e) { return; }
+  let l; try { l = (await appel('/maison/appareils')).appareils || []; } catch (e) { return; }
+  const sig = JSON.stringify(l.map(a => [a.id, a.allume, a.lum, a.watts && Math.round(a.watts)]));
+  if (sig === chargeAppareils._sig && appareils.length) return; chargeAppareils._sig = sig; appareils = l;
   const lampes = appareils.filter(a => a.type === 'lampe'), prises = appareils.filter(a => a.type !== 'lampe');
   $('#lum-res').textContent = `${lampes.filter(a => a.allume).length} allumée(s) sur ${lampes.length}`;
   $('#lumieres').innerHTML = lampes.map(a => `<div class="tuile ${a.allume ? 'on' : ''} ${a.allume == null ? 'hs' : ''}" data-id="${esc(a.id)}">
@@ -352,7 +355,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { ve
 function tout() { chargeAppareils(); chargeSentinelle(); chargeCams(); chargeAlertes(); chargeMarche(); chargeDiag(); chargeEnergie(); chargeSysteme(); chargeMeteo(); chargeAgenda(); }
 function demarre() {
   cartes(); majEtat(); tout(); veille();
-  setInterval(chargeAppareils, 15000); setInterval(chargeSentinelle, 30000); setInterval(chargeAlertes, 30000); setInterval(chargeDiag, 30000);
+  setInterval(chargeAppareils, 20000); setInterval(chargeSentinelle, 30000); setInterval(chargeAlertes, 30000); setInterval(chargeDiag, 30000);
   setInterval(() => cams.filter(c => !c.ezviz).forEach(photo), 30000); setInterval(chargeCams, 5 * 60000);
   setInterval(chargeMarche, 120000); setInterval(chargeAgenda, 5 * 60000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000);
 }

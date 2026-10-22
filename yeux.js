@@ -155,7 +155,8 @@ const VISION = (() => {
         cost = cost * 0.8 + (performance.now() - s) * 0.2;
       }
     } catch (e) { /* image ratée, on continue */ }
-    timer = setTimeout(tick, Math.max(60, Math.max(180, cost * 3) - (performance.now() - t0)));
+    const lent = document.body.classList.contains('cockpit') ? 900 : 180; // en cockpit (tablette au mur) : les yeux regardent moins souvent, les oreilles gardent la priorité
+    timer = setTimeout(tick, Math.max(60, Math.max(lent, cost * 3) - (performance.now() - t0)));
   }
   async function track() {
     const src = source();

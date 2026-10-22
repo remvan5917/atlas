@@ -57,7 +57,8 @@ const OREILLES = (() => {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: !far && S.settings.micNS !== false, autoGainControl: true } });
       if (!ctx) ctx = new AC();
       src = ctx.createMediaStreamSource(stream);
-      proc = ctx.createScriptProcessor(2048, 1, 1); // petits morceaux (~45 ms) : il réagit plus vite
+      // une tablette (moins puissante, et qui fait aussi tourner le cockpit) : des morceaux plus longs, sinon des bouts de voix sautent quand elle est occupée
+      proc = ctx.createScriptProcessor(/Android/.test(navigator.userAgent) && !/Mobile/.test(navigator.userAgent) ? 8192 : 2048, 1, 1); // petits morceaux (~45 ms) : il réagit plus vite
       // il n'écoute que la bande de la voix humaine : sans les grondements (frigo, ventilateur, rue) ni les sifflements,
       // une voix lointaine ressort bien mieux du bruit de la pièce
       const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 170; hp.Q.value = 0.7;
