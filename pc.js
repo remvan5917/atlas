@@ -32,9 +32,23 @@ const PC = (() => {
 
   /* ---------- la radio ici : sur l'appareil où Atlas tourne (la tablette et sa sono, le téléphone) ; sur l'ordinateur, le lecteur de l'ordi ---------- */
   const ici = () => typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role !== 'ordinateur';
-  let lecteur = null, lecteurNom = '', lecteurVol = 0.8, radioPC = false;
-  // quand Atlas parle, la radio baisse (puis remonte doucement)
-  setInterval(() => { if (!lecteur) return; const cible = voice.occupe() ? lecteurVol * 0.2 : lecteurVol; lecteur.volume = Math.max(0, Math.min(1, lecteur.volume + (cible - lecteur.volume) * 0.5)); }, 200);
+  let lecteur = null, lecteurNom = '', lecteurVol = 0.8, radioPC = false, baisseJusqua = 0, bouton = null;
+  // le bouton pour l'arrêter d'un doigt (toujours visible tant qu'elle joue, même par-dessus le cockpit)
+  function majBouton() {
+    const montre = !!(lecteur && !lecteur.paused);
+    if (!montre) { if (bouton) bouton.style.display = 'none'; return; }
+    if (!bouton) {
+      bouton = document.createElement('button'); bouton.type = 'button'; bouton.id = 'radio-stop';
+      bouton.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;padding:14px 26px;border:1px solid #38bdf8;border-radius:999px;background:rgba(4,18,31,.92);color:#e0f2fe;font:600 16px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;box-shadow:0 0 24px rgba(56,189,248,.35);cursor:pointer';
+      bouton.addEventListener('click', e => { e.stopPropagation(); radioStop(); });
+      document.body.appendChild(bouton);
+    }
+    const t = `<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="3" y="3" width="12" height="12" rx="2" fill="#f87171"/></svg><span>Arrêter · ${esc(lecteurNom)}</span>`;
+    if (bouton.dataset.t !== lecteurNom) { bouton.innerHTML = t; bouton.dataset.t = lecteurNom; }
+    bouton.style.display = 'flex';
+  }
+  // quand Atlas parle, ou que tu lui parles, la radio baisse (puis remonte doucement)
+  setInterval(() => { majBouton(); if (!lecteur) return; const cible = voice.occupe() || Date.now() < baisseJusqua ? lecteurVol * 0.15 : lecteurVol; lecteur.volume = Math.max(0, Math.min(1, lecteur.volume + (cible - lecteur.volume) * 0.5)); }, 200);
   async function radioIci(cle, nom) {
     if (lecteur) { lecteur.pause(); lecteur = null; }
     const a = new Audio(`https://icecast.radiofrance.fr/${cle}-midfi.mp3`); a.preload = 'none'; a.volume = 0.15;
@@ -203,7 +217,7 @@ const PC = (() => {
     fx.ok(); return say(`${nom}, sur l'ordi.`);
   }
   async function radioStop() {
-    if (lecteur) { lecteur.pause(); lecteur = null; fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
+    if (lecteur) { lecteur.pause(); lecteur = null; majBouton(); fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
     radioPC = false;
     let r; try { r = await pc({ action: 'radio_stop' }); } catch (e) { return injoignable(); }
     return say(r.nom ? `${r.nom} : arrêtée.` : "Il n'y avait pas de radio.");
@@ -325,5 +339,5 @@ const PC = (() => {
     if (va && /^(passe|va|bascule|reviens|retourne)\b/.test(n) && !/\b(chanson|musique|video|suivante?|precedente?)\b/.test(n)) return () => fenetre('active', va[1].replace(/\b(sur l['’]ordi(nateur)?|du pc)\b/i, '').trim());
     return null;
   }
-  return { route, _charge: charge, radioIci: () => !!(lecteur && !lecteur.paused) || radioPC };
+  return { route, _charge: charge, radioIci: () => !!(lecteur && !lecteur.paused) || radioPC, radioCoupe: () => radioStop(), radioBaisse: ms => { baisseJusqua = Date.now() + ms; } };
 })();

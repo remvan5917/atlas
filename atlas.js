@@ -587,6 +587,7 @@ async function handle(text) {
   // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
+  if (R.stop.test(n) && !voice.occupe() && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci()) return PC.radioCoupe(); // « stop » : la radio d'ici s'arrête
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (/^(quelle heure (est il|il est|est ce)|il est quelle heure|c est quelle heure|t as l heure|tu as l heure|l heure)$/.test(n)) { const d = new Date(); return say(`Il est ${d.getHours()} h ${d.getMinutes() ? deux2(d.getMinutes()) : ''}.`.replace(' h .', ' heures.')); }
   if (/^(on est quel jour|quel jour (sommes nous|on est|est on|nous sommes)|c est quel jour|quelle est la date|on est le combien|quelle date (on est|sommes nous))$/.test(n)) return say(`Nous sommes ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`);
@@ -853,7 +854,7 @@ async function vie() {
     if (dlg.state === 'off' || voice.endormi) { await wait(500); continue; }
     const talk = dlg.state === 'talk', conv = S.settings.conversation !== false;
     // en mode conversation, il écoute la pièce avec les oreilles de la maison (le son ne sort pas de la maison)
-    const r0 = await hear({ maxWait: talk ? 25000 : 60000, cheap: conv || !talk, prompt: talk ? '' : 'Atlas. Shadow.' });
+    const r0 = await hear({ maxWait: talk ? 25000 : 60000, cheap: conv || !talk, prompt: talk ? '' : typeof PC !== 'undefined' && PC.radioIci && PC.radioIci() ? 'Atlas. Stop. Arrête la radio.' : 'Atlas. Shadow.' });
     if (r0 === null || voice.endormi) continue; // un autre Atlas a pris la main pendant qu'il écoutait
     // les bruits que la transcription écrit entre étoiles ou crochets (« *Bruit de porte* », « [Musique] ») ne sont pas des phrases
     const r = typeof r0 === 'string' ? r0.replace(/\*[^*]*\*|\[[^\]]*\]|\([^)]*\)|♪+/g, ' ').replace(/\s+/g, ' ').trim() : r0;
@@ -864,7 +865,16 @@ async function vie() {
     const appele = R.reveil.test(n) || /^(la classe|l atlas|la tlas|la place)\s+/.test(n) && ADRESSE.test(n.replace(/^(la classe|l atlas|la tlas|la place)\s+/, ''));
     if (appele) fx.tone([[1175, 0.05]]); // un petit bip : il a entendu son nom
     // la radio joue ici : les voix de la radio ne sont pas pour lui — seulement son nom, ou les ordres de la radio elle-même
-    if (!appele && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci() && !/^(pause|stop|reprends|arrete la radio|coupe la radio|eteins la radio|baisse le son|monte le son|moins fort|plus fort|change de radio)$/.test(n)) { journal(r, dlg.qui, 'la radio joue : il attend son nom'); continue; }
+    if (!appele && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci()) {
+      const lui = !!dlg.qui && !/^invité/.test(dlg.qui); // sa voix à lui (la radio, elle, n'est pas reconnue)
+      // « stop », « arrête », « coupe la radio »… : de sa voix, même noyé dans la radio ; d'une voix inconnue, seulement l'ordre court et net
+      if (lui && (/\b(stop|stoppe|stopper|arrete|arretez|arreter|coupe|couper|eteins|eteindre|tais toi|chut|silence|ca suffit|assez)\b/.test(n) || /^(shadow ?)+$/.test(n))
+        || /^(stop|arrete|coupe|eteins|chut|silence)( (la radio|tout|ca|le son))?$/.test(n) || /\b(arrete|coupe|eteins|stop) (la radio|france ?info|france inter|fip)\b/.test(n)) { journal(r, dlg.qui, 'la radio : il l\'arrête'); await PC.radioCoupe(); continue; }
+      if (!/^(pause|reprends|baisse le son|monte le son|moins fort|plus fort|change de radio)$/.test(n)) {
+        if (lui) { PC.radioBaisse(12000); fx.tone([[988, 0.05]]); } // il t'a reconnu : la radio baisse, tu peux parler
+        journal(r, dlg.qui, lui ? 'la radio joue : il la baisse et t\'écoute' : 'la radio joue : il attend son nom'); continue;
+      }
+    }
     const bonjour = ARRIVEE.connu(dlg.qui); // il arrive : on l'accueille (avant de lui répondre, s'il parle à Atlas)
     if (bonjour) { if (appele) { CONV.note('Atlas', bonjour); await say(bonjour); } else { await ARRIVEE.dire(bonjour); if (conv) CONV.note(dlg.qui, r); continue; } }
     if (conv) {
