@@ -48,7 +48,7 @@ const CONSTELLATION = (() => {
   function note(qui, texte) {
     const t = String(texte || '').trim(); if (!t || window.__BANC) return;
     aEnvoyer.push({ qui, texte: t.slice(0, 600) });
-    clearTimeout(filT); filT = setTimeout(() => { const l = aEnvoyer.splice(0); if (l.length) appel('/atlas/fil', { id: monId, role, l }, 8000).catch(() => {}); }, 2500);
+    clearTimeout(filT); filT = setTimeout(() => { const l = aEnvoyer.splice(0); if (l.length) appel('/atlas/fil', { id: monId, role, l }, 8000).catch(() => {}); }, qui === 'atlas' ? 0 : 2500); // sa propre voix : tout de suite (les autres appareils ne la prendront pas pour un ordre)
   }
   async function contexte() {
     try {

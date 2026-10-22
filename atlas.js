@@ -816,7 +816,7 @@ async function quiRepond(texte) {
   const r0 = VOIXMAISON.root(); if (!r0) return true;
   const ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(() => ctl && ctl.abort(), 2500);
   try {
-    const j = await (await fetch(`${r0}/atlas/repond`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: monId, texte: N(texte).slice(0, 80), pic: (OREILLES.meter && OREILLES.meter().pic) || 0, appareil: S.settings.piece || '', actif: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.actifDepuis() : 99999 }), cache: 'no-store', signal: ctl ? ctl.signal : undefined })).json();
+    const j = await (await fetch(`${r0}/atlas/repond`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: monId, texte: N(texte).slice(0, 80), pic: (OREILLES.meter && OREILLES.meter().pic) || 0, appareil: S.settings.piece || '', actif: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.actifDepuis() : 99999, role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '' }), cache: 'no-store', signal: ctl ? ctl.signal : undefined })).json();
     return j.repond !== false;
   } catch (e) { return true; } finally { clearTimeout(tm); }
 }
@@ -865,11 +865,11 @@ async function vie() {
       journal(r, dlg.qui, appele ? 'appelé : il répond' : direct ? 'un ordre de la maison : il répond' : suite ? 'à la suite : il répond' : frag ? 'un bout de phrase sur la maison : il demande' : 'seul avec lui : il répond');
       dlg.suites = appele ? 0 : (dlg.suites || 0) + 1;
       CONV.parleAtlas(dlg.qui);
-      if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.actif(); // il parle à cet appareil : c'est là qu'il est
       dlg.discret = false;
     } else if (!talk && !appele) { journal(r, dlg.qui, 'en veille : il attend son nom'); continue; } // en veille : il ne répond qu'à son nom
     // plusieurs Atlas dans la maison : seul celui qui t'a le mieux entendu répond
     if (!(await quiRepond(r))) { journal(r, dlg.qui, 'un autre Atlas, plus proche, répond'); continue; }
+    if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.actif(); // c'est cet appareil qui répond : c'est là qu'il est
     dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now(); dlg.quiParlait = dlg.qui;
     dlg.busy = true;
     try {
