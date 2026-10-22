@@ -611,6 +611,86 @@ const SCIFI = (() => {
     return say(resume);
   }
 
+  /* ---------- la salle de commandement du matin : « je viens de me réveiller » ---------- */
+  // un écran de commande (la nuit, les marchés de la nuit, les annonces, la météo, les mails importants, les missions du jour)
+  // qui se remplit panneau par panneau ; il dit l'essentiel, les mails arrivent quand le tri est fini
+  async function commandement(entete) {
+    const sous = (p, ms) => Promise.race([Promise.resolve(p).catch(() => null), new Promise(r => setTimeout(() => r(null), ms))]);
+    const fr = (x, d) => Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const pc2 = (x, d = 1) => `${x > 0 ? 'plus' : x < 0 ? 'moins' : ''} ${fr(Math.abs(x), d)} %`.trim();
+    const hm2 = d => `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const P = (id, titre) => `<div style="border:1px solid #1e6a8a;border-radius:12px;padding:10px 12px;background:rgba(4,18,31,.85);min-width:0"><div style="font-size:10px;letter-spacing:.2em;color:#7dd3fc">◢ ${titre}</div><div id="cmd-${id}" style="margin-top:6px;font-size:13px;line-height:1.45;color:#e0f2fe">…</div></div>`;
+    showBoard(`<div style="font-family:ui-monospace,Menlo,monospace;background:linear-gradient(160deg,#020b14,#0a2540);border:1px solid #1e6a8a;border-radius:14px;padding:12px;box-shadow:0 0 30px rgba(56,189,248,.25) inset">
+      <div style="display:flex;justify-content:space-between;font-size:11px;letter-spacing:.2em;color:#7dd3fc"><span>◢ SALLE DE COMMANDEMENT</span><span>${esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase())} · ${hm2(new Date())}</span></div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,#38bdf8,transparent);margin:8px 0 10px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px">${P('nuit', 'LA NUIT')}${P('marches', 'MARCHÉS DE LA NUIT')}${P('annonces', 'ANNONCES DU JOUR')}${P('meteo', 'MÉTÉO')}${P('mails', 'MAILS IMPORTANTS')}${P('missions', 'MISSIONS DU JOUR')}</div></div>`, 'graphe-board');
+    clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 4 * 60000);
+    const remplis = (id, html) => { const el = document.getElementById(`cmd-${id}`); if (el) el.innerHTML = html || '<span style="color:#64748b">—</span>'; };
+    const ligne = (k, v, c) => `<div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#93c5fd">${esc(k)}</span><span style="color:${c || '#e0f2fe'};text-align:right">${esc(v)}</span></div>`;
+    const v = S.settings.ville;
+    const mails = sous(appel('/maison/pc', { action: 'mails_importants' }, 120000), 120000); // le tri peut prendre une minute : il ne bloque pas le reste
+    const [nuitTxt, or, eu, tr, w] = await Promise.all([
+      sous(rapportNuit(true), 12000),
+      sous(appel('/atlas/marche?serie=XAU&h=14', null, 8000), 9000),
+      sous(appel('/atlas/marche?serie=EURUSD&h=14', null, 8000), 9000),
+      sous(appel('/maison/trading', null, 8000), 9000),
+      v ? sous(fetch(`https://api.open-meteo.com/v1/forecast?latitude=${v.lat}&longitude=${v.lon}&current=temperature_2m,weather_code&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`).then(r => r.json()), 8000) : null]);
+    const dits = [entete];
+    // la nuit
+    remplis('nuit', nuitTxt ? esc(nuitTxt) : 'Rapport indisponible.');
+    if (nuitTxt) dits.push(nuitTxt);
+    // les marchés de la nuit : depuis 22 h hier, et la plage de la séance asiatique (1 h – 9 h)
+    const nuitM = (j, dec) => {
+      const pts = (j && j.serie) || []; if (pts.length < 5) return null;
+      const d = new Date(), v22 = new Date(d); v22.setHours(22, 0, 0, 0); if (d.getHours() < 22) v22.setDate(v22.getDate() - 1);
+      const ref = pts.find(p => p[0] * 1000 >= +v22) || pts[0], der = pts[pts.length - 1];
+      const a0 = new Date(d); a0.setHours(1, 0, 0, 0); const a1 = new Date(d); a1.setHours(9, 0, 0, 0);
+      const asie = pts.filter(p => p[0] * 1000 >= +a0 && p[0] * 1000 <= +a1).map(p => p[1]);
+      return { prix: fr(der[1], dec), v: (der[1] - ref[1]) / ref[1] * 100, lo: asie.length > 2 ? fr(Math.min(...asie), dec) : null, hi: asie.length > 2 ? fr(Math.max(...asie), dec) : null };
+    };
+    const mo = nuitM(or, 1), me = nuitM(eu, 4), mk = [];
+    remplis('marches', [mo && ligne('Or', `${mo.prix} $ · ${mo.v >= 0 ? '+' : ''}${fr(mo.v, 2)} %`, mo.v >= 0 ? '#5eead4' : '#fca5a5'), mo && mo.lo && ligne('  Asie', `${mo.lo} – ${mo.hi}`),
+      me && ligne('EUR/USD', `${me.prix} · ${me.v >= 0 ? '+' : ''}${fr(me.v, 2)} %`, me.v >= 0 ? '#5eead4' : '#fca5a5'), me && me.lo && ligne('  Asie', `${me.lo} – ${me.hi}`)].filter(Boolean).join('') || 'Pas encore de cours relevés.');
+    if (mo) mk.push(`l'or ${Math.abs(mo.v) < 0.05 ? 'est stable' : `fait ${pc2(mo.v)}`} depuis hier soir, à ${mo.prix} dollars${mo.lo ? `, entre ${mo.lo} et ${mo.hi} pendant la séance asiatique` : ''}`);
+    if (me) mk.push(`l'euro-dollar ${Math.abs(me.v) < 0.03 ? 'est stable' : `fait ${pc2(me.v, 2)}`}, à ${me.prix}`);
+    if (mk.length) dits.push(`Cette nuit, ${mk.join(' ; ')}.`);
+    // les annonces du jour (États-Unis et zone euro, impact fort)
+    const now = Date.now(), auj = new Date().toDateString();
+    const ann = ((or && or.annonces) || []).filter(a => (a.pays === 'USD' || a.pays === 'EUR') && a.impact === 'High' && !/Bank Holiday/i.test(a.titre) && new Date(a.date).toDateString() === auj).sort((a, b) => new Date(a.date) - new Date(b.date));
+    const titre = a => { try { return MARCHE._titre(a); } catch (e) { return a.titre; } };
+    remplis('annonces', ann.length ? ann.map(a => ligne(hm2(new Date(a.date)), `${a.pays === 'EUR' ? '🇪🇺' : '🇺🇸'} ${titre(a)}`, new Date(a.date) < now ? '#64748b' : '#fcd34d')).join('') : 'Aucune annonce à fort impact.');
+    const venir = ann.filter(a => new Date(a.date) > now);
+    if (venir.length) dits.push(`Annonces à fort impact : ${venir.map(a => `à ${hhmm(new Date(a.date))}, ${titre(a)}`).join(' ; ')}.`);
+    // la météo
+    if (w && w.current) {
+      const h = new Date().getHours(), pluie = w.hourly.time.map((t, i) => [+t.slice(11, 13), w.hourly.precipitation_probability[i]]).filter(([hh, p]) => hh >= h && hh <= 21 && p >= 50);
+      remplis('meteo', ligne(v.name || 'Dehors', `${Math.round(w.current.temperature_2m)}°`) + ligne('Min · max', `${Math.round(w.daily.temperature_2m_min[0])}° · ${Math.round(w.daily.temperature_2m_max[0])}°`) + ligne('Pluie', pluie.length ? `vers ${pluie[0][0]} h` : 'non', pluie.length ? '#fcd34d' : '#5eead4'));
+      dits.push(`Dehors, ${Math.round(w.current.temperature_2m)} degrés, jusqu'à ${Math.round(w.daily.temperature_2m_max[0])}${pluie.length ? `, de la pluie probable vers ${pluie[0][0]} heures` : ', sans pluie'}.`);
+    } else remplis('meteo', v ? 'Météo indisponible.' : 'Donne-moi ta ville dans les réglages.');
+    // les missions du jour : rappels, ce qu'il faut retenir, l'agenda, la session de trading
+    const fin = new Date(); fin.setHours(23, 59, 59, 999);
+    const mis = [];
+    (S.minuteurs || []).filter(t => t.type === 'rappel' && t.fin <= +fin && t.fin > now).sort((a, b) => a.fin - b.fin).slice(0, 4).forEach(t => mis.push([hm2(new Date(t.fin)), t.nom]));
+    try { MEMOIRE.aujourdhui().slice(0, 2).forEach(x => mis.push(['À retenir', x.texte.replace(/\.$/, '')])); } catch (e) { /* rien */ }
+    try { LIEN.upcoming(1).filter(x => x.days === 0).slice(0, 2).forEach(x => mis.push(['Famille', x.e.text])); } catch (e) { /* rien */ }
+    if (tr && ![0, 6].includes(new Date().getDay())) mis.push(['Trading', `à plat avant ${hm2(new Date(tr.plat_a * 1000))}`]);
+    remplis('missions', mis.length ? mis.map(([k, x]) => ligne(k, x)).join('') : 'Rien de prévu : journée libre.');
+    const vraies = mis.filter(([k]) => k !== 'Trading');
+    if (vraies.length) dits.push(`Tes missions : ${vraies.map(([k, x]) => (/^\d/.test(k) ? `${x} à ${k.replace(':', ' h ')}` : x)).join(', ')}.`);
+    if (typeof dayKey === 'function') { S.matinFait = dayKey(); save(); }
+    // les mails : s'ils sont déjà triés, il les dit ; sinon, dès que le tri est fini
+    const ditMails = r => {
+      const l = (r && r.importants) || [];
+      remplis('mails', !r ? 'Tri indisponible.' : l.length ? l.slice(0, 5).map(x => ligne(x.de.slice(0, 18), x.resume.slice(0, 48), '#fcd34d')).join('') : 'Rien d\'important.');
+      return !r ? '' : l.length ? `${l.length} mail${l.length > 1 ? 's' : ''} important${l.length > 1 ? 's' : ''}, dont ${l[0].de} : ${l[0].resume}.` : 'Aucun mail important.';
+    };
+    const deja = await sous(mails, 1500);
+    if (deja) dits.push(ditMails(deja));
+    else mails.then(r => { const t = ditMails(r); if (t) PROACTIF.annonce(`mails-matin-${Date.now()}`, `Le tri des mails est fini : ${t}`, { expire: Date.now() + 20 * 60000 }); });
+    if (nuitTxt && !/^Nuit calme/.test(nuitTxt)) dits.push('Dis « rapport de nuit » pour voir les photos.');
+    return say(dits.filter(Boolean).join(' '));
+  }
+
   /* ---------- le lien lumineux : son fils pense à lui (les lampes respirent), papa répond (l'écran de Shadow s'illumine) ---------- */
   async function lienFils(t) {
     const enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
@@ -666,5 +746,5 @@ const SCIFI = (() => {
     if (/\b(lance la fusee|lancement de la fusee|decollage|compte a rebours|fais decoller la fusee)\b/.test(n)) return fusee; // avec Shadow s'il est réveillé
     return null;
   }
-  return { route, scan, hud, modeCockpit, rapportNuit };
+  return { route, scan, hud, modeCockpit, rapportNuit, commandement };
 })();
