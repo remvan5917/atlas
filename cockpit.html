@@ -295,7 +295,8 @@ async function chargeTrading() {
 
 /* ---------- le plan : les pièces s'allument comme les vraies lampes, les caméras autour, le radar qui balaie ---------- */
 let alertesRecentes = [];
-const vuRecemment = c => alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000);
+// une vraie détection (quelqu'un, un mouvement, un bruit) dans les 10 dernières minutes — pas un message d'état (« activée », « hors ligne »)
+const vuRecemment = c => alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000 && /détection «|quelqu|personne|mouvement|bruit|véhicule|human|motion/i.test(a.texte) && !/activée|désactivée|hors ligne|en ligne|offline/i.test(a.texte));
 function plan() {
   const el = $('#plan'); if (!el) return;
   const lampes = appareils.filter(a => a.type === 'lampe');
@@ -392,7 +393,7 @@ async function chargeCams() {
 }
 function dessineCams() {
   $('#cams').innerHTML = cams.map((c, i) => `<div class="cam ${vuRecemment(c) ? 'mouv' : ''} ${c.en_ligne ? '' : 'hs'}" data-i="${i}">${urls[c.nom] ? `<img src="${urls[c.nom]}" alt="">` : `<div class="vide">${c.en_ligne ? (c.ezviz ? 'EN VEILLE<br>TOUCHER POUR UNE IMAGE' : 'LIAISON…') : 'SIGNAL PERDU'}</div>`}
-    <span class="lab">CAM ${String(i + 1).padStart(2, '0')} · ${esc(c.nom.toUpperCase())}</span>${vuRecemment(c) ? '<span class="rec">● REC</span>' : ''}<span class="info">${c.ezviz && c.batterie != null ? `BAT ${c.batterie} %` : ''}${c.at ? ` · ${c.at}` : ''}</span></div>`).join('');
+    <span class="lab">CAM ${String(i + 1).padStart(2, '0')} · ${esc(c.nom.toUpperCase())}</span>${vuRecemment(c) ? '<span class="rec">● DÉTECTION</span>' : ''}<span class="info">${c.ezviz && c.batterie != null ? `BAT ${c.batterie} %` : ''}${c.at ? ` · ${c.at}` : ''}</span></div>`).join('');
   document.querySelectorAll('.cam').forEach(el => el.onclick = () => photo(cams[+el.dataset.i]));
 }
 async function photo(c) {
