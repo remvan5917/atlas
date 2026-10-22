@@ -292,9 +292,57 @@ const SCENE = (() => {
     return say('Fin de la traduction.');
   }
 
+  /* ---------- le mode soirée : les lumières au rythme de la musique (le micro de la tablette écoute la sono) ---------- */
+  let soiree = null;
+  async function soireeOn(on) {
+    if (!on) {
+      if (!soiree) return say("Le mode soirée n'est pas lancé.");
+      const x = soiree; soiree = null; x.stop();
+      appel('/maison/soiree', { on: false }).catch(() => {});
+      return say('Fin de la soirée. Les lumières reviennent comme avant.');
+    }
+    if (soiree) return say('La soirée bat déjà son plein !');
+    let ids = [];
+    try {
+      const l = ((await appel('/maison/appareils', null, 10000)).appareils || []).filter(a => a.type === 'lampe');
+      const piece = N(S.settings.piece || '').split(' ').filter(w => w.length > 2);
+      ids = (piece.length ? l.filter(a => N(a.nom).split(' ').some(w => piece.includes(w))) : []).concat(l.filter(a => /\bsalon\b/.test(N(a.nom)))).map(a => a.id);
+      ids = [...new Set(ids)].slice(0, 4);
+    } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!ids.length) return say("Je ne trouve pas de lampe dans cette pièce.");
+    let flux; try { flux = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); } catch (e) { return say("Il me faut le micro pour entendre la musique."); }
+    let r; try { r = await appel('/maison/soiree', { on: true, ids }, 20000); } catch (e) { r = null; }
+    if (!r || !r.lampes) { flux.getTracks().forEach(x => x.stop()); return say("Les lampes ne répondent pas en direct. Réessaie dans un instant."); }
+    const c = new (window.AudioContext || window.webkitAudioContext)(), an = c.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0.5;
+    c.createMediaStreamSource(flux).connect(an);
+    const f = new Uint8Array(an.frequencyBinCount), hz = c.sampleRate / an.fftSize, nb = Math.max(2, Math.round(180 / hz));
+    let pic = 0.05, picB = 0.05, moyB = 0, envoi = false, frappeAt = 0, fini = false;
+    showBoard(panneau('MODE SOIRÉE', '<div id="so-v" style="display:flex;gap:4px;align-items:flex-end;height:140px"></div><div style="margin-top:8px;font-size:12px;color:#93c5fd">« fin du mode soirée » pour arrêter</div>', '#f472b6'), 'graphe-board');
+    clearTimeout(effaceT);
+    const barres = document.getElementById('so-v'); if (barres) barres.innerHTML = Array.from({ length: 24 }, () => '<div style="flex:1;background:linear-gradient(0deg,#f472b6,#38bdf8);border-radius:3px;height:4%"></div>').join('');
+    const tic = setInterval(() => {
+      if (fini) return;
+      an.getByteFrequencyData(f);
+      let b = 0; for (let i = 1; i <= nb; i++) b += f[i]; b /= nb * 255;
+      let e = 0; for (let i = 1; i < f.length / 2; i++) e += f[i]; e /= (f.length / 2) * 255;
+      pic = Math.max(pic * 0.997, e, 0.04); picB = Math.max(picB * 0.997, b, 0.04); moyB = moyB * 0.9 + b * 0.1;
+      const niv = Math.round(8 + 92 * Math.pow(Math.min(1, e / pic), 1.6)), frappe = b > moyB * 1.35 && b > picB * 0.6 && Date.now() - frappeAt > 260;
+      if (frappe) frappeAt = Date.now();
+      if (barres) [...barres.children].forEach((x, i) => { x.style.height = `${Math.max(4, Math.min(100, f[1 + Math.floor(i * (f.length / 2) / 24)] / 2.55))}%`; });
+      if (!envoi) { envoi = true; appel('/maison/soiree', { niveau: niv, frappe }, 3000).then(x => { if (x && x.actif === false && soiree) { soiree.stop(); soiree = null; } }).catch(() => {}).finally(() => { envoi = false; }); }
+    }, 140);
+    const stop = () => { fini = true; clearInterval(tic); flux.getTracks().forEach(x => x.stop()); c.close().catch(() => {}); setTimeout(cacheEcran, 3000); };
+    soiree = { stop };
+    setTimeout(() => { if (soiree && soiree.stop === stop) { soiree = null; stop(); appel('/maison/soiree', { on: false }).catch(() => {}); } }, 3 * 3600000);
+    jingle('generique');
+    return say(pick(['Mode soirée activé ! Mettez la musique : les lumières dansent avec vous.', 'Que la fête commence ! Les lumières suivent la musique.']));
+  }
+
   function route(t, n) {
     if (/\b(defi|duel|challenge)\b/.test(n) && MOTS_EXO.some(([re]) => re.test(n))) return () => defi(t, n);
     if ((/\b(coach|coache|entraine|entrainement|compte mes|on fait)\b/.test(n) && MOTS_EXO.some(([re]) => re.test(n))) || /\b(coach moi|mode coach|seance de sport)\b/.test(n) || /\b(\d+|une) (minutes?|secondes?) de (gainage|planche|pompes|squats|abdos)\b/.test(n)) return () => coach(t, n);
+    if (/\b(fin (du mode |de la )?soiree|arrete (le mode |la )?soiree|coupe le mode soiree)\b/.test(n)) return () => soireeOn(false);
+    if (/\b(mode soiree|mode fete|mode boum|lumieres? (en rythme|au rythme)|fais danser les lumieres)\b/.test(n)) return () => soireeOn(true);
     if (/\b(desactive|arrete|coupe|stop)\b.*\bgestes?\b|\bfin des gestes\b/.test(n)) return () => gestesOn(false);
     if (/\b(active|lance|mode)\b.*\b(gestes?|gestuel|minority report)\b|\bcontrole gestuel\b/.test(n)) return () => gestesOn(true);
     if (/\b(jeu televise|grand jeu|lance le jeu|jeu de la maison|on fait un quiz|quiz televise)\b/.test(n) && !/\bshadow\b.*\bseul\b/.test(n)) return () => jeu(t, n);

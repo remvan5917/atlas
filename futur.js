@@ -67,7 +67,7 @@ const FUTUR = (() => {
 
   /* ---------- l'accès vocal ---------- */
   // le protocole danger reste ouvert à tous (une urgence ne se refuse pas) ; ce qui pourrait servir à un intrus, ou faire des bêtises, est gardé
-  const SENSIBLE = /\bsirenes?\b.*\b(declenche|active|lance|sonner|allume|arrete|coupe|stop|eteins|desactive)\b|\b(declenche|active|lance|fais sonner|allume|arrete|coupe|eteins|desactive)\b.*\bsirenes?\b|\b(eteins|arrete|redemarre|coupe)\b.*\b(l ordi|l ordinateur|le pc)\b|\bdissuasion\b|\bdissuade\b|\b(desactive|coupe|arrete|eteins)\b.*\b(surveillance|sentinelle|cameras?|detection)\b/;
+  const SENSIBLE = /\bsirenes?\b.*\b(declenche|active|lance|sonner|allume|arrete|coupe|stop|eteins|desactive)\b|\b(declenche|active|lance|fais sonner|allume|arrete|coupe|eteins|desactive)\b.*\bsirenes?\b|\b(eteins|arrete|redemarre|coupe)\b.*\b(l ordi|l ordinateur|le pc)\b|\bdissuasion\b|\bdissuade\b|\b(desactive|coupe|arrete|eteins)\b.*\b(surveillance|sentinelle|cameras?|detection|fantome)\b/;
   const SENSIBLE_ABSENT = /\b(protocole retour|je suis (rentre|de retour|a la maison)|on est (rentres?|de retour)|fin du mode absent|mode presence|me revoila)\b/;
   const papaVoix = () => (typeof VOIX !== 'undefined' ? VOIX.people() : []).find(p => pareil(p.name, S.nom));
   function refusEcran() {
@@ -236,6 +236,32 @@ const FUTUR = (() => {
     return say(`Noté : départ pour l'école à ${m[1]} h ${m[2] || ''}. Les matins d'école, Shadow fera le compte à rebours.`);
   }
 
+  /* ---------- la voix de la sentinelle : dissuader un intrus ---------- */
+  // sur le téléphone : le bouton « Dissuader » (ou « Atlas, dissuasion ») demande à la maison ; la tablette (avec la sono) parle
+  async function dissuade() {
+    try { const r = await appel('/maison/dissuasion', {}, 20000); return say(`Dissuasion lancée : ${r.lumieres} lumières allumées, et la voix de la maison prévient l'intrus.`); }
+    catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+  }
+  let dissuasionAt = 0;
+  async function voixSentinelle() {
+    if (Date.now() - dissuasionAt < 60000) return; dissuasionAt = Date.now();
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:70;display:grid;place-items:center;font-family:ui-monospace,monospace;background:#300';
+    el.innerHTML = '<div style="text-align:center;color:#fee2e2"><div style="font:800 clamp(30px,8vw,80px) system-ui;text-shadow:0 0 30px #ef4444">ZONE SOUS SURVEILLANCE</div><div style="margin-top:12px;font-size:clamp(14px,2.5vw,22px);letter-spacing:.3em">VOUS ÊTES FILMÉS · IMAGES ENREGISTRÉES</div></div>';
+    document.body.appendChild(el);
+    let k = 0; const clig = setInterval(() => { el.style.background = k++ % 2 ? '#300' : '#b91c1c'; }, 400);
+    try {
+      try { const c = fx.audio(), t0 = c.currentTime, o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth'; g.gain.value = 0.25; o.connect(g); g.connect(c.destination); for (let i = 0; i < 6; i++) { o.frequency.setValueAtTime(650, t0 + i * 0.5); o.frequency.linearRampToValueAtTime(1050, t0 + i * 0.5 + 0.45); } o.start(t0); o.stop(t0 + 3); } catch (e) { /* pas de son */ }
+      await wait(3100);
+      for (let i = 0; i < 2; i++) { await say('Attention. Vous êtes sur une propriété privée sous surveillance. Vous êtes filmés, les images sont enregistrées et transmises. La police est prévenue. Quittez les lieux immédiatement.'); await wait(1200); }
+    } finally { clearInterval(clig); setTimeout(() => el.remove(), 20000); el.onclick = () => el.remove(); }
+  }
+  // le téléphone a été ouvert par le bouton « Dissuader » de la notification
+  try {
+    if (/[?&]dissuader=/.test(location.search)) { history.replaceState(null, '', location.pathname); setTimeout(() => dissuade(), 2500); }
+    if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.dissuader) dissuade(); });
+  } catch (e) { /* rien */ }
+
   function route(t, n) {
     if (cine) {
       if (/^(pause|mets (sur )?pause|on fait (une )?pause|stop pause)$/.test(n)) return () => cinePause(true);
@@ -245,6 +271,12 @@ const FUTUR = (() => {
     if (/\b(mode cinema|lance le cinema|on regarde un film|seance de cinema|ambiance cinema)\b/.test(n)) return () => cinema(true);
     if (/\b(missions?)\b/.test(n) && /\b(mon fils|du petit|de mon fils|pour mon fils|le petit|galactiques?)\b/.test(n) || /\bmedaille\b.*\b(mon fils|au petit|a mon fils)\b|\b(donne|decerne|envoie)\b.*\bmedaille\b/.test(n)) return () => missions(t, n);
     if (/\b(depart|on part|il part)\b.*\b(ecole)\b.*\b\d{1,2} h/.test(n)) return () => depart(t, n);
+    if (/\b(dissuasion|dissuade|fais fuir|fais peur a l intrus|protocole dissuasion)\b/.test(n)) return dissuade;
+    if (/\b(protocole )?fantome\b/.test(n)) return async () => {
+      const on = /\b(active|remets|reactive|lance|allume)\b/.test(n) ? true : /\b(desactive|coupe|arrete|stop|eteins)\b/.test(n) ? false : null;
+      let r; try { r = await appel('/maison/reveils', on == null ? undefined : { fantome: on }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+      return say(r.fantome ? 'Protocole fantôme actif : quand tu es absent, le soir, la maison fera comme si tu étais là. Les lumières suivent tes habitudes, jamais à la même minute, et parfois la radio.' : 'Protocole fantôme désactivé.');
+    };
     if (/\bcode d acces\b/.test(n) && /\b(est|sera|c est)\b/.test(n)) return () => code(t);
     if (/\b(retiens|souviens toi|rappelle toi|note|memorise)\b.*\b(ou|endroit)\b.*\b(je pose|je range|je mets|je met|je laisse|j ai pose|j ai mis|j ai range)\b/.test(n)) return () => retiens(t);
     if (/\bou (sont|est|j ai mis|j ai pose|j ai range) (mes|ma|mon|les|la|le|l)\b/.test(n) && !/\b(shadow|camera|alarme|fils|le petit|il)\b/.test(n)) return () => ouSont(t);
@@ -252,5 +284,5 @@ const FUTUR = (() => {
     if (/\b(on fait|on va faire|je fais|je vais faire|recette (de|des|du|d)|apprends moi a faire|comment (on )?fai(t|s) (on )?(des|du|de la|un|une))\b/.test(n) && /\b(crepes?|gateau|gaufres?|pates?|soupe|tarte|cookies?|omelette|pizza|quiche|risotto|salade|poulet|boeuf|poisson|riz|cake|muffins?|brownies?|sauce|puree|gratin|lasagnes?|burger|recette|dessert|diner|dejeuner|petit dej|pain|clafoutis|mousse|tiramisu|couscous|curry|tajine|ratatouille|frites|legumes|blanquette|bourguignon|pancakes?)\b/.test(n)) return () => chef(t, n);
     return null;
   }
-  return { route, autorise, cinemaActif: () => !!cine };
+  return { route, autorise, voixSentinelle, cinemaActif: () => !!cine };
 })();

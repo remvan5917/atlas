@@ -1,6 +1,6 @@
 // Garde Atlas disponible même sans réseau (les outils sans Internet marchent toujours).
 // Les fichiers sont toujours vérifiés auprès du serveur (sinon le navigateur ressert une ancienne version).
-const CACHE = 'atlas-app-v73';
+const CACHE = 'atlas-app-v74';
 const FILES = ['./', 'index.html', 'style.css', 'orthographe.js', 'cerveau.js', 'oreilles.js', 'voix.js', 'empreintes.js', 'yeux.js', 'atlas.js', 'outils.js', 'memoire.js', 'marche.js', 'proactif.js', 'maison.js', 'securite.js', 'pc.js', 'visio.js', 'scifi.js', 'trading.js', 'duo.js', 'agenda.js', 'futur.js', 'scene.js', 'noyau.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {
@@ -35,13 +35,16 @@ self.addEventListener('push', e => {
     vibrate: d.urgent ? [400, 150, 400, 150, 400, 150, 800] : [200, 100, 200],
   };
   if (d.image) options.image = d.image; // la photo de l'alerte (par l'ordinateur de la maison, avec un jeton)
+  if (d.dissuader) { options.actions = [{ action: 'dissuader', title: '🔊 Dissuader' }, { action: 'voir', title: 'Voir' }]; options.data.dissuader = true; } // quelqu'un chez toi, la nuit
   e.waitUntil(self.registration.showNotification(d.titre || 'Atlas', options));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const cible = new URL('./?alerte=' + (e.notification.data && e.notification.data.id || ''), self.registration.scope).href;
+  const dis = e.action === 'dissuader';
+  const cible = new URL('./?' + (dis ? 'dissuader=' : 'alerte=') + (e.notification.data && e.notification.data.id || ''), self.registration.scope).href;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(l => {
     const c = l.find(x => x.url.startsWith(self.registration.scope));
+    if (c && dis) c.postMessage({ dissuader: true }); // Atlas est ouvert : il lance la dissuasion tout de suite
     return c ? c.focus() : self.clients.openWindow(cible);
   }));
 });

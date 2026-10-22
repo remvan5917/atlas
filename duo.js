@@ -34,6 +34,7 @@ const DUO = (() => {
     const i = attentes.findIndex(w => w.type === m.type);
     if (i >= 0) { const w = attentes.splice(i, 1)[0]; clearTimeout(w.t); w.res(m); return; }
     if (m.type === 'question') { repondre(m); return; }
+    if (m.type === 'dissuasion') { if (typeof FUTUR !== 'undefined') FUTUR.voixSentinelle(); return; } // la tablette, avec la sono
     boite.push(m); if (boite.length > 20) boite.shift();
   }
   async function tire(sec) {
