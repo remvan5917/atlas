@@ -104,6 +104,8 @@
   .cam .vide { position: absolute; inset: 0; display: grid; place-items: center; font: 10px ui-monospace, monospace; letter-spacing: .14em; color: var(--doux); text-align: center; padding: 6px; background: repeating-linear-gradient(45deg, rgba(95, 211, 255, .03) 0 6px, transparent 6px 12px); }
   .cam .rec { position: absolute; right: 7px; top: 6px; font: 600 9.5px ui-monospace, monospace; color: var(--alerte); letter-spacing: .14em; animation: clig 1s steps(2) infinite; }
   .cam.mouv { border-color: var(--alerte); }
+  .cam .surv { position: absolute; right: 7px; top: 6px; font: 600 9.5px ui-monospace, monospace; color: #ff8a70; letter-spacing: .14em; text-shadow: 0 0 6px rgba(255, 107, 74, .6); }
+  .cam .repos { position: absolute; right: 7px; top: 6px; font: 9.5px ui-monospace, monospace; color: var(--doux); letter-spacing: .14em; }
   .cam.hs .lab { color: var(--alerte); }
 
   /* le journal d'alertes */
@@ -329,7 +331,7 @@ function plan() {
   const papa = Object.entries(boites).find(([k]) => /papa/.test(k));
   const place = c => /toit/.test(N(c.nom)) ? [papa ? papa[1].x : W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - 58, top + Hn / 2] : /plateau/.test(N(c.nom)) ? [W - 58, top + Hn + gap + Hn / 2] : /facade|rue|portail/.test(N(c.nom)) ? [W / 2, yBas] : [58, top + Hn + gap / 2];
   cams.forEach(c => {
-    const [x, y] = place(c), recent = vuRecemment(c), col = !c.en_ligne ? '#ff6b4a' : recent ? '#ffb547' : '#6ef0b8';
+    const [x, y] = place(c), recent = vuRecemment(c), col = !c.en_ligne ? '#ff6b4a' : recent ? '#ffb547' : arme(c) ? '#6ef0b8' : 'rgba(190,215,235,.45)';
     svg += `${recent ? `<circle class="onde" cx="${x}" cy="${y}" r="7" fill="none" stroke="${col}" stroke-width="2"/>` : ''}
       <circle cx="${x}" cy="${y}" r="6" fill="${col}"/><circle cx="${x}" cy="${y}" r="11" fill="none" stroke="${col}" stroke-opacity=".4"/>
       <text x="${x}" y="${y + (y > top ? 24 : -14)}" text-anchor="middle" font-size="${x < 120 || x > W - 120 ? 10 : 11}" fill="${col}" letter-spacing="2">${esc(c.nom.toUpperCase())}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 38 : -26)}" text-anchor="middle" font-size="10" fill="${col}" letter-spacing="2">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
@@ -375,8 +377,10 @@ async function danger() {
 
 /* ---------- le mode absent ---------- */
 let absent = false;
+let surveillancePlateau = false; // les caméras branchées (la LSC) : surveillées par la sentinelle la nuit et en mode absent
 async function chargeSentinelle() {
-  const avant = absent; try { absent = !!(await appel('/maison/sentinelle')).absent; } catch (e) { /* rien */ }
+  const avant = absent; try { const r = await appel('/maison/sentinelle'); absent = !!r.absent; surveillancePlateau = !!r.surveillance; } catch (e) { /* rien */ }
+  if (cams.length) { dessineCams(); plan(); }
   majEtat();
   if (avant !== absent && sc[1] && POSTE !== 'travail') { sc[1][0] = absent ? 'maison' : 'porte'; sc[1][1] = absent ? 'Je suis rentré' : 'Je pars'; const b = document.querySelector('.scene[data-k="1"]'); if (b) b.innerHTML = `${ic(sc[1][0])}<span>${sc[1][1]}</span>`; }
 }
@@ -386,14 +390,15 @@ async function basculeAbsent(b) { if (ATLAS) { dis(absent ? 'je suis rentré' : 
 let cams = [], urls = {};
 async function chargeCams() {
   const l = [];
-  try { ((await appel('/maison/ezviz')).cameras || []).forEach(c => l.push({ nom: c.nom, ezviz: true, en_ligne: c.en_ligne !== false, batterie: c.batterie })); } catch (e) { /* rien */ }
+  try { ((await appel('/maison/ezviz')).cameras || []).forEach(c => l.push({ nom: c.nom, ezviz: true, en_ligne: c.en_ligne !== false, batterie: c.batterie, arme: c.detection !== false })); } catch (e) { /* rien */ }
   try { ((await appel('/maison/cameras')).cameras || []).forEach(c => l.push({ nom: c.nom.charAt(0).toUpperCase() + c.nom.slice(1), cle: c.nom, en_ligne: true })); } catch (e) { /* rien */ }
   cams = l; dessineCams(); plan(); bandeauMaj();
   cams.filter(c => !c.ezviz).forEach(photo); // les caméras branchées : une image toutes les 30 s ; celles sur batterie : à la demande
 }
+const arme = c => c.en_ligne && (c.ezviz ? c.arme : surveillancePlateau); // armée selon les programmes (la nuit, le mode absent, la Façade de 19 h 30 à 7 h 30)
 function dessineCams() {
   $('#cams').innerHTML = cams.map((c, i) => `<div class="cam ${vuRecemment(c) ? 'mouv' : ''} ${c.en_ligne ? '' : 'hs'}" data-i="${i}">${urls[c.nom] ? `<img src="${urls[c.nom]}" alt="">` : `<div class="vide">${c.en_ligne ? (c.ezviz ? 'EN VEILLE<br>TOUCHER POUR UNE IMAGE' : 'LIAISON…') : 'SIGNAL PERDU'}</div>`}
-    <span class="lab">CAM ${String(i + 1).padStart(2, '0')} · ${esc(c.nom.toUpperCase())}</span>${vuRecemment(c) ? '<span class="rec">● DÉTECTION</span>' : ''}<span class="info">${c.ezviz && c.batterie != null ? `BAT ${c.batterie} %` : ''}${c.at ? ` · ${c.at}` : ''}</span></div>`).join('');
+    <span class="lab">CAM ${String(i + 1).padStart(2, '0')} · ${esc(c.nom.toUpperCase())}</span>${vuRecemment(c) ? '<span class="rec">● DÉTECTION</span>' : arme(c) ? '<span class="surv">● SURVEILLANCE</span>' : '<span class="repos">○ REPOS</span>'}<span class="info">${c.ezviz && c.batterie != null ? `BAT ${c.batterie} %` : ''}${c.at ? ` · ${c.at}` : ''}</span></div>`).join('');
   document.querySelectorAll('.cam').forEach(el => el.onclick = () => photo(cams[+el.dataset.i]));
 }
 async function photo(c) {
