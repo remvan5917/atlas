@@ -170,7 +170,7 @@ const SECURITE = (() => {
     l.filter(a => a.genre === 'reveil' && a.gravite === 'attention').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[1319, 0.12], [1047, 0.12], [1319, 0.12], [1047, 0.12], [1568, 0.3]]); await wait(1600); fx.tone([[1319, 0.12], [1047, 0.12], [1568, 0.3]]); await wait(900); if (dlg.state === 'standby' || dlg.state === 'sleep') dlg.state = 'talk'; return a.texte; }, { urgent: true, expire: Date.now() + 20 * 60000 }));
     // « qui sonne à la porte » (gravité annonce) : un ding-dong, la photo, et il le dit tout de suite — ça ne vaut que 3 minutes
     l.filter(a => a.gravite === 'annonce').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
-    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
+    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
   }
   setInterval(releveAlertes, 20000); setTimeout(releveAlertes, 9000);
   async function rapport(n) {

@@ -529,7 +529,40 @@ const SCIFI = (() => {
     return say(`Message enregistré. Shadow le projettera à ${enfant} en hologramme, dès qu'il le verra.`);
   }
 
+  /* ---------- l'inverse : le message holographique du petit, projeté chez papa ---------- */
+  let holoFils = null;
+  async function projetteFils(h, rejoue) {
+    let url; try { const b = await appel(`/maison/hologramme/${h.id}`, null, 30000); if (!(b instanceof Blob) || b.size < 5000) return ''; url = URL.createObjectURL(b); } catch (e) { return ''; }
+    const enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    if (!rejoue) { fx.tone([[523, 0.12], [784, 0.12], [1047, 0.25]]); await say(`Message holographique entrant… de ${enfant} !`); }
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:40;background:radial-gradient(60% 55% at 50% 55%,#06223a,#000 75%);display:grid;place-items:center;opacity:0;transition:opacity .8s';
+    el.innerHTML = `<style>@keyframes hC{0%,100%{opacity:.92}47%{opacity:.75}50%{opacity:.42}53%{opacity:.86}}@keyframes hS{from{background-position:0 0}to{background-position:0 40px}}</style>
+      <div style="position:relative;width:min(84vw,680px);animation:hC 3.2s infinite">
+        <video playsinline style="width:100%;display:block;border-radius:10px;transform:rotate(${h.rot || 0}deg);filter:sepia(1) hue-rotate(165deg) saturate(3) brightness(1.25) contrast(1.15);mix-blend-mode:screen;-webkit-mask-image:radial-gradient(70% 70% at 50% 50%,#000 60%,transparent 100%);mask-image:radial-gradient(70% 70% at 50% 50%,#000 60%,transparent 100%)"></video>
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(125,211,252,.12) 0 2px,transparent 2px 6px);animation:hS 2s linear infinite;pointer-events:none"></div>
+        <div style="position:absolute;left:50%;bottom:-60px;transform:translateX(-50%);width:70%;height:60px;background:radial-gradient(50% 100% at 50% 100%,rgba(125,211,252,.35),transparent 70%)"></div></div>
+      <div style="position:fixed;top:14px;left:0;right:0;text-align:center;font:13px ui-monospace,monospace;letter-spacing:.35em;color:#7dd3fc">◢ MESSAGE HOLOGRAPHIQUE · ${esc(enfant.toUpperCase())}</div>`;
+    document.body.appendChild(el);
+    if (typeof OREILLES !== 'undefined') OREILLES.mute(true);
+    try {
+      requestAnimationFrame(() => { el.style.opacity = '1'; });
+      const v = el.querySelector('video'); v.src = url;
+      await new Promise(res => { v.onended = res; v.onerror = res; el.onclick = res; setTimeout(res, 40000); v.play().catch(() => { v.muted = true; v.play().catch(res); }); });
+    } finally { el.style.opacity = '0'; setTimeout(() => { el.remove(); URL.revokeObjectURL(url); }, 900); if (typeof OREILLES !== 'undefined') OREILLES.mute(false); }
+    holoFils = h;
+    if (!rejoue) appel('/maison/hologramme', { lu: h.id }).catch(() => {});
+    return rejoue ? '' : 'Fin de la transmission. Dis « rejoue le message » pour le revoir.';
+  }
+  async function holoFilsReleve() {
+    if (!root()) return;
+    let r; try { r = await appel('/maison/hologramme', null, 10000); } catch (e) { return; }
+    (r.hologrammes || []).filter(h => h.de === 'enfant' && !h.lu).forEach(h => PROACTIF.annonce(`alerte-holo-${h.id}`, () => projetteFils(h, false), { urgent: true, expire: Date.now() + 3 * 86400000 }));
+  }
+  setTimeout(holoFilsReleve, 20000); setInterval(holoFilsReleve, 30000);
+
   function route(t, n) {
+    if (/\b(rejoue|remets|repasse|revoir)\b.*\b(message|hologramme)\b/.test(n) && holoFils) return () => projetteFils(holoFils, true);
     if (/\b(message (holographique|video|hologramme)|hologramme|enregistre (un|moi un) message (video )?pour|filme moi pour|laisse un message video)\b/.test(n) && !/\b(rejoue|lis|ecoute)\b/.test(n)) return hologramme;
     if (/\b(declenche|active|lance|fais sonner|allume)\b.*\bsirenes?\b/.test(n)) return () => sirene(t, n, true);
     if (/\b(arrete|coupe|stop|eteins|desactive)\b.*\bsirenes?\b/.test(n)) return () => sirene(t, n, false);
