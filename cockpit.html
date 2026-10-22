@@ -53,6 +53,11 @@
   .prix { border: 1px solid var(--ligne); border-radius: 10px; padding: 8px; }
   .prix .s { font: 11px ui-monospace, monospace; color: var(--doux); letter-spacing: .1em; }
   .prix .p { font-size: 17px; margin-top: 2px; } .haut { color: var(--ok); } .bas { color: var(--alerte); }
+  #plan svg { width: 100%; height: auto; display: block; }
+  #plan .piece { cursor: pointer; transition: fill .4s, stroke .4s; }
+  #plan text { font-family: ui-monospace, monospace; pointer-events: none; }
+  @keyframes pulse { 0% { r: 8; opacity: .9; } 100% { r: 28; opacity: 0; } }
+  #plan .onde { animation: pulse 1.6s ease-out infinite; }
   .config { max-width: 520px; margin: 40px auto; }
   .config input { width: 100%; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); margin: 8px 0; }
   .muted { color: var(--doux); font-size: 12px; }
@@ -100,6 +105,7 @@ const nf = (v, d = 2) => Number(v).toLocaleString('fr-FR', { maximumFractionDigi
 /* ---------- la mise en page ---------- */
 function cartes() {
   $('#main').innerHTML = `
+    <section class="carte" style="grid-column:1/-1"><h2>PLAN DE LA MAISON <span>toucher une pièce : allumer / éteindre</span></h2><div id="plan"></div></section>
     <section class="carte" style="grid-column:1/-1"><h2>LUMIÈRES <span id="lum-res"></span></h2><div class="grille" id="lumieres"></div>
       <div class="boutons" style="margin-top:10px"><button id="b-bas">Tout éteindre en bas</button><button id="b-absent">Mode absent</button><button class="danger" id="b-danger">Protocole danger</button></div></section>
     <section class="carte"><h2>CAMÉRAS <span>toucher : photo fraîche</span></h2><div class="cams" id="cams"></div></section>
@@ -111,6 +117,46 @@ function cartes() {
   $('#b-bas').onclick = toutEteindre; $('#b-absent').onclick = basculeAbsent; $('#b-danger').onclick = danger;
 }
 const ligne = (k, v, cls = '') => `<div class="ligne"><span class="k">${esc(k)}</span><span class="v ${cls}">${esc(v)}</span></div>`;
+
+/* ---------- le plan holographique : les pièces s'allument comme les vraies lampes, les caméras autour ---------- */
+let alertesRecentes = [];
+function plan() {
+  const el = $('#plan'); if (!el) return;
+  const lampes = appareils.filter(a => a.type === 'lampe');
+  const etage = a => /\b(chambres?|salle de bains?|premier etage|etage|bureau|grenier)\b/.test(N(a.nom));
+  const niveaux = [['ÉTAGE', lampes.filter(etage)], ['REZ-DE-CHAUSSÉE', lampes.filter(a => !etage(a))]];
+  const W = 1000, M = 130, Hn = 150, gap = 26, top = 70;
+  let svg = `<svg viewBox="0 0 ${W} ${top + niveaux.length * (Hn + gap) + 80}" xmlns="http://www.w3.org/2000/svg">
+    <defs><filter id="lueur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
+    <pattern id="grille" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="rgba(255,181,71,.06)"/></pattern></defs>
+    <rect x="0" y="0" width="${W}" height="100%" fill="url(#grille)"/>
+    <path d="M${M - 10} ${top - 6} L${W / 2} 12 L${W - M + 10} ${top - 6}" fill="none" stroke="rgba(255,181,71,.45)" stroke-width="2"/>`;
+  niveaux.forEach(([nom, l], k) => {
+    const y = top + k * (Hn + gap), n = Math.max(1, l.length), w = (W - 2 * M - (n - 1) * 10) / n;
+    svg += `<text x="${M - 8}" y="${y - 6}" font-size="11" fill="rgba(255,217,160,.5)" letter-spacing="3">${nom}</text>`;
+    l.forEach((a, i) => {
+      const x = M + i * (w + 10), on = a.allume, lum = on ? (a.lum != null ? a.lum : 100) / 100 : 0, hs = a.allume == null;
+      const chaud = a.teinte == null ? 30 : a.teinte; const col = `hsl(${38 - chaud * 0.18}, 100%, ${55 + chaud * 0.25}%)`;
+      svg += `<g class="piece" data-id="${esc(a.id)}">
+        ${on ? `<rect x="${x + 8}" y="${y + 8}" width="${w - 16}" height="${Hn - 16}" rx="10" fill="${col}" opacity="${0.15 + lum * 0.45}" filter="url(#lueur)"/>` : ''}
+        <rect x="${x}" y="${y}" width="${w}" height="${Hn}" rx="10" fill="${on ? `rgba(255,181,71,${0.06 + lum * 0.16})` : 'rgba(255,255,255,.02)'}" stroke="${hs ? 'rgba(255,122,69,.5)' : on ? col : 'rgba(255,181,71,.25)'}" stroke-width="${on ? 2 : 1}" ${hs ? 'stroke-dasharray="6 5"' : ''}/>
+        <text x="${x + w / 2}" y="${y + Hn / 2 - 4}" text-anchor="middle" font-size="${w < 130 || a.nom.length > 18 ? 12 : 15}" fill="${on ? '#fff3dd' : 'rgba(244,236,224,.55)'}">${esc(a.nom)}</text>
+        <text x="${x + w / 2}" y="${y + Hn / 2 + 16}" text-anchor="middle" font-size="11" fill="${hs ? '#ff7a45' : 'rgba(255,217,160,.6)'}">${hs ? 'SANS COURANT' : on ? `${a.lum != null ? a.lum + ' %' : 'allumée'}` : 'éteinte'}</text></g>`;
+    });
+  });
+  // les caméras autour de la maison : la toiture en haut, la cour derrière, la façade devant (la rue), l'intérieur au centre
+  const yBas = top + niveaux.length * (Hn + gap) + 30;
+  const place = c => /toit/.test(N(c.nom)) ? [W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - 62, top + Hn / 2] : /facade|rue|portail/.test(N(c.nom)) ? [W / 2, yBas] : [62, top + Hn + gap / 2];
+  cams.forEach(c => {
+    const [x, y] = place(c), recent = alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000);
+    const col = !c.en_ligne ? '#ff7a45' : recent ? '#ffcf8a' : '#7ee2b8';
+    svg += `${recent ? `<circle class="onde" cx="${x}" cy="${y}" r="8" fill="none" stroke="${col}" stroke-width="2"/>` : ''}
+      <circle cx="${x}" cy="${y}" r="7" fill="${col}"/><text x="${x}" y="${y + (y > top ? 22 : -12)}" text-anchor="middle" font-size="${x < 120 || x > W - 120 ? 10 : 11}" fill="${col}" letter-spacing="1">${esc(c.nom.toUpperCase())}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 36 : -24)}" text-anchor="middle" font-size="10" fill="${col}">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
+  });
+  svg += `<text x="${W / 2}" y="${yBas + 40}" text-anchor="middle" font-size="11" fill="rgba(255,217,160,.35)" letter-spacing="4">— LA RUE —</text></svg>`;
+  el.innerHTML = svg;
+  el.querySelectorAll('.piece').forEach(g => g.addEventListener('click', () => bascule(g.dataset.id)));
+}
 
 /* ---------- les lumières et les prises ---------- */
 let appareils = [];
@@ -125,7 +171,7 @@ async function chargeAppareils() {
       <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'débranchée' : a.watts != null ? `${a.allume ? 'allumée' : 'éteinte'} · ${nf(a.watts, 0)} W` : a.allume ? 'allumée' : 'éteinte'}</div></div>`).join('');
   document.querySelectorAll('.tuile[data-id]').forEach(el => el.addEventListener('click', e => { if (e.target.matches('input')) return; bascule(el.dataset.id); }));
   document.querySelectorAll('input[data-lum]').forEach(el => el.addEventListener('change', () => commande([el.dataset.lum], true, +el.value)));
-  majMaison();
+  majMaison(); plan();
 }
 async function commande(ids, allume, lum) {
   try { await appel('/maison/commande', Object.assign({ ids, allume }, lum != null ? { lum } : {}), 20000); } catch (e) { /* rien */ }
@@ -152,7 +198,7 @@ async function chargeCams() {
   const l = [];
   try { ((await appel('/maison/ezviz')).cameras || []).forEach(c => l.push({ nom: c.nom, ezviz: true, en_ligne: c.en_ligne !== false, batterie: c.batterie })); } catch (e) { /* rien */ }
   try { ((await appel('/maison/cameras')).cameras || []).forEach(c => l.push({ nom: c.nom.charAt(0).toUpperCase() + c.nom.slice(1), cle: c.nom, en_ligne: true })); } catch (e) { /* rien */ }
-  cams = l; dessineCams();
+  cams = l; dessineCams(); plan();
   cams.filter(c => !c.ezviz).forEach(photo); // les caméras branchées : une image toutes les 30 s ; celles sur batterie : à la demande
 }
 function dessineCams() {
@@ -174,6 +220,7 @@ async function photo(c) {
 let photosAlertes = {};
 async function chargeAlertes() {
   let l = []; try { l = (await appel('/maison/alertes?depuis=0')).alertes || []; } catch (e) { return; }
+  alertesRecentes = l.filter(a => a.genre === 'ezviz' || a.genre === 'camera'); plan();
   l = l.filter(a => a.gravite !== 'info').slice(-8).reverse();
   $('#al-res').textContent = l.length ? `${l.length} récentes` : '';
   $('#alertes').innerHTML = l.length ? l.map(a => `<div class="alerte ${a.gravite === 'urgent' ? 'urgent' : ''}"><span class="h">${hh(new Date(a.at))}</span>${a.image ? `<img data-al="${a.id}" alt="">` : ''}<span class="t">${esc(a.texte)}</span></div>`).join('') : '<div class="muted">Rien à signaler.</div>';

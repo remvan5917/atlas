@@ -384,6 +384,7 @@ const SCIFI = (() => {
     const tout = Promise.all([
       l.length ? regle(l.map(a => a.id), true, 100, 50).catch(() => {}) : null, // toute la maison en pleine lumière (chambres comprises)
       appel('/maison/danger', {}, 10000).catch(() => {}),                       // preuves : une photo de chaque caméra + alerte urgente sur le téléphone
+      appel('/maison/defense', { camera: 'toutes', action: 'sirene', duree: 60 }, 30000).catch(() => {}), // les sirènes des caméras, une minute
     ]);
     for (let k = 0; k < 3; k++) { fx.tone([[880, 0.35], [660, 0.35], [880, 0.35], [660, 0.35]]); await wait(1500); }
     showBoard(`<div style="font-family:ui-monospace,Menlo,monospace;background:#1a0505;border:2px solid #ef4444;border-radius:14px;padding:14px;color:#fee2e2">
@@ -486,7 +487,52 @@ const SCIFI = (() => {
   }
   const _n = v => N(v || '');
 
+  /* ---------- la sirène des caméras (défense active) ---------- */
+  async function sirene(t, n, on) {
+    const cam = (String(t).match(/\b(?:de la|du|de|sur la)\s+(?:caméra\s+)?(façade|facade|cours?|toiture|toit)\b/i) || [])[1] || 'toutes';
+    const nom = /toit/i.test(cam) ? 'Toiture' : /cour/i.test(cam) ? 'Cours' : /fa[cç]ade/i.test(cam) ? 'Façade' : 'toutes';
+    let r; try { r = await appel('/maison/defense', { camera: nom, action: on ? 'sirene' : 'stop', duree: on ? 30 : 0 }, 30000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!r.ok) return say(on ? "La sirène n'a pas voulu se déclencher. Utilise le bouton d'alarme de l'appli EZVIZ." : "Je n'arrive pas à couper la sirène depuis ici : coupe-la dans l'appli EZVIZ.");
+    return say(on ? `Sirène déclenchée${nom === 'toutes' ? ' sur toutes les caméras' : ` sur la caméra ${nom}`}, pendant 30 secondes. Dis « arrête la sirène » pour la couper.` : 'Sirène coupée.');
+  }
+
+  /* ---------- le message holographique : papa se filme 20 secondes, Shadow le projette à son fils façon hologramme ---------- */
+  async function hologramme() {
+    const enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    if (!window.MediaRecorder || !navigator.mediaDevices) return say("Cet appareil ne sait pas enregistrer de vidéo.");
+    let flux; try { flux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true } }); } catch (e) { return say("Je n'ai pas accès à la caméra et au micro de cet appareil."); }
+    showBoard(`<div style="position:relative;border:1px solid #38bdf8;border-radius:14px;overflow:hidden;background:#020b14"><video id="holo-apercu" autoplay muted playsinline style="width:100%;display:block;filter:sepia(1) hue-rotate(165deg) saturate(2.4) brightness(1.1)"></video>
+      <div id="holo-etat" style="position:absolute;left:10px;top:8px;font:12px ui-monospace,monospace;letter-spacing:.2em;color:#7dd3fc">◢ MESSAGE HOLOGRAPHIQUE · PRÊT</div>
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(125,211,252,.08) 0 2px,transparent 2px 5px);pointer-events:none"></div></div>
+      <div class="small muted" style="margin-top:6px">Touche l'image pour arrêter avant les 20 secondes.</div>`, 'graphe-board');
+    clearTimeout(effaceT);
+    const v = document.getElementById('holo-apercu'); if (v) v.srcObject = flux;
+    await say(`Message holographique pour ${enfant}. Je t'enregistre dans trois, deux, un.`);
+    if (typeof OREILLES !== 'undefined') OREILLES.mute(true); // il ne s'écoute pas pendant l'enregistrement
+    const type = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') ? 'video/webm;codecs=vp8,opus' : 'video/webm';
+    const rec = new MediaRecorder(flux, { mimeType: type, videoBitsPerSecond: 900000 }), morceaux = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) morceaux.push(e.data); };
+    const fini = new Promise(r => { rec.onstop = r; });
+    rec.start(500); fx.tone([[1319, 0.12]]);
+    const etat = document.getElementById('holo-etat'), t0 = Date.now();
+    const tic = setInterval(() => { if (etat) etat.textContent = `◢ ENREGISTREMENT ● ${Math.max(0, 20 - Math.round((Date.now() - t0) / 1000))} s`; }, 250);
+    await new Promise(r => { const t = setTimeout(r, 20000); const b = document.getElementById('board'); if (b) b.addEventListener('click', () => { clearTimeout(t); r(); }, { once: true }); });
+    clearInterval(tic); rec.stop(); await fini; flux.getTracks().forEach(x => x.stop());
+    if (typeof OREILLES !== 'undefined') OREILLES.mute(false);
+    fx.tone([[1319, 0.08], [988, 0.14]]); hideBoard();
+    const video = new Blob(morceaux, { type: 'video/webm' });
+    if (video.size < 5000) return say("L'enregistrement n'a pas marché. On réessaie quand tu veux.");
+    try {
+      const r = await fetch(`${root()}/maison/hologramme`, { method: 'POST', headers: { 'Content-Type': 'video/webm' }, body: video, cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+    } catch (e) { return say("Je n'ai pas réussi à l'envoyer à l'ordinateur de la maison."); }
+    return say(`Message enregistré. Shadow le projettera à ${enfant} en hologramme, dès qu'il le verra.`);
+  }
+
   function route(t, n) {
+    if (/\b(message (holographique|video|hologramme)|hologramme|enregistre (un|moi un) message (video )?pour|filme moi pour|laisse un message video)\b/.test(n) && !/\b(rejoue|lis|ecoute)\b/.test(n)) return hologramme;
+    if (/\b(declenche|active|lance|fais sonner|allume)\b.*\bsirenes?\b/.test(n)) return () => sirene(t, n, true);
+    if (/\b(arrete|coupe|stop|eteins|desactive)\b.*\bsirenes?\b/.test(n)) return () => sirene(t, n, false);
     if (/\b(qui est passe|qui est venu|les visiteurs|des visiteurs|le livreur est (passe|venu)|est ce que le (livreur|facteur) est (passe|venu)|qui a sonne|des passages|les passages)\b/.test(n) && !/\bshadow\b/.test(n)) return () => visiteurs(/\bsemaine\b/.test(n) ? 7 : 1);
     { // « surveille les infos sur la Fed », « préviens-moi s'il y a du nouveau sur l'or », « arrête de surveiller la Fed », « mes veilles »
       const aj = String(t).match(/(?:surveille|suis|garde un (?:œil|oeil) sur|fais (?:une |la )?veille sur)\s+(?:l['’]actu(?:alité)?|les (?:infos|actualités|actus|nouvelles))?\s*(?:sur|de|à propos de|concernant|autour de)?\s*(.+?)\s*[.!?]*$/i)
