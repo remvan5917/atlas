@@ -198,6 +198,7 @@ const TRADING = (() => {
     if (/\b(mes resultats|mon bilan (de trading|de la semaine)|resultats? (de la |cette )?semaine|combien j ai (gagne|perdu) cette semaine|mes performances)\b/.test(n) && !/\b(foot|match|ecole)\b/.test(n)) return bilan;
     if (/\b(ma limite|mes limites|limite (du jour|journaliere|de perte)|ma perte max(imale)?)\b/.test(n)) return () => limites(t, n);
     if (/\b(bilan|stats|statistiques)\b.*\b(boite noire|mes trades|de trading)\b|\bboite noire\b.*\bbilan\b/.test(n)) return bilanNoire;
+    if (/\b(efface|supprime|annule|enleve|retire)\b.*\b(resultat|gain|perte|pnl)\b/.test(n)) return async () => { try { await appel('/maison/trading', { efface: 'jour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Résultat du jour effacé. Tu me rediras ton vrai résultat en fin de session."); };
     if (/\b(entree|je rentre|je prends|j entre|ouvert|ouverture)\b.*\b(long|short|achat|vente)\b|\b(long|short)\b.*\b(m6e|mnq|mes|mgc|mym|mcl|sil|euro|nasdaq)\b.*\b(a|stop)\b/.test(n) && /\d/.test(t)) return () => entree(t, n);
     if (/\b(sortie|je sors|sorti|je coupe|cloture|je ferme|stoppe|stop touche|stop pris|objectif (atteint|touche)|tp touche)\b/.test(n) && !/\b(sortie de|sors de|mode|session|television|tele)\b/.test(n)) {
       const d = /\b(dollars?)\b|\$/.test(n + t) ? montant(t) : null;
