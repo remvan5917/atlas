@@ -274,5 +274,5 @@ const VISIO = (() => {
     return null;
   }
   const qui = () => { const a = inventeur(), b = (typeof LIEN !== 'undefined' && LIEN.prenom()) || ''; return a && b ? `${a} et ${b}` : a || b; };
-  return { route, visio, actif: () => !!S.visio, inventeurs: qui };
+  return { route, visio, sfx, actif: () => !!S.visio, inventeurs: qui };
 })();

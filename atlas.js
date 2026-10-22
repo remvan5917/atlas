@@ -523,7 +523,7 @@ const R = {
 };
 // une phrase → l'ordre qu'un module sait faire (sans le cerveau)
 function routeUn(t, n) {
-  for (const [nom, M] of [['memoire', typeof MEMOIRE !== 'undefined' && MEMOIRE], ['visio', typeof VISIO !== 'undefined' && VISIO], ['pc', typeof PC !== 'undefined' && PC], ['marche', typeof MARCHE !== 'undefined' && MARCHE], ['surete', typeof SECURITE !== 'undefined' && SECURITE], ['maison', typeof MAISON !== 'undefined' && MAISON], ['outils', !R.web.test(n) && typeof OUTILS !== 'undefined' && OUTILS]]) {
+  for (const [nom, M] of [['memoire', typeof MEMOIRE !== 'undefined' && MEMOIRE], ['visio', typeof VISIO !== 'undefined' && VISIO], ['scifi', typeof SCIFI !== 'undefined' && SCIFI], ['pc', typeof PC !== 'undefined' && PC], ['marche', typeof MARCHE !== 'undefined' && MARCHE], ['surete', typeof SECURITE !== 'undefined' && SECURITE], ['maison', typeof MAISON !== 'undefined' && MAISON], ['outils', !R.web.test(n) && typeof OUTILS !== 'undefined' && OUTILS]]) {
     if (!M) continue;
     const f = M.route(t, n); if (f) return { f, nom };
   }
@@ -577,6 +577,8 @@ async function handle(text) {
   if (souvenir) return souvenir();
   const visio = VISIO.route(t, n); // les visios et les effets de lumière (« mode visio », « fondu au noir », « présente-toi à mes invités »)
   if (visio) return visio();
+  const proto = SCIFI.route(t, n); // les protocoles : scan de sécurité, départ, retour, état des systèmes, présences, la fusée
+  if (proto) return proto();
   const ordi = PC.route(t, n); // l'ordinateur : le son, la musique, l'écran, les fenêtres, les applis, Gmail (une liste fermée d'actions)
   if (ordi) return ordi();
   const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
