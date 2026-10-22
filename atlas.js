@@ -575,6 +575,9 @@ async function handle(text) {
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
   if (souvenir) return souvenir();
+  if (typeof FUTUR !== 'undefined' && !(await FUTUR.autorise(n))) return; // l'accès vocal : les ordres sensibles, seulement à la voix de papa
+  const fut = FUTUR.route(t, n); // le cinéma, les clés, l'œil de faucon, le chef
+  if (fut) return fut();
   const rdv = AGENDA.route(t, n); // ton Google Agenda : « qu'est-ce que j'ai aujourd'hui ? »
   if (rdv) return rdv();
   const duo = DUO.route(t, n); // « discute avec Shadow », « accueille nos invités »

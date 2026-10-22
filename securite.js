@@ -178,7 +178,9 @@ const SECURITE = (() => {
     // « qui sonne à la porte » (gravité annonce) : un ding-dong, la photo, et il le dit tout de suite — ça ne vaut que 3 minutes
     // papa ou son fils rentrent (leur téléphone est revenu sur le Wi-Fi) : l'accueil de cinéma
     l.filter(a => a.genre === 'accueil').forEach(a => { if (typeof DUO !== 'undefined') PROACTIF.annonce(`alerte-${a.id}`, () => DUO.depuisMaison(a), { urgent: true, expire: Date.now() + 5 * 60000 }); });
-    l.filter(a => a.gravite === 'annonce' && a.genre !== 'accueil').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
+    // le vendredi 22 h 30 : le bilan de la boîte noire du trader
+    l.filter(a => a.genre === 'boite-noire').forEach(a => { if (typeof TRADING !== 'undefined') PROACTIF.annonce(`alerte-${a.id}`, async () => { await TRADING.bilanNoire(); return ''; }, { urgent: true, expire: Date.now() + 2 * 3600000 }); });
+    l.filter(a => a.gravite === 'annonce' && a.genre !== 'accueil' && a.genre !== 'boite-noire').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
     l.filter(a => a.genre === 'lien' && a.gravite === 'attention').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { lueurLien(); fx.tone([[659, 0.15], [880, 0.15], [1319, 0.35]]); await wait(700); return a.texte; }, { urgent: true, expire: Date.now() + 6 * 3600000 }));
     l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && a.genre !== 'lien' && a.genre !== 'accueil' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
   }

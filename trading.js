@@ -130,15 +130,83 @@ const TRADING = (() => {
     return say(`${v ? 'Noté. ' : ''}Ta limite du jour : ${dollars(e.limites.jour)}. Ta perte maximale sur le compte : ${dollars(e.limites.compte)}.`);
   }
 
+  /* ---------- la boîte noire : les trades dictés, et le bilan chiffré (jamais un conseil) ---------- */
+  const SPECS = { M6E: [0.0001, 1.25, 4], MNQ: [0.25, 0.5, 2], MES: [0.25, 1.25, 2], MGC: [0.1, 1, 1], MYM: [1, 0.5, 0], MCL: [0.01, 1, 2], SIL: [0.005, 5, 3] };
+  const NOMS_I = [[/\b(m6e|6e|euro dollar|eur usd|eurusd|l euro)\b/, 'M6E'], [/\b(mnq|nasdaq)\b/, 'MNQ'], [/\b(mes|s p 500|sp500)\b/, 'MES'], [/\b(mgc|l or|gold)\b/, 'MGC'], [/\b(mym|dow)\b/, 'MYM'], [/\b(mcl|petrole)\b/, 'MCL'], [/\b(sil|silver|l argent)\b/, 'SIL']];
+  let dernierInstr = 'M6E';
+  const nombre = s => { const x = String(s).replace(/\s+(?=\d{3}\b)/g, '').replace(',', '.'); const v = parseFloat(x); return isFinite(v) ? v : null; };
+  const prixApres = (t, mot) => { const m = String(t).match(new RegExp(`${mot}\\s*(?:à|a|de|au)?\\s*(\\d[\\d\\s]*(?:[.,]\\d+)?)`, 'i')); return m ? nombre(m[1]) : null; };
+  const fmtP = (v, i) => Number(v).toLocaleString('fr-FR', { minimumFractionDigits: SPECS[i][2], maximumFractionDigits: SPECS[i][2] });
+  async function entree(t, n) {
+    const sens = /\b(long|achat|achete|acheteur|buy)\b/.test(n) ? 'long' : /\b(short|vente|vendu|vendeur|sell)\b/.test(n) ? 'short' : null;
+    const ins = (NOMS_I.find(([re]) => re.test(n)) || [null, dernierInstr])[1]; dernierInstr = ins;
+    const prix = prixApres(t, '(?:entrée|entree|long|short|achat|vente|acheté|vendu|' + ins + ')') || prixApres(t, ' à');
+    if (!sens || prix == null) return say("Dis par exemple : « entrée long M6E à 1,1650, stop 20 ticks ».");
+    const [pas, val] = SPECS[ins];
+    const lots = +((n.match(/\b(\d{1,2}) (contrats?|lots?|micros?)\b/) || [])[1] || 1);
+    let ticks = +((n.match(/\bstop (?:de |a )?(\d{1,4}) ticks?\b/) || [])[1] || 0), stopPrix = null;
+    if (!ticks) { stopPrix = prixApres(t, 'stop'); if (stopPrix != null) ticks = Math.round(Math.abs(prix - stopPrix) / pas); }
+    if (ticks && stopPrix == null) stopPrix = +(sens === 'long' ? prix - ticks * pas : prix + ticks * pas).toFixed(6);
+    const objectif = prixApres(t, '(?:objectif|cible|target|tp)');
+    const risque = ticks ? +(ticks * val * lots).toFixed(2) : null;
+    let e; try { e = await appel('/maison/trading', { trade: { sens, instr: ins, prix, stop_ticks: ticks || null, stop_prix: stopPrix, lots, risque, objectif } }); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const part = risque && e.limites ? Math.round(risque / e.limites.jour * 100) : 0;
+    return say(`Boîte noire : ${sens} ${ins} à ${fmtP(prix, ins)}${lots > 1 ? `, ${lots} contrats` : ''}${ticks ? `, stop ${ticks} ticks. Risque : ${dollars(risque)}${part >= 25 ? `, soit ${part} % de ta limite du jour` : ''}` : ". Pas de stop noté : quel est ton stop ?"}.`);
+  }
+  async function sortie(t, n, pnlDit) {
+    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const o = (e.trades || []).filter(x => x.fin == null).pop();
+    if (!o) return pnlDit != null ? resultat(pnlDit, false) : say("Aucun trade ouvert dans la boîte noire.");
+    const [pas, val] = SPECS[o.instr] || [1, 1];
+    const pnlDe = px => +(((px - o.prix) * (o.sens === 'long' ? 1 : -1)) / pas * val * (o.lots || 1)).toFixed(2);
+    let px = null, pnl = pnlDit, motif = 'sortie';
+    if (pnl == null && /\b(stoppe|stop touche|stop pris|touche mon stop|au stop)\b/.test(n)) { motif = 'stop'; px = o.stop_prix; pnl = px != null ? pnlDe(px) : (o.risque != null ? -o.risque : null); }
+    else if (pnl == null && /\b(objectif|cible|target|tp) (atteint|touche)\b/.test(n) && o.objectif != null) { motif = 'objectif'; px = o.objectif; pnl = pnlDe(px); }
+    else if (pnl == null) { px = prixApres(t, '(?:sortie|sorti|sors|clôturé|cloture|fermé|ferme|coupé|coupe)') || prixApres(t, ' à'); if (px != null) pnl = pnlDe(px); }
+    if (pnl == null) return say("À quel prix es-tu sorti ? Ou dis le résultat : « sortie à plus 40 dollars ».");
+    try { await appel('/maison/trading', { cloture: { sortie: px, pnl, motif } }); } catch (er) { return say("Je n'ai pas réussi à le noter."); }
+    await say(`Trade clôturé : ${signe(pnl)}${o.risque && pnl < -o.risque * 1.15 ? ` : plus que le risque prévu de ${dollars(o.risque)}` : o.risque && pnl > 0 ? `, soit ${(pnl / o.risque).toFixed(1).replace('.', ',')} fois le risque` : ''}.`);
+    return resultat(pnl, false);
+  }
+  async function bilanNoire() {
+    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const l = (e.trades || []).filter(x => x.fin != null && x.pnl != null && x.at > Date.now() / 1000 - 7 * 86400);
+    if (!l.length) return say("La boîte noire est vide cette semaine. Pendant ta session, dicte tes trades : « entrée long M6E à 1,1650, stop 20 ticks », puis « sortie à 1,1672 ».");
+    const g = l.filter(x => x.pnl > 0), p = l.filter(x => x.pnl < 0), tot = l.reduce((a, x) => a + x.pnl, 0);
+    const moy = a => (a.length ? a.reduce((s2, x) => s2 + x.pnl, 0) / a.length : 0);
+    const gm = moy(g), pm = moy(p), taux = Math.round(g.length / l.length * 100);
+    const heures = {}; l.forEach(x => { const h = new Date(x.at * 1000).getHours(); (heures[h] = heures[h] || []).push(x.pnl); });
+    const hs = Object.entries(heures).filter(([, v]) => v.length >= 2).map(([h, v]) => [+h, v.reduce((a, b) => a + b, 0)]).sort((a, b) => b[1] - a[1]);
+    const depasse = l.filter(x => x.risque && x.pnl < -x.risque * 1.15).length;
+    const instr = {}; l.forEach(x => { instr[x.instr] = (instr[x.instr] || 0) + x.pnl; });
+    const L = [['Trades', `${l.length} · ${taux} % gagnants`, 'ok'], ['Total', `${tot > 0 ? '+' : ''}${tot.toFixed(0)} $`, tot < 0 ? 'alerte' : 'ok'], ['Gain moyen', `+${gm.toFixed(0)} $`, 'ok'], ['Perte moyenne', `${pm.toFixed(0)} $`, 'alerte'], ['Gain / perte', pm ? (gm / -pm).toFixed(2).replace('.', ',') : '—', gm > -pm ? 'ok' : 'attente']];
+    if (hs.length) L.push(['Meilleure heure', `${hs[0][0]} h (${hs[0][1] > 0 ? '+' : ''}${hs[0][1].toFixed(0)} $)`, 'ok']);
+    if (hs.length > 1) L.push(['Heure la plus dure', `${hs[hs.length - 1][0]} h (${hs[hs.length - 1][1].toFixed(0)} $)`, 'alerte']);
+    L.push(['Stops dépassés', String(depasse), depasse ? 'alerte' : 'ok']);
+    Object.entries(instr).forEach(([k, v]) => L.push([k, `${v > 0 ? '+' : ''}${v.toFixed(0)} $`, v < 0 ? 'alerte' : 'ok']));
+    try { SCIFI.hud('Boîte noire · 7 jours', L); } catch (er) { /* pas d'écran */ }
+    const dits = [`Bilan de la boîte noire, sur sept jours : ${l.length} trade${l.length > 1 ? 's' : ''}, ${taux} % de gagnants, total ${signe(tot)}.`];
+    if (g.length && p.length) dits.push(`Gain moyen ${dollars(gm)}, perte moyenne ${dollars(pm)} : un rapport de ${(gm / -pm).toFixed(2).replace('.', ',')}.`);
+    if (hs.length > 1) dits.push(`Ta meilleure heure : ${hs[0][0]} heures. La plus dure : ${hs[hs.length - 1][0]} heures.`);
+    dits.push(depasse ? `${depasse} trade${depasse > 1 ? 's ont' : ' a'} perdu plus que le stop prévu.` : 'Tous tes stops ont été respectés.');
+    return say(dits.join(' '));
+  }
+
   function route(t, n) {
     if (/\b(fin (de (la |ma )?)?(session|trading)|j arrete (de trader|le trading|ma session|la session)|je coupe (le trading|ma session)|session terminee|je termine (ma session|le trading)|fin du mode trading)\b/.test(n)) return fin;
     if (/\b(mode trading|session de trading|copilote de trading|je (commence|lance|demarre|attaque) (ma |la )?(session|journee de trading)|je vais trader|on va trader)\b/.test(n)) return () => debut(n);
     if (/\b(mes resultats|mon bilan (de trading|de la semaine)|resultats? (de la |cette )?semaine|combien j ai (gagne|perdu) cette semaine|mes performances)\b/.test(n) && !/\b(foot|match|ecole)\b/.test(n)) return bilan;
     if (/\b(ma limite|mes limites|limite (du jour|journaliere|de perte)|ma perte max(imale)?)\b/.test(n)) return () => limites(t, n);
+    if (/\b(bilan|stats|statistiques)\b.*\b(boite noire|mes trades|de trading)\b|\bboite noire\b.*\bbilan\b/.test(n)) return bilanNoire;
+    if (/\b(entree|je rentre|je prends|j entre|ouvert|ouverture)\b.*\b(long|short|achat|vente)\b|\b(long|short)\b.*\b(m6e|mnq|mes|mgc|mym|mcl|sil|euro|nasdaq)\b.*\b(a|stop)\b/.test(n) && /\d/.test(t)) return () => entree(t, n);
+    if (/\b(sortie|je sors|sorti|je coupe|cloture|je ferme|stoppe|stop touche|stop pris|objectif (atteint|touche)|tp touche)\b/.test(n) && !/\b(sortie de|sors de|mode|session|television|tele)\b/.test(n)) {
+      const d = /\b(dollars?)\b|\$/.test(n + t) ? montant(t) : null;
+      return () => sortie(t, n, d);
+    }
     const trade = /\b(dollars?|trade|trading|session|topstep)\b|\$/.test(n + t) || actif;
     if (trade && /\b(je suis (a |en )?(plus|moins|perte|gain|zero|l equilibre)|mon resultat (du jour )?(est|c est)|je termine (a|en)|je finis (a|en))\b/.test(n) && montant(t) != null) return () => resultat(montant(t), true);
-    if (trade && /\b(j ai (perdu|gagne|pris|encaisse)|je perds|je gagne|stop (touche|pris)|j ai ete stoppe)\b/.test(n) && /\d/.test(t)) return () => resultat(montant(t), false);
+    if (trade && /\b(j ai (perdu|gagne|pris|encaisse)|je perds|je gagne|stop (touche|pris)|j ai ete stoppe)\b/.test(n) && /\d/.test(t)) return () => sortie(t, n, montant(t)); // un trade ouvert dans la boîte noire : il le clôture
     return null;
   }
-  return { route, actif: () => actif, _montant: montant };
+  return { route, actif: () => actif, bilanNoire, _montant: montant, _prixApres: prixApres };
 })();
