@@ -207,16 +207,21 @@ const VISIO = (() => {
     const enfant = N((typeof LIEN !== 'undefined' && LIEN.prenom()) || '');
     // en bas, tout s'éteint ; jamais les chambres (ni celle du petit, ni la tienne : tu y vas) ; la télé aussi
     const eteindre = l.filter(a => a.allume && ((a.type === 'lampe' && !/\bchambres?\b/.test(N(a.nom))) || /\b(tele|television|tv)\b/.test(N(a.nom))));
-    const escalier = l.find(a => a.type === 'lampe' && /\bescaliers?\b/.test(N(a.nom)));
+    // les escaliers (tous les étages) et la salle de bain restent éclairés 5 minutes — le temps de se brosser les dents — puis s'éteignent tout seuls
+    const escaliers = l.filter(a => a.type === 'lampe' && /\bescaliers?\b/.test(N(a.nom)));
+    const bain = l.filter(a => a.type === 'lampe' && /\b(salle de bains?|sdb|salle d eau)\b/.test(N(a.nom)));
+    const escalier = escaliers[0] || bain[0];
     try {
-      const ids = eteindre.filter(a => a !== escalier).map(a => a.id);
+      const garde = new Set([...escaliers, ...bain]);
+      const ids = eteindre.filter(a => !garde.has(a)).map(a => a.id);
       if (ids.length) await regle(ids, false);
-      if (escalier) await regle([escalier.id], true, 25, 0, 300); // l'escalier reste éclairé 5 minutes (le temps de se brosser les dents), puis s'éteint tout seul
+      if (escaliers.length) await regle(escaliers.map(a => a.id), true, 25, 0, 300);
+      if (bain.length) await regle(bain.map(a => a.id), true, 70, 30, 300);
     } catch (e) { /* tant pis */ }
     await Promise.all([pc({ action: 'musique', quoi: 'pause' }).catch(() => {}), pc({ action: 'radio_stop' }).catch(() => {}), appel('/maison/sentinelle', { dodo: true }).catch(() => {})]);
     let cams = 0; try { cams = ((await appel('/maison/ezviz', null, 8000)).cameras || []).length + ((await appel('/maison/cameras', null, 8000)).cameras || []).length; } catch (e) { /* rien */ }
     fx.ok();
-    await say(`Bonne nuit. ${eteindre.length ? 'Tout est éteint en bas' : 'Rien n\'était resté allumé en bas'}${escalier ? ", je te laisse l'escalier allumé 5 minutes" : ''}. La sentinelle passe en garde de nuit${cams ? ` avec ${cams} caméras` : ''} : si quelque chose ne va pas, je te réveille sur ton téléphone.`);
+    await say(`Bonne nuit. ${eteindre.length ? 'Tout est éteint en bas' : 'Rien n\'était resté allumé en bas'}${escalier ? `, je te laisse ${[escaliers.length ? "l'escalier" : '', bain.length ? 'la salle de bain' : ''].filter(Boolean).join(' et ')} allumé${escaliers.length && bain.length ? 's' : ''} 5 minutes` : ''}. La sentinelle passe en garde de nuit${cams ? ` avec ${cams} caméras` : ''} : si quelque chose ne va pas, je te réveille sur ton téléphone.`);
     // l'ordi : verrouillé, écran noir (après avoir parlé)
     try { await pc({ action: 'verrouille' }); await wait(1500); await pc({ action: 'ecran' }); } catch (e) { /* tant pis */ }
     dlg.state = 'standby'; face.set('idle');

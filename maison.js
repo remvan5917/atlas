@@ -66,7 +66,11 @@ const MAISON = (() => {
     const notes = appareils.map(a => { const n = mots(a.nom); const k = m.filter(w => n.some(x => x === w || (w.length > 3 && x.startsWith(w.slice(0, -1))))).length; return { a, k, tout: k && k === n.length } }).filter(o => o.k);
     if (!notes.length) return /\b(lumieres?|lampes?)\b/.test(c) && (/\b(les|toutes)\b/.test(c) || appareils.filter(lumineux).length === 1) ? appareils.filter(a => lumineux(a) && !protege(a)) : [];
     const best = Math.max(...notes.map(o => o.k));
-    return notes.filter(o => o.k === best).map(o => o.a);
+    const meilleurs = notes.filter(o => o.k === best);
+    // « l'escalier » : la lampe qui s'appelle exactement comme ça (pas aussi « Escalier premier étage ») ; « les escaliers » : toutes
+    const pluriel = m.some(w => w.length > 3 && /s$/.test(w) && meilleurs.filter(o => mots(o.a.nom).some(x => x === w.slice(0, -1))).length > 1);
+    if (!pluriel && meilleurs.some(o => o.tout) && meilleurs.some(o => !o.tout)) return meilleurs.filter(o => o.tout).map(o => o.a);
+    return meilleurs.map(o => o.a);
   }
   const lesNoms = l => (l.length === 1 ? l[0].nom : `${l.slice(0, -1).map(a => a.nom).join(', ')} et ${l[l.length - 1].nom}`);
   async function pilote(cible, allume) {
