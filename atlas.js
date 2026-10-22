@@ -232,7 +232,7 @@ async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   if (face.state !== 'think') face.set(dlg.state === 'standby' ? 'idle' : 'listen');
   // la transcription connaît les noms de la maison (Atlas, Shadow, les caméras, les prises) : elle les reconnaît mieux
   const noms = [].concat(typeof SECURITE !== 'undefined' ? SECURITE.nomsCameras() : [], typeof MAISON !== 'undefined' ? MAISON._appareils().map(a => a.nom) : []).filter(Boolean).map(x => x.charAt(0).toUpperCase() + x.slice(1));
-  const r = await OREILLES.listen({ prompt: prompt || `Un adulte parle en français à Atlas, l'assistant de la maison. Son fils a un robot, Shadow.${noms.length ? ` Caméras et appareils : ${[...new Set(noms)].join(', ')}.` : ''}`, maxWait, cheap, endSilence: 1.0 });
+  const r = await OREILLES.listen({ prompt: prompt || `Un adulte parle en français à Atlas, l'assistant de la maison. Son fils a un robot, Shadow.${noms.length ? ` Caméras et appareils : ${[...new Set(noms)].join(', ')}.` : ''}`, maxWait, cheap, endSilence: 0.85 });
   if (face.el) face.el.classList.remove('hearing');
   if (r && typeof r === 'object') {
     if (r.error === 'not-allowed') { if (Date.now() - (dlg.micDitAt || 0) > 60000) { dlg.micDitAt = Date.now(); await say("Le micro est bloqué. Autorise le micro pour ce site, puis touche l'écran."); } await wait(5000); return ''; }
@@ -520,7 +520,7 @@ const R = {
   oublieVoix: /\boublie (la|ma) voix\b/,
   presente: /\b(presente toi|presentez vous|qui es tu|tu es qui|presente toi a)\b/,
   effacerEcran: /^(efface|efface l ecran|cache l ecran|ferme l ecran|ferme)$/,
-  web: /\b(cherche|recherche|regarde|trouve|va voir|verifie)\b.*\b(internet|le web|en ligne|google)\b|\bsur (internet|le web)\b/,
+  web: /\b(cherche|recherche|regarde|trouve|va voir|verifie)\b.*\b(internet|le web|en ligne|google)\b|\bsur (internet|le web)\b|^(cherche|recherche|trouve moi)\b(?!.*\b(mes|ma|mon) (cles|cle|telephone|lunettes|portefeuille|papiers)\b)|\b(qui a gagne|le score (de|du)|les resultats (de|du|des) (match|psg|om|ligue|elections?|loto))\b/,
   actus: /\b(actualites?|actus|les infos|les nouvelles|quoi de neuf (dans le monde|en france|aujourd hui)|les titres du jour|le journal)\b/,
   voir: /\b(qu est ce que tu vois|tu vois quoi|que vois tu|regarde|regardes|tu me vois|qui est la|decris ce que tu vois|combien de doigts|qu est ce que je tiens|je tiens quoi|c est quoi ca|qu est ce que c est que ca)\b/,
 };
@@ -542,6 +542,30 @@ function enchaine(t) {
   if (ordres.every(o => o.nom === 'maison')) return null; // que la maison : elle sait faire plusieurs lumières en une seule réponse
   return ordres;
 }
+/* ---------- la reformulation : ce qu'on dit à l'oral, en ordre clair (plus rapide et plus sûr que le cerveau en ligne) ---------- */
+const INFINITIFS = { allumer: 'allume', rallumer: 'rallume', eteindre: 'eteins', mettre: 'mets', baisser: 'baisse', monter: 'monte', augmenter: 'augmente', diminuer: 'diminue', couper: 'coupe', lancer: 'lance', ouvrir: 'ouvre', fermer: 'ferme', montrer: 'montre', afficher: 'affiche', arreter: 'arrete', envoyer: 'envoie', jouer: 'joue', chercher: 'cherche', regarder: 'regarde', activer: 'active', desactiver: 'desactive', tamiser: 'tamise', verrouiller: 'verrouille', noter: 'note', rappeler: 'rappelle', dire: 'dis', donner: 'donne', lire: 'lis', passer: 'passe' };
+function reformule(n) {
+  let m = n;
+  // la politesse : « tu peux… », « est-ce que tu pourrais… », « … s'il te plaît »
+  m = m.replace(/^(est ce que |est ce qu )?(tu peux|tu pourrais|tu veux bien|peux tu|pourrais tu|tu voudrais bien|j aimerais que tu|je voudrais que tu|je veux que tu|vas y|allez|essaie de|essaye de)\s+(me |nous )?/, '');
+  m = m.replace(/\s+(s il te plait|s il vous plait|stp|svp|please|merci)$/, '');
+  m = m.replace(/^(\w+)\b/, w => INFINITIFS[w] || w);
+  const demain = /\bdemain\b/.test(m);
+  if (/\b(trop sombre|on (n )?y voit (rien|pas grand chose)|un peu de lumiere|plus de lumiere|fais (de la |un peu de )?lumiere)\b/.test(m) && !/\b(dehors|camera|jardin|cour)\b/.test(m)) return 'allume la lumiere';
+  if (/\b(trop clair|trop de lumiere|ca eblouit|ca m eblouit)\b/.test(m)) return 'baisse la lumiere';
+  if (/^(un peu |encore )?(moins fort|moins de son|moins de bruit)$/.test(m)) return 'baisse le son';
+  if (/^(un peu |encore )?(plus fort|plus de son|j entends rien|on entend rien)$/.test(m)) return 'monte le son';
+  if (/\b(c est quoi le programme|quel est (le|mon) programme|qu est ce qu on a de prevu|qu est ce que j ai de prevu|quoi de prevu|j ai des trucs de prevu)\b/.test(m)) return `qu est ce que j ai ${demain ? 'demain' : 'aujourd hui'}`;
+  if (/\b(il va faire (beau|chaud|froid|moche|mauvais|bon)|il fera (beau|chaud|froid|quel temps)|faut il (prendre )?un parapluie|je prends un parapluie|il va y avoir du soleil)\b/.test(m)) return `quel temps fait il${demain ? ' demain' : ''}`;
+  const ins = (m.match(/\b(l or|l argent|le cuivre|l euro dollar|l euro|le bitcoin)\b/) || [])[1];
+  if (ins && (/^(l or|l argent|le cuivre|l euro dollar|l euro|le bitcoin)\b.*\b(combien|a quel prix|ou en est|il fait quoi|ca donne quoi|comment (il|elle) va|ca bouge)\b/.test(m) || /^(comment va|ou en est|ca donne quoi|quoi de neuf sur) /.test(m))) return `cours de ${ins}`;
+  if (/\b((il )?y a (quelqu un|du monde) dehors|quelqu un dans (le jardin|la cour)|tout est calme dehors|rien a signaler dehors)\b/.test(m)) return 'scan de securite';
+  if (/^bonne nuit$/.test(m)) return 'je vais me coucher';
+  if (/\b(c est l heure du film|on se (fait|regarde) un film|soiree film|on mate un film)\b/.test(m)) return 'mode cinema';
+  if (/^(fais la fete|c est la fete|ambiance (soiree|fete)|mets l ambiance)$/.test(m)) return 'mode soiree';
+  // la politesse enlevée : seulement si ce qui reste est un ordre (une vraie question va au cerveau telle quelle)
+  return m !== n && /^(allume|rallume|eteins|mets|baisse|monte|augmente|diminue|coupe|lance|ouvre|ferme|montre|affiche|arrete|envoie|joue|active|desactive|tamise|verrouille|note|rappelle|passe)\b/.test(m) ? m : null;
+}
 async function handle(text) {
   if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('papa', text); // une seule mémoire
   let n = N(text);
@@ -558,10 +582,14 @@ async function handle(text) {
     if (k > 0 && !/^(allume|rallume|eteins|eteint|mets|met|baisse|monte|augmente|diminue|coupe|tamise)\b/.test(n)) return handle(phrases.slice(k).join(' '));
   }
   if (!n) { face.flash('happy', 800); return say(pick(['Oui ?', 'Je t\'écoute.', 'Oui' + appel() + ' ?'])); }
+  const clair = reformule(n); // « tu peux allumer le salon », « il fait trop sombre », « l'or est à combien » : en ordre clair
+  if (clair && clair !== n) return handle(clair);
   // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
+  if (/^(quelle heure (est il|il est|est ce)|il est quelle heure|c est quelle heure|t as l heure|tu as l heure|l heure)$/.test(n)) { const d = new Date(); return say(`Il est ${d.getHours()} h ${d.getMinutes() ? deux2(d.getMinutes()) : ''}.`.replace(' h .', ' heures.')); }
+  if (/^(on est quel jour|quel jour (sommes nous|on est|est on|nous sommes)|c est quel jour|quelle est la date|on est le combien|quelle date (on est|sommes nous))$/.test(n)) return say(`Nous sommes ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`);
   // « mets l'écran en veille » : c'est l'écran (pc.js), pas lui
   if (R.veille.test(n) && n.split(' ').length <= 6 && !/\b(ecran|ecrans|ordi|ordinateur|pc)\b/.test(n)) { dlg.state = 'standby'; dlg.discret = true; face.set('idle'); return say(pick(['Je reste en veille. Dis « Atlas » quand tu as besoin de moi.', 'En veille.'])); }
   if (R.repete.test(n) && n.split(' ').length <= 5) return say(lastSaid || "Je n'ai encore rien dit.");
@@ -1062,6 +1090,7 @@ async function diagnostic() {
       erreur: ELEVEN.erreur ? `${new Date(ELEVEN.erreurAt || Date.now()).toLocaleTimeString('fr-FR')} ${ELEVEN.explique({ message: ELEVEN.erreur, status: ELEVEN.erreurStatus })}` : '', repos: ELEVEN.downUntil > Date.now() ? Math.round((ELEVEN.downUntil - Date.now()) / 60000) + ' min' : '',
       son: (() => { try { return fx.audio().state; } catch (e) { return '?'; } })() },
     dits: dits.slice(),
+    temps: { oreilles: OREILLES.timings ? OREILLES.timings().slice(-8) : [], cerveau: brainTimes.slice(-8) }, // pour mesurer la réactivité (ms)
     entendus: entendus.slice(-12).map(x => `${new Date(x.at).toLocaleTimeString('fr-FR')} [${x.qui}] ${x.t} → ${x.quoi}`), erreur: derniereErreur };
   try { await fetch(`${r0}/atlas/diag`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d), keepalive: true }); } catch (e) { /* plus tard */ }
 }

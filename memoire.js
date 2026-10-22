@@ -92,7 +92,7 @@ Ne répète pas ce qui est déjà connu.`;
   };
   function route(t, n) {
     if (R.oublieTout.test(n)) return oublieTout;
-    if (R.retiens.test(n) && !/\b(ma|la) voix\b/.test(n) && !/\b(dans \d+|dans (une|deux|trois|cinq|dix|quinze|vingt|trente) |a \d{1,2} ?(h|heures?)\b|demain matin|ce soir a)/.test(n)) {
+    if (R.retiens.test(n) && !/\b(ma|la) voix\b/.test(n) && !/\bou (je|j)\b.*\b(pose|range|mets|met|laisse|ai pose|ai mis|ai range)\b/.test(n) && !/\b(dans \d+|dans (une|deux|trois|cinq|dix|quinze|vingt|trente) |a \d{1,2} ?(h|heures?)\b|demain matin|ce soir a)/.test(n)) {
       const m = String(t).match(/^\s*(?:souviens[- ]toi|rappelle[- ]toi|retiens|n['’]oublie pas|mémorise|memorise|garde en mémoire|garde en memoire|enregistre dans ta mémoire)\s*(?:bien\s*)?(?:que |qu['’]\s*|de |d['’]\s*|:)?\s*(.+)$/i);
       if (m && m[1].trim().length > 3) return () => retiens(m[1]);
     }
