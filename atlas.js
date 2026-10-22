@@ -161,7 +161,7 @@ const SYNC = (() => {
         const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
         const m = g && g.data ? fusion(local, g.data) : local;
         applique(m);
-        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
+        const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? (/Mobile|iPhone/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
         if (r.status === 409) continue;
         if (!r.ok) throw new Error(`mémoire ${r.status}`);
         sale = false; derniere = Date.now(); erreur = ''; break;
@@ -1046,7 +1046,7 @@ window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.
 async function diagnostic() {
   const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
   const m = OREILLES.meter ? OREILLES.meter() : {};
-  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden,
+  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden,
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
     cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',

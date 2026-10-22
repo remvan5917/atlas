@@ -261,6 +261,10 @@ const AI = {
     if (/amara|sous-titr|merci d'avoir regard|abonnez-vous|^\W*$/i.test(t)) return '';
     if (/^(merci( beaucoup)?|au revoir|bon appétit|\.+)[.!]?$/i.test(t) && j.duration && j.duration < 1.2) return ''; // classiques du bruit
     if ((t.match(/[^\u0000-\u024F\s\d.,!?'’«»…-]/g) || []).length > t.length * 0.3) return ''; // pas du français (bruit)
+    if (!window.ATLAS_LANGUE) { // hors traducteur : les lettres d'autres langues (« Ég er að hérna »), et les bruits annoncés, sont du bruit
+      if (/[ðþøåßłńśźżčřšžěůőűğşıđ]/i.test(t)) return '';
+      if (/^\W*(applaudissements?|musique|rires?|silence|bruit|soupirs?)\W*$/i.test(t) || /^\s*[[(*♪].*[\])*♪]\s*$/.test(t)) return '';
+    }
     return t;
   },
 
