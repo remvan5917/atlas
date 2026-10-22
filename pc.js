@@ -30,8 +30,29 @@ const PC = (() => {
   const injoignable = () => say("L'ordinateur ne répond pas.");
   const sansExtension = "Pour les fenêtres, il faut que l'extension Atlas soit chargée : ferme ta session sur l'ordi et rouvre-la, une fois.";
 
+  /* ---------- la radio ici : sur l'appareil où Atlas tourne (la tablette et sa sono, le téléphone) ; sur l'ordinateur, le lecteur de l'ordi ---------- */
+  const ici = () => typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role !== 'ordinateur';
+  let lecteur = null, lecteurNom = '', lecteurVol = 0.8;
+  // quand Atlas parle, la radio baisse (puis remonte doucement)
+  setInterval(() => { if (!lecteur) return; const cible = voice.occupe() ? lecteurVol * 0.2 : lecteurVol; lecteur.volume = Math.max(0, Math.min(1, lecteur.volume + (cible - lecteur.volume) * 0.5)); }, 200);
+  async function radioIci(cle, nom) {
+    if (lecteur) { lecteur.pause(); lecteur = null; }
+    const a = new Audio(`https://icecast.radiofrance.fr/${cle}-midfi.mp3`); a.preload = 'none'; a.volume = 0.15;
+    lecteur = a; lecteurNom = nom;
+    await say(`${nom}.`);
+    try { await a.play(); } catch (e) { if (lecteur === a) lecteur = null; return say(`${nom} ne passe pas.`); }
+    a.onerror = () => { if (lecteur === a) lecteur = null; };
+  }
+  function lecteurSon(o) {
+    if (o.muet === true) lecteurVol = 0; else if (o.muet === false) lecteurVol = lecteurVol || 0.6;
+    else if (o.niveau != null) lecteurVol = Math.max(0, Math.min(1, o.niveau / 100));
+    else if (o.delta != null) lecteurVol = Math.max(0, Math.min(1, lecteurVol + o.delta / 100));
+    fx.ok(); return say(lecteurVol ? `Radio à ${Math.round(lecteurVol * 100)} %.` : 'Radio coupée.');
+  }
+
   /* ---------- le son ---------- */
   async function son(o) {
+    if (lecteur && ici()) return lecteurSon(o); // la radio d'ici : son volume à elle
     let r; try { r = await pc(Object.assign({ action: 'volume' }, o)); } catch (e) { return injoignable(); }
     if (!r.ok) return say("Je n'arrive pas à régler le son de l'ordi.");
     fx.ok();
@@ -41,6 +62,11 @@ const PC = (() => {
   }
   /* ---------- la musique ---------- */
   async function musique(quoi) {
+    if (lecteur) { // la radio d'ici
+      if (quoi === 'pause' || quoi === 'stop' || (quoi === 'bascule' && !lecteur.paused)) { lecteur.pause(); fx.ok(); return quoi === 'stop' ? (lecteur = null, say(`${lecteurNom} : arrêtée.`)) : say('Pause.'); }
+      if (quoi === 'lecture' || quoi === 'bascule') { try { await lecteur.play(); } catch (e) { /* rien */ } fx.ok(); return say(`${lecteurNom}.`); }
+      if (quoi === 'quoi') return say(`${lecteurNom}, ici.`);
+    }
     let r; try { r = await pc({ action: 'musique', quoi }); } catch (e) { return injoignable(); }
     if (!r.ok) return say(r.raison === 'aucun lecteur' ? "Rien ne joue sur l'ordi." : "Le lecteur ne répond pas.");
     const titre = r.titre ? `« ${r.titre} »${r.artiste ? `, de ${r.artiste}` : ''}` : '';
@@ -168,11 +194,13 @@ const PC = (() => {
   const RADIOS = [[/\b(france ?info|les infos|les informations|info en continu)\b/, 'franceinfo', 'France Info'], [/\bfrance inter\b|^(mets |met |allume |lance )?la radio$/, 'franceinter', 'France Inter'], [/\bfip\b/, 'fip', 'FIP'],
     [/\bfrance culture\b/, 'franceculture', 'France Culture'], [/\bfrance musique\b/, 'francemusique', 'France Musique'], [/\bmouv\b/, 'mouv', 'Mouv']];
   async function radio(cle, nom) {
+    if (ici()) return radioIci(cle, nom); // ici : la tablette (et sa sono), le téléphone
     let r; try { r = await pc({ action: 'radio', cle }); } catch (e) { return injoignable(); }
     if (!r.ok) return say(`${nom} ne passe pas.`);
     fx.ok(); return say(`${nom}, sur l'ordi.`);
   }
   async function radioStop() {
+    if (lecteur) { lecteur.pause(); lecteur = null; fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
     let r; try { r = await pc({ action: 'radio_stop' }); } catch (e) { return injoignable(); }
     return say(r.nom ? `${r.nom} : arrêtée.` : "Il n'y avait pas de radio.");
   }
