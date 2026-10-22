@@ -247,7 +247,7 @@ async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   return r;
 }
 const dits = []; // le diagnostic : ce qu'il a répondu (mémoire vive)
-const say = t => { if (t) { dits.push(`${new Date().toLocaleTimeString('fr-FR')} ${String(t).slice(0, 110)}`); if (dits.length > 10) dits.shift(); } return voice.say(t); };
+const say = t => { if (t) { dits.push(`${new Date().toLocaleTimeString('fr-FR')} ${String(t).slice(0, 110)}`); if (dits.length > 10) dits.shift(); if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('atlas', t); } return voice.say(t); };
 async function ask(text, { wait: w = 20000 } = {}) {
   await say(text);
   const a = await hear({ maxWait: w });
@@ -317,6 +317,8 @@ async function repondre(text) {
   c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now(), who: dlg.qui || '' });
   const think = difficile(text);
   const msgs = [{ role: 'system', content: systeme(text) }].concat(c.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 3000) })));
+  const ailleurs = typeof CONSTELLATION !== 'undefined' ? await CONSTELLATION.contexte() : ''; // une seule mémoire : ce qui s'est dit sur les autres appareils
+  if (ailleurs) msgs[0].content += `\n${ailleurs}`;
   face.set('think');
   let queue = think ? say(pick(['Je regarde ça.', 'Je réfléchis.', 'Une seconde.'])) : Promise.resolve(), spoken = 0, ecr = false;
   const t0 = performance.now();
@@ -541,6 +543,7 @@ function enchaine(t) {
   return ordres;
 }
 async function handle(text) {
+  if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('papa', text); // une seule mémoire
   let n = N(text);
   cacheEcran();
   // « Atlas, … » : son nom au début ne compte pas
@@ -576,6 +579,8 @@ async function handle(text) {
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
   if (souvenir) return souvenir();
+  const ailleurs = typeof CONSTELLATION !== 'undefined' && CONSTELLATION.route(t, n); // « envoie ça sur mon téléphone », « montre les caméras sur l'ordi »
+  if (ailleurs) return ailleurs();
   if (typeof FUTUR !== 'undefined' && !(await FUTUR.autorise(n))) return; // l'accès vocal : les ordres sensibles, seulement à la voix de papa
   const fut = FUTUR.route(t, n); // le cinéma, les clés, l'œil de faucon, le chef
   if (fut) return fut();
@@ -811,7 +816,7 @@ async function quiRepond(texte) {
   const r0 = VOIXMAISON.root(); if (!r0) return true;
   const ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(() => ctl && ctl.abort(), 2500);
   try {
-    const j = await (await fetch(`${r0}/atlas/repond`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: monId, texte: N(texte).slice(0, 80), pic: (OREILLES.meter && OREILLES.meter().pic) || 0, appareil: S.settings.piece || '' }), cache: 'no-store', signal: ctl ? ctl.signal : undefined })).json();
+    const j = await (await fetch(`${r0}/atlas/repond`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: monId, texte: N(texte).slice(0, 80), pic: (OREILLES.meter && OREILLES.meter().pic) || 0, appareil: S.settings.piece || '', actif: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.actifDepuis() : 99999 }), cache: 'no-store', signal: ctl ? ctl.signal : undefined })).json();
     return j.repond !== false;
   } catch (e) { return true; } finally { clearTimeout(tm); }
 }
@@ -860,6 +865,7 @@ async function vie() {
       journal(r, dlg.qui, appele ? 'appelé : il répond' : direct ? 'un ordre de la maison : il répond' : suite ? 'à la suite : il répond' : frag ? 'un bout de phrase sur la maison : il demande' : 'seul avec lui : il répond');
       dlg.suites = appele ? 0 : (dlg.suites || 0) + 1;
       CONV.parleAtlas(dlg.qui);
+      if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.actif(); // il parle à cet appareil : c'est là qu'il est
       dlg.discret = false;
     } else if (!talk && !appele) { journal(r, dlg.qui, 'en veille : il attend son nom'); continue; } // en veille : il ne répond qu'à son nom
     // plusieurs Atlas dans la maison : seul celui qui t'a le mieux entendu répond

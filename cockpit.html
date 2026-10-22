@@ -118,6 +118,17 @@
   .muted { color: var(--doux); font: 11px ui-monospace, monospace; letter-spacing: .1em; }
   .reserve { height: 150px; flex: 0 0 auto; } /* le coin d'Atlas (son visage, en bas à droite) */
 
+  /* le poste de travail (l'ordinateur) : la session de trading, la boîte noire */
+  .travail .prix svg { height: 46px; } .travail .prix .p { font-size: 20px; }
+  .sess { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .kpi { border: 1px solid var(--ligne); border-radius: 4px; padding: 8px 10px; }
+  .kpi .k { font: 10px ui-monospace, monospace; letter-spacing: .16em; color: var(--doux); }
+  .kpi .v { font: 500 20px ui-monospace, monospace; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jauge { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .06); margin-top: 7px; overflow: hidden; } .jauge i { display: block; height: 100%; background: var(--ok); }
+  .trades { width: 100%; border-collapse: collapse; font: 12px ui-monospace, monospace; }
+  .trades th { text-align: left; font-weight: 400; color: var(--doux); letter-spacing: .14em; font-size: 10px; padding: 4px 6px; border-bottom: 1px solid var(--ligne); }
+  .trades td { padding: 6px; border-bottom: 1px solid rgba(95, 211, 255, .06); } .trades tr.ouvert td { color: var(--ambre2); }
+
   /* le démarrage */
   #boot { position: fixed; inset: 0; z-index: 20; background: var(--bg); display: grid; place-items: center; transition: opacity .6s; }
   #boot div { font: 12px/2 ui-monospace, monospace; letter-spacing: .25em; color: var(--cyan); min-width: 340px; }
@@ -138,7 +149,7 @@
 <div id="boot"><div id="boot-l"></div></div>
 <header>
   <div>
-    <div class="marque">ATLAS <b>//</b> COCKPIT DE LA MAISON</div>
+    <div class="marque" id="marque">ATLAS <b>//</b> COCKPIT DE LA MAISON</div>
     <div class="horloge"><div class="heure" id="heure">--:--</div><div class="date" id="date"></div></div>
   </div>
   <div class="bandeau"><span id="bandeau">SYSTÈMES EN LIGNE</span></div>
@@ -191,7 +202,17 @@ const IC = {
   manette: '<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4M15.5 11.5h.01M18 13.5h.01"/>',
   robot: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/>',
   alerte: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+  courbe: '<path d="M3 17l5-6 4 3 6-8 3 3"/><path d="M3 21h18"/>',
+  oeil: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  boite: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M10 15h4M7 7V4h10v3"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  calendrier: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  trophee: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 6h3v2a3 3 0 0 1-3 3M7 6H4v2a3 3 0 0 0 3 3"/>',
 };
+const POSTE = new URLSearchParams(location.search).get('poste') === 'travail' ? 'travail' : 'maison'; // l'ordinateur : le poste de travail
+// un toucher dans le cockpit : il est ici (Atlas le suit d'un appareil à l'autre)
+document.addEventListener('pointerdown', () => { try { if (window.parent !== window && window.parent.CONSTELLATION) window.parent.CONSTELLATION.actif(); } catch (e) { /* rien */ } }, { passive: true, capture: true });
 const ic = k => `<svg class="ic" viewBox="0 0 24 24">${IC[k]}</svg>`;
 
 /* ---------- les scènes : elles passent par Atlas (le cockpit vit dans Atlas), comme si on les lui disait ---------- */
@@ -205,8 +226,11 @@ function dis(texte, bouton) {
 }
 const SCENES = [['lune', 'Bonne nuit', 'je vais me coucher'], ['soleil', 'Réveil', 'je viens de me réveiller'], ['film', 'Cinéma', 'mode cinéma'], ['musique', 'Soirée', 'mode soirée'],
   ['bouclier', 'Scan sécurité', 'scan de sécurité'], ['radar', 'Rapport de nuit', 'rapport de nuit'], ['manette', 'Jeu télévisé', 'lance le jeu télévisé'], ['robot', 'Duo Shadow', 'discute avec Shadow']];
+const SCENES_TRAVAIL = [['courbe', 'Mode trading', 'mode trading'], ['stop', 'Fin de session', 'fin de session'], ['oeil', 'Œil de faucon', 'regarde mon graphique'], ['boite', 'Boîte noire', 'bilan de la boîte noire'],
+  ['trophee', 'Résultats semaine', 'mes résultats de la semaine'], ['calendrier', 'Annonces du jour', 'annonces du jour'], ['mail', 'Mails importants', 'mes mails importants']];
 let sc = [];
 function cartes() {
+  if (POSTE === 'travail') return cartesTravail();
   $('#main').innerHTML = `
     <div class="col">
       <section class="carte"><h2><div><i>01</i>SCÈNES</div><span>${ATLAS ? 'UN TOUCHER' : ''}</span></h2><div class="scenes" id="scenes"></div></section>
@@ -226,6 +250,47 @@ function cartes() {
     .concat(ATLAS ? SCENES : []).concat([['alerte', 'Danger', null, danger, 'danger']]);
   $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}">${ic(i)}<span>${esc(t)}</span></button>`).join('');
   document.querySelectorAll('.scene').forEach(b => b.onclick = () => { const x = sc[+b.dataset.k]; if (x[3]) x[3](b); else dis(x[2], b); });
+}
+
+function cartesTravail() {
+  document.body.classList.add('travail');
+  $('#main').innerHTML = `
+    <div class="col">
+      <section class="carte"><h2><div><i>01</i>POSTE DE TRAVAIL</div><span>${ATLAS ? 'UN TOUCHER' : ''}</span></h2><div class="scenes" id="scenes"></div></section>
+      <section class="carte grand"><h2><div><i>02</i>AUJOURD'HUI</div><span id="ag-res"></span></h2><div class="defile" id="agenda"></div></section>
+    </div>
+    <div class="col">
+      <section class="carte"><h2><div><i>03</i>SESSION DE TRADING</div><span id="se-res"></span></h2><div id="session"></div></section>
+      <section class="carte"><h2><div><i>04</i>MARCHÉS</div><span>24 H</span></h2><div class="marche" id="marche"></div></section>
+      <section class="carte grand"><h2><div><i>05</i>BOÎTE NOIRE</div><span id="bn-res"></span></h2><div class="defile" id="noire"></div></section>
+    </div>
+    <div class="col">
+      <section class="carte"><h2><div><i>06</i>CAMÉRAS</div><span>TOUCHER : IMAGE FRAÎCHE</span></h2><div class="cams" id="cams"></div></section>
+      <section class="carte grand"><h2><div><i>07</i>JOURNAL</div><span id="al-res"></span></h2><div class="defile log" id="alertes"></div></section>
+      <div class="reserve"></div>
+    </div>`;
+  sc = (ATLAS ? SCENES_TRAVAIL : []).concat([['power', 'Tout éteindre', null, toutEteindre], ['alerte', 'Danger', null, danger, 'danger']]);
+  $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}">${ic(i)}<span>${esc(t)}</span></button>`).join('');
+  document.querySelectorAll('.scene').forEach(b => b.onclick = () => { const x = sc[+b.dataset.k]; if (x[3]) x[3](b); else dis(x[2], b); });
+}
+// la session : en cours ou pas, le résultat du jour et la marge avant la limite, l'heure limite Topstep, la prochaine annonce ; la boîte noire
+async function chargeTrading() {
+  if (POSTE !== 'travail') return;
+  let e; try { e = await appel('/maison/trading'); } catch (er) { return; }
+  const now = Date.now() / 1000, lim = (e.limites || {}).jour || 1000, p = e.pnl || 0, reste = Math.max(0, lim + Math.min(0, p));
+  const dans = s => { const m = Math.max(0, Math.round((s - now) / 60)); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}` : `${m} min`; };
+  const semaine = ![0, 6].includes(new Date().getDay());
+  const ann = (e.annonces || []).find(a => a.at > now);
+  $('#se-res').textContent = e.actif ? 'EN COURS' : 'HORS SESSION';
+  $('#session').innerHTML = `<div class="sess">
+    <div class="kpi"><div class="k">RÉSULTAT DU JOUR</div><div class="v ${p > 0 ? 'haut' : p < 0 ? 'bas' : ''}">${e.pnl == null ? '—' : `${p > 0 ? '+' : ''}${nf(p, 0)} $`}</div></div>
+    <div class="kpi"><div class="k">MARGE AVANT LIMITE</div><div class="v">${nf(reste, 0)} $</div><div class="jauge"><i style="width:${Math.round(reste / lim * 100)}%;background:${reste / lim < 0.2 ? 'var(--alerte)' : reste / lim < 0.5 ? 'var(--ambre)' : 'var(--ok)'}"></i></div></div>
+    <div class="kpi"><div class="k">À PLAT TOPSTEP</div><div class="v">${semaine ? hh(new Date(e.plat_a * 1000)) : '—'}</div><div class="k" style="margin-top:4px">${semaine && e.plat_a > now ? `DANS ${dans(e.plat_a)}` : ''}</div></div>
+    <div class="kpi"><div class="k">PROCHAINE ANNONCE</div><div class="v" style="font-size:14px">${ann ? esc(propre(ann.titre)) : 'AUCUNE'}</div><div class="k" style="margin-top:4px">${ann ? `${hh(new Date(ann.at * 1000))} · DANS ${dans(ann.at)}` : 'FORT IMPACT · US / EURO'}</div></div></div>
+    <div class="muted" style="margin-top:8px">SEMAINE : ${e.semaine > 0 ? '+' : ''}${nf(e.semaine || 0, 0)} $ · ${e.semaine_jours || 0} SÉANCE(S) NOTÉE(S)</div>`;
+  const t = (e.trades || []).slice(-10).reverse();
+  $('#bn-res').textContent = t.length ? `${t.length} TRADES · 7 J` : '';
+  $('#noire').innerHTML = t.length ? `<table class="trades"><tr><th>HEURE</th><th>INSTR.</th><th>SENS</th><th>ENTRÉE</th><th>SORTIE</th><th>RÉSULTAT</th></tr>${t.map(x => `<tr class="${x.fin == null ? 'ouvert' : ''}"><td>${hh(new Date(x.at * 1000))}</td><td>${esc(x.instr || '')}</td><td>${x.sens === 'long' ? 'LONG' : 'SHORT'}</td><td>${x.prix ?? ''}</td><td>${x.fin == null ? 'EN COURS' : x.sortie ?? '—'}</td><td class="${x.pnl > 0 ? 'haut' : x.pnl < 0 ? 'bas' : ''}">${x.pnl == null ? '' : `${x.pnl > 0 ? '+' : ''}${nf(x.pnl, 0)} $`}</td></tr>`).join('')}</table>` : '<div class="muted">AUCUN TRADE DICTÉ CETTE SEMAINE. DIS « ENTRÉE LONG M6E À 1,1650, STOP 20 TICKS ».</div>';
 }
 
 /* ---------- le plan : les pièces s'allument comme les vraies lampes, les caméras autour, le radar qui balaie ---------- */
@@ -282,6 +347,7 @@ async function chargeAppareils() {
   const sig = JSON.stringify(l.map(a => [a.id, a.allume, a.lum, a.watts && Math.round(a.watts)]));
   if (sig === chargeAppareils._sig && appareils.length) return; chargeAppareils._sig = sig; appareils = l;
   const lampes = appareils.filter(a => a.type === 'lampe'), prises = appareils.filter(a => a.type !== 'lampe');
+  if (!$('#lumieres')) { bandeauMaj(); return; } // le poste de travail : pas de tuiles
   $('#lum-res').textContent = `${lampes.filter(a => a.allume).length} / ${lampes.length} ACTIVES`;
   $('#lumieres').innerHTML = lampes.map(a => `<div class="tuile ${a.allume ? 'on' : ''} ${a.allume == null ? 'hs' : ''}" data-id="${esc(a.id)}">
       <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'sans courant' : a.allume ? `${a.lum != null ? a.lum + ' %' : 'active'}` : 'veille'}</div>
@@ -311,7 +377,7 @@ let absent = false;
 async function chargeSentinelle() {
   const avant = absent; try { absent = !!(await appel('/maison/sentinelle')).absent; } catch (e) { /* rien */ }
   majEtat();
-  if (avant !== absent && sc[1]) { sc[1][0] = absent ? 'maison' : 'porte'; sc[1][1] = absent ? 'Je suis rentré' : 'Je pars'; const b = document.querySelector('.scene[data-k="1"]'); if (b) b.innerHTML = `${ic(sc[1][0])}<span>${sc[1][1]}</span>`; }
+  if (avant !== absent && sc[1] && POSTE !== 'travail') { sc[1][0] = absent ? 'maison' : 'porte'; sc[1][1] = absent ? 'Je suis rentré' : 'Je pars'; const b = document.querySelector('.scene[data-k="1"]'); if (b) b.innerHTML = `${ic(sc[1][0])}<span>${sc[1][1]}</span>`; }
 }
 async function basculeAbsent(b) { if (ATLAS) { dis(absent ? 'je suis rentré' : 'je pars', b); setTimeout(chargeSentinelle, 4000); return; } try { await appel('/maison/sentinelle', { absent: !absent }); } catch (e) { /* rien */ } setTimeout(chargeSentinelle, 500); }
 
@@ -396,7 +462,7 @@ async function chargeMeteo() {
 }
 async function chargeSysteme() { try { sys = await appel('/maison/pc', { action: 'systeme' }); } catch (e) { /* rien */ } majEtat(); bandeauMaj(); }
 const recent = x => { if (!x || !x.recu) return false; const [h, m, s] = x.recu.split(':').map(Number), t = new Date(); t.setHours(h, m, s || 0, 0); return Date.now() - t < 3 * 60000; };
-function sysPb() { if (!sys) return null; const off = Object.entries(sys.services || {}).filter(([, v]) => !v).map(([k]) => k); return off.length || sys.cpu_temp >= 85 || sys.disque >= 90 ? (off.length ? `${off.join(', ')} arrêté` : 'surchauffe ou disque plein') : ''; }
+function sysPb() { if (!sys) return null; const off = Object.entries(sys.services || {}).filter(([, v]) => !v).map(([k]) => k); return off.length || sys.cpu_temp >= 92 || sys.disque >= 90 ? (off.length ? `${off.join(', ')} arrêté` : 'surchauffe ou disque plein') : ''; }
 function majEtat() {
   const sh = Object.entries(diag).find(([k]) => /^shadow/.test(k)), shOk = sh && recent(sh[1]), pb = sysPb();
   $('#etat').innerHTML = `<span class="puce"><span class="led ${absent ? 'am' : 'ok'}"></span>MAISON <b>${absent ? 'ABSENT' : 'OCCUPÉE'}</b></span>`
@@ -431,7 +497,7 @@ function horloge() {
 }
 setInterval(horloge, 1000); horloge();
 function boot() {
-  const lignes = ['LIAISON AVEC LA MAISON', 'ÉCLAIRAGE', 'CAMÉRAS', 'SENTINELLE', 'AGENDA', 'MARCHÉS', 'COCKPIT EN LIGNE'];
+  const lignes = POSTE === 'travail' ? ['LIAISON AVEC LA MAISON', 'MARCHÉS', 'SESSION DE TRADING', 'BOÎTE NOIRE', 'AGENDA', 'CAMÉRAS', 'POSTE DE TRAVAIL EN LIGNE'] : ['LIAISON AVEC LA MAISON', 'ÉCLAIRAGE', 'CAMÉRAS', 'SENTINELLE', 'AGENDA', 'MARCHÉS', 'COCKPIT EN LIGNE'];
   const el = $('#boot-l');
   el.innerHTML = lignes.map(t => `<p>${t}<b>OK</b></p>`).join('');
   el.querySelectorAll('p').forEach((p, i) => setTimeout(() => p.classList.add('v'), 180 + i * 230));
@@ -439,12 +505,13 @@ function boot() {
 }
 async function veille() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) { /* rien */ } } // l'écran reste allumé (tablette au mur)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { veille(); tout(); } });
-function tout() { chargeAppareils(); chargeSentinelle(); chargeCams(); chargeAlertes(); chargeMarche(); chargeDiag(); chargeEnergie(); chargeSysteme(); chargeMeteo(); chargeAgenda(); }
+function tout() { chargeAppareils(); chargeSentinelle(); chargeCams(); chargeAlertes(); chargeMarche(); chargeDiag(); chargeEnergie(); chargeSysteme(); chargeMeteo(); chargeAgenda(); chargeTrading(); }
 function demarre() {
+  if (POSTE === 'travail') $('#marque').innerHTML = 'ATLAS <b>//</b> POSTE DE TRAVAIL';
   boot(); cartes(); majEtat(); tout(); veille();
   setInterval(chargeAppareils, 20000); setInterval(chargeSentinelle, 30000); setInterval(chargeAlertes, 30000); setInterval(chargeDiag, 30000);
   setInterval(() => cams.filter(c => !c.ezviz).forEach(photo), 30000); setInterval(chargeCams, 5 * 60000);
-  setInterval(chargeMarche, 120000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000); setInterval(chargeAgenda, 5 * 60000);
+  setInterval(chargeMarche, 120000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000); setInterval(chargeAgenda, 5 * 60000); setInterval(chargeTrading, 30000);
 }
 if (ROOT) demarre();
 else {
