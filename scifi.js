@@ -205,15 +205,14 @@ const SCIFI = (() => {
     const canal = (nom, msg) => appel(`/maison/canal/${nom}`, msg, 10000);
     let duo = false;
     try {
-      await appel('/maison/canal/atlas?attente=0', null, 5000); // on vide les vieux messages
+      DUO.vide(); // on oublie les vieux messages (le canal atlas n'a qu'une boucle de lecture : duo.js)
       await say('Séquence de lancement. Shadow, ici Atlas : tu es prêt ?');
       await canal('shadow', { type: 'fusee', de: 'atlas' });
-      const r = await appel('/maison/canal/atlas?attente=6', null, 10000);
-      duo = (r.messages || []).some(m => m.type === 'fusee-pret');
+      duo = !!(await DUO.attends('fusee-pret', 6000));
     } catch (e) { duo = false; }
     if (duo) {
       let fini = false;
-      try { const r = await appel('/maison/canal/atlas?attente=25', null, 30000); fini = (r.messages || []).some(m => m.type === 'fusee-ok'); } catch (e) { /* tant pis */ }
+      fini = !!(await DUO.attends('fusee-ok', 25000));
       sfx('final');
       if (lum.length) { try { for (const v of [100, 20, 100, 30, 100]) { await regle(lum.map(a => a.id), true, v, 100); await wait(120); } await Promise.all(lum.map(a => regle([a.id], true, a.lum, a.teinte))); } catch (e) { /* tant pis */ } }
       return say(fini ? "Décollage confirmé. Bravo l'équipage, mission réussie !" : 'Shadow a perdu le contact, mais la fusée est partie. Mission réussie !');
@@ -670,6 +669,7 @@ const SCIFI = (() => {
     // les missions du jour : rappels, ce qu'il faut retenir, l'agenda, la session de trading
     const fin = new Date(); fin.setHours(23, 59, 59, 999);
     const mis = [];
+    try { (await AGENDA.aujourdhui()).slice(0, 5).forEach(e => mis.push([e.journee ? 'Journée' : hm2(new Date(e.debut * 1000)), `${e.titre}${e.lieu ? ` · ${e.lieu.split(',')[0]}` : ''}`])); } catch (e) { /* pas d'agenda */ }
     (S.minuteurs || []).filter(t => t.type === 'rappel' && t.fin <= +fin && t.fin > now).sort((a, b) => a.fin - b.fin).slice(0, 4).forEach(t => mis.push([hm2(new Date(t.fin)), t.nom]));
     try { MEMOIRE.aujourdhui().slice(0, 2).forEach(x => mis.push(['À retenir', x.texte.replace(/\.$/, '')])); } catch (e) { /* rien */ }
     try { LIEN.upcoming(1).filter(x => x.days === 0).slice(0, 2).forEach(x => mis.push(['Famille', x.e.text])); } catch (e) { /* rien */ }

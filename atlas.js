@@ -575,6 +575,10 @@ async function handle(text) {
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
   if (souvenir) return souvenir();
+  const rdv = AGENDA.route(t, n); // ton Google Agenda : « qu'est-ce que j'ai aujourd'hui ? »
+  if (rdv) return rdv();
+  const duo = DUO.route(t, n); // « discute avec Shadow », « accueille nos invités »
+  if (duo) return duo();
   const trade = TRADING.route(t, n); // le copilote de trading : « mode trading », « je suis à moins 300 », « fin de session »
   if (trade) return trade();
   const visio = VISIO.route(t, n); // les visios et les effets de lumière (« mode visio », « fondu au noir », « présente-toi à mes invités »)
@@ -670,6 +674,7 @@ const CONV = (() => {
     // un vrai invité : une voix nouvelle (apparue il y a moins de 10 min), qui n'a jamais parlé à Atlas
     if (g && g.vu >= 2 && !g.connuAtlas && Date.now() - g.debut < 10 * 60000 && !estQuestion && Date.now() - spontane > 30000 && (presents().length || nbInvites() >= 2)) {
       const m = accueillirInvite();
+      if (m && typeof DUO !== 'undefined') { face.set('idle'); return DUO.invites(false); }
       if (m) { note('Atlas', m); face.set('idle'); return say(m); }
     }
     depuisEval++;
@@ -731,6 +736,7 @@ const ARRIVEE = (() => {
     if (Date.now() - dernierAccueil < 15000) { vu[nom] = avant; return ''; } // quelqu'un vient d'être accueilli : son tour viendra à la phrase suivante
     dernierAccueil = Date.now();
     PROACTIF.reconnu(nom); // le matin : le briefing suit l'accueil
+    if (typeof DUO !== 'undefined' && DUO.visage(nom)) return ''; // papa ou son fils : l'accueil de cinéma (duo.js)
     return phrase(nom);
   }
   async function dire(t) { if (!t || voice.occupe() || dlg.busy) return; face.flash('happy', 1200); CONV.note('Atlas', t); await say(t); }
@@ -743,7 +749,7 @@ const ARRIVEE = (() => {
     if (inconnu) { inconnuDepuis = inconnuDepuis || Date.now(); } else inconnuDepuis = 0;
     if (accueil) return dire(accueil);
     // un visage inconnu, bien visible depuis 5 secondes : un invité
-    if (inconnuDepuis && Date.now() - inconnuDepuis > 5000 && Date.now() - (dlg.depuis || 0) > 60000 && faces.some(f => f.name)) { inconnuDepuis = 0; const t = CONV.accueillirInvite(); if (t) dire(t); }
+    if (inconnuDepuis && Date.now() - inconnuDepuis > 5000 && Date.now() - (dlg.depuis || 0) > 60000 && faces.some(f => f.name)) { inconnuDepuis = 0; const t = CONV.accueillirInvite(); if (t && typeof DUO !== 'undefined') PROACTIF.annonce(`invites-${Date.now()}`, () => DUO.invites(false), { urgent: true, expire: Date.now() + 60000 }); else if (t) dire(t); }
   }
   async function yeux() {
     if (S.settings.camera === false || typeof VISION === 'undefined' || !VISION.supported || VISION.isOn()) return;
