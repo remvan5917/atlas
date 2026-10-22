@@ -332,11 +332,19 @@ const MAISON = (() => {
     return say(`C'est transmis. Shadow dira à ${enfant()} : « ${t} », dès qu'il le verra.`);
   }
   const annonceMsg = m => `Message de ${enfant()} : « ${m.texte} ».`;
+  // la réponse du petit, en hologramme sur l'écran d'Atlas
+  function holoMsg(m) {
+    showBoard(`<div style="font-family:ui-monospace,monospace;background:radial-gradient(80% 90% at 50% 50%,#062238,#020b14);border:1px solid rgba(125,211,252,.5);border-radius:16px;padding:16px 18px;box-shadow:0 0 30px rgba(56,189,248,.3) inset;position:relative;overflow:hidden">
+      <div style="font-size:11px;letter-spacing:.3em;color:#7dd3fc">◢ MESSAGE HOLOGRAPHIQUE · ${esc(enfant().toUpperCase())}</div>
+      <div style="margin-top:12px;font:600 22px/1.35 system-ui,sans-serif;color:#d6f4ff;text-shadow:0 0 10px rgba(125,211,252,.9),0 0 24px rgba(56,189,248,.5)">${esc(m.texte)}</div>
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(125,211,252,.08) 0 2px,transparent 2px 6px);pointer-events:none"></div></div>`, 'graphe-board');
+    clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 60000);
+  }
   async function lus(ms) { for (const m of ms) { try { await appel('/maison/messages', { lu: m.id }); } catch (e) { /* plus tard */ } } }
   async function releve() {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel('/maison/messages?pour=papa'); } catch (e) { return; }
-    (j.messages || []).forEach(m => PROACTIF.annonce(`msg-${m.id}`, async () => { await lus([m]); return annonceMsg(m); }, { expire: Date.now() + 6 * 3600000 }));
+    (j.messages || []).forEach(m => PROACTIF.annonce(`msg-${m.id}`, async () => { await lus([m]); holoMsg(m); return annonceMsg(m); }, { expire: Date.now() + 6 * 3600000 }));
   }
   setInterval(releve, 30000);
   async function suiviMessage() {
