@@ -118,3 +118,11 @@ menu { display: flex; justify-content: flex-end; gap: 10px; margin: 14px 0 0; pa
 .graphe { width: min(88vw, 860px); display: flex; flex-direction: column; gap: 6px; }
 .graphe small { font-family: ui-monospace, 'DejaVu Sans Mono', monospace; letter-spacing: .4em; font-size: 11px; color: rgba(255, 217, 160, .6); }
 .graphe canvas { width: 100%; height: auto; display: block; }
+
+/* ---------- le mode cockpit : le tableau de bord en grand, Atlas en petit dans le coin (il écoute et parle toujours) ---------- */
+#cockpit-cadre { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 2; background: var(--bg); }
+body.cockpit #papa-hud { background: transparent; pointer-events: none; }
+body.cockpit #papa-hud::after, body.cockpit .hud-coin, body.cockpit .hud-panneau, body.cockpit .hud-cadre { display: none; }
+body.cockpit #noyau { left: auto; top: auto; right: 12px; bottom: 12px; transform: none; width: 150px; height: 150px; pointer-events: auto;
+  border-radius: 50%; background: radial-gradient(circle, rgba(7, 8, 10, .85) 55%, transparent 72%); }
+body.cockpit #hud-etat { left: auto; right: 12px; top: auto; bottom: 166px; transform: none; font-size: 9px; letter-spacing: .3em; }

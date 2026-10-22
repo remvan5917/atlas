@@ -437,6 +437,18 @@ const SCIFI = (() => {
     return say(l.length ? `Je surveille : ${liste(l.map(v => v.sujet))}.` : "Je ne surveille aucune actualité pour l'instant. Dis par exemple : surveille les infos sur la Fed.");
   }
 
+  /* ---------- le mode cockpit : le tableau de bord en grand, et Atlas en petit dans le coin (il écoute et parle toujours) ---------- */
+  function modeCockpit(on) {
+    document.body.classList.toggle('cockpit', on);
+    let f = document.getElementById('cockpit-cadre');
+    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = 'cockpit.html'; f.title = 'Cockpit de la maison'; document.body.appendChild(f); }
+    if (!on && f) f.remove();
+    try { localStorage.setItem('atlas-cockpit', on ? '1' : '0'); } catch (e) { /* rien */ }
+    window.dispatchEvent(new Event('resize'));
+  }
+  // une tablette au mur : elle se rallume en mode cockpit
+  setTimeout(() => { try { if (localStorage.getItem('atlas-cockpit') === '1') modeCockpit(true); } catch (e) { /* rien */ } }, 1500);
+
   function route(t, n) {
     { // « surveille les infos sur la Fed », « préviens-moi s'il y a du nouveau sur l'or », « arrête de surveiller la Fed », « mes veilles »
       const aj = String(t).match(/(?:surveille|suis|garde un (?:œil|oeil) sur|fais (?:une |la )?veille sur)\s+(?:l['’]actu(?:alité)?|les (?:infos|actualités|actus|nouvelles))?\s*(?:sur|de|à propos de|concernant|autour de)?\s*(.+?)\s*[.!?]*$/i)
@@ -445,7 +457,8 @@ const SCIFI = (() => {
       if (/\b(mes veilles|qu est ce que tu surveilles|quelles actus tu surveilles|tu surveilles quoi)\b/.test(n)) return () => veille('liste');
       if (aj && aj[1] && !/\b(maison|cameras?|perimetre|alarme|enfant|fils|reseau|ordi)\b/.test(N(aj[1])) && /\b(infos?|actu|actualites?|nouvelles|nouveau|veille|surveille)\b/.test(n)) return () => veille('ajoute', aj[1].replace(/^(?:sur|de)\s+/i, '').trim());
     }
-    if (/\b(cockpit|tableau de bord|ecran de controle|panneau de controle de la maison)\b/.test(n) && !/\breglages\b/.test(n)) return () => { window.open('cockpit.html', '_blank'); return say("J'ouvre le cockpit de la maison."); };
+    if (/\b(ferme|quitte|sors du|enleve|cache)\b.*\b(cockpit|tableau de bord)\b|\bfin du (mode )?cockpit\b/.test(n)) return () => { modeCockpit(false); return say('Mode cockpit fermé.'); };
+    if (/\b(cockpit|tableau de bord|ecran de controle|panneau de controle de la maison)\b/.test(n) && !/\breglages\b/.test(n)) return () => { modeCockpit(true); return say("Mode cockpit : le tableau de bord de la maison, en direct. Je reste là, dans le coin, et je t'écoute toujours."); };
     if (/\b(combien|consommation|consomme|consomment|coute|coutent|facture|energie|electricite|kilowatt|gourmand)\b/.test(n) && /\b(maison|prise|prises|station|tele|television|fusee|musique|lumieres?|ampoules?|appareils?|ce mois|aujourd hui|energie|electricite|consomme)\b/.test(n) && !/\b(or|argent|bitcoin|action|nasdaq|cuivre)\b/.test(n) && !/\b(kilowatt ?heure coute|prix du kilowatt)\b/.test(n)) return () => energie(t, n);
     if (/\b(le kilowatt ?heure|le kwh|prix du kilowatt ?heure)\b.*\d/.test(n)) return () => prixKwh(t);
     if (/\blumiere qui suit le soleil\b|\b(teinte|lumiere) automatique\b|\bcircadien\w*\b/.test(n) && /\b(desactive|arrete|coupe|enleve)\b/.test(n)) return () => circadien(false);
@@ -476,5 +489,5 @@ const SCIFI = (() => {
     if (/\b(lance la fusee|lancement de la fusee|decollage|compte a rebours|fais decoller la fusee)\b/.test(n)) return fusee; // avec Shadow s'il est réveillé
     return null;
   }
-  return { route, scan, hud };
+  return { route, scan, hud, modeCockpit };
 })();
