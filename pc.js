@@ -192,7 +192,8 @@ const PC = (() => {
     if (!r.ok) return say(r.raison === 'rien trouvé' ? `Je ne trouve rien pour « ${q} » sur YouTube.` : 'YouTube ne répond pas.');
     fx.ok(); return say(r.titre ? `Je mets « ${r.titre.slice(0, 80)} », sur l'ordi.` : `Je mets ${q}, sur l'ordi.`);
   }
-  const RADIOS = [[/\b(france ?info|les infos|les informations|info en continu)\b/, 'franceinfo', 'France Info'], [/\bfrance inter\b|^(mets |met |allume |lance )?la radio$/, 'franceinter', 'France Inter'], [/\bfip\b/, 'fip', 'FIP'],
+  // les noms des radios, et ce que l'oreille en fait parfois (« France AFO », « francs impôts », « Saint-Fo »)
+  const RADIOS = [[/\b(france ?infos?|france (afo|impos|impots?|in fo|en fo|infaux|enfo|info)|francs? (impots?|infos?|afo)|saint fo|les infos|les informations|info en continu)\b/, 'franceinfo', 'France Info'], [/\b(france ?inter|france (enter|un terre|anter)|francs? inter)\b|^(mets |met |mais |allume |lance )?(la )?radio$/, 'franceinter', 'France Inter'], [/\b(fip|fipe|fib)\b/, 'fip', 'FIP'],
     [/\bfrance culture\b/, 'franceculture', 'France Culture'], [/\bfrance musique\b/, 'francemusique', 'France Musique'], [/\bmouv\b/, 'mouv', 'Mouv']];
   async function radio(cle, nom) {
     if (ici()) return radioIci(cle, nom); // ici : la tablette (et sa sono), le téléphone
@@ -264,6 +265,11 @@ const PC = (() => {
     if (/^(mets|met|allume|lance|joue|fais moi ecouter|branche)\b/.test(n)) {
       const ra = RADIOS.find(([re]) => re.test(n));
       if (ra) return () => radio(ra[1], ra[2]);
+    }
+    // « la radio France Info », « mais la radio… » (le « mets » mal entendu) : le mot radio, ou une station, suffit
+    if (/\bradio\b/.test(n) && !/\b(arrete|coupe|eteins|stop|c est quoi|quelle radio|pourquoi|comment)\b/.test(n) && n.split(' ').length <= 9) {
+      const ra = RADIOS.find(([re]) => re.test(n)) || RADIOS[1];
+      return () => radio(ra[1], ra[2]);
     }
     // la musique par YouTube : « mets du Daft Punk », « joue Bohemian Rhapsody », « mets la chanson X », « mets X sur YouTube »
     const yt = String(t).match(/^\s*(?:mets|met|joue|lance|fais[- ]moi écouter|fais moi ecouter|passe)\s+(?:moi\s+)?(?:(?:de la |la |une )?(?:musique|chanson|vidéo|video)\s+(?:de\s+|d['’]\s*)?|du\s+|de la\s+|des\s+|de\s+l['’])?(.+?)\s*(?:sur youtube|sur l['’]ordi(?:nateur)?)?[.!?]*\s*$/i);
