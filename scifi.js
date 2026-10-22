@@ -8,6 +8,8 @@
    - « état des systèmes » / « diagnostic » : l'ordinateur (températures, mémoire, disque), les services de la maison, le réseau.
    - « qui est à la maison ? » : les téléphones, Shadow (réveillé ? il voit le petit ?), les voix entendues, le réseau.
    - « lance la fusée » / « compte à rebours » : 10, 9, 8… la Fusée s'allume au décollage.
+   - Les réveils : « réveille-moi à 7 h », « réveille-moi en semaine à 6 h 45 » (lever de soleil 15 min avant, sur l'ordinateur,
+     même téléphone fermé), « mes réveils », « annule mes réveils », « désactive / active le réveil de l'école ».
    - Les alertes de prix : « préviens-moi si l'or passe 4 150 », « si l'argent perd 1 % », « mes alertes de prix »,
      « supprime les alertes de prix » (l'ordinateur surveille toutes les 2 minutes, notification + voix).
    ========================================================= */
@@ -168,6 +170,12 @@ const SCIFI = (() => {
     if (voix.length) { L.push(['Voix entendues', liste(voix), 'ok']); dits.push(`J'ai entendu ${liste(voix)} récemment`); }
     if (shadow) { L.push(['Shadow', shadow.enfantVu ? `réveillé · voit ${enfant}` : 'réveillé', 'ok']); dits.push(shadow.enfantVu ? `Shadow est réveillé, et il voit ${enfant} en ce moment` : `Shadow est réveillé${shadow.parleIlYa != null && shadow.parleIlYa < 600 ? `, ${enfant} lui a parlé il y a ${Math.max(1, Math.round(shadow.parleIlYa / 60))} minute${shadow.parleIlYa >= 120 ? 's' : ''}` : ''}`); }
     else { L.push(['Shadow', 'endormi ou absent', 'attente']); dits.push('Shadow ne donne pas signe de vie'); }
+    // la Fusée allumée la nuit : il dort à la maison ; éteinte : il est chez sa mère
+    try {
+      const h = new Date().getHours();
+      const fu = ((await appel('/maison/appareils', null, 10000)).appareils || []).find(a => /\bfusee\b/.test(N(a.nom)));
+      if (fu && fu.allume != null && (h >= 20 || h < 8)) { L.push(['Fusée', fu.allume ? `allumée · ${enfant} dort ici` : 'éteinte', fu.allume ? 'ok' : 'attente']); dits.push(fu.allume ? `La Fusée est allumée : ${enfant} dort à la maison` : `La Fusée est éteinte : ${enfant} est sans doute chez sa mère`); }
+    } catch (e) { /* rien */ }
     if (s) (s.tailscale || []).forEach(p => L.push([p.nom, p.en_ligne ? 'à portée' : 'hors ligne', p.en_ligne ? 'ok' : 'attente']));
     if (s) L.push(['Réseau', `${s.reseau.presents} appareils présents`, 'ok']);
     hud('Présences', L, []);
@@ -234,7 +242,51 @@ const SCIFI = (() => {
     return say(`${l.length} alerte${l.length > 1 ? 's' : ''} : ${l.map(a => `${nom(a.sym)} ${a.sens === 'haut' ? 'au-dessus de' : 'sous'} ${fmt(a.seuil, a.sym)}`).join(', ')}.`);
   }
 
+  /* ---------- les réveils sur l'ordinateur de la maison : la lampe monte 15 minutes avant (lever de soleil), même téléphone fermé ---------- */
+  const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  const hTxt = hm => { const [h, m] = hm.split(':'); return `${+h} h${m !== '00' ? ` ${m}` : ''}`; };
+  const joursTxt = j => (!j || !j.length ? '' : j.length === 7 ? 'tous les jours' : j.join() === '0,1,2,3,4' ? 'du lundi au vendredi' : j.join() === '5,6' ? 'le week-end' : `le ${j.map(x => JOURS[x]).join(', ')}`);
+  async function reveil(t, n) {
+    const m = n.match(/\b(?:a|pour)\s+(\d{1,2})\s*(?:heures?|h)\s*(\d{1,2})?/) || n.match(/\b(\d{1,2})\s*(?:heures?|h)\s*(\d{1,2})?/);
+    if (!m) return say("À quelle heure ? Dis par exemple : réveille-moi à 7 heures.");
+    const h = +m[1], mi = m[2] ? +m[2] : (/\bet demie?\b/.test(n) ? 30 : /\bet quart\b/.test(n) ? 15 : /\bmoins le quart\b/.test(n) ? -15 : 0);
+    const d = new Date(); d.setHours(h, mi, 0, 0);
+    if (h > 23 || d.getMinutes() > 59) return say("Cette heure n'existe pas.");
+    let jours = [];
+    if (/\b(tous les jours|chaque jour|tous les matins|chaque matin)\b/.test(n)) jours = [0, 1, 2, 3, 4, 5, 6];
+    else if (/\b(en semaine|jours de semaine|du lundi au vendredi|jours ouvres|les jours de travail)\b/.test(n)) jours = [0, 1, 2, 3, 4];
+    else if (/\bweek ?end\b/.test(n)) jours = [5, 6];
+    else JOURS.forEach((j, i) => { if (new RegExp(`\\b${j}s?\\b`).test(n) && /\b(les|chaque|tous les)\b/.test(n)) jours.push(i); });
+    if (!jours.length && d <= new Date()) d.setDate(d.getDate() + 1);
+    const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let r; try { r = await appel('/maison/reveils', jours.length ? { heure: hm, jours } : { heure: hm, date }, 10000); } catch (e) { r = null; }
+    if (!r) return null; // l'ordinateur ne répond pas : le réveil du téléphone (outils.js) prend le relais
+    fx.ok();
+    const quand = jours.length ? joursTxt(jours) : d.getDate() === new Date().getDate() ? "aujourd'hui" : 'demain';
+    return say(`Réveil réglé à ${d.getHours()} heures${d.getMinutes() ? ` ${d.getMinutes()}` : ''}, ${quand}. Ta lampe montera doucement un quart d'heure avant, comme un lever de soleil, et je te réveillerai ici et sur ton téléphone, même si je suis fermé.`);
+  }
+  async function reveils(effacer) {
+    let r; try { r = await appel('/maison/reveils', effacer ? { supprime: 'tout' } : null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (effacer) { S.minuteurs = (S.minuteurs || []).filter(x => x.type !== 'reveil'); save(); fx.ok(); return say('Tous tes réveils sont annulés.'); }
+    const l = r.reveils || [], e = r.ecole || {};
+    const ec = e.actif ? ` Le réveil d'école de ${(typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils'} est actif, à ${hTxt(e.heure)}, les jours d'école, quand la Fusée est allumée.` : '';
+    if (!l.length) return say(`Aucun réveil pour toi.${ec}`);
+    return say(`${l.map(x => `${hTxt(x.heure)} ${x.jours.length ? joursTxt(x.jours) : x.date === new Date().toISOString().slice(0, 10) ? "aujourd'hui" : 'demain'}`).join(', ')}.${ec}`);
+  }
+  async function ecole(actif) {
+    try { await appel('/maison/reveils', { ecole: actif }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok();
+    const p = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    return say(actif ? `Réveil d'école activé : à 7 h 30, les jours d'école hors vacances, si la Fusée est allumée, je l'éteins et j'allume doucement la lumière de ${p}.` : `Réveil d'école de ${p} désactivé.`);
+  }
+
   function route(t, n) {
+    if (/\breveil\b.*\b(ecole|classe)\b|\b(ecole|classe)\b.*\breveil\b/.test(n) && /\b(desactive|coupe|arrete|annule|supprime|enleve)\b/.test(n)) return () => ecole(false);
+    if (/\breveil\b.*\b(ecole|classe)\b|\b(ecole|classe)\b.*\breveil\b/.test(n) && /\b(active|remets|rallume|reactive)\b/.test(n)) return () => ecole(true);
+    if (/\b(annule|arrete|supprime|enleve|desactive|efface)\b.*\b(mes |le |les |mon )?reveils?\b/.test(n)) return () => reveils(true);
+    if (/\b(mes reveils|quels reveils|a quelle heure (je me reveille|tu me reveilles|est mon reveil)|j ai un reveil)\b/.test(n)) return () => reveils(false);
+    if (/\b(reveille moi|reveiller|mets un reveil|programme un reveil|regle un reveil|reveil a|reveil pour)\b/.test(n) && /\d/.test(n)) return async () => { const r = await reveil(t, n); if (r === null && typeof OUTILS !== 'undefined') { const o = OUTILS.route(t, n); if (o) return o(); } return r; };
     if (/\b(mes alertes de prix|les alertes de prix|quelles alertes (de prix )?(sont )?(en cours|posees))\b/.test(n) && !/\b(supprime|efface|enleve|annule)\b/.test(n)) return () => prixListe(false);
     if (/\b(supprime|efface|enleve|annule|retire)\b.*\balertes? de prix\b/.test(n)) return () => prixListe(true);
     if (/\b(previens moi|alerte moi|dis moi|averti?s moi|mets une alerte|pose une alerte|alerte)\b.*\b(si|quand|des que|lorsque)\b/.test(n) && INSTR.some(([re]) => re.test(n)) && /\d/.test(t)) return () => prixAlerte(t, n);
