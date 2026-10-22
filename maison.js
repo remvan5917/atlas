@@ -23,8 +23,19 @@ const MAISON = (() => {
     try {
       const r = await fetch(`${r0}${chemin}`, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl ? ctl.signal : undefined });
       if (!r.ok) throw new Error(`maison ${r.status}`);
-      return await r.json();
+      const j = await r.json();
+      if (/^\/maison\/commande/.test(chemin) && j && j.resultats) j.resultats.forEach(x => { if (x.hors_ligne) sansCourant.add(x.id); else if (x.ok) sansCourant.delete(x.id); });
+      return j;
     } finally { clearTimeout(tm); }
+  }
+  // les ampoules sans courant (coupées à l'interrupteur) : le cloud les voit hors ligne ; on le dit clairement
+  const sansCourant = new Set();
+  function rate(l) {
+    if (!l.length) return '';
+    const sc = l.filter(a => sansCourant.has(a.id)), autres = l.filter(a => !sansCourant.has(a.id));
+    const p = x => x.length > 1;
+    return [sc.length ? `${lesNoms(sc)} ${p(sc) ? "n'ont" : "n'a"} pas de courant : ${p(sc) ? 'elles sont sûrement éteintes' : 'sûrement éteinte'} à l'interrupteur. Rallume l'interrupteur, et je m'en occupe.` : '',
+      autres.length ? `${lesNoms(autres)} ne ${p(autres) ? 'répondent' : 'répond'} pas.` : ''].filter(Boolean).join(' ');
   }
   const enfant = () => LIEN.prenom() || 'ton fils';
 
@@ -73,10 +84,10 @@ const MAISON = (() => {
     face.set('idle'); vusAt = 0;
     const nomDe = x => Object.assign({}, x, { nom: (appareils.find(a => a.id === x.id) || x).nom });
     const ok = (r.resultats || []).filter(x => x.ok).map(nomDe), ko = (r.resultats || []).filter(x => !x.ok).map(nomDe);
-    if (!ok.length) return say(`${lesNoms(l)} ne répond pas. ${l.length > 1 ? 'Ils sont' : 'Il est'} peut-être débranché${l.length > 1 ? 's' : ''}.`);
+    if (!ok.length) return say(rate(l) || `${lesNoms(l)} ne répond pas.`);
     fx.tone(allume ? [[660, 0.05], [990, 0.07]] : [[990, 0.05], [660, 0.07]]);
     const sauf = gardes.length ? ` Sauf ${lesNoms(gardes)} : je n'y touche que si tu me le demandes par son nom.` : '';
-    return say(`${tout && ok.length > 1 ? (allume ? 'Tout est allumé' : 'Tout est éteint') : `${lesNoms(ok)} : ${allume ? 'allumé' : 'éteint'}${ok.length > 1 ? 's' : ''}`}.${sauf}${ko.length ? ` ${lesNoms(ko)} ne répond pas.` : ''}`);
+    return say(`${tout && ok.length > 1 ? (allume ? 'Tout est allumé' : 'Tout est éteint') : `${lesNoms(ok)} : ${allume ? 'allumé' : 'éteint'}${ok.length > 1 ? 's' : ''}`}.${sauf}${ko.length ? ` ${rate(ko)}` : ''}`);
   }
   async function etat(cible) {
     try { await liste(true); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
@@ -150,7 +161,7 @@ const MAISON = (() => {
       for (const g of Object.values(groupes)) { const r = await appel('/maison/commande', Object.assign({ ids: g.ids, allume: true }, g.c), 20000); ok = ok.concat((r.resultats || []).filter(x => x.ok).map(x => x.id)); }
     } catch (e) { face.set('oops'); return say("La commande n'est pas passée : l'ordinateur ne répond pas."); }
     face.set('idle'); vusAt = 0;
-    if (!ok.length) return say(`${lesNoms(l)} ne répond pas.`);
+    if (!ok.length) return say(rate(l) || `${lesNoms(l)} ne répond pas.`);
     fx.ok();
     const qui = lesNoms(l.filter(a => ok.includes(a.id)));
     if (o.amb) return say(pick([`Ambiance ${o.amb} : ${qui}.`, `C'est fait, ambiance ${o.amb}.`]));
@@ -207,7 +218,7 @@ const MAISON = (() => {
       for (const g of Object.values(groupes)) { const r = await appel('/maison/commande', Object.assign({ ids: g.ids }, g.c), 20000); (r.resultats || []).filter(x => x.ok).forEach(x => bons.add(x.id)); }
     } catch (e) { face.set('oops'); return say("La commande n'est pas passée : l'ordinateur ne répond pas."); }
     face.set('idle'); vusAt = 0;
-    if (!bons.size) return say(`${lesNoms([...quoi.values()].map(x => x.a))} ne répond pas.`);
+    if (!bons.size) return say(rate([...quoi.values()].map(x => x.a)));
     fx.ok();
     const phrase = g => {
       const l = g.noms.filter(a => bons.has(a.id)); if (!l.length) return '';
@@ -217,7 +228,7 @@ const MAISON = (() => {
       return `${lesNoms(l)} : ${d}`;
     };
     const ko = [...quoi.values()].map(x => x.a).filter(a => !bons.has(a.id));
-    return say(`${Object.values(groupes).map(phrase).filter(Boolean).join('. ')}.${ko.length ? ` ${lesNoms(ko)} ne répond pas.` : ''}`);
+    return say(`${Object.values(groupes).map(phrase).filter(Boolean).join('. ')}.${ko.length ? ` ${rate(ko)}` : ''}`);
   }
   // un bout de phrase (« … lumière de la cuisine ») : le début s'est perdu (on lui a parlé pendant qu'il parlait) — il demande
   function fragment(t, n) {
