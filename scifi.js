@@ -669,7 +669,7 @@ const SCIFI = (() => {
     // les missions du jour : rappels, ce qu'il faut retenir, l'agenda, la session de trading
     const fin = new Date(); fin.setHours(23, 59, 59, 999);
     const mis = [];
-    try { (await AGENDA.aujourdhui()).slice(0, 5).forEach(e => mis.push([e.journee ? 'Journée' : hm2(new Date(e.debut * 1000)), `${e.titre}${e.lieu ? ` · ${e.lieu.split(',')[0]}` : ''}`])); } catch (e) { /* pas d'agenda */ }
+    try { (await AGENDA.aujourdhui()).slice(0, 5).forEach(e => mis.push([e.journee ? 'Journée' : hm2(new Date(e.debut * 1000)), `${AGENDA.propre(e.titre)}${e.lieu ? ` · ${e.lieu.split(',')[0]}` : ''}`])); } catch (e) { /* pas d'agenda */ }
     (S.minuteurs || []).filter(t => t.type === 'rappel' && t.fin <= +fin && t.fin > now).sort((a, b) => a.fin - b.fin).slice(0, 4).forEach(t => mis.push([hm2(new Date(t.fin)), t.nom]));
     try { MEMOIRE.aujourdhui().slice(0, 2).forEach(x => mis.push(['À retenir', x.texte.replace(/\.$/, '')])); } catch (e) { /* rien */ }
     try { LIEN.upcoming(1).filter(x => x.days === 0).slice(0, 2).forEach(x => mis.push(['Famille', x.e.text])); } catch (e) { /* rien */ }

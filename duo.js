@@ -216,7 +216,7 @@ const DUO = (() => {
     const n = await allumees;
     const lum = n ? ' La maison s\'éveille pour vous.' : '';
     const meteo = w && w.current ? ` Il fait ${Math.round(w.current.temperature_2m)} degrés dehors.` : '';
-    let rdv = ''; if (!fils || deux) { try { const e = (await AGENDA.aujourdhui()).find(x => !x.journee && x.debut > Date.now() / 1000); if (e) rdv = ` Prochain rendez-vous : ${e.titre} à ${AGENDA.hm(e.debut)}.`; } catch (e) { /* pas d'agenda */ } }
+    let rdv = ''; if (!fils || deux) { try { const e = (await AGENDA.aujourdhui()).find(x => !x.journee && x.debut > Date.now() / 1000); if (e) rdv = ` Prochain rendez-vous : ${AGENDA.propre(e.titre)} à ${AGENDA.hm(e.debut)}.`; } catch (e) { /* pas d'agenda */ } }
     let t;
     if (deux) t = `${salut()} ! Identification confirmée : les deux inventeurs sont de retour à la base. Bienvenue à la maison, ${nom ? `${nom} et ` : ''}${p || 'jeune maître'}.${lum} Tous les systèmes sont à vous.${resume ? ` ${resume}` : ''}${rdv}`;
     else if (fils) t = pick([`Alerte, alerte ! Le commandant ${p || 'en second'} est de retour à la base !${lum} Bienvenue à la maison. Shadow, ton copilote, est prêt, et la fusée attend tes ordres.`,

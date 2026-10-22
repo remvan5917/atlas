@@ -20,7 +20,8 @@ const AGENDA = (() => {
   const hm = s => { const d = new Date(s * 1000); return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`.replace(' h 00', ' h'); };
   const jourDe = s => new Date(s * 1000).toDateString();
   const nomJour = s => { const d = new Date(s * 1000), auj = new Date(), dem = new Date(Date.now() + 86400000); return d.toDateString() === auj.toDateString() ? "aujourd'hui" : d.toDateString() === dem.toDateString() ? 'demain' : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' }); };
-  const un = e => (e.journee ? `${e.titre}, toute la journée` : `${e.titre} à ${hm(e.debut)}${e.lieu ? `, ${e.lieu.split(',')[0]}` : ''}`);
+  const propre = t => String(t || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim(); // sans emoji : la voix les lirait
+  const un = e => (e.journee ? `${propre(e.titre)}, toute la journée` : `${propre(e.titre)} à ${hm(e.debut)}${e.lieu ? `, ${e.lieu.split(',')[0]}` : ''}`);
   async function lire(jours = 7) { return appel(`/maison/agenda?jours=${jours}`, 12000); }
 
   // pour la salle de commandement et l'accueil : les rendez-vous qui restent aujourd'hui
@@ -41,7 +42,7 @@ const AGENDA = (() => {
     const now = Date.now() / 1000, l = (r.evenements || []).filter(e => e.journee ? e.fin > now : e.fin > now);
     if (/\bprochain\b/.test(n)) {
       const p = l.find(e => !e.journee && e.debut > now);
-      return say(p ? `Ton prochain rendez-vous : ${p.titre}, ${nomJour(p.debut)} à ${hm(p.debut)}${p.lieu ? `, à ${p.lieu.split(',')[0]}` : ''}.` : 'Aucun rendez-vous prévu dans les sept prochains jours.');
+      return say(p ? `Ton prochain rendez-vous : ${propre(p.titre)}, ${nomJour(p.debut)} à ${hm(p.debut)}${p.lieu ? `, à ${p.lieu.split(',')[0]}` : ''}.` : 'Aucun rendez-vous prévu dans les sept prochains jours.');
     }
     const quand = /\bdemain\b/.test(n) ? 'demain' : /\bsemaine\b/.test(n) ? 'semaine' : 'aujourd hui';
     const dem = new Date(Date.now() + 86400000).toDateString(), auj = new Date().toDateString();
@@ -58,5 +59,5 @@ const AGENDA = (() => {
     if (/\b(mon agenda|mes rendez vous|mes rdv|mon planning|mon programme|mon emploi du temps|mon prochain (rendez vous|rdv)|qu est ce que j ai (de prevu )?(aujourd hui|demain|cette semaine|ce matin|cet apres midi|ce soir)|j ai quoi (de prevu )?(aujourd hui|demain|cette semaine)|j ai (un|des) (rendez vous|rdv)|c est quand mon (rendez vous|rdv))\b/.test(n)) return () => dire(n);
     return null;
   }
-  return { route, aujourdhui, prochain, un, hm };
+  return { route, aujourdhui, prochain, un, hm, propre };
 })();
