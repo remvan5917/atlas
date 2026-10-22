@@ -152,7 +152,8 @@ const ELEVEN = {
     }).then(buf => new Promise((res, rej) => fx.audio().decodeAudioData(buf, res, rej)));
     p.catch(e => {
       this.cache.delete(key); this.erreur = e.message; this.erreurAt = Date.now(); this.erreurStatus = e.status || 0;
-      // crédit épuisé ou clé refusée : on n'insiste pas pendant 30 min ; un souci réseau : 2 min
+      // crédit épuisé ou clé refusée : on n'insiste pas pendant 30 min ; un souci réseau : 2 min ; un texte vide refusé (400) : ce n'est pas une panne
+      if (e.status === 400 && /empty|vide|non-empty/i.test(e.message)) return;
       this.downUntil = Date.now() + ((e.status === 401 || e.status === 402 || e.status === 429 || /quota/i.test(e.message)) ? 30 * 60000 : 120000);
     });
     this.cache.set(key, p);
@@ -231,7 +232,8 @@ const voice = {
   // une seule phrase à la fois : les autres attendent leur tour (jamais deux voix l'une sur l'autre)
   say(text) {
     const t = this.clean(text);
-    if (!S.settings.sound || !t || this.endormi) return Promise.resolve();
+    // rien à prononcer (un guillemet ou un tiret tout seul) : on ne dérange pas la voix
+    if (!S.settings.sound || !t || !/[\p{L}\p{N}]/u.test(t) || this.endormi) return Promise.resolve();
     if (t === this._dernier && Date.now() - this._dernierA < 5000) return this._file; // la même phrase deux fois de suite : une seule
     this._dernier = t; this._dernierA = Date.now();
     const gen = this._gen;
