@@ -6,7 +6,9 @@
    - « présente-toi à mes invités », « mode science-fiction », « fais ton show » : il présente son inventeur et la maison, en séquence de
      science-fiction (sons, lumières qui parcourent les pièces — jamais les chambres —, caméras en direct) ; en visio, la version courte.
    - « coupe mon micro » / « remets mon micro » (le micro de l'ordi), « montre le graphique de l'or à l'écran ».
-   - « je vais me coucher » : en bas tout s'éteint (jamais les chambres), l'escalier éclairé 90 s, la musique coupée, la sentinelle
+   - « [le petit] va se coucher » : sa musique, la Fusée et sa lumière à 15 % pendant 15 minutes, puis tout s'éteint tout seul.
+   - « je viens de me réveiller » : la maison s'allume (jamais les chambres) et le briefing du matin.
+   - « je vais me coucher » : en bas tout s'éteint (jamais les chambres), l'escalier éclairé 5 minutes, la musique coupée, la sentinelle
      en garde de nuit tout de suite, l'ordi verrouillé et l'écran noir.
    ========================================================= */
 'use strict';
@@ -25,7 +27,8 @@ const VISIO = (() => {
     } finally { clearTimeout(tm); }
   }
   const lampes = async () => ((await appel('/maison/appareils', null, 15000)).appareils || []).filter(a => a.type === 'lampe' && a.allume != null);
-  const regle = (ids, allume, lum, teinte) => appel('/maison/commande', Object.assign({ ids, allume }, lum != null ? { lum } : {}, teinte != null ? { teinte } : {}), 20000);
+  // pendant : en secondes, puis l'ordinateur de la maison éteint tout seul (même si le téléphone est fermé)
+  const regle = (ids, allume, lum, teinte, pendant) => appel('/maison/commande', Object.assign({ ids, allume }, lum != null ? { lum } : {}, teinte != null ? { teinte } : {}, pendant ? { pendant } : {}), 20000);
   const pc = d => appel('/maison/pc', d);
   // lesquelles : celles qu'on nomme, sinon celles qui sont allumées, sinon le salon
   async function cibles(t, salonDabord) {
@@ -208,18 +211,52 @@ const VISIO = (() => {
     try {
       const ids = eteindre.filter(a => a !== escalier).map(a => a.id);
       if (ids.length) await regle(ids, false);
-      if (escalier) { await regle([escalier.id], true, 15, 0); setTimeout(() => regle([escalier.id], false).catch(() => {}), 90000); } // l'escalier éclairé le temps de monter
+      if (escalier) await regle([escalier.id], true, 25, 0, 300); // l'escalier reste éclairé 5 minutes (le temps de se brosser les dents), puis s'éteint tout seul
     } catch (e) { /* tant pis */ }
     await Promise.all([pc({ action: 'musique', quoi: 'pause' }).catch(() => {}), pc({ action: 'radio_stop' }).catch(() => {}), appel('/maison/sentinelle', { dodo: true }).catch(() => {})]);
     let cams = 0; try { cams = ((await appel('/maison/ezviz', null, 8000)).cameras || []).length + ((await appel('/maison/cameras', null, 8000)).cameras || []).length; } catch (e) { /* rien */ }
     fx.ok();
-    await say(`Bonne nuit. ${eteindre.length ? 'Tout est éteint en bas' : 'Rien n\'était resté allumé en bas'}${escalier ? ", je t'éclaire l'escalier une minute et demie" : ''}. La sentinelle passe en garde de nuit${cams ? ` avec ${cams} caméras` : ''} : si quelque chose ne va pas, je te réveille sur ton téléphone.`);
+    await say(`Bonne nuit. ${eteindre.length ? 'Tout est éteint en bas' : 'Rien n\'était resté allumé en bas'}${escalier ? ", je te laisse l'escalier allumé 5 minutes" : ''}. La sentinelle passe en garde de nuit${cams ? ` avec ${cams} caméras` : ''} : si quelque chose ne va pas, je te réveille sur ton téléphone.`);
     // l'ordi : verrouillé, écran noir (après avoir parlé)
     try { await pc({ action: 'verrouille' }); await wait(1500); await pc({ action: 'ecran' }); } catch (e) { /* tant pis */ }
     dlg.state = 'standby'; face.set('idle');
   }
 
+  /* ---------- « [le petit] va se coucher » : sa musique, la Fusée et sa lumière à 15 %, un quart d'heure ---------- */
+  const prenomEnfant = () => (typeof LIEN !== 'undefined' && LIEN.prenom()) || '';
+  async function coucherEnfant() {
+    let l = []; try { l = (await appel('/maison/appareils', null, 15000)).appareils || []; } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const p = N(prenomEnfant());
+    const lampe = l.find(a => a.type === 'lampe' && p && N(a.nom).split(' ').includes(p));
+    const prises = l.filter(a => a.type !== 'lampe' && /\b(musique|fusee)\b/.test(N(a.nom)));
+    const ok = [], rien = [];
+    try {
+      if (lampe) { const r = await regle([lampe.id], true, 15, 0, 900); (r.resultats || []).some(x => x.ok) ? ok.push('sa lumière à 15 %') : rien.push('sa lumière'); }
+      if (prises.length) { const r = await regle(prises.map(a => a.id), true, null, null, 900); prises.forEach(a => ((r.resultats || []).find(x => x.id === a.id && x.ok) ? ok : rien).push(/fusee/.test(N(a.nom)) ? 'la Fusée' : 'sa musique')); }
+    } catch (e) { return say("La commande n'est pas passée : l'ordinateur ne répond pas."); }
+    if (!ok.length) return say(rien.length ? `${rien.join(' et ')} ne répondent pas.` : "Je ne trouve ni sa lumière, ni sa musique, ni la Fusée.");
+    fx.ok();
+    const liste = x => (x.length > 1 ? `${x.slice(0, -1).join(', ')} et ${x[x.length - 1]}` : x[0]);
+    return say(`C'est parti pour le coucher de ${prenomEnfant() || 'ton fils'} : ${liste(ok)}, pendant un quart d'heure. Ensuite, tout s'éteint tout seul.${rien.length ? ` ${liste(rien)} ne répond pas.` : ''}`);
+  }
+
+  /* ---------- « je viens de me réveiller » : la maison s'allume (jamais les chambres : le petit dort peut-être) ---------- */
+  async function reveil() {
+    let l = []; try { l = await lampes(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const bas = l.filter(a => !/\bchambres?\b/.test(N(a.nom)));
+    appel('/maison/sentinelle', { dodo: false }).catch(() => {}); // fin de la garde de nuit anticipée
+    let r = null; try { if (bas.length) r = await regle(bas.map(a => a.id), true, 85, 70); } catch (e) { /* tant pis */ }
+    const allumees = r ? (r.resultats || []).filter(x => x.ok).length : 0;
+    fx.ok();
+    let brief = ''; try { if (typeof PROACTIF !== 'undefined') { brief = await PROACTIF.briefMatin(); if (typeof dayKey === 'function') { S.matinFait = dayKey(); save(); } } } catch (e) { /* pas de briefing */ }
+    const h = new Date().getHours();
+    return say(`${h < 18 ? 'Bonjour' : 'Bonsoir'} ! ${allumees ? 'La maison s\'allume.' : 'Je n\'ai pas pu allumer la maison.'}${brief ? ` ${brief}` : ''}`);
+  }
+
   function route(t, n) {
+    const p = N(prenomEnfant());
+    if (!/\bchez\b/.test(n) && p && new RegExp(`\\b${p}\\b.*\\b(va|part|file|monte) (se coucher|au lit|dormir|au dodo)\\b|\\bc est l heure (du coucher|d aller au lit) (de|pour) ${p}\\b|\\bcoucher de ${p}\\b`).test(n) || !/\bchez\b/.test(n) && /\b(mon fils|le petit|mon bonhomme|mon garcon) (va|part|file|monte) (se coucher|au lit|dormir|au dodo)\b/.test(n)) return coucherEnfant;
+    if (/\b(je viens de me (reveiller|lever)|je suis (reveille|leve|debout)|je me leve|je me reveille|c est le matin|allume la maison|reveille la maison|debout la maison)\b/.test(n)) return reveil;
     if (!/\bchez\b/.test(n) && /\b(je (vais|pars|monte|file) (me coucher|dormir|au lit|au dodo)|je (me couche|vais au lit)|on (va|part) (se coucher|dormir)|on se couche|c est l heure de dormir|bonne nuit (atlas|la maison|tout le monde))\b/.test(n)) return coucher;
     if (/\b(mode visio|mode visioconference|je (suis|vais etre|passe|pars) en visio|je commence (une|ma) visio|j ai une visio|on commence la visio)\b/.test(n) && !/\b(fin|sors|arrete|quitte)\b/.test(n)) return () => visio(true);
     if (/\b(fin (du mode |de la |de ma )?visio|j ai fini (la|ma) visio|la visio est (finie|terminee)|sors du mode visio|arrete le mode visio|quitte le mode visio)\b/.test(n)) return () => visio(false);
