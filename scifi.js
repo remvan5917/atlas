@@ -18,6 +18,8 @@
      la sentinelle prévient seule d'un même véhicule 3 fois en 24 h, ou de quelqu'un qui repasse 3 fois en 30 min.
    - La veille d'actualités : « surveille les infos sur la Fed », « préviens-moi s'il y a du nouveau sur l'or », « mes veilles »,
      « arrête de surveiller la Fed » (Google Actualités toutes les 20 min, 7 h–23 h, trié par le cerveau de la maison).
+   - « rapport de nuit » / « qu'est-ce qui s'est passé cette nuit ? » : de 20 h au réveil, les photos en film accéléré avec leur heure,
+     personnes (cour, toit / rue), véhicules, bruits, alertes ; un résumé d'une phrase au réveil (« je viens de me réveiller »).
    - Les réveils : « réveille-moi à 7 h », « réveille-moi en semaine à 6 h 45 » (lever de soleil 15 min avant, sur l'ordinateur,
      même téléphone fermé), « mes réveils », « annule mes réveils », « désactive / active le réveil de l'école ».
    - Les alertes de prix : « préviens-moi si l'or passe 4 150 », « si l'argent perd 1 % », « mes alertes de prix »,
@@ -561,7 +563,56 @@ const SCIFI = (() => {
   }
   setTimeout(holoFilsReleve, 20000); setInterval(holoFilsReleve, 30000);
 
+  /* ---------- le rapport de nuit : ce que la sentinelle a vu entre 20 h et le réveil, en film accéléré ---------- */
+  async function rapportNuit(court) {
+    const now = new Date(), debut = new Date(now); debut.setHours(20, 0, 0, 0);
+    if (now.getHours() < 20) debut.setDate(debut.getDate() - 1);
+    const fin = new Date(debut); fin.setDate(fin.getDate() + 1); fin.setHours(8, 30, 0, 0);
+    let al = [], pa = [];
+    try { al = ((await appel(`/maison/alertes?depuis=${+debut}`, null, 10000)).alertes || []).filter(a => a.at >= +debut && a.at <= +fin); } catch (e) { return court ? '' : say("L'ordinateur de la maison ne répond pas."); }
+    try { pa = ((await appel('/maison/passages?jours=2', null, 10000)).passages || []).filter(x => x.at * 1000 >= +debut && x.at * 1000 <= +fin); } catch (e) { /* rien */ }
+    const h = ms => hhmm(new Date(ms));
+    const pers = pa.filter(x => x.personne), veh = pa.filter(x => !x.personne && x.a && x.a.vehicule);
+    const prives = pers.filter(x => !/facade|rue/.test(N(x.camera)));
+    const bruits = al.filter(a => a.genre === 'camera' && /bruit/i.test(a.texte));
+    const urgentes = al.filter(a => a.gravite === 'urgent');
+    const autres = al.filter(a => a.gravite === 'attention' && !['reveil', 'coucher', 'presence', 'marche', 'veille', 'hologramme'].includes(a.genre) && a.genre !== 'ezviz');
+    const mouv = al.filter(a => a.genre === 'ezviz' && /^Détection/.test(a.texte)).length;
+    const parts = [];
+    if (urgentes.length) parts.push(`attention, ${urgentes.length} alerte${urgentes.length > 1 ? 's' : ''} urgente${urgentes.length > 1 ? 's' : ''} : ${urgentes.slice(-2).map(a => `${h(a.at)}, ${a.texte.replace(/\.$/, '')}`).join(' ; ')}`);
+    if (prives.length) parts.push(`${prives.length} passage${prives.length > 1 ? 's' : ''} de personnes dans la cour ou sur le toit (${prives.slice(-3).map(x => h(x.at * 1000)).join(', ')})`);
+    const rue = pers.length - prives.length;
+    if (rue) parts.push(`${rue} passant${rue > 1 ? 's' : ''} devant la maison`);
+    if (veh.length) parts.push(`${veh.length} véhicule${veh.length > 1 ? 's' : ''} vu${veh.length > 1 ? 's' : ''}`);
+    if (bruits.length) parts.push(`${bruits.length} bruit${bruits.length > 1 ? 's' : ''} fort${bruits.length > 1 ? 's' : ''} (${bruits.slice(-3).map(a => h(a.at)).join(', ')})`);
+    if (autres.length) parts.push(`${autres.length} autre${autres.length > 1 ? 's' : ''} alerte${autres.length > 1 ? 's' : ''} : ${autres.slice(-2).map(a => a.texte.replace(/\.$/, '')).join(' ; ')}`);
+    const calme = !urgentes.length && !prives.length && !bruits.length && !autres.length;
+    const resume = calme ? `Nuit calme.${rue || veh.length ? ` ${[rue ? `${rue} passant${rue > 1 ? 's' : ''} dans la rue` : '', veh.length ? `${veh.length} véhicule${veh.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' et ')}, rien dans la cour ni sur le toit.` : ' Rien dans la cour ni sur le toit, aucune alerte.'}` : `Cette nuit : ${parts.join('. ')}.`;
+    if (court) return resume;
+    // le film accéléré : les photos de la nuit, dans l'ordre, avec leur heure
+    const avecPhoto = al.filter(a => a.image).slice(-16);
+    const photos = [];
+    for (const a of avecPhoto) { try { const b = await appel(`/maison/alerte/image?id=${a.id}`, null, 10000); if (b instanceof Blob) photos.push({ u: URL.createObjectURL(b), h: h(a.at), t: a.texte, urgent: a.gravite === 'urgent' }); } catch (e) { /* rien */ } }
+    const L = [['Personnes (cour, toit)', `${prives.length}`, prives.length ? 'alerte' : 'ok'], ['Passants (rue)', `${rue}`, 'ok'], ['Véhicules', `${veh.length}`, 'ok'],
+      ['Bruits forts', `${bruits.length}`, bruits.length ? 'attente' : 'ok'], ['Mouvements détectés', `${mouv}`, 'ok'], ['Alertes urgentes', `${urgentes.length}`, urgentes.length ? 'alerte' : 'ok']];
+    showBoard(`<div style="font-family:ui-monospace,Menlo,monospace;background:linear-gradient(160deg,#04121f,#0a2540);border:1px solid #1e6a8a;border-radius:14px;padding:12px 14px;color:#cfefff">
+      <div style="display:flex;justify-content:space-between;font-size:11px;letter-spacing:.18em;color:#7dd3fc"><span>◢ RAPPORT DE NUIT</span><span>${h(+debut)} → ${h(Math.min(+fin, Date.now()))}</span></div>
+      ${photos.length ? `<div style="position:relative;margin-top:10px;border:1px solid #1e6a8a;border-radius:10px;overflow:hidden;background:#020b14"><img id="nuit-film" src="${photos[0].u}" style="width:100%;display:block"><div id="nuit-leg" style="position:absolute;left:8px;bottom:6px;right:8px;font-size:12px;color:#e0f2fe;text-shadow:0 0 4px #000"></div></div>
+        <div style="display:flex;gap:4px;margin-top:6px;overflow-x:auto">${photos.map((p, i) => `<div data-i="${i}" style="flex:0 0 auto;font-size:10px;padding:3px 6px;border-radius:6px;border:1px solid ${p.urgent ? '#f87171' : '#1e6a8a'};color:${p.urgent ? '#fca5a5' : '#93c5fd'}">${p.h}</div>`).join('')}</div>` : '<div style="margin-top:10px;font-size:13px;color:#93c5fd">Aucune photo cette nuit.</div>'}
+      <div style="margin-top:8px">${L.map(([k, v, e]) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:#93c5fd">${esc(k)}</span><span style="color:${{ ok: '#5eead4', alerte: '#fca5a5', attente: '#fcd34d' }[e]}">${esc(v)}</span></div>`).join('')}</div></div>`, 'graphe-board');
+    clearTimeout(effaceT); effaceT = setTimeout(() => { cacheEcran(); photos.forEach(p => URL.revokeObjectURL(p.u)); }, 120000);
+    if (photos.length > 1) {
+      let i = 0; const img = document.getElementById('nuit-film'), leg = document.getElementById('nuit-leg');
+      const montre = k => { if (!img || !document.body.contains(img)) return false; i = k; img.src = photos[k].u; leg.textContent = `${photos[k].h} · ${photos[k].t.slice(0, 90)}`; document.querySelectorAll('[data-i]').forEach(x => { x.style.background = +x.dataset.i === k ? 'rgba(56,189,248,.3)' : 'transparent'; }); return true; };
+      montre(0);
+      const film = setInterval(() => { if (!montre((i + 1) % photos.length)) clearInterval(film); }, 900);
+      document.querySelectorAll('[data-i]').forEach(x => x.addEventListener('click', () => { clearInterval(film); montre(+x.dataset.i); }));
+    } else if (photos.length) { const leg = document.getElementById('nuit-leg'); if (leg) leg.textContent = `${photos[0].h} · ${photos[0].t.slice(0, 90)}`; }
+    return say(resume);
+  }
+
   function route(t, n) {
+    if (/\b(rapport de (la )?nuit|qu est ce qui s est passe (cette nuit|la nuit derniere|pendant la nuit|pendant que je dormais)|comment s est passee la nuit|la nuit (a ete|s est passee)|il s est passe quoi cette nuit|bilan de (la )?nuit)\b/.test(n)) return () => rapportNuit(false);
     if (/\b(rejoue|remets|repasse|revoir)\b.*\b(message|hologramme)\b/.test(n) && holoFils) return () => projetteFils(holoFils, true);
     if (/\b(message (holographique|video|hologramme)|hologramme|enregistre (un|moi un) message (video )?pour|filme moi pour|laisse un message video)\b/.test(n) && !/\b(rejoue|lis|ecoute)\b/.test(n)) return hologramme;
     if (/\b(declenche|active|lance|fais sonner|allume)\b.*\bsirenes?\b/.test(n)) return () => sirene(t, n, true);
@@ -606,5 +657,5 @@ const SCIFI = (() => {
     if (/\b(lance la fusee|lancement de la fusee|decollage|compte a rebours|fais decoller la fusee)\b/.test(n)) return fusee; // avec Shadow s'il est réveillé
     return null;
   }
-  return { route, scan, hud, modeCockpit };
+  return { route, scan, hud, modeCockpit, rapportNuit };
 })();

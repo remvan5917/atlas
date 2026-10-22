@@ -260,9 +260,10 @@ const VISIO = (() => {
     let r = null; try { if (bas.length) r = await regle(bas.map(a => a.id), true, 85, 70); } catch (e) { /* tant pis */ }
     const allumees = r ? (r.resultats || []).filter(x => x.ok).length : 0;
     fx.ok();
+    let nuitTxt = ''; try { if (typeof SCIFI !== 'undefined' && new Date().getHours() < 12) nuitTxt = await SCIFI.rapportNuit(true); } catch (e) { /* rien */ }
     let brief = ''; try { if (typeof PROACTIF !== 'undefined') { brief = await PROACTIF.briefMatin(); if (typeof dayKey === 'function') { S.matinFait = dayKey(); save(); } } } catch (e) { /* pas de briefing */ }
     const h = new Date().getHours();
-    return say(`${h < 18 ? 'Bonjour' : 'Bonsoir'} ! ${allumees ? 'La maison s\'allume.' : 'Je n\'ai pas pu allumer la maison.'}${brief ? ` ${brief}` : ''}`);
+    return say(`${h < 18 ? 'Bonjour' : 'Bonsoir'} ! ${allumees ? 'La maison s\'allume.' : 'Je n\'ai pas pu allumer la maison.'}${nuitTxt ? ` ${nuitTxt}` : ''}${brief ? ` ${brief}` : ''}${nuitTxt && !/^Nuit calme/.test(nuitTxt) ? ' Dis « rapport de nuit » pour voir les photos.' : ''}`);
   }
 
   function route(t, n) {
