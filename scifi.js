@@ -274,6 +274,11 @@ const SCIFI = (() => {
     if (!l.length) return say(`Aucun réveil pour toi.${ec}`);
     return say(`${l.map(x => `${hTxt(x.heure)} ${x.jours.length ? joursTxt(x.jours) : x.date === new Date().toISOString().slice(0, 10) ? "aujourd'hui" : 'demain'}`).join(', ')}.${ec}`);
   }
+  async function coucherAuto(actif) {
+    try { await appel('/maison/reveils', { coucher: actif }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok();
+    return say(actif ? "Coucher automatique activé : à 20 h, s'il est là, salle de bain, Fusée, radio et lumière basse, et Shadow le lui dit." : 'Coucher automatique de 20 h désactivé.');
+  }
   async function ecole(actif) {
     try { await appel('/maison/reveils', { ecole: actif }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     fx.ok();
@@ -282,6 +287,8 @@ const SCIFI = (() => {
   }
 
   function route(t, n) {
+    if (/\bcoucher (automatique|de 20 h|de 20 heures|du soir)\b/.test(n) && /\b(desactive|coupe|arrete|annule|supprime|enleve)\b/.test(n)) return () => coucherAuto(false);
+    if (/\bcoucher (automatique|de 20 h|de 20 heures|du soir)\b/.test(n) && /\b(active|remets|reactive)\b/.test(n)) return () => coucherAuto(true);
     if (/\breveil\b.*\b(ecole|classe)\b|\b(ecole|classe)\b.*\breveil\b/.test(n) && /\b(desactive|coupe|arrete|annule|supprime|enleve)\b/.test(n)) return () => ecole(false);
     if (/\breveil\b.*\b(ecole|classe)\b|\b(ecole|classe)\b.*\breveil\b/.test(n) && /\b(active|remets|rallume|reactive)\b/.test(n)) return () => ecole(true);
     if (/\b(annule|arrete|supprime|enleve|desactive|efface)\b.*\b(mes |le |les |mon )?reveils?\b/.test(n)) return () => reveils(true);

@@ -6,7 +6,8 @@
    - « présente-toi à mes invités », « mode science-fiction », « fais ton show » : il présente son inventeur et la maison, en séquence de
      science-fiction (sons, lumières qui parcourent les pièces — jamais les chambres —, caméras en direct) ; en visio, la version courte.
    - « coupe mon micro » / « remets mon micro » (le micro de l'ordi), « montre le graphique de l'or à l'écran ».
-   - « [le petit] va se coucher » : sa musique et sa lumière à 15 % pendant 15 minutes ; la Fusée reste allumée toute la nuit
+   - « [le petit] va se coucher » (et tout seul à 20 h s'il est là — sentinelle) : la salle de bain 10 min (les dents), sa lumière
+     à 15 % pendant 20 min, sa radio une heure, Shadow le lui dit ; la Fusée reste allumée toute la nuit
      (Fusée allumée la nuit = il dort chez papa ; le réveil d'école l'éteint à 7 h 30, hors vacances).
    - « je viens de me réveiller » : la maison s'allume (jamais les chambres) et le briefing du matin.
    - « je vais me coucher » : en bas tout s'éteint (jamais les chambres), l'escalier éclairé 5 minutes, la musique coupée, la sentinelle
@@ -237,15 +238,18 @@ const VISIO = (() => {
     const prises = l.filter(a => a.type !== 'lampe' && /\b(musique|fusee)\b/.test(N(a.nom)));
     const ok = [], rien = [];
     try {
-      if (lampe) { const r = await regle([lampe.id], true, 15, 0, 900); (r.resultats || []).some(x => x.ok) ? ok.push('sa lumière à 15 %') : rien.push('sa lumière'); }
-      // la Fusée reste allumée toute la nuit (allumée la nuit = il dort chez papa : le réveil d'école l'éteint à 7 h 30) ; la musique, 15 minutes
-      for (const a of prises) { const fus = /fusee/.test(N(a.nom)); const r = await regle([a.id], true, null, null, fus ? null : 900); ((r.resultats || []).some(x => x.ok) ? ok : rien).push(fus ? 'la Fusée' : 'sa musique'); }
+      const bain = l.filter(a => a.type === 'lampe' && /\b(salle de bains?|sdb|salle d eau)\b/.test(N(a.nom)));
+      if (bain.length) { const r = await regle(bain.map(a => a.id), true, 70, 30, 600); if ((r.resultats || []).some(x => x.ok)) ok.push('la salle de bain pour les dents'); }
+      if (lampe) { const r = await regle([lampe.id], true, 15, 0, 1200); (r.resultats || []).some(x => x.ok) ? ok.push('sa lumière à 15 %') : rien.push('sa lumière'); }
+      // la Fusée reste allumée toute la nuit (allumée la nuit = il dort chez papa : le réveil d'école l'éteint à 7 h 30) ; sa radio, une heure
+      for (const a of prises) { const fus = /fusee/.test(N(a.nom)); const r = await regle([a.id], true, null, null, fus ? null : 3600); ((r.resultats || []).some(x => x.ok) ? ok : rien).push(fus ? 'la Fusée' : 'sa radio'); }
+      appel('/maison/canal/shadow', { type: 'coucher', de: 'atlas' }).catch(() => {}); // Shadow le lui dit
     } catch (e) { return say("La commande n'est pas passée : l'ordinateur ne répond pas."); }
     if (!ok.length) return say(rien.length ? `${rien.join(' et ')} ne répondent pas.` : "Je ne trouve ni sa lumière, ni sa musique, ni la Fusée.");
     fx.ok();
     const liste = x => (x.length > 1 ? `${x.slice(0, -1).join(', ')} et ${x[x.length - 1]}` : x[0]);
-    const quart = ok.filter(x => x !== 'la Fusée'), fus = ok.includes('la Fusée');
-    return say(`C'est parti pour le coucher de ${prenomEnfant() || 'ton fils'} : ${liste(ok)}.${quart.length ? ` ${quart.length > 1 ? 'Sa lumière et sa musique s\'éteindront' : quart[0].charAt(0).toUpperCase() + quart[0].slice(1) + ' s\'éteindra'} dans un quart d'heure.` : ''}${fus ? ' La Fusée veille toute la nuit.' : ''}${rien.length ? ` ${liste(rien)} ne répond pas.` : ''}`);
+    const fus = ok.includes('la Fusée');
+    return say(`C'est parti pour le coucher de ${prenomEnfant() || 'ton fils'} : ${liste(ok)}.${ok.some(x => /salle de bain/.test(x)) ? ' La salle de bain s\'éteint dans 10 minutes.' : ''}${ok.includes('sa lumière à 15 %') ? ' Sa lumière dans 20 minutes.' : ''}${ok.includes('sa radio') ? ' Sa radio dans une heure.' : ''}${fus ? ' La Fusée veille toute la nuit.' : ''} Shadow le lui dit.${rien.length ? ` ${liste(rien)} ne répond pas.` : ''}`);
   }
 
   /* ---------- « je viens de me réveiller » : la maison s'allume (jamais les chambres : le petit dort peut-être) ---------- */
