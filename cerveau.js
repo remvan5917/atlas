@@ -211,7 +211,8 @@ const AI = {
       const fd = new FormData();
       fd.append('file', blob, `voix.${ext}`);
       if (groq) fd.append('model', this.STT_MODEL);
-      fd.append('language', 'fr');
+      const lg = window.ATLAS_LANGUE || 'fr'; // le traducteur universel : « auto » (la langue de chacun)
+      if (lg !== 'auto') fd.append('language', lg); else if (!groq) fd.append('language', 'auto');
       fd.append('temperature', '0');
       fd.append('response_format', 'verbose_json'); // avec l'indice de confiance de chaque morceau
       fd.append('prompt', prompt || 'Un adulte parle en français à Atlas, son assistant vocal.');

@@ -578,6 +578,8 @@ async function handle(text) {
   if (typeof FUTUR !== 'undefined' && !(await FUTUR.autorise(n))) return; // l'accès vocal : les ordres sensibles, seulement à la voix de papa
   const fut = FUTUR.route(t, n); // le cinéma, les clés, l'œil de faucon, le chef
   if (fut) return fut();
+  const sc = SCENE.route(t, n); // le coach, les gestes, le jeu télévisé, le traducteur
+  if (sc) return sc();
   const rdv = AGENDA.route(t, n); // ton Google Agenda : « qu'est-ce que j'ai aujourd'hui ? »
   if (rdv) return rdv();
   const duo = DUO.route(t, n); // « discute avec Shadow », « accueille nos invités »
