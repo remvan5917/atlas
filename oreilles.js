@@ -16,7 +16,7 @@ const OREILLES = (() => {
   let engine = null;
   let ctx = null, stream = null, proc = null, src = null;
   let muted = false, muteUntil = 0;
-  let noise = 0.004, speaking = false, voiced = 0, silent = 0, buf = [], pre = [], peak = 0, frames = 0;
+  let noise = 0.004, speaking = false, voiced = 0, silent = 0, buf = [], pre = [], peak = 0, frames = 0, dernierPic = 0;
   let level = 0, threshold = 0.012, lastHeard = '', lastPrint = null;
   // Interrompre Shadow en lui parlant : on écoute aussi pendant qu'il parle (en gardant ~1,7 s de son)
   let ring = [], ttsFrames = 0, ttsPeak = 0, loud = 0, bargedAt = 0;
@@ -131,7 +131,7 @@ const OREILLES = (() => {
     if (silent >= endFrames || dur > 12) {
       const audio = buf;
       const speech = dur - (silent * f.length) / ctx.sampleRate;
-      buf = []; speaking = false; voiced = 0;
+      buf = []; speaking = false; voiced = 0; dernierPic = peak; // la force de la voix (pour savoir quel appareil t'a le mieux entendu)
       emit('speechend');
       if (speech > 0.15 && worthSending(speech)) transcribe(audio);
     }
@@ -268,7 +268,7 @@ const OREILLES = (() => {
     stop: () => { cancel(); closeMic(); }, // un autre Atlas a pris la main : on rend le micro
     engine: () => engine,
     listening: () => !!pending,
-    meter: () => ({ level, threshold, noise, lastHeard, speaking }),
+    meter: () => ({ level, threshold, noise, lastHeard, speaking, pic: dernierPic }),
     timings: () => timings.slice(),
     reopen: async () => { closeMic(); return start(); },
     takePrint: () => { const p = lastPrint; lastPrint = null; return p; },

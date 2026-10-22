@@ -395,7 +395,42 @@ const SCIFI = (() => {
     await tout;
   }
 
+  /* ---------- l'énergie : en direct (prises qui mesurent), aujourd'hui et ce mois-ci (ampoules estimées) ---------- */
+  const kwh = v => v.toLocaleString('fr-FR', { maximumFractionDigits: v < 1 ? 2 : 1 });
+  const euros = v => `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  async function energie(t, n) {
+    let e; try { e = await appel('/maison/energie', null, 15000); } catch (ex) { return say("L'ordinateur de la maison ne répond pas."); }
+    // un appareil précis : « combien consomme la station de trading ? »
+    const un = (e.direct || []).find(x => N(t).includes(N(x.nom))) || Object.keys(e.aujourdhui || {}).map(nom => ({ nom })).find(x => N(t).includes(N(x.nom)));
+    if (un && !/\b(maison|total|tout)\b/.test(n)) {
+      const d = (e.direct || []).find(x => x.nom === un.nom), auj = (e.aujourdhui || {})[un.nom], mo = (e.mois || {})[un.nom];
+      return say(`${un.nom} : ${d && d.watts != null ? `${Math.round(d.watts)} watts en ce moment` : 'pas de mesure en direct'}${auj != null ? `, ${kwh(auj)} kilowattheure aujourd'hui` : ''}${mo != null ? `, ${euros(mo * e.prix_kwh)} depuis le début du mois` : ''}.${(e.mesure || []).includes(un.nom) ? '' : ' (Estimation : cette ampoule ne mesure pas sa consommation.)'}`);
+    }
+    const mois = /\b(mois|mensuel)\b/.test(n), data = mois ? e.mois || {} : e.aujourdhui || {};
+    const tot = Object.values(data).reduce((a, b) => a + b, 0);
+    if (!Object.keys(data).length) return say("Je viens de commencer à mesurer : redemande-moi dans quelques heures. En ce moment, " + ((e.direct || []).map(x => `${x.nom} : ${Math.round(x.watts)} watts`).join(', ') || 'aucune prise ne mesure') + '.');
+    const top = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    hud(mois ? 'Énergie · ce mois-ci' : "Énergie · aujourd'hui", [['Total', `${kwh(tot)} kWh · ${euros(tot * e.prix_kwh)}`, 'ok'],
+      ...Object.entries(data).sort((a, b) => b[1] - a[1]).map(([nom, v]) => [nom + ((e.mesure || []).includes(nom) ? '' : ' (estimé)'), `${kwh(v)} kWh · ${euros(v * e.prix_kwh)}`, 'ok']),
+      ...(e.direct || []).filter(x => x.watts > 0).map(x => [`${x.nom} en direct`, `${Math.round(x.watts)} W`, 'attente']), ['Prix', `${e.prix_kwh.toLocaleString('fr-FR')} € le kWh`, 'ok']], []);
+    return say(`${mois ? 'Ce mois-ci' : "Aujourd'hui"}, les appareils reliés ont consommé ${kwh(tot)} kilowattheures, soit environ ${euros(tot * e.prix_kwh)}. Le plus gourmand : ${top.map(([nom, v]) => `${nom}, ${kwh(v)}`).join(' ; ')}. Seules les prises qui mesurent sont exactes : pour les ampoules, c'est une estimation, et le reste de la maison (frigo, chauffage, four) n'est pas compté.`);
+  }
+  async function prixKwh(t) {
+    const m = String(t).match(/(\d+[.,]\d+)/); if (!m) return say("Dis par exemple : le kilowattheure coûte 0,25 euro.");
+    try { await appel('/maison/energie', { prix_kwh: parseFloat(m[1].replace(',', '.')) }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok(); return say(`C'est noté : ${m[1].replace('.', ',')} euro le kilowattheure.`);
+  }
+  async function circadien(actif) {
+    try { await appel('/maison/reveils', { circadien: actif }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok(); return say(actif ? 'La lumière suit de nouveau le soleil : fraîche le matin, chaude le soir.' : "D'accord : quand tu allumes, la lumière garde sa teinte d'avant.");
+  }
+
   function route(t, n) {
+    if (/\b(cockpit|tableau de bord|ecran de controle|panneau de controle de la maison)\b/.test(n) && !/\breglages\b/.test(n)) return () => { window.open('cockpit.html', '_blank'); return say("J'ouvre le cockpit de la maison."); };
+    if (/\b(combien|consommation|consomme|consomment|coute|coutent|facture|energie|electricite|kilowatt|gourmand)\b/.test(n) && /\b(maison|prise|prises|station|tele|television|fusee|musique|lumieres?|ampoules?|appareils?|ce mois|aujourd hui|energie|electricite|consomme)\b/.test(n) && !/\b(or|argent|bitcoin|action|nasdaq|cuivre)\b/.test(n) && !/\b(kilowatt ?heure coute|prix du kilowatt)\b/.test(n)) return () => energie(t, n);
+    if (/\b(le kilowatt ?heure|le kwh|prix du kilowatt ?heure)\b.*\d/.test(n)) return () => prixKwh(t);
+    if (/\blumiere qui suit le soleil\b|\b(teinte|lumiere) automatique\b|\bcircadien\w*\b/.test(n) && /\b(desactive|arrete|coupe|enleve)\b/.test(n)) return () => circadien(false);
+    if (/\blumiere qui suit le soleil\b|\b(teinte|lumiere) automatique\b|\bcircadien\w*\b/.test(n) && /\b(active|remets|reactive)\b/.test(n)) return () => circadien(true);
     if (/\b(protocole danger|protocole d urgence|alerte intrusion|mode panique|declenche l alerte|il y a des intrus|on essaie d entrer|quelqu un essaie d entrer)\b/.test(n)) return danger;
     if (enAttente && Date.now() - enAttente.at < 4 * 60000) {
       if (/^(oui|ouais|ok|d accord|vas y|carrement|avec plaisir|oui merci|bien sur|fais le|oui fais le)\b/.test(n)) return () => habitudeReponse(true);

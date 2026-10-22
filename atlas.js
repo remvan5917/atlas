@@ -792,6 +792,15 @@ async function presentation() {
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
 // ce qui ressemble à une demande qu'on lui fait (une question, un ordre) — le reste, sans son nom, ne le concerne pas
 const ADRESSE = /^(et )?(dis|dit|dites|donne|mets|met|allume|allumes|eteins|eteint|eteindre|baisse|monte|augmente|diminue|coupe|tamise|lance|ajoute|rappelle|note|cherche|trouve|montre|affiche|explique|raconte|calcule|convertis|combien|quelle?s?|quel|quels|ou|comment|pourquoi|quand|qui|est ce qu|est ce que|qu est ce|c est quoi|tu peux|tu sais|tu connais|peux tu|sais tu|pourrais tu|j ai besoin|je veux|je voudrais|fais|fait|ouvre|ferme|active|envoie|envoyer|previens|arrete|stop|repete|lis|regarde|aide|traduis|ecris|programme|reveille|minuteur|il fait|il va|ca fait|y a t il|il y a)\b/;
+let monId = ''; try { monId = localStorage.getItem('atlas-appareil') || ''; if (!monId) { monId = Math.random().toString(36).slice(2, 10); localStorage.setItem('atlas-appareil', monId); } } catch (e) { monId = Math.random().toString(36).slice(2, 10); }
+async function quiRepond(texte) {
+  const r0 = VOIXMAISON.root(); if (!r0) return true;
+  const ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(() => ctl && ctl.abort(), 2500);
+  try {
+    const j = await (await fetch(`${r0}/atlas/repond`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: monId, texte: N(texte).slice(0, 80), pic: (OREILLES.meter && OREILLES.meter().pic) || 0, appareil: S.settings.piece || '' }), cache: 'no-store', signal: ctl ? ctl.signal : undefined })).json();
+    return j.repond !== false;
+  } catch (e) { return true; } finally { clearTimeout(tm); }
+}
 async function vie() {
   for (;;) {
     if (dlg.state === 'off' || voice.endormi) { await wait(500); continue; }
@@ -837,6 +846,8 @@ async function vie() {
       CONV.parleAtlas(dlg.qui);
       dlg.discret = false;
     } else if (!talk && !appele) { journal(r, dlg.qui, 'en veille : il attend son nom'); continue; } // en veille : il ne répond qu'à son nom
+    // plusieurs Atlas dans la maison : seul celui qui t'a le mieux entendu répond
+    if (!(await quiRepond(r))) { journal(r, dlg.qui, 'un autre Atlas, plus proche, répond'); continue; }
     dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now(); dlg.quiParlait = dlg.qui;
     dlg.busy = true;
     try {
@@ -912,6 +923,7 @@ function ouvreReglages() {
   $('#r-eleven-effet').value = s.elevenEffet || 'leger';
   $('#r-eleven-etat').textContent = !s.elevenKey || !/^sk_/.test(s.elevenKey) || !s.elevenVoice ? (s.elevenVoice || s.elevenKey ? ELEVEN.explique('') : '') : ELEVEN.erreur && Date.now() < ELEVEN.downUntil ? `En pause : ${ELEVEN.explique({ message: ELEVEN.erreur, status: +(ELEVEN.erreur.match(/ElevenLabs (\d+)/) || [])[1] })}` : 'Prête.';
   $('#r-micro').value = s.micSens || 'loin';
+  $('#r-piece').value = s.piece || '';
   $('#r-son').checked = s.sound !== false;
   $('#r-eveil').checked = s.eveil !== false;
   $('#r-conv').checked = s.conversation !== false;
@@ -975,6 +987,7 @@ function lieReglages() {
     catch (e) { $('#r-eleven-etat').textContent = ELEVEN.explique(e); }
   });
   bind('#r-micro', el => { s().micSens = el.value; });
+  bind('#r-piece', el => { s().piece = el.value.trim(); });
   bind('#r-son', el => { s().sound = el.checked; });
   bind('#r-conv', el => { s().conversation = el.checked; dlg.discret = false; });
   bind('#r-accueil', el => { s().accueil = el.checked; });
@@ -1020,7 +1033,7 @@ window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.
 async function diagnostic() {
   const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
   const m = OREILLES.meter ? OREILLES.meter() : {};
-  const d = { v: window.ATLAS_VERSION, appareil: /Android/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur', demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden,
+  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? 'téléphone' : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden,
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
     cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',

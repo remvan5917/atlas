@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080a">
+<title>Cockpit Atlas</title>
+<style>
+  :root { --bg: #07080a; --carte: #111216; --carte2: #17181d; --ambre: #ffb547; --ambre2: #ffcf8a; --texte: #f4ece0; --doux: rgba(255, 217, 160, .55);
+    --ligne: rgba(255, 181, 71, .22); --ok: #7ee2b8; --alerte: #ff7a45; --froid: #9cc8ff; color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--texte); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { padding: 14px 16px 28px; background: radial-gradient(70% 40% at 50% 0%, rgba(255, 181, 71, .07), transparent 70%), var(--bg); min-height: 100vh; }
+  .mono { font-family: ui-monospace, 'DejaVu Sans Mono', 'Roboto Mono', monospace; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .titre { letter-spacing: .35em; font-size: 13px; color: var(--ambre2); }
+  .heure { font-size: 34px; font-weight: 300; letter-spacing: .04em; color: var(--texte); }
+  .etat { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pastille { border: 1px solid var(--ligne); border-radius: 999px; padding: 5px 11px; font-size: 12px; color: var(--doux); background: rgba(255, 181, 71, .04); }
+  .pastille b { color: var(--texte); font-weight: 600; }
+  .pastille.ok b { color: var(--ok); } .pastille.al b { color: var(--alerte); }
+  main { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); align-items: start; }
+  .carte { background: linear-gradient(180deg, var(--carte2), var(--carte)); border: 1px solid var(--ligne); border-radius: 16px; padding: 12px 14px 14px; min-width: 0; }
+  .carte h2 { margin: 0 0 10px; font: 600 11px ui-monospace, monospace; letter-spacing: .3em; color: var(--ambre); display: flex; justify-content: space-between; align-items: center; }
+  .carte h2 span { color: var(--doux); letter-spacing: .1em; font-weight: 400; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .tuile { border: 1px solid var(--ligne); border-radius: 12px; padding: 10px; background: rgba(255, 255, 255, .02); cursor: pointer; user-select: none; min-height: 74px; display: flex; flex-direction: column; justify-content: space-between; transition: background .2s, border-color .2s; }
+  .tuile .nom { font-size: 13px; line-height: 1.2; }
+  .tuile .val { font: 12px ui-monospace, monospace; color: var(--doux); }
+  .tuile.on { background: rgba(255, 181, 71, .16); border-color: rgba(255, 181, 71, .65); box-shadow: 0 0 18px rgba(255, 181, 71, .18) inset; }
+  .tuile.on .val { color: var(--ambre2); }
+  .tuile.hs { opacity: .45; }
+  .tuile input[type=range] { width: 100%; accent-color: var(--ambre); margin: 6px 0 0; }
+  .ligne { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(255, 181, 71, .08); font-size: 13px; }
+  .ligne:last-child { border-bottom: 0; }
+  .ligne .k { color: var(--doux); } .ligne .v { text-align: right; } .v.ok { color: var(--ok); } .v.al { color: var(--alerte); }
+  .cams { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .cam { position: relative; border: 1px solid var(--ligne); border-radius: 10px; overflow: hidden; background: #020304; aspect-ratio: 16 / 9; cursor: pointer; }
+  .cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cam .lab { position: absolute; left: 6px; top: 5px; font: 10px ui-monospace, monospace; letter-spacing: .14em; text-shadow: 0 0 4px #000; }
+  .cam .info { position: absolute; right: 6px; bottom: 5px; font: 10px ui-monospace, monospace; color: var(--doux); text-shadow: 0 0 4px #000; }
+  .cam .vide { position: absolute; inset: 0; display: grid; place-items: center; font: 11px ui-monospace, monospace; color: var(--doux); text-align: center; padding: 6px; }
+  .alerte { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(255, 181, 71, .08); font-size: 13px; }
+  .alerte:last-child { border-bottom: 0; }
+  .alerte .h { font: 12px ui-monospace, monospace; color: var(--doux); flex: 0 0 44px; }
+  .alerte.urgent .t { color: var(--alerte); }
+  .alerte img { width: 64px; height: 40px; object-fit: cover; border-radius: 6px; flex: 0 0 auto; }
+  .boutons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  button { font: inherit; font-size: 13px; color: var(--texte); background: rgba(255, 181, 71, .08); border: 1px solid var(--ligne); border-radius: 10px; padding: 9px 12px; cursor: pointer; }
+  button:active { transform: scale(.98); }
+  button.danger { border-color: rgba(255, 122, 69, .7); color: #ffd2c2; background: rgba(255, 122, 69, .12); }
+  .marche { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+  .prix { border: 1px solid var(--ligne); border-radius: 10px; padding: 8px; }
+  .prix .s { font: 11px ui-monospace, monospace; color: var(--doux); letter-spacing: .1em; }
+  .prix .p { font-size: 17px; margin-top: 2px; } .haut { color: var(--ok); } .bas { color: var(--alerte); }
+  .config { max-width: 520px; margin: 40px auto; }
+  .config input { width: 100%; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); margin: 8px 0; }
+  .muted { color: var(--doux); font-size: 12px; }
+  @media (max-width: 420px) { .heure { font-size: 26px; } main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="titre mono">◢ COCKPIT · ATLAS</div>
+    <div class="heure mono" id="heure">--:--</div>
+  </div>
+  <div class="etat" id="etat"></div>
+</header>
+<main id="main"></main>
+<div id="config" class="config" hidden>
+  <div class="titre mono">◢ ADRESSE DE LA MAISON</div>
+  <p class="muted">Ouvre d'abord Atlas sur cet appareil (le cockpit reprend son adresse), ou tape l'adresse de l'ordinateur de la maison :</p>
+  <input id="adresse" placeholder="https://….ts.net" autocomplete="off">
+  <button id="adresse-ok">Enregistrer</button>
+</div>
+<script>
+'use strict';
+/* Le cockpit de la maison : lumières, prises, caméras, alertes, marchés, Shadow, énergie, système — en temps réel.
+   Il reprend l'adresse de la maison des réglages d'Atlas (même appareil) ; tout passe par l'ordinateur de la maison (Tailscale). */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const N = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
+const reglages = S.settings || {};
+let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
+if (!ROOT) ROOT = (reglages.localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+if (!/^https?:\/\//.test(ROOT) || /localhost:11434/.test(ROOT)) ROOT = '';
+async function appel(chemin, corps, ms = 15000) {
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(ROOT + chemin, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl.signal });
+    if (!r.ok) throw new Error(r.status);
+    return /image/.test(r.headers.get('Content-Type') || '') ? r.blob() : r.json();
+  } finally { clearTimeout(tm); }
+}
+const hh = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+const nf = (v, d = 2) => Number(v).toLocaleString('fr-FR', { maximumFractionDigits: d });
+
+/* ---------- la mise en page ---------- */
+function cartes() {
+  $('#main').innerHTML = `
+    <section class="carte" style="grid-column:1/-1"><h2>LUMIÈRES <span id="lum-res"></span></h2><div class="grille" id="lumieres"></div>
+      <div class="boutons" style="margin-top:10px"><button id="b-bas">Tout éteindre en bas</button><button id="b-absent">Mode absent</button><button class="danger" id="b-danger">Protocole danger</button></div></section>
+    <section class="carte"><h2>CAMÉRAS <span>toucher : photo fraîche</span></h2><div class="cams" id="cams"></div></section>
+    <section class="carte"><h2>ALERTES <span id="al-res"></span></h2><div id="alertes"></div></section>
+    <section class="carte"><h2>PRISES</h2><div class="grille" id="prises"></div></section>
+    <section class="carte"><h2>MARCHÉS <span>cours au comptant</span></h2><div class="marche" id="marche"></div><div id="annonces" class="muted" style="margin-top:8px"></div></section>
+    <section class="carte"><h2>MAISON</h2><div id="maison"></div></section>
+    <section class="carte"><h2>SYSTÈMES</h2><div id="systeme"></div></section>`;
+  $('#b-bas').onclick = toutEteindre; $('#b-absent').onclick = basculeAbsent; $('#b-danger').onclick = danger;
+}
+const ligne = (k, v, cls = '') => `<div class="ligne"><span class="k">${esc(k)}</span><span class="v ${cls}">${esc(v)}</span></div>`;
+
+/* ---------- les lumières et les prises ---------- */
+let appareils = [];
+async function chargeAppareils() {
+  try { appareils = (await appel('/maison/appareils')).appareils || []; } catch (e) { return; }
+  const lampes = appareils.filter(a => a.type === 'lampe'), prises = appareils.filter(a => a.type !== 'lampe');
+  $('#lum-res').textContent = `${lampes.filter(a => a.allume).length} allumée(s) sur ${lampes.length}`;
+  $('#lumieres').innerHTML = lampes.map(a => `<div class="tuile ${a.allume ? 'on' : ''} ${a.allume == null ? 'hs' : ''}" data-id="${esc(a.id)}">
+      <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'sans courant' : a.allume ? `${a.lum != null ? a.lum + ' %' : 'allumée'}` : 'éteinte'}</div>
+      ${a.lum != null ? `<input type="range" min="2" max="100" value="${a.allume ? a.lum : 50}" data-lum="${esc(a.id)}">` : ''}</div>`).join('');
+  $('#prises').innerHTML = prises.map(a => `<div class="tuile ${a.allume ? 'on' : ''} ${a.allume == null ? 'hs' : ''}" data-id="${esc(a.id)}">
+      <div class="nom">${esc(a.nom)}</div><div class="val">${a.allume == null ? 'débranchée' : a.watts != null ? `${a.allume ? 'allumée' : 'éteinte'} · ${nf(a.watts, 0)} W` : a.allume ? 'allumée' : 'éteinte'}</div></div>`).join('');
+  document.querySelectorAll('.tuile[data-id]').forEach(el => el.addEventListener('click', e => { if (e.target.matches('input')) return; bascule(el.dataset.id); }));
+  document.querySelectorAll('input[data-lum]').forEach(el => el.addEventListener('change', () => commande([el.dataset.lum], true, +el.value)));
+  majMaison();
+}
+async function commande(ids, allume, lum) {
+  try { await appel('/maison/commande', Object.assign({ ids, allume }, lum != null ? { lum } : {}), 20000); } catch (e) { /* rien */ }
+  setTimeout(chargeAppareils, 400);
+}
+function bascule(id) { const a = appareils.find(x => x.id === id); if (!a || a.allume == null) return; commande([id], !a.allume); }
+function toutEteindre() { const l = appareils.filter(a => a.allume && a.type === 'lampe' && !/\bchambres?\b/.test(N(a.nom))); if (l.length) commande(l.map(a => a.id), false); }
+async function danger() {
+  if (!confirm('Protocole danger : toutes les lumières à fond, une photo de chaque caméra gardée comme preuve, et une alerte urgente sur ton téléphone. On y va ?')) return;
+  const l = appareils.filter(a => a.type === 'lampe' && a.allume != null);
+  await Promise.all([l.length ? appel('/maison/commande', { ids: l.map(a => a.id), allume: true, lum: 100, teinte: 50 }, 20000).catch(() => {}) : null, appel('/maison/danger', {}).catch(() => {})]);
+  if (confirm('Appeler le 17 maintenant ?')) location.href = 'tel:17';
+  chargeAppareils(); chargeAlertes();
+}
+
+/* ---------- le mode absent, la sentinelle ---------- */
+let absent = false;
+async function chargeSentinelle() { try { absent = !!(await appel('/maison/sentinelle')).absent; } catch (e) { /* rien */ } majEtat(); }
+async function basculeAbsent() { try { await appel('/maison/sentinelle', { absent: !absent }); } catch (e) { /* rien */ } setTimeout(chargeSentinelle, 500); }
+
+/* ---------- les caméras ---------- */
+let cams = [], urls = {};
+async function chargeCams() {
+  const l = [];
+  try { ((await appel('/maison/ezviz')).cameras || []).forEach(c => l.push({ nom: c.nom, ezviz: true, en_ligne: c.en_ligne !== false, batterie: c.batterie })); } catch (e) { /* rien */ }
+  try { ((await appel('/maison/cameras')).cameras || []).forEach(c => l.push({ nom: c.nom.charAt(0).toUpperCase() + c.nom.slice(1), cle: c.nom, en_ligne: true })); } catch (e) { /* rien */ }
+  cams = l; dessineCams();
+  cams.filter(c => !c.ezviz).forEach(photo); // les caméras branchées : une image toutes les 30 s ; celles sur batterie : à la demande
+}
+function dessineCams() {
+  $('#cams').innerHTML = cams.map((c, i) => `<div class="cam" data-i="${i}">${urls[c.nom] ? `<img src="${urls[c.nom]}" alt="">` : `<div class="vide">${c.en_ligne ? (c.ezviz ? 'sur batterie<br>toucher pour une photo' : 'chargement…') : 'SIGNAL PERDU'}</div>`}
+    <span class="lab" style="color:${c.en_ligne ? 'var(--texte)' : 'var(--alerte)'}">${esc(c.nom.toUpperCase())}</span><span class="info">${c.ezviz && c.batterie != null ? `🔋 ${c.batterie} %` : ''}${c.at ? ` · ${c.at}` : ''}</span></div>`).join('');
+  document.querySelectorAll('.cam').forEach(el => el.onclick = () => photo(cams[+el.dataset.i]));
+}
+async function photo(c) {
+  if (!c || !c.en_ligne) return;
+  if (c.ezviz) { const el = document.querySelector(`.cam[data-i="${cams.indexOf(c)}"] .info`); if (el) el.textContent = 'réveil…'; }
+  try {
+    const b = await appel(c.ezviz ? `/maison/ezviz/photo?nom=${encodeURIComponent(c.nom)}` : `/maison/camera?nom=${encodeURIComponent(c.cle)}`, null, c.ezviz ? 70000 : 20000);
+    if (b instanceof Blob && b.size > 1000) { if (urls[c.nom]) URL.revokeObjectURL(urls[c.nom]); urls[c.nom] = URL.createObjectURL(b); c.at = hh(new Date()); }
+  } catch (e) { /* rien */ }
+  dessineCams();
+}
+
+/* ---------- les alertes ---------- */
+let photosAlertes = {};
+async function chargeAlertes() {
+  let l = []; try { l = (await appel('/maison/alertes?depuis=0')).alertes || []; } catch (e) { return; }
+  l = l.filter(a => a.gravite !== 'info').slice(-8).reverse();
+  $('#al-res').textContent = l.length ? `${l.length} récentes` : '';
+  $('#alertes').innerHTML = l.length ? l.map(a => `<div class="alerte ${a.gravite === 'urgent' ? 'urgent' : ''}"><span class="h">${hh(new Date(a.at))}</span>${a.image ? `<img data-al="${a.id}" alt="">` : ''}<span class="t">${esc(a.texte)}</span></div>`).join('') : '<div class="muted">Rien à signaler.</div>';
+  for (const a of l.filter(x => x.image)) {
+    if (!photosAlertes[a.id]) { try { const b = await appel(`/maison/alerte/image?id=${a.id}`); if (b instanceof Blob) photosAlertes[a.id] = URL.createObjectURL(b); } catch (e) { /* rien */ } }
+    const img = document.querySelector(`img[data-al="${a.id}"]`); if (img && photosAlertes[a.id]) img.src = photosAlertes[a.id];
+  }
+}
+
+/* ---------- les marchés ---------- */
+async function chargeMarche() {
+  let m; try { m = await appel('/atlas/marche?h=24'); } catch (e) { return; }
+  const noms = { XAU: 'OR', XAG: 'ARGENT', HG: 'CUIVRE', EURUSD: 'EUR/USD' };
+  $('#marche').innerHTML = Object.entries(m.cours || {}).map(([k, c]) => `<div class="prix"><div class="s">${noms[k] || k}</div><div class="p">${nf(c.prix, k === 'EURUSD' ? 4 : 2)}</div>${c.var24 != null ? `<div class="${c.var24 >= 0 ? 'haut' : 'bas'} mono" style="font-size:12px">${c.var24 >= 0 ? '▲' : '▼'} ${nf(Math.abs(c.var24))} %</div>` : ''}</div>`).join('');
+  const prochaines = (m.annonces || []).filter(a => a.impact === 'High' && Date.parse(a.date) > Date.now()).slice(0, 3);
+  $('#annonces').innerHTML = prochaines.length ? 'Annonces fortes : ' + prochaines.map(a => `${esc(a.pays)} ${esc(a.titre)} (${new Date(a.date).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })})`).join(' · ') : '';
+}
+
+/* ---------- la maison : Shadow, la Fusée, l'énergie, la météo ---------- */
+let diag = {}, energie = null, meteo = null;
+async function chargeDiag() { try { diag = await appel('/atlas/diag'); } catch (e) { /* rien */ } majMaison(); }
+async function chargeEnergie() { try { energie = await appel('/maison/energie'); } catch (e) { /* rien */ } majMaison(); }
+async function chargeMeteo() {
+  const v = reglages.ville; if (!v || !v.lat) return;
+  try { meteo = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${v.lat}&longitude=${v.lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1`)).json(); } catch (e) { /* rien */ }
+  majEtat();
+}
+const recent = x => { if (!x || !x.recu) return false; const [h, m, s] = x.recu.split(':').map(Number), t = new Date(); t.setHours(h, m, s || 0, 0); return Date.now() - t < 3 * 60000; };
+function majMaison() {
+  const el = $('#maison'); if (!el) return;
+  const sh = Object.entries(diag).find(([k]) => /^shadow/.test(k)), s = sh && recent(sh[1]) ? sh[1] : null;
+  const fu = appareils.find(a => /\bfusee\b/.test(N(a.nom)));
+  const h = new Date().getHours();
+  const atlas = Object.entries(diag).filter(([k, v]) => !/^shadow/.test(k) && recent(v)).map(([k]) => k);
+  const tot = energie ? Object.values(energie.aujourdhui || {}).reduce((a, b) => a + b, 0) : null;
+  el.innerHTML = ligne('Shadow', s ? (s.enfantVu ? 'réveillé · il le voit' : 'réveillé') : 'endormi ou fermé', s ? 'ok' : '')
+    + (fu ? ligne('La Fusée', fu.allume ? ((h >= 20 || h < 8) ? 'allumée · il dort ici' : 'allumée') : 'éteinte', fu.allume ? 'ok' : '') : '')
+    + ligne('Atlas allumés', atlas.length ? atlas.join(', ') : 'aucun')
+    + (tot != null ? ligne("Énergie aujourd'hui", `${nf(tot)} kWh · ${nf(tot * (energie.prix_kwh || 0.25))} €`) : '');
+}
+function majEtat() {
+  const c = meteo && meteo.current, d = meteo && meteo.daily;
+  $('#etat').innerHTML = `<span class="pastille ${absent ? 'al' : 'ok'}">Maison <b>${absent ? 'mode absent' : 'présence'}</b></span>`
+    + (c ? `<span class="pastille">${esc(reglages.ville.name || '')} <b>${Math.round(c.temperature_2m)}°</b>${d ? ` · ${Math.round(d.temperature_2m_min[0])}/${Math.round(d.temperature_2m_max[0])}° · pluie ${d.precipitation_probability_max[0]} %` : ''}</span>` : '')
+    + `<span class="pastille" id="p-sys">Systèmes <b>…</b></span>`;
+  if (sys) majSysteme();
+}
+
+/* ---------- les systèmes ---------- */
+let sys = null;
+async function chargeSysteme() { try { sys = await appel('/maison/pc', { action: 'systeme' }); } catch (e) { /* rien */ } majSysteme(); }
+function majSysteme() {
+  if (!sys) return;
+  const off = Object.entries(sys.services || {}).filter(([, v]) => !v).map(([k]) => k);
+  const pb = off.length || sys.cpu_temp >= 85 || sys.disque >= 90;
+  const p = $('#p-sys'); if (p) { p.className = `pastille ${pb ? 'al' : 'ok'}`; p.innerHTML = `Systèmes <b>${pb ? 'à vérifier' : 'opérationnels'}</b>`; }
+  $('#systeme').innerHTML = ligne('Processeur', `${sys.cpu_temp ?? '?'} °C · charge ${nf(sys.charge, 1)}`, sys.cpu_temp >= 85 ? 'al' : 'ok') + ligne('Carte graphique', `${sys.gpu_temp ?? '?'} °C`, sys.gpu_temp >= 85 ? 'al' : 'ok')
+    + ligne('Mémoire', `${sys.ram} %`, sys.ram >= 90 ? 'al' : 'ok') + ligne('Disque', `${sys.disque} % · ${sys.disque_libre_go} Go libres`, sys.disque >= 90 ? 'al' : 'ok')
+    + Object.entries(sys.services || {}).map(([k, v]) => ligne(k.charAt(0).toUpperCase() + k.slice(1), v ? 'en ligne' : 'ARRÊTÉ', v ? 'ok' : 'al')).join('')
+    + ligne('Réseau', `${sys.reseau.presents} appareils`) + (sys.tailscale || []).map(t => ligne(t.nom, t.en_ligne ? 'connecté' : 'hors ligne', t.en_ligne ? 'ok' : '')).join('');
+}
+
+/* ---------- le démarrage ---------- */
+setInterval(() => { $('#heure').textContent = hh(new Date()); }, 1000);
+$('#heure').textContent = hh(new Date());
+async function veille() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) { /* rien */ } } // l'écran reste allumé (tablette au mur)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { veille(); tout(); } });
+function tout() { chargeAppareils(); chargeSentinelle(); chargeCams(); chargeAlertes(); chargeMarche(); chargeDiag(); chargeEnergie(); chargeSysteme(); chargeMeteo(); }
+function demarre() {
+  cartes(); majEtat(); tout(); veille();
+  setInterval(chargeAppareils, 15000); setInterval(chargeSentinelle, 30000); setInterval(chargeAlertes, 30000); setInterval(chargeDiag, 30000);
+  setInterval(() => cams.filter(c => !c.ezviz).forEach(photo), 30000); setInterval(chargeCams, 5 * 60000);
+  setInterval(chargeMarche, 120000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000);
+}
+if (ROOT) demarre();
+else {
+  $('#config').hidden = false;
+  $('#adresse-ok').onclick = () => { const v = $('#adresse').value.trim().replace(/\/+$/, '').replace(/\/v1$/, ''); if (!/^https:\/\//.test(v)) return; try { localStorage.setItem('cockpit-adresse', v); } catch (e) { /* rien */ } location.reload(); };
+}
+</script>
+</body>
+</html>

@@ -64,7 +64,13 @@ const MAISON = (() => {
     if (/\b(tout|toutes les lumieres|toute la maison|tous les appareils|partout)\b/.test(c)) return (/lumieres?/.test(c) ? appareils.filter(lumineux) : appareils.slice()).filter(a => (allume ? !chaud(a) : !protege(a)));
     const m = mots(c);
     const notes = appareils.map(a => { const n = mots(a.nom); const k = m.filter(w => n.some(x => x === w || (w.length > 3 && x.startsWith(w.slice(0, -1))))).length; return { a, k, tout: k && k === n.length } }).filter(o => o.k);
-    if (!notes.length) return /\b(lumieres?|lampes?)\b/.test(c) && (/\b(les|toutes)\b/.test(c) || appareils.filter(lumineux).length === 1) ? appareils.filter(a => lumineux(a) && !protege(a)) : [];
+    if (!notes.length) {
+      if (/\b(lumieres?|lampes?)\b/.test(c) && (/\b(les|toutes)\b/.test(c) || appareils.filter(lumineux).length === 1)) return appareils.filter(a => lumineux(a) && !protege(a));
+      // « allume la lumière » : celle de la pièce où est cet appareil (réglages : « Cet appareil est dans la pièce »)
+      const piece = mots(S.settings.piece || '');
+      if (piece.length && /\b(lumiere|lampe|eclairage|ici)\b/.test(c)) return appareils.filter(a => lumineux(a) && mots(a.nom).some(x => piece.includes(x)));
+      return [];
+    }
     const best = Math.max(...notes.map(o => o.k));
     const meilleurs = notes.filter(o => o.k === best);
     // « l'escalier » : la lampe qui s'appelle exactement comme ça (pas aussi « Escalier premier étage ») ; « les escaliers » : toutes
