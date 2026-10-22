@@ -14,6 +14,8 @@
      tout seul vers 21 h 30 s'il y a quelqu'un.
    - Il apprend tes habitudes : 4 jours sur 14 à la même heure (± 25 min) → il propose, « oui » → automatique (seulement si tu es là) ;
      « quelles habitudes as-tu remarquées ? », « supprime les automatismes ».
+   - La veille d'actualités : « surveille les infos sur la Fed », « préviens-moi s'il y a du nouveau sur l'or », « mes veilles »,
+     « arrête de surveiller la Fed » (Google Actualités toutes les 20 min, 7 h–23 h, trié par le cerveau de la maison).
    - Les réveils : « réveille-moi à 7 h », « réveille-moi en semaine à 6 h 45 » (lever de soleil 15 min avant, sur l'ordinateur,
      même téléphone fermé), « mes réveils », « annule mes réveils », « désactive / active le réveil de l'école ».
    - Les alertes de prix : « préviens-moi si l'or passe 4 150 », « si l'argent perd 1 % », « mes alertes de prix »,
@@ -425,7 +427,24 @@ const SCIFI = (() => {
     fx.ok(); return say(actif ? 'La lumière suit de nouveau le soleil : fraîche le matin, chaude le soir.' : "D'accord : quand tu allumes, la lumière garde sa teinte d'avant.");
   }
 
+  /* ---------- la veille d'actualités : l'ordinateur lit l'actu toutes les 20 minutes et ne prévient que du vraiment nouveau ---------- */
+  async function veille(action, sujet) {
+    let r; try { r = await appel('/maison/veilles', action === 'liste' ? null : action === 'ajoute' ? { sujet } : { supprime: sujet || 'tout' }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const l = r.veilles || [];
+    fx.ok();
+    if (action === 'ajoute') return say(`C'est noté : je surveille l'actualité sur « ${sujet} », toutes les 20 minutes, de 7 h à 23 h. Je ne te préviens que s'il y a un vrai fait nouveau et important, pas à chaque article.`);
+    if (action === 'supprime') return say(sujet && sujet !== 'tout' ? `J'arrête de surveiller « ${sujet} ».` : "J'arrête toutes mes veilles d'actualités.");
+    return say(l.length ? `Je surveille : ${liste(l.map(v => v.sujet))}.` : "Je ne surveille aucune actualité pour l'instant. Dis par exemple : surveille les infos sur la Fed.");
+  }
+
   function route(t, n) {
+    { // « surveille les infos sur la Fed », « préviens-moi s'il y a du nouveau sur l'or », « arrête de surveiller la Fed », « mes veilles »
+      const aj = String(t).match(/(?:surveille|suis|garde un (?:œil|oeil) sur|fais (?:une |la )?veille sur)\s+(?:l['’]actu(?:alité)?|les (?:infos|actualités|actus|nouvelles))?\s*(?:sur|de|à propos de|concernant|autour de)?\s*(.+?)\s*[.!?]*$/i)
+        || String(t).match(/préviens[- ]moi\s+(?:s['’]il y a|quand il y a|dès qu['’]il y a)\s+(?:du nouveau|des nouvelles|une info|de l['’]actu)\s+(?:sur|à propos de|concernant)\s+(.+?)\s*[.!?]*$/i);
+      if (/\b(arrete|stop|ne surveille plus|supprime|annule)\b.*\b(surveiller|veilles?|surveillance de l actu)\b/.test(n)) { const m = String(t).match(/surveiller\s+(?:l['’]actu(?:alité)? (?:sur|de)\s+)?(.+?)\s*[.!?]*$/i); return () => veille('supprime', m && !/^(tout|les veilles)$/i.test(m[1]) ? m[1] : 'tout'); }
+      if (/\b(mes veilles|qu est ce que tu surveilles|quelles actus tu surveilles|tu surveilles quoi)\b/.test(n)) return () => veille('liste');
+      if (aj && aj[1] && !/\b(maison|cameras?|perimetre|alarme|enfant|fils|reseau|ordi)\b/.test(N(aj[1])) && /\b(infos?|actu|actualites?|nouvelles|nouveau|veille|surveille)\b/.test(n)) return () => veille('ajoute', aj[1].replace(/^(?:sur|de)\s+/i, '').trim());
+    }
     if (/\b(cockpit|tableau de bord|ecran de controle|panneau de controle de la maison)\b/.test(n) && !/\breglages\b/.test(n)) return () => { window.open('cockpit.html', '_blank'); return say("J'ouvre le cockpit de la maison."); };
     if (/\b(combien|consommation|consomme|consomment|coute|coutent|facture|energie|electricite|kilowatt|gourmand)\b/.test(n) && /\b(maison|prise|prises|station|tele|television|fusee|musique|lumieres?|ampoules?|appareils?|ce mois|aujourd hui|energie|electricite|consomme)\b/.test(n) && !/\b(or|argent|bitcoin|action|nasdaq|cuivre)\b/.test(n) && !/\b(kilowatt ?heure coute|prix du kilowatt)\b/.test(n)) return () => energie(t, n);
     if (/\b(le kilowatt ?heure|le kwh|prix du kilowatt ?heure)\b.*\d/.test(n)) return () => prixKwh(t);
