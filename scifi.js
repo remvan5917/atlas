@@ -8,6 +8,8 @@
    - « état des systèmes » / « diagnostic » : l'ordinateur (températures, mémoire, disque), les services de la maison, le réseau.
    - « qui est à la maison ? » : les téléphones, Shadow (réveillé ? il voit le petit ?), les voix entendues, le réseau.
    - « lance la fusée » / « compte à rebours » : 10, 9, 8… la Fusée s'allume au décollage.
+   - Les alertes de prix : « préviens-moi si l'or passe 4 150 », « si l'argent perd 1 % », « mes alertes de prix »,
+     « supprime les alertes de prix » (l'ordinateur surveille toutes les 2 minutes, notification + voix).
    ========================================================= */
 'use strict';
 
@@ -59,7 +61,7 @@ const SCIFI = (() => {
     } catch (e) { return null; }
   }
   async function alertes(depuis) {
-    try { return ((await appel('/maison/alertes?depuis=0', null, 10000)).alertes || []).filter(a => a.at >= depuis && a.gravite !== 'info'); } catch (e) { return null; }
+    try { return ((await appel('/maison/alertes?depuis=0', null, 10000)).alertes || []).filter(a => a.at >= depuis && a.gravite !== 'info' && a.gravite !== 'annonce'); } catch (e) { return null; }
   }
 
   /* ---------- le scan de sécurité ---------- */
@@ -178,22 +180,70 @@ const SCIFI = (() => {
     const f = l.find(a => /\bfusee\b/.test(N(a.nom)));
     if (!f) return say("Je ne trouve pas la Fusée.");
     const lum = l.filter(a => a.type === 'lampe' && a.allume && !chambre(a));
-    if (f.allume) await regle([f.id], false).catch(() => {});
     sfx('demarrage');
-    await say('Séquence de lancement. Tous les systèmes sont prêts. Dix. Neuf. Huit. Sept. Six. Cinq. Quatre. Trois. Deux. Un.');
+    // en duo avec Shadow s'il est réveillé : Atlas lance la séquence, Shadow fait le compte à rebours et allume la Fusée
+    const canal = (nom, msg) => appel(`/maison/canal/${nom}`, msg, 10000);
+    let duo = false;
+    try {
+      await appel('/maison/canal/atlas?attente=0', null, 5000); // on vide les vieux messages
+      await say('Séquence de lancement. Shadow, ici Atlas : tu es prêt ?');
+      await canal('shadow', { type: 'fusee', de: 'atlas' });
+      const r = await appel('/maison/canal/atlas?attente=6', null, 10000);
+      duo = (r.messages || []).some(m => m.type === 'fusee-pret');
+    } catch (e) { duo = false; }
+    if (duo) {
+      let fini = false;
+      try { const r = await appel('/maison/canal/atlas?attente=25', null, 30000); fini = (r.messages || []).some(m => m.type === 'fusee-ok'); } catch (e) { /* tant pis */ }
+      sfx('final');
+      if (lum.length) { try { for (const v of [100, 20, 100, 30, 100]) { await regle(lum.map(a => a.id), true, v, 100); await wait(120); } await Promise.all(lum.map(a => regle([a.id], true, a.lum, a.teinte))); } catch (e) { /* tant pis */ } }
+      return say(fini ? "Décollage confirmé. Bravo l'équipage, mission réussie !" : 'Shadow a perdu le contact, mais la fusée est partie. Mission réussie !');
+    }
+    if (f.allume) await regle([f.id], false).catch(() => {});
+    await say('Pas de réponse de Shadow : je lance seul. Tous les systèmes sont prêts. Dix. Neuf. Huit. Sept. Six. Cinq. Quatre. Trois. Deux. Un.');
     await regle([f.id], true).catch(() => {});
     sfx('final');
     if (lum.length) { try { for (const v of [100, 20, 100, 30, 100]) { await regle(lum.map(a => a.id), true, v, 100); await wait(120); } await Promise.all(lum.map(a => regle([a.id], true, a.lum, a.teinte))); } catch (e) { /* tant pis */ } }
     return say('Décollage ! La Fusée a quitté la Terre.');
   }
 
+  /* ---------- les alertes de prix (l'ordinateur surveille 24 h/24, et prévient par notification et à la voix) ---------- */
+  const INSTR = [[/\b(l or|de l or|gold|xau)\b/, 'XAU', "l'or"], [/\b(l argent|de l argent|silver|xag)\b/, 'XAG', "l'argent"], [/\b(cuivre|copper)\b/, 'HG', 'le cuivre'], [/\b(euro dollar|eurusd|l euro)\b/, 'EURUSD', "l'euro-dollar"]];
+  const fmt = (v, sym) => (sym === 'EURUSD' ? v.toFixed(5) : v.toLocaleString('fr-FR', { maximumFractionDigits: 2 }));
+  async function prixAlerte(t, n) {
+    const ins = INSTR.find(([re]) => re.test(n));
+    if (!ins) return say("Sur quel marché ? Je surveille l'or, l'argent, le cuivre et l'euro-dollar.");
+    const pc = String(t).match(/(\d+(?:[.,]\d+)?)\s*(?:%|pour\s?cents?)/i);
+    const nb = String(t).replace(/(\d)[\s ](?=\d{3}\b)/g, '$1').match(/(\d+(?:[.,]\d+)?)(?!\s*(?:%|pour))/);
+    let corps;
+    if (pc) { const v = parseFloat(pc[1].replace(',', '.')); corps = { sym: ins[1], pct: /\b(perd|baisse|chute|recule|descend|tombe|lache)\b/.test(n) ? -v : v }; }
+    else if (nb) corps = { sym: ins[1], seuil: parseFloat(nb[1].replace(',', '.')) };
+    else return say(`À quel prix ? Dis par exemple : préviens-moi si ${ins[2]} passe 4 150.`);
+    let r; try { r = await appel('/maison/prix-alertes', corps, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (r.erreur) return say(r.erreur === 'pas de cours' ? `Je n'ai pas encore le cours de ${ins[2]}.` : "Je n'ai pas compris l'alerte.");
+    const a = r.alerte; fx.ok();
+    const premiere = !S.prixVu; if (premiere) { S.prixVu = true; save(); }
+    return say(`${a.type === 'pct' ? `Alerte posée : je te préviens si ${ins[2]} ${a.pct > 0 ? 'prend' : 'perd'} ${Math.abs(a.pct)} %, c'est-à-dire ${a.sens === 'haut' ? 'au-dessus' : 'en dessous'} de ${fmt(a.seuil, a.sym)}` : `Alerte posée : je te préviens dès que ${ins[2]} ${a.sens === 'haut' ? 'dépasse' : 'passe sous'} ${fmt(a.seuil, a.sym)}`}. ${ins[2].charAt(0).toUpperCase() + ins[2].slice(1)} est à ${fmt(r.cours, a.sym)} en ce moment.${premiere ? ' Je surveille le cours au comptant, toutes les 2 minutes : il peut différer de quelques points du contrat future que tu trades.' : ''}`);
+  }
+  async function prixListe(supprimer) {
+    let r; try { r = await appel('/maison/prix-alertes', supprimer ? { supprime: 'tout' } : null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (supprimer) { fx.ok(); return say(r.supprimees ? `${r.supprimees} alerte${r.supprimees > 1 ? 's' : ''} de prix supprimée${r.supprimees > 1 ? 's' : ''}.` : "Il n'y avait aucune alerte de prix."); }
+    const l = r.alertes || [];
+    if (!l.length) return say("Aucune alerte de prix en cours.");
+    const nom = sym => (INSTR.find(x => x[1] === sym) || [])[2] || sym;
+    hud('Alertes de prix', l.map(a => [nom(a.sym), `${a.sens === 'haut' ? '▲ au-dessus de' : '▼ sous'} ${fmt(a.seuil, a.sym)}`, 'attente']), []);
+    return say(`${l.length} alerte${l.length > 1 ? 's' : ''} : ${l.map(a => `${nom(a.sym)} ${a.sens === 'haut' ? 'au-dessus de' : 'sous'} ${fmt(a.seuil, a.sym)}`).join(', ')}.`);
+  }
+
   function route(t, n) {
+    if (/\b(mes alertes de prix|les alertes de prix|quelles alertes (de prix )?(sont )?(en cours|posees))\b/.test(n) && !/\b(supprime|efface|enleve|annule)\b/.test(n)) return () => prixListe(false);
+    if (/\b(supprime|efface|enleve|annule|retire)\b.*\balertes? de prix\b/.test(n)) return () => prixListe(true);
+    if (/\b(previens moi|alerte moi|dis moi|averti?s moi|mets une alerte|pose une alerte|alerte)\b.*\b(si|quand|des que|lorsque)\b/.test(n) && INSTR.some(([re]) => re.test(n)) && /\d/.test(t)) return () => prixAlerte(t, n);
     if (/\b(scan (de securite|du perimetre|des cameras)|scanne (le perimetre|la maison|les cameras|les alentours)|protocole (de )?securite|verifie (le perimetre|toutes les cameras|la maison)|tout est en ordre dehors)\b/.test(n)) return scan;
     if (/\b(protocole depart|je pars|on part|je m en vais|on s en va|je sors de la maison|je quitte la maison|mode absent)\b/.test(n) && !/\b(visio|en vacances dans|chez moi ce soir)\b/.test(n) && !/\b(fin|arrete|sors) (du )?mode absent\b/.test(n)) return depart;
     if (/\b(protocole retour|je suis (rentre|de retour|a la maison)|on est (rentres?|de retour)|me revoila|fin du mode absent|mode presence)\b/.test(n)) return retour;
     if (/\b(etat des systemes|etat de tes systemes|diagnostic( complet| du systeme| de la maison)?|rapport systeme|comment vont (tes|les) systemes|statut (des )?systemes|etat de l ordi(nateur)?)\b/.test(n) && !/\bshadow\b/.test(n)) return systemes;
     if (/\b(qui est (a la maison|present|dans la maison)|il y a qui a la maison|qui est rentre|qui est dans la maison|y a quelqu un a la maison|ou est (mon fils|le petit))\b/.test(n)) return presence;
-    if (/\b(lance la fusee|lancement de la fusee|decollage|compte a rebours|fais decoller la fusee)\b/.test(n)) return fusee;
+    if (/\b(lance la fusee|lancement de la fusee|decollage|compte a rebours|fais decoller la fusee)\b/.test(n)) return fusee; // avec Shadow s'il est réveillé
     return null;
   }
   return { route, scan, hud };

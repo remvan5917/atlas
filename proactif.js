@@ -26,7 +26,7 @@ const PROACTIF = (() => {
   async function tic() {
     for (let i = file.length - 1; i >= 0; i--) if (file[i].expire < Date.now()) file.splice(i, 1);
     if (!file.length || parle || !dlg.started || voice.endormi || dlg.state === 'off' || dlg.busy || voice.occupe() || OREILLES.hearing()) return;
-    const x = file.find(y => (y.urgent || (!nuit() && quelquun())) && (S.settings.proactif !== false || /^(eco|ny)-/.test(y.cle)));
+    const x = file.find(y => (y.urgent || (!nuit() && quelquun())) && (S.settings.proactif !== false || /^(eco|ny|alerte)-/.test(y.cle)));
     if (!x || Date.now() - (voice.endedAt || 0) < (x.enchaine ? 700 : 6000)) return;
     file.splice(file.indexOf(x), 1);
     dits[x.cle] = Date.now(); garde();

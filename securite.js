@@ -166,7 +166,9 @@ const SECURITE = (() => {
       const der = res[res.length - 1];
       PROACTIF.annonce(`alerte-${der.id}`, async () => `${res.length} nouveaux appareils se sont connectés au réseau de la maison. Si ce sont tes nouvelles prises ou ampoules, relance la connexion des appareils sur l'ordinateur : je les reconnaîtrai. Sinon, dis « rapport de sécurité ».`, { urgent: res.some(a => a.gravite === 'urgent'), expire: Date.now() + 6 * 3600000 });
     }
-    l.filter(a => a.gravite !== 'info' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
+    // « qui sonne à la porte » (gravité annonce) : un ding-dong, la photo, et il le dit tout de suite — ça ne vaut que 3 minutes
+    l.filter(a => a.gravite === 'annonce').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
+    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000) }));
   }
   setInterval(releveAlertes, 20000); setTimeout(releveAlertes, 9000);
   async function rapport(n) {
