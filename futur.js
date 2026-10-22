@@ -197,6 +197,45 @@ const FUTUR = (() => {
     return say(i >= et.length ? '' : 'Recette fermée. Les minuteurs lancés continuent.');
   }
 
+  /* ---------- les missions galactiques de son fils (Shadow les valide) ---------- */
+  const enfant = () => (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+  async function missions(t, n) {
+    const p = enfant();
+    let r;
+    try {
+      if (/\b(ajoute|nouvelle|cree)\b.*\bmission\b/.test(n)) {
+        const nom = String(t).replace(/^.*?\bmission\b\s*(?:pour\s+\S+\s*)?(?:[:,-]\s*)?/i, '').replace(/\s*[,(]?\s*\d+\s*points?\)?\s*[.!]*$/i, '').replace(/[.!]+$/, '').trim();
+        if (nom.length < 3) return say('Quelle mission ? Dis par exemple : « ajoute une mission pour mon fils : nourrir le chat ».');
+        r = await appel('/maison/missions', { ajoute: { nom, points: +((n.match(/\b(\d{1,2}) points?\b/) || [])[1] || 15) } });
+        return say(`Mission ajoutée pour ${p} : ${nom}. Shadow la lui proposera.`);
+      }
+      if (/\b(retire|supprime|enleve)\b.*\bmission\b/.test(n)) {
+        r = await appel('/maison/missions');
+        const x = r.missions.find(m => N(t).includes(N(m.nom)) || N(m.nom).split(' ').filter(w => w.length > 3).some(w => N(t).includes(w)));
+        if (!x) return say(`Je ne trouve pas cette mission. Ses missions : ${r.missions.map(m => m.nom).join(', ')}.`);
+        await appel('/maison/missions', { retire: x.id });
+        return say(`Mission retirée : ${x.nom}.`);
+      }
+      if (/\bmedaille\b/.test(n)) {
+        const pour = (String(t).match(/\bpour\s+(.{3,60}?)\s*[.!]*$/i) || [])[1] || '';
+        r = await appel('/maison/missions', { medaille: pour ? `pour ${pour}` : 'Bravo champion' });
+        sfx('final');
+        return say(`Médaille envoyée${pour ? ` pour ${pour}` : ''}. Shadow va faire la cérémonie à ${p}. Plus 25 points.`);
+      }
+      r = await appel('/maison/missions');
+    } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const faites = r.missions.filter(m => r.faites.includes(m.id)), reste = r.missions.filter(m => !r.faites.includes(m.id));
+    try { SCIFI.hud(`Missions · ${p}`, [['Grade', `${r.grade} · ${r.points} pts`, 'ok'], ...r.missions.map(m => [m.nom, r.faites.includes(m.id) ? 'accomplie' : `+${m.points}`, r.faites.includes(m.id) ? 'ok' : 'attente']), ['Cette semaine', `${r.semaine} missions`, 'ok']]); } catch (e) { /* pas d'écran */ }
+    return say(`${p} est ${r.grade}, avec ${r.points} points. Aujourd'hui : ${faites.length ? `${faites.length} mission${faites.length > 1 ? 's' : ''} accomplie${faites.length > 1 ? 's' : ''}` : 'aucune mission accomplie pour l\'instant'}${reste.length ? `, il reste ${reste.map(m => m.nom).join(', ')}` : ''}. ${r.semaine} missions cette semaine.`);
+  }
+  async function depart(t, n) {
+    const m = n.match(/\b(\d{1,2}) h(?:eures?)? ?(\d{2})?\b/);
+    if (!m) return say("À quelle heure ? Dis par exemple : « le départ pour l'école est à 8 h 15 ».");
+    const h = `${m[1].padStart(2, '0')}:${m[2] || '00'}`;
+    try { await appel('/maison/reveils', { ecole_depart: h }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    return say(`Noté : départ pour l'école à ${m[1]} h ${m[2] || ''}. Les matins d'école, Shadow fera le compte à rebours.`);
+  }
+
   function route(t, n) {
     if (cine) {
       if (/^(pause|mets (sur )?pause|on fait (une )?pause|stop pause)$/.test(n)) return () => cinePause(true);
@@ -204,6 +243,8 @@ const FUTUR = (() => {
     }
     if (/\b(fin du film|fin de la seance|le film est fini|sors du mode cinema|arrete le mode cinema|fin du mode cinema)\b/.test(n)) return () => cinema(false);
     if (/\b(mode cinema|lance le cinema|on regarde un film|seance de cinema|ambiance cinema)\b/.test(n)) return () => cinema(true);
+    if (/\b(missions?)\b/.test(n) && /\b(mon fils|du petit|de mon fils|pour mon fils|le petit|galactiques?)\b/.test(n) || /\bmedaille\b.*\b(mon fils|au petit|a mon fils)\b|\b(donne|decerne|envoie)\b.*\bmedaille\b/.test(n)) return () => missions(t, n);
+    if (/\b(depart|on part|il part)\b.*\b(ecole)\b.*\b\d{1,2} h/.test(n)) return () => depart(t, n);
     if (/\bcode d acces\b/.test(n) && /\b(est|sera|c est)\b/.test(n)) return () => code(t);
     if (/\b(retiens|souviens toi|rappelle toi|note|memorise)\b.*\b(ou|endroit)\b.*\b(je pose|je range|je mets|je met|je laisse|j ai pose|j ai mis|j ai range)\b/.test(n)) return () => retiens(t);
     if (/\bou (sont|est|j ai mis|j ai pose|j ai range) (mes|ma|mon|les|la|le|l)\b/.test(n) && !/\b(shadow|camera|alarme|fils|le petit|il)\b/.test(n)) return () => ouSont(t);

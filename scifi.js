@@ -498,7 +498,7 @@ const SCIFI = (() => {
   }
 
   /* ---------- le message holographique : papa se filme 20 secondes, Shadow le projette à son fils façon hologramme ---------- */
-  async function hologramme() {
+  async function hologramme(capsule = '') { // capsule : « AAAA-MM-JJ », le jour où Shadow l'ouvrira
     const enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
     if (!window.MediaRecorder || !navigator.mediaDevices) return say("Cet appareil ne sait pas enregistrer de vidéo.");
     let flux; try { flux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true } }); } catch (e) { return say("Je n'ai pas accès à la caméra et au micro de cet appareil."); }
@@ -508,7 +508,8 @@ const SCIFI = (() => {
       <div class="small muted" style="margin-top:6px">Touche l'image pour arrêter avant les 20 secondes.</div>`, 'graphe-board');
     clearTimeout(effaceT);
     const v = document.getElementById('holo-apercu'); if (v) v.srcObject = flux;
-    await say(`Message holographique pour ${enfant}. Je t'enregistre dans trois, deux, un.`);
+    const duree = capsule ? 60 : 20;
+    await say(capsule ? `Capsule temporelle pour ${enfant}. Tu as une minute. Je t'enregistre dans trois, deux, un.` : `Message holographique pour ${enfant}. Je t'enregistre dans trois, deux, un.`);
     if (typeof OREILLES !== 'undefined') OREILLES.mute(true); // il ne s'écoute pas pendant l'enregistrement
     const type = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') ? 'video/webm;codecs=vp8,opus' : 'video/webm';
     const rec = new MediaRecorder(flux, { mimeType: type, videoBitsPerSecond: 900000 }), morceaux = [];
@@ -516,18 +517,58 @@ const SCIFI = (() => {
     const fini = new Promise(r => { rec.onstop = r; });
     rec.start(500); fx.tone([[1319, 0.12]]);
     const etat = document.getElementById('holo-etat'), t0 = Date.now();
-    const tic = setInterval(() => { if (etat) etat.textContent = `◢ ENREGISTREMENT ● ${Math.max(0, 20 - Math.round((Date.now() - t0) / 1000))} s`; }, 250);
-    await new Promise(r => { const t = setTimeout(r, 20000); const b = document.getElementById('board'); if (b) b.addEventListener('click', () => { clearTimeout(t); r(); }, { once: true }); });
+    const tic = setInterval(() => { if (etat) etat.textContent = `◢ ${capsule ? 'CAPSULE TEMPORELLE' : 'ENREGISTREMENT'} ● ${Math.max(0, duree - Math.round((Date.now() - t0) / 1000))} s`; }, 250);
+    await new Promise(r => { const t = setTimeout(r, duree * 1000); const b = document.getElementById('board'); if (b) b.addEventListener('click', () => { clearTimeout(t); r(); }, { once: true }); });
     clearInterval(tic); rec.stop(); await fini; flux.getTracks().forEach(x => x.stop());
     if (typeof OREILLES !== 'undefined') OREILLES.mute(false);
     fx.tone([[1319, 0.08], [988, 0.14]]); hideBoard();
     const video = new Blob(morceaux, { type: 'video/webm' });
     if (video.size < 5000) return say("L'enregistrement n'a pas marché. On réessaie quand tu veux.");
     try {
-      const r = await fetch(`${root()}/maison/hologramme`, { method: 'POST', headers: { 'Content-Type': 'video/webm' }, body: video, cache: 'no-store' });
+      const r = await fetch(`${root()}/maison/hologramme${capsule ? `?capsule=${capsule}` : ''}`, { method: 'POST', headers: { 'Content-Type': 'video/webm' }, body: video, cache: 'no-store' });
       if (!r.ok) throw new Error(r.status);
     } catch (e) { return say("Je n'ai pas réussi à l'envoyer à l'ordinateur de la maison."); }
+    if (capsule) return say(`Capsule temporelle scellée. Elle restera verrouillée jusqu'au ${new Date(`${capsule}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}. Ce jour-là, Shadow l'ouvrira pour ${enfant}.`);
     return say(`Message enregistré. Shadow le projettera à ${enfant} en hologramme, dès qu'il le verra.`);
+  }
+  // la capsule temporelle : un message à ouvrir plus tard (Noël, son anniversaire, dans un an…)
+  const MOIS = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  function prochaine(mois, jourM, annee) { const auj = new Date(); auj.setHours(0, 0, 0, 0); let d = new Date(annee || auj.getFullYear(), mois, jourM); if (!annee && d <= auj) d = new Date(auj.getFullYear() + 1, mois, jourM); return d; }
+  function dateCapsule(n) {
+    let m;
+    if (/\bnoel\b/.test(n)) return prochaine(11, 25);
+    if (/\b(nouvel an|jour de l an)\b/.test(n)) return prochaine(0, 1);
+    if ((m = n.match(/\ble (\d{1,2}|premier|1er) (janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)(?: (\d{4}))?\b/))) return prochaine(MOIS.indexOf(m[2]), /^\d+$/.test(m[1]) ? +m[1] : 1, m[3] ? +m[3] : 0);
+    if ((m = n.match(/\bdans (un|une|deux|trois|cinq|six|dix|\d{1,3}) (ans?|annees?|mois|semaines?|jours?)\b/))) {
+      const k = { un: 1, une: 1, deux: 2, trois: 3, cinq: 5, six: 6, dix: 10 }[m[1]] || +m[1], d = new Date();
+      if (/^an|^annee/.test(m[2])) d.setFullYear(d.getFullYear() + k); else if (m[2] === 'mois') d.setMonth(d.getMonth() + k); else if (/^semaine/.test(m[2])) d.setDate(d.getDate() + 7 * k); else d.setDate(d.getDate() + k);
+      return d;
+    }
+    return null;
+  }
+  async function capsule(t, n) {
+    const enfant = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    let d = dateCapsule(n);
+    if (!d && /\banniversaire\b/.test(n)) {
+      if (!S.anniversaireEnfant) {
+        const a = N(await ask(`C'est quand, l'anniversaire de ${enfant} ?`, { wait: 12000 }) || '');
+        const m = a.match(/\b(\d{1,2}|premier|1er) (janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\b/);
+        if (!m) return say("Je n'ai pas compris la date. Redis-moi par exemple : « capsule temporelle pour le 14 mai ».");
+        S.anniversaireEnfant = [MOIS.indexOf(m[2]), /^\d+$/.test(m[1]) ? +m[1] : 1]; save();
+      }
+      d = prochaine(S.anniversaireEnfant[0], S.anniversaireEnfant[1]);
+    }
+    if (!d) {
+      const a = N(await ask('On l\'ouvre quand ? À Noël, pour son anniversaire, dans un an, ou à une date ?', { wait: 12000 }) || '');
+      d = dateCapsule(a) || (/\banniversaire\b/.test(a) && S.anniversaireEnfant ? prochaine(S.anniversaireEnfant[0], S.anniversaireEnfant[1]) : null);
+      if (!d) return say("Je n'ai pas compris la date. Redis-moi par exemple : « capsule temporelle à ouvrir dans un an ».");
+    }
+    const jours = Math.round((d - new Date()) / 86400000);
+    if (jours < 1) return say('Choisis une date dans le futur.');
+    const lib = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    if (!(await askYesNo(`Capsule temporelle à ouvrir le ${lib}, dans ${jours} jours. On enregistre ?`))) return say('Capsule annulée.');
+    return hologramme(iso(d));
   }
 
   /* ---------- l'inverse : le message holographique du petit, projeté chez papa ---------- */
@@ -703,6 +744,7 @@ const SCIFI = (() => {
     if ((/\b(bisous?|calins?|coeurs?|rayons?) lumineux\b|\bsignal lumineux\b|\bje pense a lui (aussi|fort|tres fort)\b/.test(n) || /\b(envoie|envoi|renvoie|fais)( lui| a mon fils| au petit| a shadow)? (un |des |plein de |gros |un gros )*(bisous?|calins?|coeurs?)\b/.test(n)) && !/\b(maman|sa mere|ma mere)\b/.test(n)) return () => lienFils(t);
     if (/\b(rapport de (la )?nuit|qu est ce qui s est passe (cette nuit|la nuit derniere|pendant la nuit|pendant que je dormais)|comment s est passee la nuit|la nuit (a ete|s est passee)|il s est passe quoi cette nuit|bilan de (la )?nuit)\b/.test(n)) return () => rapportNuit(false);
     if (/\b(rejoue|remets|repasse|revoir)\b.*\b(message|hologramme)\b/.test(n) && holoFils) return () => projetteFils(holoFils, true);
+    if (/\bcapsules? temporelles?\b|\bcapsule (a|pour) ouvrir\b/.test(n)) return () => capsule(t, n);
     if (/\b(message (holographique|video|hologramme)|hologramme|enregistre (un|moi un) message (video )?pour|filme moi pour|laisse un message video)\b/.test(n) && !/\b(rejoue|lis|ecoute)\b/.test(n)) return hologramme;
     if (/\b(declenche|active|lance|fais sonner|allume)\b.*\bsirenes?\b/.test(n)) return () => sirene(t, n, true);
     if (/\b(arrete|coupe|stop|eteins|desactive)\b.*\bsirenes?\b/.test(n)) return () => sirene(t, n, false);
