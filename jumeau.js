@@ -378,7 +378,7 @@ const JUMEAU = (() => {
       const n = N(a.nom); let pos = null, rgb = AM, nom = '';
       if (/fusee/.test(n) && ch) { pos = [ch.x0 + 0.4, ch.y0 + 0.7, ch.z1 - 0.5]; rgb = VI; nom = 'FUSÉE'; }
       else if (/tele|tv/.test(n) && sa) { pos = [sa.x1 - 0.4, sa.y0 + 1, 0]; rgb = CY; nom = 'TÉLÉ'; }
-      else if (/musique/.test(n) && ch) { pos = [ch.x0 + 2.9, ch.y0 + 0.9, ch.z1 - 0.4]; rgb = VI; nom = 'MUSIQUE'; }
+      else if (/musique/.test(n) && ch) { pos = [ch.x0 + 1.6, ch.y0 + 0.9, ch.z1 - 0.4]; rgb = VI; nom = 'MUSIQUE'; }
       if (!pos) continue;
       const q = proj(...pos), on = !!a.allume && curseur == null;
       halo(q[0], q[1], q[3] * (on ? 0.9 : 0.35), rgb, on ? 0.45 + 0.15 * Math.sin(t / 500) : 0.12);
@@ -460,31 +460,31 @@ const JUMEAU = (() => {
   const prenomEnfant = ps => { const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom))); const n = ch ? ch.a.nom.replace(/chambre\s*(de\s*|d['’]\s*)?/i, '').trim() : ''; return n && n.length < 16 ? n.toUpperCase() : 'TON FILS'; };
 
   const flane = (p, graine, t) => { const w = (p.x1 - p.x0) * 0.22, d = (p.z1 - p.z0) * 0.22; return [(p.x0 + p.x1) / 2 + Math.sin(t / 9000 + graine) * w, p.y0, (p.z0 + p.z1) / 2 + Math.cos(t / 11000 + graine * 1.7) * d]; }; // il marche doucement dans la pièce
-  // il dort : son lit, lui allongé dessous la couverture qui se soulève quand il respire, des « z » qui montent
+  // il dort : son lit en hauteur (une mezzanine), le long du mur des toilettes dans le sens de la longueur, avec son échelle ;
+  // lui allongé dessus, la couverture qui se soulève quand il respire, des « z » qui montent
+  function lit(p, on) {
+    const y = p.y0, hl = 1.45, xa = p.x1 - 1.0, xb = p.x1 - 0.08, za = 0.3, zb = 2.4, col = on ? VI : CY, al = on ? 0.6 : 0.35;
+    poly([[xa, y + hl, za], [xb, y + hl, za], [xb, y + hl, zb], [xa, y + hl, zb]], col, al, 1.1, true, on); // le sommier
+    [[xa, za], [xa, zb], [xb, za], [xb, zb]].forEach(([x, z]) => trait([x, y, z], [x, y + hl + 0.35, z], col, al * 0.7)); // les montants
+    trait([xa, y + hl + 0.35, za], [xa, y + hl + 0.35, zb - 0.7], col, al * 0.8); trait([xb, y + hl + 0.35, za], [xb, y + hl + 0.35, zb], col, al * 0.6); // la barrière
+    trait([xa, y + hl + 0.35, za], [xb, y + hl + 0.35, za], col, al * 0.6); trait([xa, y + hl + 0.35, zb], [xb, y + hl + 0.35, zb], col, al * 0.6);
+    const ze = zb - 0.65, ze2 = zb - 0.25; // l'échelle, côté chambre
+    trait([xa - 0.05, y, ze], [xa - 0.05, y + hl + 0.35, ze], col, al); trait([xa - 0.05, y, ze2], [xa - 0.05, y + hl + 0.35, ze2], col, al);
+    for (let k = 1; k <= 5; k++) { const yy = y + (hl * k) / 5.5; trait([xa - 0.05, yy, ze], [xa - 0.05, yy, ze2], col, al * 0.8); }
+    return { y: y + hl, xa, xb, za, zb };
+  }
   function dort(p, prenom, t) {
-    const y = p.y0, xa = p.x0 + 0.5, xb = p.x0 + 2.5, za = p.z0 + 0.35, zb = p.z0 + 1.5, hl = 0.45, zc = (za + zb) / 2;
-    const lit = [[xa, y + hl, za], [xb, y + hl, za], [xb, y + hl, zb], [xa, y + hl, zb]];
-    poly(lit, CY, 0.45, 1, true); [[xa, za], [xb, za], [xb, zb], [xa, zb]].forEach(([x, z]) => trait([x, y, z], [x, y + hl, z], CY, 0.25));
-    trait([xa, y + hl, za], [xa, y + hl + 0.5, za], CY, 0.35); trait([xa, y + hl, zb], [xa, y + hl + 0.5, zb], CY, 0.35); trait([xa, y + hl + 0.5, za], [xa, y + hl + 0.5, zb], CY, 0.35); // la tête de lit
-    const souffle = 0.03 * Math.sin(t / 900), yc = y + hl + 0.14 + souffle;
-    const tete = proj(xa + 0.32, y + hl + 0.14, zc), r = tete[3] * 0.12;
+    const L_ = lit(p, true), xm = (L_.xa + L_.xb) / 2, souffle = 0.03 * Math.sin(t / 900), yc = L_.y + 0.14 + souffle;
+    const tete = proj(xm, L_.y + 0.16, L_.za + 0.35), r = tete[3] * 0.12;
     halo(tete[0], tete[1], r * 6, VI, 0.35);
     ctx.strokeStyle = `rgba(${VI},.9)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(tete[0], tete[1], Math.max(2, r), 0, 6.283); ctx.stroke();
-    const cv_ = [[xa + 0.6, yc, za + 0.1], [xb - 0.1, yc - 0.03, za + 0.1], [xb - 0.1, yc - 0.03, zb - 0.1], [xa + 0.6, yc, zb - 0.1]]; // la couverture
-    face(cv_, VI, 0.18); poly(cv_, VI, 0.7, 1.2, true, true);
-    for (let i = 0; i < 3; i++) { const ph = (t / 2400 + i / 3) % 1, q = proj(xa + 0.3 + ph * 0.4, y + hl + 0.5 + ph * 1.1, zc - ph * 0.3); texte(i === 2 ? 'Z' : 'z', q[0], q[1], `rgba(${VI},${(0.9 * (1 - ph)).toFixed(2)})`, 9 + i * 2 + ph * 4, '', 0, 0.5); }
-    const q = proj((xa + xb) / 2, y + hl + 1.5, zc); texte(`${prenom} · DORT`, q[0], q[1], `rgba(${VI},.95)`, 9.5, '', 0, 4.5);
-  }
-  // qui est où, en réfléchissant : à la maison, il n'y a que papa et son fils (quand il est là) → au plus deux hologrammes.
-  // Pour chacun, on pèse les indices et on le met à l'endroit le plus probable ; une pièce allumée sans personne reste
-  // seulement allumée. « PAPA » quand c'est sûr, « PAPA ? » quand c'est probable, rien quand on ne sait pas.
-  const AUTO = /sentinelle|routine|programme|planif|habitude|reveil|oracle|dissuasion|aventure|soiree/; // une lumière allumée par la maison elle-même n'est pas un indice
-  function derniereMain(id, T) { // la dernière fois qu'une main (pas un automatisme) l'a allumée, et il y a combien de minutes
-    if (!donnees) return null; const now = T == null ? Date.now() / 1000 : T; let der = null;
-    for (const e of donnees.lumieres) { if (e.t > now) break; if (e.ids.includes(id) && e.allume && !AUTO.test(N(e.par || ''))) der = e; }
-    return der ? (now - der.t) / 60 : null;
+    const cv_ = [[L_.xa + 0.1, yc, L_.za + 0.65], [L_.xb - 0.1, yc, L_.za + 0.65], [L_.xb - 0.1, yc - 0.03, L_.zb - 0.15], [L_.xa + 0.1, yc - 0.03, L_.zb - 0.15]]; // la couverture
+    face(cv_, VI, 0.18); poly(cv_, VI, 0.75, 1.2, true, true);
+    for (let i = 0; i < 3; i++) { const ph = (t / 2400 + i / 3) % 1, q = proj(xm - ph * 0.3, L_.y + 0.45 + ph * 1.0, L_.za + 0.3 - ph * 0.2); texte(i === 2 ? 'Z' : 'z', q[0], q[1], `rgba(${VI},${(0.9 * (1 - ph)).toFixed(2)})`, 9 + i * 2 + ph * 4, '', 0, 0.5); }
+    const q = proj(xm, L_.y + 1.25, (L_.za + L_.zb) / 2); texte(`${prenom} · DORT`, q[0], q[1], `rgba(${VI},.95)`, 9.5, '', 0, 4.5);
   }
   function habitants(ps, T, t) {
+    const monteOk = (performance.now() - naissance) > 2400;
     const now = T == null ? Date.now() / 1000 : T, d = new Date(now * 1000), h = d.getHours() + d.getMinutes() / 60, soir = h >= 19.5 || h < 9;
     const chEnfant = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom)));
     const prenom = prenomEnfant(ps), marche = a => !!a && (T == null ? !!a.allume : !!etatA(a, T).allume);
@@ -502,6 +502,7 @@ const JUMEAU = (() => {
       else if (vuShadow) enfant = { nom: `${prenom} · AVEC SHADOW` };
       else if (allumee || veilleuse) enfant = { nom: prenom };
     }
+    if (chEnfant && !(enfant && enfant.dort) && monteOk) lit(chEnfant, false);
     if (enfant && enfant.dort) dort(chEnfant, prenom, t);
     else if (enfant) { const [x, y, z] = flane(chEnfant, 4.1, t); personne(x, y, z, VI, 1.3, enfant.nom, t, 4); }
     // ---- papa : le lieu le plus probable
