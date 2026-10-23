@@ -458,20 +458,10 @@ const JUMEAU = (() => {
   // qui est à la maison, et où : papa là où un de ses Atlas est actif (la pièce de l'appareil), son fils quand Shadow le voit
   let ou = null, ouA = 0;
   async function chargeOu() { if (Date.now() - ouA < 20000) return; ouA = Date.now(); try { ou = await appel('/atlas/ou'); } catch (e) { /* rien */ } }
-  // qui est où : toutes les preuves de la maison, de la plus sûre à la plus probable
-  //  1. papa là où il utilise un Atlas (l'ordinateur, la tablette, la pièce de l'appareil) ;
-  //  2. son fils quand Shadow le voit ;
-  //  3. une pièce allumée = quelqu'un dedans : sa chambre → lui (s'il est chez papa), la chambre de papa → papa,
-  //     une autre pièce → papa s'il n'est pas déjà ailleurs, sinon « présence » ; l'escalier → quelqu'un sur les marches ;
-  //     la télé allumée → quelqu'un au salon ; une lumière restée allumée plus de 3 h sans bouger : sans doute oubliée.
   let enfantMaison = true, coucher = false, enfantA = 0;
   async function chargeEnfant() { if (Date.now() - enfantA < 60000) return; enfantA = Date.now(); try { const r = await appel('/maison/shadow'); enfantMaison = r.a_la_maison !== false; coucher = !!r.coucher; } catch (e) { /* on suppose */ } }
   const prenomEnfant = ps => { const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom))); const n = ch ? ch.a.nom.replace(/chambre\s*(de\s*|d['’]\s*)?/i, '').trim() : ''; return n && n.length < 16 ? n.toUpperCase() : 'TON FILS'; };
-  function allumeeDepuis(id, T) { // depuis quand cette lampe est dans son état (en secondes), d'après le journal ; null si on ne sait pas
-    if (!donnees) return null; const now = T == null ? Date.now() / 1000 : T;
-    let der = null; for (const e of donnees.lumieres) { if (e.t > now) break; if (e.ids.includes(id)) der = e; }
-    return der ? now - der.t : null;
-  }
+
   const flane = (p, graine, t) => { const w = (p.x1 - p.x0) * 0.22, d = (p.z1 - p.z0) * 0.22; return [(p.x0 + p.x1) / 2 + Math.sin(t / 9000 + graine) * w, p.y0, (p.z0 + p.z1) / 2 + Math.cos(t / 11000 + graine * 1.7) * d]; }; // il marche doucement dans la pièce
   // il dort : son lit, lui allongé dessous la couverture qui se soulève quand il respire, des « z » qui montent
   function dort(p, prenom, t) {
@@ -488,47 +478,61 @@ const JUMEAU = (() => {
     for (let i = 0; i < 3; i++) { const ph = (t / 2400 + i / 3) % 1, q = proj(xa + 0.3 + ph * 0.4, y + hl + 0.5 + ph * 1.1, zc - ph * 0.3); texte(i === 2 ? 'Z' : 'z', q[0], q[1], `rgba(${VI},${(0.9 * (1 - ph)).toFixed(2)})`, 9 + i * 2 + ph * 4, '', 0, 0.5); }
     const q = proj((xa + xb) / 2, y + hl + 1.5, zc); texte(`${prenom} · DORT`, q[0], q[1], `rgba(${VI},.95)`, 9.5, '', 0, 4.5);
   }
+  // qui est où, en réfléchissant : à la maison, il n'y a que papa et son fils (quand il est là) → au plus deux hologrammes.
+  // Pour chacun, on pèse les indices et on le met à l'endroit le plus probable ; une pièce allumée sans personne reste
+  // seulement allumée. « PAPA » quand c'est sûr, « PAPA ? » quand c'est probable, rien quand on ne sait pas.
+  const AUTO = /sentinelle|routine|programme|planif|habitude|reveil|oracle|dissuasion|aventure|soiree/; // une lumière allumée par la maison elle-même n'est pas un indice
+  function derniereMain(id, T) { // la dernière fois qu'une main (pas un automatisme) l'a allumée, et il y a combien de minutes
+    if (!donnees) return null; const now = T == null ? Date.now() / 1000 : T; let der = null;
+    for (const e of donnees.lumieres) { if (e.t > now) break; if (e.ids.includes(id) && e.allume && !AUTO.test(N(e.par || ''))) der = e; }
+    return der ? (now - der.t) / 60 : null;
+  }
   function habitants(ps, T, t) {
-    const dans = (p, dx, dz) => [(p.x0 + p.x1) / 2 + dx, p.y0, (p.z0 + p.z1) / 2 + dz];
+    const now = T == null ? Date.now() / 1000 : T, d = new Date(now * 1000), h = d.getHours() + d.getMinutes() / 60, soir = h >= 19.5 || h < 9;
     const chEnfant = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom)));
-    const dehors = T == null && ou && ou.pourquoi === 'dehors';
-    let papa = false, lui = false;
-    if (T == null && ou && ou.pourquoi === 'actif' && (ou.depuis || 0) < 600) {
-      const n = N(ou.piece || '');
-      const p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
-      if (!p && ou.role === 'ordinateur') { personne(3.75, 0, 1.55, AM, 1.8, 'PAPA', t, 4); papa = true; } // devant l'ordinateur (rez-de-chaussée, côté cour, à droite)
-      else if (!p && ou.role === 'tablette') { personne(-0.2, 0, 1.45, AM, 1.8, 'PAPA', t, 4); papa = true; } // devant la tablette (la lingerie, mur de droite)
-      else if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); papa = true; }
-    }
-    let vuShadow = false;
-    if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); vuShadow = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
-    else vuShadow = !!donnees && donnees.shadow.some(e => Math.abs(e.t - T) < 10 * 60);
-    const prenom = prenomEnfant(ps);
-    if (vuShadow && chEnfant) { const [x, y, z] = dans(chEnfant, 0.9, -0.6); personne(x, y, z, VI, 1.3, `${prenom} · AVEC SHADOW`, t, 4); lui = true; }
-    // les pièces allumées
-    const allumees = ps.filter(p => p.a && (p.v || 0) > 0.05).sort((a, b) => (a === chEnfant ? -1 : 0) - (b === chEnfant ? -1 : 0));
-    allumees.forEach((p, i) => {
-      const n = N(p.a.nom), dep = allumeeDepuis(p.a.id, T), a = clamp((p.v || 0) * 1.6, 0, 1);
-      if (dep != null && dep > 3 * 3600) { const q = proj((p.x0 + p.x1) / 2, p.y0 + 1.6, (p.z0 + p.z1) / 2); texte('OUBLIÉE ?', q[0], q[1], `rgba(${AM},.55)`, 8.5, '', 0, 1.2); return; } // allumée depuis des heures : sûrement oubliée
-      let nom = 'PRÉSENCE', rgb = CY, taille = 1.75;
-      if (p === chEnfant) { if (lui) return; if (enfantMaison) { nom = prenom; rgb = VI; taille = 1.3; lui = true; } }
-      else if (p.k === 2 || /papa/.test(n)) { if (papa) return; if (!dehors) { nom = 'PAPA'; rgb = AM; papa = true; } }
-      else if (!papa && !dehors) { nom = 'PAPA ?'; rgb = AM; papa = true; }
-      if (p.genre === 'escalier') { const u = 0.5 + 0.25 * Math.sin(t / 5000 + i), x = p.x0 + (p.x1 - p.x0) * u; personne(x, p.y0 + (p.y1 - p.y0) * u, (p.z0 + p.z1) / 2, rgb, taille, nom, t, 3, a); return; } // sur les marches
-      const [x, y, z] = flane(p, i * 2.3, t); personne(x, y, z, rgb, taille, nom, t, 3, a);
-    });
-    // sa veilleuse (la Fusée) ou sa musique allumées : il est dans sa chambre ; le soir et la nuit, il dort
+    const prenom = prenomEnfant(ps), marche = a => !!a && (T == null ? !!a.allume : !!etatA(a, T).allume);
     const fus = appareils.find(a => a.type !== 'lampe' && /fusee/.test(N(a.nom))), mus = appareils.find(a => a.type !== 'lampe' && /musique/.test(N(a.nom)));
-    const marche = a => !!a && (T == null ? !!a.allume : !!etatA(a, T).allume);
-    if (!lui && chEnfant && enfantMaison && (marche(fus) || marche(mus))) {
-      const d = new Date((T == null ? Date.now() / 1000 : T) * 1000), h = d.getHours() + d.getMinutes() / 60;
-      if (h >= 19.5 || h < 9 || (T == null && coucher)) dort(chEnfant, prenom, t);
-      else { const [x, y, z] = flane(chEnfant, 4.1, t); personne(x, y, z, VI, 1.3, prenom, t, 4); }
-      lui = true;
+    const tele = appareils.find(a => a.type !== 'lampe' && /tele|tv/.test(N(a.nom))), sa = ps.find(p => p.a && /salon|sejour/.test(N(p.a.nom)));
+    const centre = p => [(p.x0 + p.x1) / 2, p.y0, (p.z0 + p.z1) / 2];
+    // ---- son fils : seulement s'il est chez papa, et seulement avec un indice
+    let enfant = null;
+    if (enfantMaison && chEnfant) {
+      let vuShadow = false;
+      if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); vuShadow = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
+      else vuShadow = !!donnees && donnees.shadow.some(e => Math.abs(e.t - T) < 10 * 60);
+      const veilleuse = marche(fus) || marche(mus), allumee = (chEnfant.v || 0) > 0.05;
+      if (veilleuse && (soir || (T == null && coucher)) && !allumee) enfant = { dort: true };
+      else if (vuShadow) enfant = { nom: `${prenom} · AVEC SHADOW` };
+      else if (allumee || veilleuse) enfant = { nom: prenom };
     }
-    // la télé allumée : quelqu'un au salon (s'il n'y a pas déjà quelqu'un)
-    const tele = T == null && appareils.find(a => a.type !== 'lampe' && /tele|tv/.test(N(a.nom)) && a.allume), sa = ps.find(p => p.a && /salon|sejour/.test(N(p.a.nom)));
-    if (tele && sa && !allumees.includes(sa)) personne(sa.x0 + 1.2, 0, 0.3, papa ? CY : AM, 1.75, papa ? 'DEVANT LA TÉLÉ' : 'PAPA ?', t, 3);
+    if (enfant && enfant.dort) dort(chEnfant, prenom, t);
+    else if (enfant) { const [x, y, z] = flane(chEnfant, 4.1, t); personne(x, y, z, VI, 1.3, enfant.nom, t, 4); }
+    // ---- papa : le lieu le plus probable
+    if (T == null && ou && ou.pourquoi === 'dehors') return; // il est sorti (son téléphone n'est plus à la maison)
+    const lieux = []; // [score, x, y, z, comment le dessiner]
+    if (T == null && ou && ou.pourquoi === 'actif' && (ou.depuis || 0) < 600) { // il utilise un Atlas : le plus sûr
+      const fr = 100 - (ou.depuis || 0) / 12, n = N(ou.piece || ''), p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
+      if (ou.role === 'ordinateur' && !p) lieux.push([fr, 3.75, 0, 1.55]); // devant l'ordinateur (rez-de-chaussée, côté cour, à droite)
+      else if (ou.role === 'tablette' && !p) lieux.push([fr, -0.2, 0, 1.45]); // devant la tablette (la lingerie, mur de droite)
+      else if (p) lieux.push([fr, ...centre(p), p]);
+    }
+    for (const p of ps) {
+      if (!p.a || (p.v || 0) <= 0.05 || (p === chEnfant && enfant)) continue;
+      const m = derniereMain(p.a.id, T); // allumée à la main il y a m minutes : plus c'est récent, plus il y est
+      let sc = m == null ? 8 : m < 180 ? 70 * Math.exp(-m / 25) + 8 : 3;
+      if (p.genre === 'escalier') sc = m != null && m < 2 ? 40 : 2; // l'escalier : on ne fait qu'y passer
+      if ((p.k === 2 || /papa/.test(N(p.a.nom))) && soir) sc += 25; // sa chambre, le soir
+      if (p === chEnfant) sc *= 0.3; // la chambre du petit : papa n'y est pas d'habitude
+      lieux.push([sc, ...centre(p), p]);
+    }
+    if (marche(tele) && sa) lieux.push([45, sa.x0 + 1.2, 0, 0.3]); // la télé allumée : il la regarde
+    lieux.sort((a, b) => b[0] - a[0]);
+    const best = lieux[0];
+    if (!best || best[0] < 15) return; // on ne sait pas où il est : on ne l'invente pas
+    let [sc, x, y, z, p] = best;
+    if (p && p.genre === 'escalier') { const u = 0.5, x2 = p.x0 + (p.x1 - p.x0) * u; personne(x2, p.y0 + (p.y1 - p.y0) * u, (p.z0 + p.z1) / 2, AM, 1.8, sc >= 60 ? 'PAPA' : 'PAPA ?', t, 4); return; }
+    if (p) [x, y, z] = flane(p, 1.3, t);
+    personne(x, y, z, AM, 1.8, sc >= 60 ? 'PAPA' : 'PAPA ?', t, 4, clamp(sc / 40, 0.5, 1));
   }
   // le cœur d'Atlas : une sphère d'anneaux au-dessus du toit, reliée par des flux aux caméras et aux pièces allumées
   function coeur(ps, T, t, m) {
