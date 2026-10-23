@@ -1,6 +1,6 @@
 // Garde Atlas disponible même sans réseau (les outils sans Internet marchent toujours).
 // Les fichiers sont toujours vérifiés auprès du serveur (sinon le navigateur ressert une ancienne version).
-const CACHE = 'atlas-app-v103';
+const CACHE = 'atlas-app-v104';
 const FILES = ['./', 'index.html', 'style.css', 'orthographe.js', 'cerveau.js', 'oreilles.js', 'voix.js', 'empreintes.js', 'yeux.js', 'atlas.js', 'outils.js', 'memoire.js', 'marche.js', 'proactif.js', 'foyer.js', 'bord.js', 'maison.js', 'securite.js', 'pc.js', 'visio.js', 'scifi.js', 'trading.js', 'duo.js', 'constellation.js', 'agenda.js', 'futur.js', 'scene.js', 'noyau.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {
@@ -25,8 +25,8 @@ self.addEventListener('fetch', e => {
   });
   e.respondWith(
     withTimeout(net, 3500)
-      .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || net))
-      .catch(() => (req.mode === 'navigate' ? caches.match('index.html') : Promise.reject(new Error('hors-ligne'))))
+      .catch(() => caches.match(req).then(r => r || net)) // la copie de CETTE version seulement ; sinon on attend le réseau
+      .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : Promise.reject(new Error('hors-ligne'))))) // hors ligne : la dernière copie
   );
 });
 
