@@ -118,7 +118,12 @@ const JUMEAU = (() => {
   // le cadrage automatique : à chaque image, la maison (avec la cour, le toit et le cœur d'Atlas) remplit le cadre,
   // en laissant la place du tableau de bord en haut et en bas ; en douceur (pas de saut quand elle tourne)
   let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, f_ = 0, ox_ = 0, oy_ = 0;
-  const BOITE = []; for (const x of [-L / 2 - 1.2, L / 2 + COUR]) for (const y of [0, FAITE + 1.6]) for (const z of [-D / 2 - 0.4, D / 2 + 0.4]) BOITE.push([x, y, z]);
+  const BOITE = []; // les vrais points de la maison : ses murs, le faîte, la cour et son plateau, le cœur d'Atlas, le bord de la rue
+  for (const z of [-D / 2, D / 2]) {
+    for (const x of [-L / 2, L / 2]) for (const y of [0, TOIT]) BOITE.push([x, y, z]);
+    BOITE.push([0, FAITE, z], [L / 2 + COUR, 0, z], [L / 2 + COUR, H, z], [-L / 2 - 1.4, 0, z]);
+  }
+  BOITE.push([0, FAITE + 2.2, 0]);
   function brut(x, y, z) {
     z = -z; // l'écran est un repère « main gauche » : sans ça, la gauche du plan de papa sortait à droite (la maison en miroir)
     const xx = x - CX, X = xx * cy_ - z * sy_, Z = xx * sy_ + z * cy_, Y = y + niveauDe(y) * ECART - CYV;
@@ -424,45 +429,80 @@ const JUMEAU = (() => {
     }
   }
   // une personne en hologramme : un corps de lumière, des anneaux qui la parcourent de bas en haut, un socle qui tourne, son nom
-  function personne(x, y0, z, rgb, taille, nom, t, prio = 3) {
+  function personne(x, y0, z, rgb, taille, nom, t, prio = 3, a = 1) {
+    if (a < 0.03) return;
+    const tl = (p, q, c, al, ...r) => trait(p, q, c, al * a, ...r), fc = (pp, c, al) => face(pp, c, al * a), pl = (pp, c, al, ...r) => poly(pp, c, al * a, ...r); // tout s'efface avec a
     const k = taille / 1.75, bob = Math.sin(t / 420 + x) * 0.025, Y = h => y0 + h * k + bob;
     // le faisceau de lumière qui la projette, depuis le sol
-    face([[x - 0.35, y0 + 0.01, z - 0.35], [x + 0.35, y0 + 0.01, z - 0.35], [x + 0.35, y0 + 0.01, z + 0.35], [x - 0.35, y0 + 0.01, z + 0.35]], rgb, 0.12);
-    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) trait([x + dx, y0, z + dz], [x + dx * 0.2, Y(1.95), z + dz * 0.2], rgb, 0.08);
+    fc([[x - 0.35, y0 + 0.01, z - 0.35], [x + 0.35, y0 + 0.01, z - 0.35], [x + 0.35, y0 + 0.01, z + 0.35], [x - 0.35, y0 + 0.01, z + 0.35]], rgb, 0.12);
+    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) tl([x + dx, y0, z + dz], [x + dx * 0.2, Y(1.95), z + dz * 0.2], rgb, 0.08);
     // le corps
     const tete = proj(x, Y(1.6), z), r = tete[3] * 0.13 * k;
-    halo(tete[0], tete[1], r * 5, rgb, 0.3);
-    ctx.strokeStyle = `rgba(${rgb},.9)`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(tete[0], tete[1], Math.max(2, r), 0, 6.283); ctx.stroke();
+    halo(tete[0], tete[1], r * 5, rgb, 0.3 * a);
+    ctx.strokeStyle = `rgba(${rgb},${(0.9 * a).toFixed(2)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(tete[0], tete[1], Math.max(2, r), 0, 6.283); ctx.stroke();
     const ep = 0.23 * k, ha = 0.15 * k;
-    poly([[x - ep, Y(1.4), z], [x + ep, Y(1.4), z], [x + ha, Y(0.88), z], [x - ha, Y(0.88), z]], rgb, 0.85, 1.4, true, true); // le buste
-    face([[x - ep, Y(1.4), z], [x + ep, Y(1.4), z], [x + ha, Y(0.88), z], [x - ha, Y(0.88), z]], rgb, 0.12);
+    pl([[x - ep, Y(1.4), z], [x + ep, Y(1.4), z], [x + ha, Y(0.88), z], [x - ha, Y(0.88), z]], rgb, 0.85, 1.4, true, true); // le buste
+    fc([[x - ep, Y(1.4), z], [x + ep, Y(1.4), z], [x + ha, Y(0.88), z], [x - ha, Y(0.88), z]], rgb, 0.12);
     const bras = Math.sin(t / 700 + z) * 0.05;
-    trait([x - ep, Y(1.38), z], [x - ep - 0.08, Y(0.9 + bras), z + 0.05], rgb, 0.8, 1.3, true); trait([x + ep, Y(1.38), z], [x + ep + 0.08, Y(0.9 - bras), z - 0.05], rgb, 0.8, 1.3, true);
-    trait([x - ha * 0.6, Y(0.88), z], [x - ha * 0.8, y0 + 0.02, z], rgb, 0.8, 1.4, true); trait([x + ha * 0.6, Y(0.88), z], [x + ha * 0.8, y0 + 0.02, z], rgb, 0.8, 1.4, true);
-    trait([x, Y(1.47), z], [x, Y(1.4), z], rgb, 0.8, 1.2);
+    tl([x - ep, Y(1.38), z], [x - ep - 0.08, Y(0.9 + bras), z + 0.05], rgb, 0.8, 1.3, true); tl([x + ep, Y(1.38), z], [x + ep + 0.08, Y(0.9 - bras), z - 0.05], rgb, 0.8, 1.3, true);
+    tl([x - ha * 0.6, Y(0.88), z], [x - ha * 0.8, y0 + 0.02, z], rgb, 0.8, 1.4, true); tl([x + ha * 0.6, Y(0.88), z], [x + ha * 0.8, y0 + 0.02, z], rgb, 0.8, 1.4, true);
+    tl([x, Y(1.47), z], [x, Y(1.4), z], rgb, 0.8, 1.2);
     // les anneaux qui la parcourent (le scan de l'hologramme)
-    for (const off of [0, 0.5]) { const h = ((t / 1600 + off) % 1) * 1.75, pts = []; for (let i = 0; i < 18; i++) { const a = (i / 18) * 6.283; pts.push([x + Math.cos(a) * 0.32 * k, Y(h), z + Math.sin(a) * 0.32 * k]); } poly(pts, rgb, 0.45 * Math.sin(Math.PI * h / 1.75), 1); }
+    for (const off of [0, 0.5]) { const h = ((t / 1600 + off) % 1) * 1.75, pts = []; for (let i = 0; i < 18; i++) { const a = (i / 18) * 6.283; pts.push([x + Math.cos(a) * 0.32 * k, Y(h), z + Math.sin(a) * 0.32 * k]); } pl(pts, rgb, 0.45 * Math.sin(Math.PI * h / 1.75), 1); }
     // le socle qui tourne
-    const rot = t / 900; for (let i = 0; i < 28; i += 2) { const a = (i / 28) * 6.283 + rot, b = ((i + 1) / 28) * 6.283 + rot; trait([x + Math.cos(a) * 0.55, y0 + 0.02, z + Math.sin(a) * 0.55], [x + Math.cos(b) * 0.55, y0 + 0.02, z + Math.sin(b) * 0.55], rgb, 0.75, 1.3); }
-    const q = proj(x, Y(2.0), z); texte(nom, q[0], q[1], `rgba(${rgb},.95)`, 9.5, '', 0, prio);
+    const rot = t / 900; for (let i = 0; i < 28; i += 2) { const a = (i / 28) * 6.283 + rot, b = ((i + 1) / 28) * 6.283 + rot; tl([x + Math.cos(a) * 0.55, y0 + 0.02, z + Math.sin(a) * 0.55], [x + Math.cos(b) * 0.55, y0 + 0.02, z + Math.sin(b) * 0.55], rgb, 0.75, 1.3); }
+    const q = proj(x, Y(2.0), z); texte(nom, q[0], q[1], `rgba(${rgb},${(0.95 * a).toFixed(2)})`, 9.5, '', 0, prio);
   }
   // qui est à la maison, et où : papa là où un de ses Atlas est actif (la pièce de l'appareil), son fils quand Shadow le voit
   let ou = null, ouA = 0;
   async function chargeOu() { if (Date.now() - ouA < 20000) return; ouA = Date.now(); try { ou = await appel('/atlas/ou'); } catch (e) { /* rien */ } }
+  // qui est où : toutes les preuves de la maison, de la plus sûre à la plus probable
+  //  1. papa là où il utilise un Atlas (l'ordinateur, la tablette, la pièce de l'appareil) ;
+  //  2. son fils quand Shadow le voit ;
+  //  3. une pièce allumée = quelqu'un dedans : sa chambre → lui (s'il est chez papa), la chambre de papa → papa,
+  //     une autre pièce → papa s'il n'est pas déjà ailleurs, sinon « présence » ; l'escalier → quelqu'un sur les marches ;
+  //     la télé allumée → quelqu'un au salon ; une lumière restée allumée plus de 3 h sans bouger : sans doute oubliée.
+  let enfantMaison = true, enfantA = 0;
+  async function chargeEnfant() { if (Date.now() - enfantA < 60000) return; enfantA = Date.now(); try { enfantMaison = (await appel('/maison/shadow')).a_la_maison !== false; } catch (e) { /* on suppose */ } }
+  const prenomEnfant = ps => { const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom))); const n = ch ? ch.a.nom.replace(/chambre\s*(de\s*|d['’]\s*)?/i, '').trim() : ''; return n && n.length < 16 ? n.toUpperCase() : 'TON FILS'; };
+  function allumeeDepuis(id, T) { // depuis quand cette lampe est dans son état (en secondes), d'après le journal ; null si on ne sait pas
+    if (!donnees) return null; const now = T == null ? Date.now() / 1000 : T;
+    let der = null; for (const e of donnees.lumieres) { if (e.t > now) break; if (e.ids.includes(id)) der = e; }
+    return der ? now - der.t : null;
+  }
+  const flane = (p, graine, t) => { const w = (p.x1 - p.x0) * 0.22, d = (p.z1 - p.z0) * 0.22; return [(p.x0 + p.x1) / 2 + Math.sin(t / 9000 + graine) * w, p.y0, (p.z0 + p.z1) / 2 + Math.cos(t / 11000 + graine * 1.7) * d]; }; // il marche doucement dans la pièce
   function habitants(ps, T, t) {
     const dans = (p, dx, dz) => [(p.x0 + p.x1) / 2 + dx, p.y0, (p.z0 + p.z1) / 2 + dz];
+    const chEnfant = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom)));
+    const dehors = T == null && ou && ou.pourquoi === 'dehors';
+    let papa = false, lui = false;
     if (T == null && ou && ou.pourquoi === 'actif' && (ou.depuis || 0) < 600) {
       const n = N(ou.piece || '');
-      let p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
-      if (!p && ou.role === 'ordinateur') personne(3.75, 0, 1.55, AM, 1.8, 'PAPA', t, 4); // devant l'ordinateur (rez-de-chaussée, côté cour, à droite)
-      else if (!p && ou.role === 'tablette') personne(-0.2, 0, 1.45, AM, 1.8, 'PAPA', t, 4); // devant la tablette (la lingerie, mur de droite)
-      else if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); }
+      const p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
+      if (!p && ou.role === 'ordinateur') { personne(3.75, 0, 1.55, AM, 1.8, 'PAPA', t, 4); papa = true; } // devant l'ordinateur (rez-de-chaussée, côté cour, à droite)
+      else if (!p && ou.role === 'tablette') { personne(-0.2, 0, 1.45, AM, 1.8, 'PAPA', t, 4); papa = true; } // devant la tablette (la lingerie, mur de droite)
+      else if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); papa = true; }
     }
-    let lui = false;
-    if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); lui = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
-    else lui = !!donnees && donnees.shadow.some(e => Math.abs(e.t - T) < 10 * 60);
-    const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom)));
-    if (lui && ch) { const [x, y, z] = dans(ch, 0.9, -0.6); personne(x, y, z, VI, 1.3, 'AVEC SHADOW', t, 4); }
+    let vuShadow = false;
+    if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); vuShadow = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
+    else vuShadow = !!donnees && donnees.shadow.some(e => Math.abs(e.t - T) < 10 * 60);
+    const prenom = prenomEnfant(ps);
+    if (vuShadow && chEnfant) { const [x, y, z] = dans(chEnfant, 0.9, -0.6); personne(x, y, z, VI, 1.3, `${prenom} · AVEC SHADOW`, t, 4); lui = true; }
+    // les pièces allumées
+    const allumees = ps.filter(p => p.a && (p.v || 0) > 0.05).sort((a, b) => (a === chEnfant ? -1 : 0) - (b === chEnfant ? -1 : 0));
+    allumees.forEach((p, i) => {
+      const n = N(p.a.nom), dep = allumeeDepuis(p.a.id, T), a = clamp((p.v || 0) * 1.6, 0, 1);
+      if (dep != null && dep > 3 * 3600) { const q = proj((p.x0 + p.x1) / 2, p.y0 + 1.6, (p.z0 + p.z1) / 2); texte('OUBLIÉE ?', q[0], q[1], `rgba(${AM},.55)`, 8.5, '', 0, 1.2); return; } // allumée depuis des heures : sûrement oubliée
+      let nom = 'PRÉSENCE', rgb = CY, taille = 1.75;
+      if (p === chEnfant) { if (lui) return; if (enfantMaison) { nom = prenom; rgb = VI; taille = 1.3; lui = true; } }
+      else if (p.k === 2 || /papa/.test(n)) { if (papa) return; if (!dehors) { nom = 'PAPA'; rgb = AM; papa = true; } }
+      else if (!papa && !dehors) { nom = 'PAPA ?'; rgb = AM; papa = true; }
+      if (p.genre === 'escalier') { const u = 0.5 + 0.25 * Math.sin(t / 5000 + i), x = p.x0 + (p.x1 - p.x0) * u; personne(x, p.y0 + (p.y1 - p.y0) * u, (p.z0 + p.z1) / 2, rgb, taille, nom, t, 3, a); return; } // sur les marches
+      const [x, y, z] = flane(p, i * 2.3, t); personne(x, y, z, rgb, taille, nom, t, 3, a);
+    });
+    // la télé allumée : quelqu'un au salon (s'il n'y a pas déjà quelqu'un)
+    const tele = T == null && appareils.find(a => a.type !== 'lampe' && /tele|tv/.test(N(a.nom)) && a.allume), sa = ps.find(p => p.a && /salon|sejour/.test(N(p.a.nom)));
+    if (tele && sa && !allumees.includes(sa)) personne(sa.x0 + 1.2, 0, 0.3, papa ? CY : AM, 1.75, papa ? 'DEVANT LA TÉLÉ' : 'PAPA ?', t, 3);
   }
   // le cœur d'Atlas : une sphère d'anneaux au-dessus du toit, reliée par des flux aux caméras et aux pièces allumées
   function coeur(ps, T, t, m) {
@@ -751,7 +791,7 @@ const JUMEAU = (() => {
   function maj() {
     const el = document.getElementById('plan'); if (!el) return;
     if (!boite || !boite.isConnected) monte(el);
-    charge(false); chargeMeteo(); chargeOu(); lance();
+    charge(false); chargeMeteo(); chargeOu(); chargeEnfant(); lance();
   }
   function bascule3d(on) {
     actif = on; try { localStorage.setItem('cockpit-vue', on ? '3d' : '2d'); } catch (e) { /* rien */ }
