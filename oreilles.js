@@ -8,6 +8,7 @@
      chez Google). Sert de secours sans clé Groq.
    ========================================================= */
 'use strict';
+let OREILLES_AEC = null; // l'anti-écho du micro (pour le diagnostic)
 
 const OREILLES = (() => {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -54,7 +55,12 @@ const OREILLES = (() => {
       // le filtre anti-bruit du téléphone peut abîmer une voix d'enfant : papa peut le couper dans les réglages
       // de loin, le filtre anti-bruit du téléphone efface souvent la voix : on le coupe dans ce mode (notre filtre de voix le remplace)
       const far = S.settings.micSens === 'loin';
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: !far && S.settings.micNS !== false, autoGainControl: true } });
+      // l'anti-écho fait passer Android en « mode appel » : branchée en jack sur la sono, la tablette renvoie alors un peu du micro
+      // dans la sortie (le larsen quand Atlas se tait). Sur la tablette, il est coupé (sa propre voix, il la reconnaît autrement).
+      const tablette = /Android/.test(navigator.userAgent) && !/Mobile/.test(navigator.userAgent);
+      const aec = S.settings.micAEC != null ? S.settings.micAEC !== false : !tablette;
+      OREILLES_AEC = aec;
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: aec, noiseSuppression: aec && !far && S.settings.micNS !== false, autoGainControl: true } });
       if (!ctx) ctx = new AC();
       src = ctx.createMediaStreamSource(stream);
       // une tablette (moins puissante, et qui fait aussi tourner le cockpit) : des morceaux plus longs, sinon des bouts de voix sautent quand elle est occupée

@@ -587,6 +587,7 @@ async function handle(text) {
   // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
+  if (/\b(active|desactive|coupe|enleve|remets|allume|eteins) (l )?anti ?echo\b/.test(n)) { const on = /\b(active|remets|allume)\b/.test(n); S.settings.micAEC = on; save(); await say(on ? "Anti-écho activé. Je relance mes oreilles." : "Anti-écho coupé : plus de larsen sur la sono. Je relance mes oreilles."); setTimeout(() => location.reload(), 600); return; }
   if (R.stop.test(n) && !voice.occupe() && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci()) return PC.radioCoupe(); // « stop » : la radio d'ici s'arrête
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (/^(quelle heure (est il|il est|est ce)|il est quelle heure|c est quelle heure|t as l heure|tu as l heure|l heure)$/.test(n)) { const d = new Date(); return say(`Il est ${d.getHours()} h ${d.getMinutes() ? deux2(d.getMinutes()) : ''}.`.replace(' h .', ' heures.')); }
@@ -1095,7 +1096,7 @@ window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.
 async function diagnostic() {
   const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
   const m = OREILLES.meter ? OREILLES.meter() : {};
-  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`,
+  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`, antiecho: typeof OREILLES_AEC !== 'undefined' ? OREILLES_AEC : null,
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
     cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',
