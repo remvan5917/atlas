@@ -260,7 +260,7 @@ async function ask(text, { wait: w = 20000 } = {}) {
   const a = await hear({ maxWait: w });
   return a || '';
 }
-const ORDRE_DIRECT = /^(journal de bord|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
+const ORDRE_DIRECT = /^(journal de bord|(ouvre|affiche) (les |tes )?(reglages|parametres)|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
 const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
 const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
 async function askYesNo(text) {
@@ -656,6 +656,7 @@ async function handle(text) {
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
   if (/\b(test|teste|tester|essai) (du |le |de |un )?(larsen|larcene|larsene)\b/.test(n)) return testLarsen();
   if (/\b(active|desactive|coupe|enleve|remets|allume|eteins) (l )?anti ?echo\b/.test(n)) { const on = /\b(active|remets|allume)\b/.test(n); S.settings.micAEC = on; save(); await say(on ? "Anti-écho activé. Je relance mes oreilles." : "Anti-écho coupé : plus de larsen sur la sono. Je relance mes oreilles."); setTimeout(() => location.reload(), 600); return; }
+  if (/^(ouvre|affiche|montre|ouvrir) (les |tes |mes )?(reglages|parametres)$|^(reglages|parametres)$/.test(n)) { ouvreReglages(); return say('Réglages ouverts.'); }
   if (R.stop.test(n) && !voice.occupe() && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci()) return PC.radioCoupe(); // « stop » : la radio d'ici s'arrête
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
   if (/^(quelle heure (est il|il est|est ce)|il est quelle heure|c est quelle heure|t as l heure|tu as l heure|l heure)$/.test(n)) { const d = new Date(); return say(`Il est ${d.getHours()} h ${d.getMinutes() ? deux2(d.getMinutes()) : ''}.`.replace(' h .', ' heures.')); }
