@@ -556,7 +556,7 @@ function briefing(fin = true) {
 
 /* ---------- ce qu'il comprend ---------- */
 const R = {
-  reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas|a classe|atlase|atlast|hat last|atia|hathia|atlia|atlasse)\b/,
+  reveil: /\b(atlas|atlass|atlasse|atla|at las|at lass|at last|hatlas|hatlass|attlas|atlace|atlase|atlass|latlas|a tlas|a classe|atlase|atlast|hat last|atia|hathia|atlia|atlasse|maxlas|matlas|atlaz|attla)\b/,
   veille: /\b(veille|mets toi en veille|en veille|c est tout|merci c est tout|au revoir|repose toi|tu peux te reposer)\b/, // « bonne nuit Atlas » : la routine du coucher (visio.js)
   stop: /^(stop|tais toi|silence|chut|arrete|ca suffit|stoppe)\b/,
   repete: /\b(repete|redis|tu peux repeter|j ai pas compris|pardon)\b/,

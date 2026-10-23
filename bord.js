@@ -134,7 +134,8 @@ const BORD = (() => {
     let mistral = 0, jetons = 0, req = { mistral: 0, groq: 0, maison: 0 };
     for (const [k, v] of Object.entries(f.cerveaux || {})) {
       const [fo, mo] = k.split('|'); req[fo] = (req[fo] || 0) + v.req;
-      if (fo === 'mistral') { const p = PRIX.find(([re]) => re.test(mo)) || [0, 2, 6]; mistral += (v.in * p[1] + v.out * p[2]) / 1e6 * USD_EUR; jetons += v.in + v.out; }
+      if (fo === 'mistral' && /voxtral/.test(mo)) mistral += v.in / 60 * 0.001 * USD_EUR; // les oreilles : des secondes de voix (environ 0,001 $ la minute)
+      else if (fo === 'mistral') { const p = PRIX.find(([re]) => re.test(mo)) || [0, 2, 6]; mistral += (v.in * p[1] + v.out * p[2]) / 1e6 * USD_EUR; jetons += v.in + v.out; }
     }
     const quota = +S.settings.elevenQuota || 100000, car = f.eleven || 0;
     const jour = new Date().getDate(), finMois = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();

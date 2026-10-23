@@ -59,7 +59,7 @@ const AI = {
   ready() { return this.hasKey() && (this.cfg().local || this.online()); },
   // les oreilles : Groq (Whisper large) et/ou les oreilles de la maison (whisper.cpp sur l'ordinateur, sans limite)
   homeEars() { return typeof VOIXMAISON !== 'undefined' ? VOIXMAISON.root() : ''; },
-  canTranscribe() { return (!!S.settings.key || !!this.homeEars()) && !!window.MediaRecorder && !!navigator.mediaDevices && this.online(); },
+  canTranscribe() { return (!!S.settings.key || !!S.settings.mistralKey || !!this.homeEars()) && !!window.MediaRecorder && !!navigator.mediaDevices && this.online(); },
 
   // Modèles de secours si Groq retire celui qu'on utilise
   FALLBACK: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'],
@@ -294,8 +294,24 @@ const AI = {
     };
     const groqOk = !!S.settings.key && !(S.settings.sttCool > Date.now());
     let j = null;
+    // Voxtral (Mistral) d'abord, s'il a sa clé : la meilleure oreille en français (et presque gratuite) ; un plafond par jour,
+    // puis les oreilles de la maison et Groq comme avant
+    const sec = /wav/.test(blob.type) ? blob.size / 32000 : 4;
+    const jour = new Date().toDateString();
+    if (!S.oreillesMistral || S.oreillesMistral.jour !== jour) S.oreillesMistral = { jour, sec: 0 };
+    if (S.settings.mistralKey && !(this.mistralSttDown > Date.now()) && S.oreillesMistral.sec < (S.settings.voxtralMaxMin || 180) * 60 && this.online()) {
+      try {
+        const fd = new FormData();
+        fd.append('file', blob, `voix.${ext}`); fd.append('model', 'voxtral-mini-latest');
+        const lg = window.ATLAS_LANGUE || 'fr'; if (lg !== 'auto') fd.append('language', lg);
+        j = await this._fetch({ base: this.MISTRAL, key: S.settings.mistralKey }, '/audio/transcriptions', { method: 'POST', body: fd }, 15000);
+        S.oreillesMistral.sec += sec; this.lastEars = 'mistral'; this.lastConfident = true; this.lastHeardAt = Date.now();
+        if (typeof compteMois === 'function') compteMois('mistral', 'voxtral-mini-latest', Math.round(sec), 0);
+        j = { text: j.text || '' }; // pas de morceaux notés : la confiance se juge sur le texte (les filtres ci-dessous)
+      } catch (e) { j = null; this.mistralSttDown = Date.now() + (e.status === 429 ? 600000 : e.status === 401 ? 3600000 : 120000); this.mistralSttErreur = e.message; }
+    }
     // en veille (il attend son nom), ou si papa l'a choisi : les oreilles de la maison d'abord (Groq est gardé pour les vraies conversations)
-    if (home && (S.settings.earsMaisonFirst || cheap || !groqOk)) {
+    if (!j && home && (S.settings.earsMaisonFirst || cheap || !groqOk)) {
       try { j = await viaMaison(); } catch (e) { if (!groqOk) throw e; } // l'ordinateur ne répond pas : Groq
     }
     if (!j) {
