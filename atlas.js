@@ -963,7 +963,7 @@ async function vie() {
       const memes = memeVoix || adresse;
       // un bout de phrase (« C'est… ») : sans doute l'écho de sa voix, ou une phrase coupée — il attend la suite
       const bout = n.split(' ').filter(Boolean).length < 2 || /(\.\.\.|…|,)\s*$/.test(String(r).trim()); // « Et quand l'… dit, » : coupée au milieu
-      const suite = talk && Date.now() - (dlg.repondu || 0) < 15000 && memes && !bout && (dlg.suites || 0) < 2;
+      const suite = talk && Date.now() - (dlg.repondu || 0) < 25000 && memes && !bout && (dlg.suites || 0) < 3; // 25 s et 3 questions de suite sans redire son nom
       const seul = CONV.autres(dlg.qui) === 0 && adresse && n.split(' ').length >= 2 && !bout && !dlg.discret && AI.lastConfident !== false; // mal entendu, et pas appelé : il ne répond pas au hasard
       // « … lumière de la cuisine » : le début s'est perdu (on lui a parlé pendant qu'il parlait) ; il demande « j'allume ou j'éteins ? »
       const frag = !appele && !suite && !seul && !dlg.discret && !!MAISON.fragment(r, n);
