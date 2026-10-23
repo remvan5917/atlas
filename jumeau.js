@@ -37,8 +37,8 @@ const JUMEAU = (() => {
   const PLAN = [ // [motif du nom, niveau, x0, x1, z0, z1, genre]
     [/cuisine/, 0, -5, -1.7, -2.5, 2.5], [/lingerie|buanderie/, 0, -1.7, 1.3, -2.5, 2.5], [/salon|sejour/, 0, 1.3, 5, -2.5, 2.5],
     [/escalier (premier|1er|du 1er|etage)|escalier.*etage/, 1, 1.4, 4.7, -2.5, -1.5, 'escalier'], [/escalier/, 0, -1.6, 1.6, -2.5, -1.5, 'escalier'], // le long du mur gauche : au milieu (vers le 1er), côté cour (vers le 2e)
-    [/toilettes?|wc/, 1, -1.0, 1.2, 0.6, 2.5], [/salle de bains?|salle d eau/, 1, 3.0, 5, -0.3, 2.5], [/chambre papa|chambre de papa|parents/, 2, -5, 5, -2.5, 2.5],
-    [/chambre/, 1, -5, -1.0, -0.2, 2.5], // l'autre chambre : celle du petit, au 1er, côté rue
+    [/toilettes?|wc/, 1, -1.0, 1.2, 0.6, 2.5], [/salle de bains?|salle d eau/, 1, 3.0, 5, 0.6, 2.5], [/chambre papa|chambre de papa|parents/, 2, -5, 5, -2.5, 2.5],
+    [/chambre/, 1, -5, -1.0, -2.5, 2.5], // l'autre chambre : celle du petit, au 1er, côté rue, sur toute la largeur
   ];
   // les pièces sans lampe connectée (on les dessine quand même, éteintes) : les toilettes, entre la chambre du petit et la salle de bain
   const SANS_LAMPE = [['TOILETTES', /toilettes?|wc/, 1, -1.0, 1.2, 0.6, 2.5]];
