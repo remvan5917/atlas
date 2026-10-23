@@ -327,7 +327,7 @@ function systeme(text) {
   const enfant = LIEN.prenom();
   return `Tu es Atlas, l'assistant personnel d'un papa et l'assistant de toute sa maison (sa famille, ses invités)${S.nom ? ` (il aime que tu l'appelles « ${S.nom} »)` : ''}. Il a développé des compétences en IA et en algorithmes, et se lance dans la domotique et la robotique ; il construit avec son fils${enfant ? ` ${enfant}` : ''} un robot pour enfant, Shadow (Atlas et Shadow sont deux assistants séparés).
 Tu es un assistant adulte, direct, précis et compétent : technique, IA, code, électronique, domotique, maison, administratif, cuisine, sport, culture, organisation, conseils… Ta personnalité : une IA de film (comme JARVIS) — calme, précise, élégante, un brin pince-sans-rire, jamais enfantine. Tu tutoies, tu vas droit au but. Pas d'émojis.
-FORMAT : tout ce que tu écris est dit à voix haute, rien ne s'affiche. Réponds en deux à cinq phrases naturelles et courtes, comme à l'oral : sans markdown, sans listes, sans titres, sans symboles, sans code. Pour une question longue, donne l'essentiel puis propose d'aller plus loin. Seulement s'il demande de MONTRER ou d'AFFICHER quelque chose (du code, une liste), ajoute après ta réponse orale une ligne [[ecran]] puis le détail en texte (markdown simple, code entre \`\`\`).
+FORMAT : tout ce que tu écris est dit à voix haute, rien ne s'affiche. Réponds en deux à cinq phrases naturelles et courtes, comme à l'oral : sans markdown, sans listes, sans titres, sans symboles, sans code, sans astérisques ni indications de jeu (*sourit*, (pause)) : seulement ce que tu dis. Pour une question longue, donne l'essentiel puis propose d'aller plus loin. Seulement s'il demande de MONTRER ou d'AFFICHER quelque chose (du code, une liste), ajoute après ta réponse orale une ligne [[ecran]] puis le détail en texte (markdown simple, code entre \`\`\`).
 COMMANDES (au plus une, à la toute fin) : [[web:recherche]] pour chercher sur Internet, [[regarder]] pour regarder avec ta caméra, [[rappel:AAAA-MM-JJ HH:MM|texte]] pour un rappel, [[note:texte]] pour l'ajouter à ses notes, [[minuteur:durée]], [[meteo]].
 Tu as des outils qu'il peut demander directement (ne prétends pas qu'ils n'existent pas) : calculs exacts et TVA, conversions d'unités et de devises, minuteurs nommés, réveil, chrono, Pomodoro, listes (courses, à faire…), météo de n'importe quelle ville, état de son PC, « fais-moi le point », heure dans le monde, jours avant une date, pile ou face, la journée de son fils avec Shadow. S'il en parle, dis-lui la phrase à dire (par exemple « dis : minuteur pâtes 9 minutes »).
 Tu as une caméra : s'il te demande ce que tu vois, de regarder quelque chose ou ce qu'il tient, réponds seulement [[regarder]]. Ne dis jamais que tu n'as pas de caméra.
@@ -353,6 +353,10 @@ Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { week
 ${VRAI.texte() ? `ÉTAT RÉEL DE LA MAISON, à l'instant (la seule vérité sur la maison ; « il » = papa) :\n${VRAI.texte()}\n` : "L'état réel de la maison n'est pas disponible en ce moment : ne dis rien sur ce qui s'y passe, propose « rapport de sécurité ».\n"}${notes ? `Ses notes :\n${notes}\n` : ''}${typeof FOYER !== 'undefined' && FOYER.contexte() ? `${FOYER.contexte()}\n` : ''}${dlg.ordrePrecedent && Date.now() - dlg.ordrePrecedent.at < 120000 ? `Le dernier ordre qu'il t'a donné (il y a ${Math.round((Date.now() - dlg.ordrePrecedent.at) / 1000)} s) : « ${dlg.ordrePrecedent.t} ». S'il enchaîne avec une suite courte (« et la cuisine ? », « pareil pour le salon », « encore », « plus fort »), refais cet ordre adapté avec [[commande:…]].\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
 ${CONV.contexte()}`;
 }
+// à l'oral, les indications de jeu (*sourit*, (pause), [musique]) ne se lisent pas ; le reste des parenthèses, si
+const JEU_ORAL = /\b(rit|rire|sourit|sourire|clin|soupir\w*|pause|chuchot\w*|murmur\w*|voix|ton calme|bruit\w*|musique|bip|grésill\w*|hoche|lève|regarde|ton ironique|ironique|pince-sans-rire|sarcastique|en riant|en souriant|tousse|silence)\b/i;
+const sansJeu = t => String(t).replace(/\*([^*\n]{1,80})\*/g, (m, x) => (/^[«"“]/.test(x.trim()) ? x : JEU_ORAL.test(x) || x.trim().split(/\s+/).length <= 3 ? ' ' : x))
+  .replace(/\(([^()\n]{0,100})\)/g, (m, x) => (JEU_ORAL.test(x) ? ' ' : m)).replace(/\[(?!\[)([^\[\]\n]{0,50})\](?!\])/g, (m, x) => (JEU_ORAL.test(x) ? ' ' : m)).replace(/[ \t]{2,}/g, ' ');
 async function repondre(text) {
   if (!AI.ready()) return say("Mon cerveau n'est pas branché : règle-le dans mes réglages. Mes outils marchent quand même : calculs, conversions, minuteurs, réveil, listes, notes, météo, état du PC et le point du jour.");
   const c = S.chat || (S.chat = []);
@@ -376,7 +380,7 @@ async function repondre(text) {
     if (/\[\[\s*(commande|pardon)/i.test(s)) { muet = true; s = s.slice(0, s.search(/\[\[/)); } // la commande répond d'elle-même : il ne dit rien de plus (ni « c'est allumé » avant que ce soit fait)
     const i = s.indexOf('[[ecran');
     if (i >= 0) { s = s.slice(0, i); ecr = true; }
-    s = s.replace(/\[\[[^\]]*\]\]/g, '').replace(/\[\[[^\]]*$/, '').replace(/[*`#]/g, '').trim();
+    s = sansJeu(s.replace(/\[\[[^\]]*\]\]/g, '').replace(/\[\[[^\]]*$/, '')).replace(/[*`#]/g, '').trim();
     if (!s || dlg.interrupt) return;
     if (!spoken++) { face.set('idle'); finPensee(); }
     VOIXMAISON.prefetch(s);
@@ -396,7 +400,7 @@ async function repondre(text) {
   const detailPropre = String(detail || '').replace(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo|allume|eteins|pardon|commande)[^\]]*\]\]/gi, '').trim();
   const montrer = /\b(affiche|afficher|montre|montrer|ecris|ecrire|a l ecran|sur l ecran)\b/.test(N(text));
   if (detailPropre && montrer) ecran('', detailPropre);
-  let dit = String(oral || '').replace(/\[\[[^\]]*\]\]/g, '').trim();
+  let dit = sansJeu(String(oral || '').replace(/\[\[[^\]]*\]\]/g, '')).trim();
   if (muet) dit = String(oral || '').split(/\[\[/)[0].trim(); // avec une commande : seulement ce qui a été dit avant elle
   if (!dit && detailPropre && !montrer) dit = detailPropre.replace(/```[\s\S]*?```/g, ' ').replace(/[*#`>|_-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 700);
   if (!spoken && dit) await say(dit);
