@@ -24,7 +24,7 @@ const JUMEAU = (() => {
   const VU = /détection «|quelqu|personne|mouvement|bruit|véhicule|human|motion/i, PAS_VU = /activée|désactivée|hors ligne|en ligne|offline/i;
   const CY = '95,211,255', AM = '255,181,71', RO = '255,107,74', VE = '110,240,184', VI = '180,140,255';
   let actif = false, cv = null, ctx = null, boite = null, W = 0, Hc = 0, dpr = 1;
-  let yaw = -0.45, pitch = 0.36, zoom = 1, base = -0.45, phase = 0, vyaw = 0, glisse = null, repriseAuto = 0, anime = 0, dernierT = 0, dernierDessin = 0, naissance = 0;
+  let yaw = 0.5, pitch = 0.36, zoom = 1, base = 0.5, phase = 0, vyaw = 0, glisse = null, repriseAuto = 0, anime = 0, dernierT = 0, dernierDessin = 0, naissance = 0;
   let donnees = null, chargeA = 0, curseur = null, lecture = false, precedent = null; // curseur : null = en direct ; sinon un instant (s)
   let meteo = null, meteoA = 0, eclair = 0;
   const images = {}, photosAl = {}, etats = new Map(), cartes = [], doigts = new Map();
@@ -120,6 +120,7 @@ const JUMEAU = (() => {
   let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, f_ = 0, ox_ = 0, oy_ = 0;
   const BOITE = []; for (const x of [-L / 2 - 1.2, L / 2 + COUR]) for (const y of [0, FAITE + 1.6]) for (const z of [-D / 2 - 0.4, D / 2 + 0.4]) BOITE.push([x, y, z]);
   function brut(x, y, z) {
+    z = -z; // l'écran est un repère « main gauche » : sans ça, la gauche du plan de papa sortait à droite (la maison en miroir)
     const xx = x - CX, X = xx * cy_ - z * sy_, Z = xx * sy_ + z * cy_, Y = y + niveauDe(y) * ECART - CYV;
     const Y2 = Y * cp_ - Z * sp_, Z2 = Y * sp_ + Z * cp_, k = 1 / (19 + Z2);
     return [X * k, -Y2 * k, Z2, k];
@@ -725,7 +726,7 @@ const JUMEAU = (() => {
       const g = glisse; if (doigts.size) return; glisse = null; repriseAuto = Date.now() + 8000;
       if (!g || g.bouge || g.pince) return;
       vyaw = 0;
-      const now = performance.now(); if (now - dernierTap < 320) { yaw = base = -0.45; pitch = 0.36; zoom = 1; phase = 0; dernierTap = 0; return; } dernierTap = now;
+      const now = performance.now(); if (now - dernierTap < 320) { yaw = base = 0.5; pitch = 0.36; zoom = 1; phase = 0; dernierTap = 0; return; } dernierTap = now;
       if (curseur != null || e.type !== 'pointerup') return;
       const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
       let mieux = null, aire = Infinity;
