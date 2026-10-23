@@ -177,7 +177,7 @@ const JUMEAU = (() => {
       p.v = e.v; p.flash = e.flash;
     }
     const monte = k => ease(age * 1.7 - k * 0.38); // chaque niveau monte du sol, l'un après l'autre
-    coquille(monte, age);
+    coquille(monte, age, t);
     for (const p of ps) piece(p, monte(p.k), t, nuit);
     prises(ps, t, nait);
     // le toit : deux pans (l'un sur la rue, l'autre sur la cour), l'arête parallèle à la rue, le velux
@@ -251,7 +251,7 @@ const JUMEAU = (() => {
   }
 
   // la coquille de la maison : les planchers des trois niveaux, les angles, les noms des niveaux ; la cour et le plateau derrière
-  function coquille(monte, age) {
+  function coquille(monte, age, t) {
     const niv = ['RDC', '1ER', '2E'];
     for (let k = 0; k < 3; k++) {
       const m = monte(k); if (m <= 0) continue;
@@ -269,6 +269,30 @@ const JUMEAU = (() => {
       trait([x - 0.01, 1.05, zb - 0.15], [x - 0.01, 1.05, zb - 0.28], AM, 0.9, 2); // la poignée
       trait([x - 0.5, 0.02, za - 0.1], [x - 0.5, 0.02, zb + 0.1], AM, 0.4); trait([x - 0.5, 0.02, za - 0.1], [x, 0.02, za - 0.1], AM, 0.4); trait([x - 0.5, 0.02, zb + 0.1], [x, 0.02, zb + 0.1], AM, 0.4); // la marche
       const q = proj(x - 0.3, ph + 0.35, (za + zb) / 2); texte('ENTRÉE', q[0], q[1], `rgba(${AM},.8)`, 9, '', 0, 2);
+      // la porte de la cour : à l'arrière, à gauche
+      const xc = L / 2 + 0.02;
+      poly([[xc, 0, za], [xc, 0, zb], [xc, ph, zb], [xc, ph, za]], VE, 0.65, 1.2, true, true);
+      face([[xc, 0, za], [xc, 0, zb], [xc, ph, zb], [xc, ph, za]], VE, 0.04);
+      trait([xc + 0.01, 1.05, zb - 0.15], [xc + 0.01, 1.05, zb - 0.28], VE, 0.9, 2);
+      const qc = proj(xc + 0.3, ph + 0.35, (za + zb) / 2); texte('PORTE DE LA COUR', qc[0], qc[1], `rgba(${VE},.75)`, 8.5, '', 0, 1.8);
+      // l'ordinateur : au rez-de-chaussée, côté cour, à droite ; son écran brille quand il est utilisé
+      const pc = typeof ou !== 'undefined' && ou && ou.role === 'ordinateur' && ou.pourquoi === 'actif' && curseur == null;
+      const bx0 = 4.2, bx1 = 4.9, bz0 = 0.3, bz1 = 2.4, by = 0.75;
+      poly([[bx0, by, bz0], [bx1, by, bz0], [bx1, by, bz1], [bx0, by, bz1]], CY, 0.55, 1.1, true, pc); // le bureau
+      [[bx0, bz0], [bx0, bz1], [bx1, bz0], [bx1, bz1]].forEach(([x, z]) => trait([x, 0, z], [x, by, z], CY, 0.3));
+      // ses quatre écrans, en arc ; quand il les utilise, des courbes de marché y défilent
+      [0.62, 1.15, 1.68, 2.21].forEach((zc, i) => {
+        const ang = (i - 1.5) * 0.12, w = 0.25, xa = 4.72 - Math.abs(i - 1.5) * 0.09, ya = 0.88, yb = 1.24;
+        const ec = [[xa + ang * w, ya, zc - w], [xa - ang * w, ya, zc + w], [xa - ang * w, yb, zc + w], [xa + ang * w, yb, zc - w]];
+        face(ec, pc ? '120,220,255' : CY, pc ? 0.28 : 0.06); poly(ec, CY, pc ? 0.95 : 0.42, 1.1, true, pc);
+        if (pc) { // la courbe
+          const pts = []; for (let k = 0; k <= 10; k++) { const u = k / 10, v = 0.5 + 0.32 * Math.sin(u * 6 + i * 1.7 + t / 900) * Math.cos(u * 3.1 + i); pts.push([xa - 0.01, ya + 0.05 + (yb - ya - 0.1) * v, zc - w * 0.85 + w * 1.7 * u]); }
+          poly(pts, i % 2 ? VE : AM, 0.85, 1, false);
+        }
+      });
+      trait([4.85, by, 1.4], [4.85, 0.88, 1.4], CY, 0.4); // le pied des écrans
+      if (pc) { const qe = proj(4.7, 1.05, 1.4); halo(qe[0], qe[1], qe[3] * 2.2, CY, 0.28); }
+      const qo = proj(4.6, 1.6, 1.4); texte('ORDINATEUR', qo[0], qo[1], `rgba(${CY},.7)`, 8.5, '', 0, 1.6);
     }
     // la cour (au sol) et le plateau (au niveau du 1er), derrière la maison
     const mc = ease(age * 1.7 - 0.6); if (mc <= 0) return;
@@ -423,8 +447,8 @@ const JUMEAU = (() => {
     if (T == null && ou && ou.pourquoi === 'actif' && (ou.depuis || 0) < 600) {
       const n = N(ou.piece || '');
       let p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
-      if (!p) p = ou.role === 'tablette' ? ps.find(x => x.a && /salon|sejour/.test(N(x.a.nom))) : ou.role === 'ordinateur' ? ps.find(x => x.a && x.k === 2) : null;
-      if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); }
+      if (!p && ou.role === 'ordinateur') personne(3.75, 0, 1.55, AM, 1.8, 'PAPA', t, 4); // devant l'ordinateur (rez-de-chaussée, côté cour, à droite)
+      else { if (!p && ou.role === 'tablette') p = ps.find(x => x.a && /salon|sejour/.test(N(x.a.nom))); if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); } }
     }
     let lui = false;
     if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); lui = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
