@@ -291,6 +291,26 @@ const nettoie = t => String(t || '').replace(/<think>[\s\S]*?<\/think>/g, '').re
   .replace(/https?:\/\/\S+/g, '').replace(/\(\s*\)/g, '').replace(/[*#`>|_]+/g, ' ').replace(/\s+([.,;:!?])/g, '$1').replace(/\s+/g, ' ').trim();
 const appel = () => (S.nom ? `, ${S.nom}` : '');
 const difficile = t => String(t).length > 170 || /\b(pourquoi|comment ca marche|explique|compare|analyse|reflechis|en detail|code|programme|script|algorithme|architecture|strategie|plan|optimise|debug)\b/.test(N(t));
+/* ---------- ce qui est VRAI dans la maison, maintenant (l'ordinateur de la maison le dit) : Atlas n'invente rien d'autre ---------- */
+const VRAI = (() => {
+  let t = '', at = 0;
+  async function maj() {
+    const r0 = typeof VOIXMAISON !== 'undefined' && VOIXMAISON.root(); if (!r0 || window.__BANC) return;
+    const ctl = window.AbortController ? new AbortController() : null; const tm = setTimeout(() => ctl && ctl.abort(), 4000);
+    try { const r = await fetch(`${r0}/atlas/vrai`, { cache: 'no-store', signal: ctl ? ctl.signal : undefined }); if (r.ok) { t = (await r.json()).texte || ''; at = Date.now(); } } catch (e) { /* plus tard */ } finally { clearTimeout(tm); }
+  }
+  setInterval(maj, 60000); setTimeout(maj, 3000);
+  return { texte: () => (Date.now() - at < 5 * 60000 ? t : ''), frais: () => (Date.now() - at > 45000 ? Promise.race([maj(), wait(1500)]) : Promise.resolve()) };
+})();
+// ce qu'il sait faire, en phrases qu'il comprend : le cerveau traduit une demande dite autrement en [[commande:…]]
+const CATALOGUE = `Lumières et prises : « allume <appareil> », « éteins <appareil> » (avec le nom exact d'un appareil de la maison), « mets <appareil> à 30 % », « allume tout », « éteins tout », « qu'est-ce qui est allumé ? », « mode film », « mode soirée », « mode cinéma », « fin du film ».
+Maison et sécurité : « je pars », « je suis rentré », « je vais me coucher », « je viens de me réveiller », « rapport de sécurité », « il s'est passé quoi ? », « rapport de nuit », « montre-moi la façade », « montre la dernière alerte », « la batterie des caméras », « l'alarme est activée ? », « active l'alarme en mode total », « scan de sécurité », « mode cockpit ».
+Son fils et Shadow : « dis à mon fils que … », « demande à mon fils de … », « qu'est-ce que Shadow a appris aujourd'hui ? », « donne une médaille à mon fils pour … », « discute avec Shadow », « lance la fusée ».
+Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h 30 », « rappelle-moi de … dans 20 minutes », « ajoute du lait à la liste de courses », « lis la liste de courses », « note que … », « lis mes notes », « mon agenda d'aujourd'hui », « fais-moi le point ».
+Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
+Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
+Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».
+Ordinateur : « ouvre Firefox », « ferme la fenêtre », « verrouille l'ordi », « état du PC ».`;
 function systeme(text) {
   const now = new Date();
   const notes = (S.notes || []).slice(-15).map(x => `- ${x.text}`).join('\n');
@@ -306,9 +326,22 @@ Tu as Internet : pour une actualité, une info récente, un prix, un horaire, un
 Tu as une mémoire : tu retiens tout seul ce qu'il te dit de durable (il peut dire « souviens-toi que… », « qu'est-ce que tu sais sur moi ? », « oublie que… »). Tu suis aussi les marchés pour lui (il fait du trading) : « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or » ; tu le préviens 5 minutes avant les annonces importantes et l'ouverture de Wall Street. Sur les marchés, donne seulement des faits : jamais de conseil d'achat ou de vente, jamais de prédiction présentée comme sûre.
 Tu pilotes les prises et lampes de la maison (« allume la lampe du salon », « éteins tout », « mode film »), tu transmets ses messages à son fils par Shadow (« dis à mon fils que… ») et tu lui dis ce que Shadow a appris (« qu'est-ce que Shadow a appris aujourd'hui ? », pour effacer les bêtises).
 Tu lis l'état de l'alarme Verisure et tu peux l'activer (« active l'alarme en mode total »), seulement si elle est désactivée, mais tu ne la désactives JAMAIS (c'est le badge ou l'appli). Tu montres les caméras de la maison (« montre-moi l'entrée »).
-Tu n'as pas accès à ses comptes ni à ses mails : ne prétends jamais le contraire. Si tu ne sais pas, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
+Tu n'as pas accès à ses comptes ni à ses mails : ne prétends jamais le contraire. Si tu ne sais pas, dis-le.
+RÈGLES DE VÉRITÉ (les plus importantes) : tu ne perçois QUE la phrase qu'on vient de te transcrire (elle peut être mal entendue) et les infos écrites ici. Tu n'entends pas les bruits, tu ne sens rien, et tu ne vois rien sans [[regarder]]. N'invente JAMAIS un état de la maison, une détection, une alerte, une personne présente, un chiffre, un prix, un rendez-vous ou un souvenir : ce qui n'est pas écrit ici, tu ne le sais pas ; dis-le simplement et propose la phrase qui permet de le savoir. Ne dis jamais que tu as fait une action sans écrire la commande qui la fait. Si la phrase est incompréhensible, sans suite, dans une autre langue ou visiblement mal entendue, réponds seulement [[pardon]].
+POUR AGIR : s'il demande une chose que tu sais faire mais dite autrement (« il fait noir ici », « j'ai froid aux yeux avec cette lumière », « préviens le petit que le dîner est prêt »), réponds seulement [[commande:la phrase exacte]] avec une phrase de cette liste (adaptée : le bon appareil, la bonne durée, le bon texte), sans rien dire d'autre (la commande répond d'elle-même) :
+${CATALOGUE}
+Si rien dans cette liste ni dans tes commandes ne le fait, dis franchement que tu ne sais pas encore le faire.
+N'invente jamais un appareil : il n'y a dans la maison QUE ceux de la liste (pas de thermostat, de chauffage, de volets ou d'enceinte s'ils n'y sont pas) ; ne propose pas de régler ce qui n'existe pas. Ne cherche jamais sur Internet ce qui le concerne lui (son trading, sa maison, son agenda, sa famille) : c'est écrit ici, ou tu ne le sais pas.
+Tu ne vois PAS les caméras en direct : pour savoir s'il y a quelqu'un quelque part, dis seulement ce que disent les alertes ci-dessous, puis propose « montre-moi la … ».
+EXEMPLES (suis-les) :
+« Aïe, ça, c'est ça ? » → [[pardon]]   (une phrase qui ne demande rien et n'a pas de sens ici : mal entendue)
+« Et pas du tout. » → [[pardon]]
+« Il y a quelqu'un dans le jardin ? » → Aucune alerte des caméras depuis quelques heures. Je ne les vois pas en direct : dis « montre-moi la cour » pour regarder.
+« Il fait noir dans la chambre. » → [[commande:allume la chambre papa]]   (et si c'est déjà allumé d'après l'état réel, dis-le au lieu d'agir)
+« Préviens le petit que le dîner est prêt. » → [[commande:dis à mon fils que le dîner est prêt]]
+« L'alarme est mise ? » → réponds avec l'état réel de l'alarme ; s'il est inconnu, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
 Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
-${notes ? `Ses notes :\n${notes}\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
+${VRAI.texte() ? `ÉTAT RÉEL DE LA MAISON, à l'instant (la seule vérité sur la maison ; « il » = papa) :\n${VRAI.texte()}\n` : "L'état réel de la maison n'est pas disponible en ce moment : ne dis rien sur ce qui s'y passe, propose « rapport de sécurité ».\n"}${notes ? `Ses notes :\n${notes}\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
 ${CONV.contexte()}`;
 }
 async function repondre(text) {
@@ -316,16 +349,20 @@ async function repondre(text) {
   const c = S.chat || (S.chat = []);
   c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now(), who: dlg.qui || '' });
   const think = difficile(text);
+  if (window.__ordreDuCerveau) { c.pop(); return say("Ça, je ne sais pas encore le faire."); } // une commande traduite par le cerveau que personne ne comprend : pas de boucle
+  await VRAI.frais();
   const msgs = [{ role: 'system', content: systeme(text) }].concat(c.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 3000) })));
+  if (AI.lastConfident === false && Date.now() - (AI.lastHeardAt || 0) < 15000) msgs[0].content += "\nATTENTION : la transcription de sa dernière phrase est PEU SÛRE (le micro a mal entendu). Si elle n'a pas un sens clair, réponds seulement [[pardon]].";
   const ailleurs = typeof CONSTELLATION !== 'undefined' ? await CONSTELLATION.contexte() : ''; // une seule mémoire : ce qui s'est dit sur les autres appareils
   if (ailleurs) msgs[0].content += `\n${ailleurs}`;
   face.set('think');
-  let queue = think ? say(pick(['Je regarde ça.', 'Je réfléchis.', 'Une seconde.'])) : Promise.resolve(), spoken = 0, ecr = false;
+  let queue = think ? say(pick(['Je regarde ça.', 'Je réfléchis.', 'Une seconde.'])) : Promise.resolve(), spoken = 0, ecr = false, muet = false;
   const t0 = performance.now();
   const onSentence = raw0 => {
     if (!spoken) { brainTimes.push(Math.round(performance.now() - t0)); if (brainTimes.length > 20) brainTimes.shift(); }
-    if (ecr) return;
+    if (ecr || muet) return;
     let s = String(raw0);
+    if (/\[\[\s*(commande|pardon)/i.test(s)) { muet = true; s = s.slice(0, s.search(/\[\[/)); } // la commande répond d'elle-même : il ne dit rien de plus (ni « c'est allumé » avant que ce soit fait)
     const i = s.indexOf('[[ecran');
     if (i >= 0) { s = s.slice(0, i); ecr = true; }
     s = s.replace(/\[\[[^\]]*\]\]/g, '').replace(/\[\[[^\]]*$/, '').replace(/[*`#]/g, '').trim();
@@ -336,18 +373,19 @@ async function repondre(text) {
   };
   let raw = '';
   try {
-    raw = await AI.chatStream(msgs, { maxTokens: think ? 1200 : 700, temperature: 0.5, think }, onSentence);
+    raw = await AI.chatStream(msgs, { maxTokens: think ? 1200 : 700, temperature: 0.4, think }, onSentence); // plus froid : moins d'invention
   } catch (e) {
     if (!spoken) { try { raw = await AI.chat(msgs, { maxTokens: 900, temperature: 0.5, think }); onSentence(raw); } catch (e2) { face.set('oops'); await queue; return say(e2.status === 429 ? "Mon cerveau en ligne a épuisé son crédit pour le moment. Mes outils restent disponibles." : "Mon cerveau ne répond pas. Réessaie dans un instant."); } }
   }
   await queue;
   raw = String(raw || '').replace(/<think>[\s\S]*?<\/think>/g, '');
   const [oral, detail] = raw.split(/\[\[ecran\]\]/i);
-  const cmd = raw.match(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo|allume|eteins)\s*(?::\s*([^\]]*))?\]\]/i);
-  const detailPropre = String(detail || '').replace(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo|allume|eteins)[^\]]*\]\]/gi, '').trim();
+  const cmd = raw.match(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo|allume|eteins|pardon|commande)\s*(?::\s*([^\]]*))?\]\]/i);
+  const detailPropre = String(detail || '').replace(/\[\[\s*(web|regarder|rappel|note|minuteur|meteo|allume|eteins|pardon|commande)[^\]]*\]\]/gi, '').trim();
   const montrer = /\b(affiche|afficher|montre|montrer|ecris|ecrire|a l ecran|sur l ecran)\b/.test(N(text));
   if (detailPropre && montrer) ecran('', detailPropre);
   let dit = String(oral || '').replace(/\[\[[^\]]*\]\]/g, '').trim();
+  if (muet) dit = String(oral || '').split(/\[\[/)[0].trim(); // avec une commande : seulement ce qui a été dit avant elle
   if (!dit && detailPropre && !montrer) dit = detailPropre.replace(/```[\s\S]*?```/g, ' ').replace(/[*#`>|_-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 700);
   if (!spoken && dit) await say(dit);
   CONV.note('Atlas', dit);
@@ -357,6 +395,8 @@ async function repondre(text) {
   MEMOIRE.tour(); // il retient ce qui dure (après quelques échanges)
   if (!cmd) return;
   const a = cmd[1].toLowerCase(), arg = (cmd[2] || '').trim();
+  if (a === 'pardon') { if (!spoken) await say(pick(["Pardon ? Je n'ai pas bien entendu.", 'Tu peux répéter ? Je n\'ai pas bien saisi.', "Pardon, je n'ai pas compris."])); dlg.state = 'talk'; dlg.silence = 0; return; }
+  if (a === 'commande' && arg) { window.__ordreDuCerveau = true; try { return await handle(arg); } finally { window.__ordreDuCerveau = false; } }
   if (a === 'regarder') return voir(text);
   if (a === 'web') return internet(text, arg);
   if (a === 'rappel') return rappelPour(arg, spoken);
@@ -906,7 +946,7 @@ async function vie() {
       // un bout de phrase (« C'est… ») : sans doute l'écho de sa voix, ou une phrase coupée — il attend la suite
       const bout = n.split(' ').filter(Boolean).length < 2 || /(\.\.\.|…|,)\s*$/.test(String(r).trim()); // « Et quand l'… dit, » : coupée au milieu
       const suite = talk && Date.now() - (dlg.repondu || 0) < 15000 && memes && !bout && (dlg.suites || 0) < 2;
-      const seul = CONV.autres(dlg.qui) === 0 && adresse && n.split(' ').length >= 2 && !bout && !dlg.discret;
+      const seul = CONV.autres(dlg.qui) === 0 && adresse && n.split(' ').length >= 2 && !bout && !dlg.discret && AI.lastConfident !== false; // mal entendu, et pas appelé : il ne répond pas au hasard
       // « … lumière de la cuisine » : le début s'est perdu (on lui a parlé pendant qu'il parlait) ; il demande « j'allume ou j'éteins ? »
       const frag = !appele && !suite && !seul && !dlg.discret && !!MAISON.fragment(r, n);
       // les ordres évidents de la maison (« mode cockpit », « fin du film », « pause » au cinéma) : pas besoin de dire son nom

@@ -255,13 +255,25 @@ const AI = {
     if (Array.isArray(j.segments) && j.segments.length) {
       const good = j.segments.filter(s => !(s.no_speech_prob > 0.75 && s.avg_logprob < -0.9) && !(s.avg_logprob < -1.6));
       const lp = good.length ? good.reduce((a, s) => a + s.avg_logprob, 0) / good.length : -9;
-      this.lastConfident = lp > -0.8; // la phrase a-t-elle été bien comprise ?
+      this.lastConfident = lp > -0.8; // la phrase a-t-elle été bien comprise ? this.lastHeardAt = Date.now();
       t = good.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim();
     }
     if (/amara|sous-titr|merci d'avoir regard|abonnez-vous|^\W*$/i.test(t)) return '';
     if (/^(merci( beaucoup)?|au revoir|bon appétit|\.+)[.!]?$/i.test(t) && j.duration && j.duration < 1.2) return ''; // classiques du bruit
     if ((t.match(/[^\u0000-\u024F\s\d.,!?'’«»…-]/g) || []).length > t.length * 0.3) return ''; // pas du français (bruit)
     { const w = t.toLowerCase().match(/[\wÀ-ÿ']+/g) || []; if (w.length >= 8 && new Set(w).size / w.length <= 0.35) return ''; } // « les fées et les fées et les fées… » : l'oreille qui boucle sur du bruit
+    { // l'oreille qui récite sa consigne sur du bruit (« Son fils a un robot… ») : quatre mots d'affilée de la consigne = du bruit
+      const mots = x => (String(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').match(/[a-z]+/g) || []);
+      const w = mots(t), pr = ` ${mots(prompt).join(' ')} `;
+      const k = Math.min(5, w.length);
+      if (w.length >= 4 && w.length <= 14) for (let i = 0; i + k <= w.length; i++) if (pr.includes(` ${w.slice(i, i + k).join(' ')} `)) return '';
+    }
+    if (!window.ATLAS_LANGUE) { // hors traducteur : de l'anglais sur du bruit (« We're going to have a hundred times ») n'est pas pour lui
+      const w = t.toLowerCase().match(/[a-z']+/g) || [];
+      const EN = /^(the|you|we|we're|you're|i'm|it's|are|is|have|has|going|think|thank|thanks|what|that|this|with|from|come|your|my|it|of|and|to|hundred|times|top|if|be|was|they|he|she|do|don't|can|will|would|there|so|but|not|all|one|just|like|know|yeah|okay|oh|get|got|me|him|her|our|out|up|how|why|when|who)$/;
+      const en = w.filter(x => EN.test(x)).length;
+      if ((w.length >= 3 && en / w.length >= 0.5) || (w.length >= 2 && en === w.length)) return '';
+    }
     if (!window.ATLAS_LANGUE) { // hors traducteur : les lettres d'autres langues (« Ég er að hérna »), et les bruits annoncés, sont du bruit
       if (/[ðþøåßłńśźżčřšžěůőűğşıđ]/i.test(t)) return '';
       if (/^\W*(applaudissements?|musique|rires?|silence|bruit|soupirs?)\W*$/i.test(t) || /^\s*[[(*♪].*[\])*♪]\s*$/.test(t)) return '';
