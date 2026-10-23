@@ -62,7 +62,7 @@ const JUMEAU = (() => {
   // où est chaque caméra, et où elle regarde (d'après le plan de papa)
   function placeCam(c) {
     const n = N(c.nom);
-    if (/toit/.test(n)) return { p: [-L / 2 + 0.1, TOIT + 0.25, -D / 2 + 0.2], d: [0.75, 0.45, 0.55] };      // l'angle avant du toit, tournée vers le velux
+    if (/toit/.test(n)) return { p: [-L / 2 + 0.1, TOIT + 0.25, -D / 2 + 0.2], d: [0.85, 0.12, 0.45] };      // l'angle avant du toit, tournée vers le velux
     if (/cour|jardin/.test(n)) return { p: [L / 2 + COUR - 0.1, 2.4, -D / 2 + 0.3], d: [-1, -0.45, 0.35] }; // au fond de la cour, elle regarde la maison
     if (/plateau/.test(n)) return { p: [L / 2 + 0.12, H + 1.2, 0.6], d: [1, -0.35, -0.05] };                // le mur arrière du 1er, au-dessus du plateau
     if (/facade|rue|portail/.test(n)) return { p: [-L / 2 - 0.12, H + 0.35, -1.7], d: [-1, -0.45, 0.2] }; // au 1er, juste au-dessus de la porte d'entrée
@@ -402,6 +402,14 @@ const JUMEAU = (() => {
       const clig = vue ? 0.55 + 0.45 * Math.sin(t / 140) : 1;
       base.forEach(b => trait(p, b, col, 0.25 * clig + 0.08));
       poly(base, col, 0.42 * clig + 0.1, 1.2, true, true);
+      // la vraie portée : 25 m pour les EZVIZ, 15 m pour la caméra branchée ; les rayons s'arrêtent où ils touchent le sol
+      // (on voit la zone vraiment couverte, dans la rue, dans la cour) ; le cône s'efface avec la distance
+      const portee = c.ezviz ? 25 : 15, sol0 = 0;
+      const loin = base.map(b => { const dir = b.map((v, i) => v - p[i]), l = Math.hypot(...dir), e = dir.map(v => (v / l) * portee * m); let q = p.map((v, i) => v + e[i]); if (q[1] < sol0) { const k = (p[1] - sol0) / (p[1] - q[1]); q = p.map((v, i) => v + (q[i] - v) * k); q[1] = sol0 + 0.01; } return q; });
+      loin.forEach((q, k) => { const b = base[k]; for (let sgm = 0; sgm < 3; sgm++) { const f0 = sgm / 3, f1 = (sgm + 1) / 3, A = b.map((v, i) => v + (q[i] - v) * f0), B = b.map((v, i) => v + (q[i] - v) * f1); trait(A, B, col, (0.2 - sgm * 0.06) * clig); } });
+      poly(loin, col, 0.12 * clig, 1, true);
+      if (loin.filter(q => q[1] < 0.05).length >= 2) face(loin, col, 0.025 * clig); // la zone couverte au sol
+      if (m > 0.9) { const mz = loin.reduce((a, q) => a.map((v, i) => v + q[i] / 4), [0, 0, 0]), qm = proj(...mz); texte(`${portee} M`, qm[0], qm[1], `rgba(${col},.55)`, 8.5, '', 0, 0.8); }
       // le balayage : une ligne qui parcourt le cône
       const s = (t / 1800 + c.nom.length * 0.13) % 1, bal = base.map(b => p.map((v, i) => v + (b[i] - v) * s));
       poly(bal, col, 0.3 * (1 - s), 1);
