@@ -254,7 +254,7 @@ async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   return r;
 }
 const dits = []; // le diagnostic : ce qu'il a répondu (mémoire vive)
-const say = t => { if (t) { dits.push(`${new Date().toLocaleTimeString('fr-FR')} ${String(t).slice(0, 110)}`); if (dits.length > 10) dits.shift(); if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('atlas', t); } return voice.say(t); };
+const say = t => { if (window.__agentCapture) { if (t) window.__agentCapture.push(String(t)); return Promise.resolve(); } if (t) { dits.push(`${new Date().toLocaleTimeString('fr-FR')} ${String(t).slice(0, 110)}`); if (dits.length > 10) dits.shift(); if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('atlas', t); } return voice.say(t); };
 async function ask(text, { wait: w = 20000 } = {}) {
   await say(text);
   const a = await hear({ maxWait: w });
@@ -315,6 +315,7 @@ Maison et sécurité : « je pars », « je suis rentré », « je vais me couch
 Son fils et Shadow : « dis à mon fils que … », « demande à mon fils de … », « qu'est-ce que Shadow a appris aujourd'hui ? », « donne une médaille à mon fils pour … », « discute avec Shadow », « lance la fusée ».
 Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h 30 », « rappelle-moi de … dans 20 minutes », « ajoute du lait à la liste de courses », « lis la liste de courses », « note que … », « lis mes notes », « mon agenda d'aujourd'hui », « fais-moi le point ».
 Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
+Programmes : « qu'est-ce que tu as programmé ? », « annule les programmes ».
 Ordinateur de bord : « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
@@ -359,6 +360,7 @@ const sansJeu = t => String(t).replace(/\*([^*\n]{1,80})\*/g, (m, x) => (/^[«"�
   .replace(/\(([^()\n]{0,100})\)/g, (m, x) => (JEU_ORAL.test(x) ? ' ' : m)).replace(/\[(?!\[)([^\[\]\n]{0,50})\](?!\])/g, (m, x) => (JEU_ORAL.test(x) ? ' ' : m)).replace(/[ \t]{2,}/g, ' ');
 async function repondre(text) {
   if (!AI.ready()) return say("Mon cerveau n'est pas branché : règle-le dans mes réglages. Mes outils marchent quand même : calculs, conversions, minuteurs, réveil, listes, notes, météo, état du PC et le point du jour.");
+  if (!window.__ordreDuCerveau && typeof AGENT !== 'undefined') { try { if (await AGENT.lance(text)) return; } catch (e) { console.warn('agent', e); } } // une demande à plusieurs étapes : l'agent la fait lui-même
   const c = S.chat || (S.chat = []);
   c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now(), who: dlg.qui || '' });
   const think = difficile(text);
@@ -680,6 +682,8 @@ async function handle(text) {
   if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && VOIX.forget(nom)) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
   if (R.quiParle.test(n)) return say(!dlg.qui ? (OREILLES.engine() === 'whisper' ? "Je ne reconnais pas ta voix. Dis « apprends ma voix », et je la retiendrai." : "Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq.") : /^invité/.test(dlg.qui) ? "Je ne connais pas encore ta voix. Dis « apprends ma voix », et je la retiendrai." : `C'est ${dlg.qui}. Je reconnais ta voix.`);
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
+  const ag = typeof AGENT !== 'undefined' && AGENT.route(t, n); // « qu'est-ce que tu as programmé ? », « annule les programmes »
+  if (ag) return ag();
   const bord = typeof BORD !== 'undefined' && BORD.route(t, n); // le journal de bord, le flux de pensée
   if (bord) return bord();
   const foyer = typeof FOYER !== 'undefined' && FOYER.route(t, n); // ses proches, ses affaires rangées, ce qu'il a prêté

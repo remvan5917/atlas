@@ -1,7 +1,7 @@
 // Garde Atlas disponible même sans réseau (les outils sans Internet marchent toujours).
 // Les fichiers sont toujours vérifiés auprès du serveur (sinon le navigateur ressert une ancienne version).
-const CACHE = 'atlas-app-v110';
-const FILES = ['./', 'index.html', 'style.css', 'orthographe.js', 'cerveau.js', 'oreilles.js', 'voix.js', 'empreintes.js', 'yeux.js', 'atlas.js', 'outils.js', 'memoire.js', 'marche.js', 'proactif.js', 'foyer.js', 'bord.js', 'maison.js', 'securite.js', 'pc.js', 'visio.js', 'scifi.js', 'trading.js', 'duo.js', 'constellation.js', 'agenda.js', 'futur.js', 'scene.js', 'noyau.js',
+const CACHE = 'atlas-app-v111';
+const FILES = ['./', 'index.html', 'style.css', 'orthographe.js', 'cerveau.js', 'oreilles.js', 'voix.js', 'empreintes.js', 'yeux.js', 'atlas.js', 'outils.js', 'memoire.js', 'marche.js', 'proactif.js', 'foyer.js', 'bord.js', 'agent.js', 'maison.js', 'securite.js', 'pc.js', 'visio.js', 'scifi.js', 'trading.js', 'duo.js', 'constellation.js', 'agenda.js', 'futur.js', 'scene.js', 'noyau.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
