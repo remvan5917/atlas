@@ -37,9 +37,11 @@ const JUMEAU = (() => {
   const PLAN = [ // [motif du nom, niveau, x0, x1, z0, z1, genre]
     [/cuisine/, 0, -5, -1.7, -2.5, 2.5], [/lingerie|buanderie/, 0, -1.7, 1.3, -2.5, 2.5], [/salon|sejour/, 0, 1.3, 5, -2.5, 2.5],
     [/escalier (premier|1er|du 1er|etage)|escalier.*etage/, 1, 1.4, 4.7, -2.5, -1.5, 'escalier'], [/escalier/, 0, -1.6, 1.6, -2.5, -1.5, 'escalier'], // le long du mur gauche : au milieu (vers le 1er), côté cour (vers le 2e)
-    [/salle de bains?|salle d eau|toilette|wc/, 1, 1.8, 5, -1.4, 2.5], [/chambre papa|chambre de papa|parents/, 2, -5, 5, -2.5, 2.5],
-    [/chambre/, 1, -5, -1.4, -0.2, 2.5], // l'autre chambre : celle du petit, au 1er, côté rue
+    [/toilettes?|wc/, 1, -1.0, 1.2, 0.6, 2.5], [/salle de bains?|salle d eau/, 1, 3.0, 5, -0.3, 2.5], [/chambre papa|chambre de papa|parents/, 2, -5, 5, -2.5, 2.5],
+    [/chambre/, 1, -5, -1.0, -0.2, 2.5], // l'autre chambre : celle du petit, au 1er, côté rue
   ];
+  // les pièces sans lampe connectée (on les dessine quand même, éteintes) : les toilettes, entre la chambre du petit et la salle de bain
+  const SANS_LAMPE = [['TOILETTES', /toilettes?|wc/, 1, -1.0, 1.2, 0.6, 2.5]];
   function pieces(T) {
     const lampes = appareils.filter(a => a.type === 'lampe'), l = [], pris = new Set(), libres = [];
     for (const a of lampes) {
@@ -50,7 +52,8 @@ const JUMEAU = (() => {
       l.push({ a, k: r[1], x0: r[2], x1: r[3], y0: r[1] * H, y1: (r[1] + 1) * H, z0: r[4], z1: r[5], genre: r[6] || 'piece', ...e });
     }
     // une lampe qu'on ne sait pas placer : sur le palier du 1er, côte à côte
-    libres.forEach(([a, e], i) => { const w = 3.2 / libres.length; l.push({ a, k: 1, x0: -1.4 + i * w, x1: -1.4 + (i + 1) * w, y0: H, y1: 2 * H, z0: -1.3, z1: 2.5, genre: 'piece', ...e }); });
+    libres.forEach(([a, e], i) => { const w = 2.4 / libres.length; l.push({ a, k: 1, x0: -1.0 + i * w, x1: -1.0 + (i + 1) * w, y0: H, y1: 2 * H, z0: -1.3, z1: 0.5, genre: 'piece', ...e }); });
+    for (const [nom, re, k, x0, x1, z0, z1] of SANS_LAMPE) if (!lampes.some(a => re.test(N(a.nom)))) l.push({ a: null, nomFixe: nom, k, x0, x1, y0: k * H, y1: (k + 1) * H, z0, z1, genre: 'piece', allume: false });
     return l;
   }
   // où est chaque caméra, et où elle regarde (d'après le plan de papa)
@@ -191,7 +194,7 @@ const JUMEAU = (() => {
     cartesDessin(t);
     // les noms des pièces
     ctx.globalCompositeOperation = 'source-over';
-    if (nait > 0.9) for (const p of ps) if (p.a && p.centre) etiquette(p, T, (age - 0.9) * 8);
+    if (nait > 0.9) for (const p of ps) if (p.a && p.centre) etiquette(p, T, (age - 0.9) * 8); else if (p.nomFixe && p.centre) texte(p.nomFixe, p.centre[0], p.centre[1] + 4, `rgba(238,243,248,${(0.5 * prof(p.centre[2])).toFixed(2)})`, W > 700 ? 10 : 9);
     hud(C, T, ps, t, age);
   }
 
