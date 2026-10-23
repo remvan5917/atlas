@@ -260,7 +260,7 @@ async function ask(text, { wait: w = 20000 } = {}) {
   const a = await hear({ maxWait: w });
   return a || '';
 }
-const ORDRE_DIRECT = /^(test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
+const ORDRE_DIRECT = /^(journal de bord|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
 const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
 const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
 async function askYesNo(text) {
@@ -315,6 +315,7 @@ Maison et sécurité : « je pars », « je suis rentré », « je vais me couch
 Son fils et Shadow : « dis à mon fils que … », « demande à mon fils de … », « qu'est-ce que Shadow a appris aujourd'hui ? », « donne une médaille à mon fils pour … », « discute avec Shadow », « lance la fusée ».
 Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h 30 », « rappelle-moi de … dans 20 minutes », « ajoute du lait à la liste de courses », « lis la liste de courses », « note que … », « lis mes notes », « mon agenda d'aujourd'hui », « fais-moi le point ».
 Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
+Ordinateur de bord : « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
 Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».
@@ -365,6 +366,7 @@ async function repondre(text) {
   const ailleurs = typeof CONSTELLATION !== 'undefined' ? await CONSTELLATION.contexte() : ''; // une seule mémoire : ce qui s'est dit sur les autres appareils
   if (ailleurs) msgs[0].content += `\n${ailleurs}`;
   face.set('think');
+  const finPensee = typeof BORD !== 'undefined' ? BORD.pensee(text) : () => {}; // l'écran de film : ce qu'il consulte vraiment
   let queue = think ? say(pick(['Je regarde ça.', 'Je réfléchis.', 'Une seconde.'])) : Promise.resolve(), spoken = 0, ecr = false, muet = false;
   const t0 = performance.now();
   const onSentence = raw0 => {
@@ -376,7 +378,7 @@ async function repondre(text) {
     if (i >= 0) { s = s.slice(0, i); ecr = true; }
     s = s.replace(/\[\[[^\]]*\]\]/g, '').replace(/\[\[[^\]]*$/, '').replace(/[*`#]/g, '').trim();
     if (!s || dlg.interrupt) return;
-    if (!spoken++) face.set('idle');
+    if (!spoken++) { face.set('idle'); finPensee(); }
     VOIXMAISON.prefetch(s);
     queue = queue.then(() => (dlg.interrupt ? null : say(s)));
   };
@@ -386,6 +388,7 @@ async function repondre(text) {
   } catch (e) {
     if (!spoken) { try { raw = await AI.chat(msgs, { maxTokens: 900, temperature: 0.5, think }); onSentence(raw); } catch (e2) { face.set('oops'); await queue; return say(e2.status === 429 ? "Mon cerveau en ligne a épuisé son crédit pour le moment. Mes outils restent disponibles." : "Mon cerveau ne répond pas. Réessaie dans un instant."); } }
   }
+  finPensee();
   await queue;
   raw = String(raw || '').replace(/<think>[\s\S]*?<\/think>/g, '');
   const [oral, detail] = raw.split(/\[\[ecran\]\]/i);
@@ -672,6 +675,8 @@ async function handle(text) {
   if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && VOIX.forget(nom)) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
   if (R.quiParle.test(n)) return say(!dlg.qui ? (OREILLES.engine() === 'whisper' ? "Je ne reconnais pas ta voix. Dis « apprends ma voix », et je la retiendrai." : "Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq.") : /^invité/.test(dlg.qui) ? "Je ne connais pas encore ta voix. Dis « apprends ma voix », et je la retiendrai." : `C'est ${dlg.qui}. Je reconnais ta voix.`);
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
+  const bord = typeof BORD !== 'undefined' && BORD.route(t, n); // le journal de bord, le flux de pensée
+  if (bord) return bord();
   const foyer = typeof FOYER !== 'undefined' && FOYER.route(t, n); // ses proches, ses affaires rangées, ce qu'il a prêté
   if (foyer) return foyer();
   const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
