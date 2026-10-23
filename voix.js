@@ -148,6 +148,7 @@ const ELEVEN = {
     }).then(async r => {
       clearTimeout(tm);
       if (!r.ok) { let d = ''; try { d = (await r.json()).detail; d = d && (d.message || d.status || d); } catch (e) { /* rien */ } const e = new Error(`ElevenLabs ${r.status}${d ? ` : ${String(d).slice(0, 120)}` : ''}`); e.status = r.status; throw e; }
+      if (typeof compteMois === 'function') compteMois('', '', 0, 0, t.length); // la facture : les caractères dits
       return r.arrayBuffer();
     }).then(buf => new Promise((res, rej) => fx.audio().decodeAudioData(buf, res, rej)));
     p.catch(e => {

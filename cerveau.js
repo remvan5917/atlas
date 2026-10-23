@@ -14,6 +14,13 @@ function warmBrain() {
 }
 setInterval(() => { if (typeof dlg !== 'undefined' && dlg.started && dlg.state !== 'sleep') warmBrain(); }, 4 * 60000);
 // Compteur d'énergie du jour : jetons envoyés au cerveau et secondes de voix transcrites
+// La facture du mois (sur cet appareil) : les jetons lus et écrits par cerveau, les caractères dits par ElevenLabs
+function compteMois(fournisseur, modele, entree, sortie, car) {
+  const m = new Date().toISOString().slice(0, 7);
+  if (!S.facture || S.facture.mois !== m) S.facture = { mois: m, l: {}, eleven: 0 };
+  if (car) S.facture.eleven += car;
+  if (fournisseur) { const k = `${fournisseur}|${modele}`; const x = S.facture.l[k] || (S.facture.l[k] = { in: 0, out: 0, req: 0 }); x.in += entree || 0; x.out += sortie || 0; x.req++; }
+}
 function countUsage(tokens, audioSec) {
   const k = new Date().toDateString();
   if (!S.usage || S.usage.day !== k) S.usage = { day: k, tokens: 0, req: 0, audio: 0 };
@@ -24,7 +31,7 @@ const AI = {
   GROQ: 'https://api.groq.com/openai/v1',
   // Mistral (Paris) : le cerveau principal quand sa clé est sur l'appareil (Groq, puis le cerveau de la maison, en secours)
   MISTRAL: 'https://api.mistral.ai/v1',
-  MISTRAL_MODEL: 'mistral-medium-latest',
+  MISTRAL_MODEL: 'mistral-large-latest', // le plus intelligent (« cerveau économique » : mistral-medium-latest)
   mistralDownUntil: 0,
   dernier: null, // le cerveau qui vient de répondre (pour le diagnostic et l'écran d'analyse)
   mistralPret() { return !!S.settings.mistralKey && !(this.mistralDownUntil > Date.now()) && this.online(); },
@@ -143,6 +150,7 @@ const AI = {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     }, c.local ? Math.max(timeout, 45000) : timeout);
     countUsage(j.usage ? j.usage.total_tokens : 0);
+    if (j.usage) compteMois(c.mistral ? 'mistral' : c.local ? 'maison' : 'groq', c.model, j.usage.prompt_tokens, j.usage.completion_tokens);
     return cleanReply((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '');
   },
 
@@ -195,7 +203,7 @@ const AI = {
           let j = null;
           try { j = JSON.parse(data); } catch (e) { continue; }
           const u = (j.x_groq && j.x_groq.usage) || j.usage;
-          if (u && u.total_tokens) countUsage(u.total_tokens);
+          if (u && u.total_tokens) { countUsage(u.total_tokens); compteMois(c.mistral ? 'mistral' : c.local ? 'maison' : 'groq', c.model, u.prompt_tokens, u.completion_tokens); }
           let piece = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
           if (Array.isArray(piece)) piece = piece.filter(x => x && x.type === 'text').map(x => x.text || '').join('');
           // les modèles « qui réfléchissent » peuvent envoyer <think>…</think> : on ne le dit pas

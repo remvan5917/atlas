@@ -143,7 +143,7 @@ const SYNC = (() => {
     return out;
   }
   // les réglages qui voyagent d'un appareil à l'autre (jamais la clé Groq : elle reste sur l'appareil où on l'a tapée)
-  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches', 'proteges'];
+  const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches', 'proteges', 'mistralModel', 'elevenQuota'];
   const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
     S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.proches = m.proches || S.proches || []; S.rangements = m.rangements || S.rangements || []; S.prets = m.prets || S.prets || []; S.tomb = m.tomb;
@@ -315,7 +315,7 @@ Maison et sécurité : « je pars », « je suis rentré », « je vais me couch
 Son fils et Shadow : « dis à mon fils que … », « demande à mon fils de … », « qu'est-ce que Shadow a appris aujourd'hui ? », « donne une médaille à mon fils pour … », « discute avec Shadow », « lance la fusée ».
 Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h 30 », « rappelle-moi de … dans 20 minutes », « ajoute du lait à la liste de courses », « lis la liste de courses », « note que … », « lis mes notes », « mon agenda d'aujourd'hui », « fais-moi le point ».
 Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
-Ordinateur de bord : « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
+Ordinateur de bord : « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
 Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».

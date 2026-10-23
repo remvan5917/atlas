@@ -120,7 +120,42 @@ const BORD = (() => {
     PROACTIF.annonce(`bord-${d.toDateString()}`, 'Le journal de bord du jour est prêt. Dis « journal de bord » quand tu veux l\'entendre.', { expire: Date.now() + 90 * 60000 });
   }, 60000);
 
+  /* ---------- la facture du mois : ce que coûtent le cerveau et la voix (estimation) ---------- */
+  // prix publics approximatifs (dollars par million de jetons : lus, écrits) ; Groq et la maison : gratuits ici
+  const PRIX = [[/mistral-large/, 2, 6], [/mistral-medium/, 0.4, 2], [/mistral-small|ministral/, 0.1, 0.3], [/magistral-medium/, 2, 5]];
+  const USD_EUR = 0.92;
+  function envoieFacture() { if (!S.facture || !VOIXMAISON.root() || window.__BANC) return; appel('/atlas/facture', { id: monId, role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '', facture: S.facture }, 8000).catch(() => {}); }
+  setInterval(envoieFacture, 10 * 60000); setTimeout(envoieFacture, 20000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) envoieFacture(); });
+  const euros = x => x < 0.01 ? 'moins d\'un centime' : x < 1 ? `${Math.round(x * 100)} centimes` : `${x.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} €`;
+  async function facture() {
+    envoieFacture(); await wait(800);
+    let f; try { f = await appel('/atlas/facture', null, 8000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    let mistral = 0, jetons = 0, req = { mistral: 0, groq: 0, maison: 0 };
+    for (const [k, v] of Object.entries(f.cerveaux || {})) {
+      const [fo, mo] = k.split('|'); req[fo] = (req[fo] || 0) + v.req;
+      if (fo === 'mistral') { const p = PRIX.find(([re]) => re.test(mo)) || [0, 2, 6]; mistral += (v.in * p[1] + v.out * p[2]) / 1e6 * USD_EUR; jetons += v.in + v.out; }
+    }
+    const quota = +S.settings.elevenQuota || 100000, car = f.eleven || 0;
+    const jour = new Date().getDate(), finMois = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    const projMistral = mistral / Math.max(1, jour) * finMois, projCar = Math.round(car / Math.max(1, jour) * finMois);
+    showBoard(`<div style="font-family:ui-monospace,Menlo,monospace;background:linear-gradient(160deg,#020b14,#0a2540);border:1px solid #1e6a8a;border-radius:14px;padding:14px 16px;color:#e0f2fe;min-width:min(520px,86vw);text-align:left"><div style="font-size:11px;letter-spacing:.24em;color:#7dd3fc">◢ FACTURE DU MOIS · ${esc(f.mois)} · ${f.appareils} APPAREIL${f.appareils > 1 ? 'S' : ''}</div><div style="height:1px;background:linear-gradient(90deg,transparent,#38bdf8,transparent);margin:9px 0 12px"></div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px 16px;font-size:15px"><span>Mistral (${req.mistral || 0} réponses)</span><b>${esc(euros(mistral))}</b><span style="color:#93c5fd">→ à ce rythme, fin du mois</span><b style="color:#93c5fd">${esc(euros(projMistral))}</b>
+      <span>Groq, en secours (${req.groq || 0})</span><b>gratuit</b><span>Cerveau de la maison (${req.maison || 0})</span><b>gratuit</b>
+      <span>Voix ElevenLabs</span><b>${car.toLocaleString('fr-FR')} / ${quota.toLocaleString('fr-FR')} car.</b><span style="color:#93c5fd">→ à ce rythme, fin du mois</span><b style="color:${projCar > quota ? '#fca5a5' : '#93c5fd'}">${projCar.toLocaleString('fr-FR')} car.</b></div>
+      <div style="margin-top:10px;font-size:11px;color:#64748b">Estimation d'après les prix publics ; ta vraie facture est sur les sites de Mistral et d'ElevenLabs.</div></div>`, 'graphe-board');
+    const t = [`Ce mois-ci, le cerveau Mistral a coûté environ ${euros(mistral)}${jour >= 3 ? `, soit à peu près ${euros(projMistral)} sur le mois à ce rythme` : ''}.`,
+      `La voix a utilisé ${car.toLocaleString('fr-FR')} caractères sur ${quota.toLocaleString('fr-FR')}${projCar > quota && jour >= 3 ? ' : à ce rythme, tu dépasseras ton forfait avant la fin du mois' : ''}.`];
+    if (!req.mistral && !S.settings.mistralKey) t.unshift("Mistral n'est pas encore branché sur cet appareil.");
+    return say(t.join(' '));
+  }
+
   function route(t, n) {
+    const fq = n.match(/\bforfait (?:eleven ?labs|elevenlabs|de (?:la )?voix|voix)\b.*?(\d[\d ]*\d|\d+)\s*(mille|k)?/);
+    if (fq) return () => { const v = parseInt(fq[1].replace(/\s/g, ''), 10) * (fq[2] ? 1000 : 1); if (!(v >= 1000)) return say("Dis par exemple : mon forfait ElevenLabs est de 100 000 caractères."); S.settings.elevenQuota = v; save(); return say(`Noté : ${v.toLocaleString('fr-FR')} caractères par mois pour la voix.`); };
+    if (/\b(ma facture|la facture|combien (je depense|ca coute|ca me coute|tu me coutes|tu coutes)|ma consommation|mon budget (ia|atlas)?|ce que tu me coutes)\b/.test(n)) return facture;
+    if (/\b(cerveau|mode) (economique|eco|moins cher)\b/.test(n)) return () => { S.settings.mistralModel = 'mistral-medium-latest'; save(); return say('Cerveau économique : Mistral Medium. Toujours très bon, environ cinq fois moins cher.'); };
+    if (/\b(cerveau|mode) (maximum|max|premium|le plus intelligent|puissant)\b/.test(n)) return () => { S.settings.mistralModel = 'mistral-large-latest'; save(); return say('Cerveau maximum : Mistral Large, le plus intelligent.'); };
     if (/\b(cache|masque|enleve|coupe|arrete) (ton|l|le|ta) (analyse|flux de pensee|hud)\b/.test(n)) return () => { S.settings.pensee = false; save(); return say('Analyse masquée.'); };
     if (/\b(montre|affiche|remets|active) (ton|l|le|ta) (analyse|flux de pensee|hud)\b|^mode analyse$/.test(n)) return () => { S.settings.pensee = true; save(); return say("Analyse affichée : tu verras ce que je consulte avant de répondre."); };
     if (/\b(journal de bord|journal du bord|carnet de bord)\b/.test(n) && /\bhier\b/.test(n)) return hier;
