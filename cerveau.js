@@ -30,7 +30,8 @@ const AI = {
   cfg() {
     const s = S.settings;
     // cerveau de la maison d'abord ; s'il ne répond pas (ordi éteint, loin de la maison), Groq prend le relais quelques minutes
-    if (s.brain === 'local' && !(s.key && this.localDownUntil > Date.now())) return { base: (s.localUrl || '').replace(/\/+$/, ''), model: s.localModel, key: '', local: true };
+    // avec une clé Groq, le grand cerveau d'abord (le cerveau de la maison, plus petit, reste en secours) ; sans clé, celui de la maison
+    if (s.brain === 'local' && !s.key) return { base: (s.localUrl || '').replace(/\/+$/, ''), model: s.localModel, key: '', local: true };
     // Groq a épuisé tous ses modèles (le quota du jour) : le cerveau de la maison prend le relais un moment
     if (this.groqDownUntil > Date.now() && s.localUrl && s.localModel && !(this.localDownUntil > Date.now())) return { base: s.localUrl.replace(/\/+$/, ''), model: s.localModel, key: '', local: true };
     return { base: this.GROQ, model: s.model || this.DEFAULT_MODEL, key: s.key, local: false };
@@ -84,6 +85,7 @@ const AI = {
           continue;
         }
         if (isModelError(e)) { removed = true; continue; }
+        if ((e.net || !e.status || e.status >= 500) && S.settings.localUrl && S.settings.localModel && !(this.localDownUntil > Date.now()) && !(this.groqDownUntil > Date.now())) { this.groqDownUntil = Date.now() + 180000; return this.robust(once, null); }
         throw e;
       }
     }
