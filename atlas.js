@@ -253,7 +253,7 @@ async function ask(text, { wait: w = 20000 } = {}) {
   const a = await hear({ maxWait: w });
   return a || '';
 }
-const ORDRE_DIRECT = /^(mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
+const ORDRE_DIRECT = /^(test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
 const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
 const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
 async function askYesNo(text) {
@@ -566,6 +566,20 @@ function reformule(n) {
   // la politesse enlevée : seulement si ce qui reste est un ordre (une vraie question va au cerveau telle quelle)
   return m !== n && /^(allume|rallume|eteins|mets|baisse|monte|augmente|diminue|coupe|lance|ouvre|ferme|montre|affiche|arrete|envoie|joue|active|desactive|tamise|verrouille|note|rappelle|passe)\b/.test(m) ? m : null;
 }
+// le test du larsen : une chose coupée à la fois, quinze secondes chacune ; il dit à l'oreille quelle phase siffle
+const LARSEN = [];
+async function testLarsen() {
+  const ecr = (n, t) => showBoard(`<div style="text-align:center;padding:26px 18px;font-family:ui-monospace,monospace"><div style="font-size:clamp(40px,9vw,90px);color:#7dd3fc;letter-spacing:.1em">PHASE ${n}</div><div style="font-size:clamp(16px,3vw,26px);color:#e0f2fe;letter-spacing:.14em;margin-top:10px">${t}</div></div>`);
+  const pause = on => [fx.ctx, OREILLES.ctx && OREILLES.ctx()].forEach(c => { try { if (c) on ? c.suspend() : c.resume(); } catch (e) { /* rien */ } });
+  const note = t => { LARSEN.push(`${hhmm(new Date())}:${String(new Date().getSeconds()).padStart(2, '0')} ${t}`); if (LARSEN.length > 12) LARSEN.shift(); };
+  await say("Test du larsen. Trois phases de quinze secondes. Écoute la sono, et retiens le numéro des phases où ça siffle.");
+  try {
+    ecr(1, 'MICRO COUPÉ'); await say('Phase 1 : micro coupé.'); note('phase 1 : micro coupé'); OREILLES.stop(); await wait(15000);
+    ecr(2, 'MICRO ALLUMÉ'); await say('Phase 2 : micro allumé.'); note('phase 2 : micro allumé'); try { await OREILLES.reopen(); } catch (e) { note('micro : ' + e.message); } await wait(15000);
+    ecr(3, "LE SON D'ATLAS EN PAUSE · MICRO ALLUMÉ"); await say("Phase 3 : le son d'Atlas en pause, micro allumé."); note('phase 3 : son en pause, micro allumé'); pause(true); await wait(15000);
+  } finally { pause(false); hideBoard(); note('fin'); }
+  await say('Fin du test. Alors : ça sifflait pendant la phase 1, la phase 2, ou la phase 3 ?');
+}
 async function handle(text) {
   if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('papa', text); // une seule mémoire
   let n = N(text);
@@ -587,6 +601,7 @@ async function handle(text) {
   // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
+  if (/\b(test|teste|tester|essai) (du |le |de |un )?(larsen|larcene|larsene)\b/.test(n)) return testLarsen();
   if (/\b(active|desactive|coupe|enleve|remets|allume|eteins) (l )?anti ?echo\b/.test(n)) { const on = /\b(active|remets|allume)\b/.test(n); S.settings.micAEC = on; save(); await say(on ? "Anti-écho activé. Je relance mes oreilles." : "Anti-écho coupé : plus de larsen sur la sono. Je relance mes oreilles."); setTimeout(() => location.reload(), 600); return; }
   if (R.stop.test(n) && !voice.occupe() && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci()) return PC.radioCoupe(); // « stop » : la radio d'ici s'arrête
   if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
@@ -1096,7 +1111,7 @@ window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.
 async function diagnostic() {
   const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
   const m = OREILLES.meter ? OREILLES.meter() : {};
-  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`, antiecho: typeof OREILLES_AEC !== 'undefined' ? OREILLES_AEC : null,
+  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`, antiecho: typeof OREILLES_AEC !== 'undefined' ? OREILLES_AEC : null, larsen: LARSEN.slice(),
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
     cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',

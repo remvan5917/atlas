@@ -279,6 +279,7 @@ const OREILLES = (() => {
     meter: () => ({ level, threshold, noise, lastHeard, speaking, pic: dernierPic }),
     timings: () => timings.slice(),
     reopen: async () => { closeMic(); return start(); },
+    ctx: () => ctx, // (le test du larsen met ses sons en pause)
     takePrint: () => { const p = lastPrint; lastPrint = null; return p; },
     hearing: () => speaking || !!(pending && pending.busy),
     on: (ev, fn) => handlers[ev].push(fn),
