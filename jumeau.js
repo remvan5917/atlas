@@ -210,7 +210,7 @@ const JUMEAU = (() => {
       poly([[xa, ys, -lz], [xb, ys, -lz], [xb, ys, lz], [xa, ys, lz]], CY, 0.55, 1.2, true, true);
       face([[xa - 1, ys, -lz - 1], [xb + 1, ys, -lz - 1], [xb + 1, ys, lz + 1], [xa - 1, ys, lz + 1]], CY, 0.022);
     }
-    if (nait > 0.75) { cameras(ps, T, t, ease((age - 0.75) * 4)); coeur(ps, T, t, ease((age - 0.8) * 4)); shadowOrbe(ps, T, t); habitants(ps, T, t); }
+    if (nait > 0.75) { cameras(ps, T, t, ease((age - 0.75) * 4)); coeur(ps, T, t, ease((age - 0.8) * 4)); shadowOrbe(ps, T, t); habitants(ps, T, t); bandeauGarde = null; bouclier(ps, T, t, ease((age - 0.9) * 4)); }
     meteoDessin(C, t, dt);
     motes(t, dt);
     cartesDessin(t);
@@ -532,6 +532,47 @@ const JUMEAU = (() => {
     if (p) [x, y, z] = flane(p, 1.3, t);
     personne(x, y, z, AM, 1.8, sc >= 60 ? 'PAPA' : 'PAPA ?', t, 4, clamp(sc / 40, 0.5, 1));
   }
+  // la maison sous garde : la sentinelle (la nuit, le mode absent) et l'alarme Verisure (quand elle sera reliée)
+  let alarme = null, alarmeA = 0;
+  async function chargeAlarme() { if (Date.now() - alarmeA < 5 * 60000) return; alarmeA = Date.now(); try { alarme = await appel('/maison/alarme'); } catch (e) { /* rien */ } }
+  function garde() {
+    const sentinelle = (typeof surveillancePlateau !== 'undefined' && surveillancePlateau) || (typeof absent !== 'undefined' && absent);
+    const vs = !!(alarme && alarme.pret && alarme.libelle && !/desarm|désarm|desactiv|désactiv|off|disarm|non arm/i.test(alarme.libelle));
+    return { sentinelle, verisure: vs, libelle: vs ? alarme.libelle : '' };
+  }
+  function bouclier(ps, T, t, m) {
+    if (T != null || m <= 0) return; // (en relecture, on ne sait pas si elle veillait)
+    const g = garde(); if (!g.sentinelle && !g.verisure) return;
+    const alerte = cams.some(c => detections(c, null).length), rgb = alerte || g.verisure ? RO : VE;
+    const cxd = (-L / 2 - 1.3 + L / 2 + COUR + 0.3) / 2, rx = (L + COUR + 1.6) / 2 + 0.6, rz = D / 2 + 1.4, ry = FAITE + 1.0;
+    const pulse = alerte ? 0.6 + 0.4 * Math.sin(t / 120) : 0.75 + 0.25 * Math.sin(t / 1400);
+    // le dôme : des parallèles et des méridiens, une onde qui le parcourt de bas en haut
+    const onde = (t / 3800) % 1;
+    for (let i = 1; i <= 6; i++) {
+      const la = (i / 7) * (Math.PI / 2), y = ry * Math.sin(la), r = Math.cos(la), pts = [];
+      for (let k = 0; k < 40; k++) { const a = (k / 40) * 6.283; pts.push([cxd + Math.cos(a) * rx * r, y, Math.sin(a) * rz * r]); }
+      const br = Math.max(0, 1 - Math.abs(i / 7 - onde) * 5);
+      poly(pts, rgb, (0.08 + 0.35 * br) * pulse * m, 1, true, br > 0.3);
+    }
+    const rot = t / 30000;
+    for (let k = 0; k < 18; k++) {
+      const a = (k / 18) * 6.283 + rot, pts = [];
+      for (let i = 0; i <= 8; i++) { const la = (i / 8) * (Math.PI / 2); pts.push([cxd + Math.cos(a) * rx * Math.cos(la), ry * Math.sin(la), Math.sin(a) * rz * Math.cos(la)]); }
+      poly(pts, rgb, 0.07 * pulse * m, 1, false);
+    }
+    // la barrière laser autour du terrain, et la lumière qui en fait le tour
+    const x0 = -L / 2 - 1.3, x1 = L / 2 + COUR + 0.3, z0 = -D / 2 - 0.6, z1 = D / 2 + 0.6, tour = [[x0, z0], [x1, z0], [x1, z1], [x0, z1]];
+    for (const hy of [0.35, 0.8]) poly(tour.map(([x, z]) => [x, hy, z]), rgb, 0.4 * pulse * m, 1, true, true);
+    tour.forEach(([x, z]) => trait([x, 0, z], [x, 1.0, z], rgb, 0.6 * m, 1.3, true));
+    const per = 2 * (x1 - x0 + z1 - z0); let u = ((t / 6000) % 1) * per, pt;
+    for (let k = 0; k < 4 && !pt; k++) { const [ax, az] = tour[k], [bx, bz] = tour[(k + 1) % 4], l = Math.hypot(bx - ax, bz - az); if (u <= l) pt = [ax + (bx - ax) * u / l, 0.58, az + (bz - az) * u / l]; else u -= l; }
+    if (pt) { const q = proj(...pt); halo(q[0], q[1], 14, rgb, 0.8 * m); }
+    // le bandeau
+    const txt = g.verisure ? `● ALARME VERISURE ARMÉE${g.libelle ? ` · ${String(g.libelle).toUpperCase()}` : ''}${g.sentinelle ? ' · SENTINELLE' : ''}` : `● SENTINELLE EN GARDE${typeof absent !== 'undefined' && absent ? ' · MODE ABSENT' : ' · NUIT'}`;
+    bandeauGarde = { txt: alerte ? `${txt} · DÉTECTION` : txt, rgb };
+  }
+  let bandeauGarde = null;
+
   // le cœur d'Atlas : une sphère d'anneaux au-dessus du toit, reliée par des flux aux caméras et aux pièces allumées
   function coeur(ps, T, t, m) {
     if (m <= 0) return;
@@ -659,6 +700,7 @@ const JUMEAU = (() => {
     ctx.textAlign = 'left'; ctx.font = '9.5px ui-monospace, monospace';
     const lignes = [[`LUMIÈRES ${on}/${tot}`, on ? AM : CY], [watts != null ? `ÉNERGIE ${Math.round(watts)} W` : 'ÉNERGIE —', CY], [`CAMÉRAS ${camsOk}/${cams.length}${vues ? ` · ${vues} DÉTECTION${vues > 1 ? 'S' : ''}` : ''}`, vues ? RO : VE]];
     lignes.forEach(([x, col], i) => { ctx.fillStyle = `rgba(${col},.75)`; ctx.fillText(x, 16, Hc - 16 - (lignes.length - 1 - i) * 13); });
+    if (bandeauGarde) { ctx.textAlign = 'center'; ctx.font = '600 10.5px ui-monospace, monospace'; const w = ctx.measureText(bandeauGarde.txt).width + 22, y = Hc < 330 ? 12 : 16; ctx.fillStyle = 'rgba(2,8,6,.75)'; ctx.fillRect(W / 2 - w / 2, y, w, 18); ctx.strokeStyle = `rgba(${bandeauGarde.rgb},.8)`; ctx.lineWidth = 1; ctx.strokeRect(W / 2 - w / 2 + 0.5, y + 0.5, w - 1, 17); ctx.fillStyle = `rgba(${bandeauGarde.rgb},${(0.75 + 0.25 * Math.sin(t / 500)).toFixed(2)})`; ctx.fillText(bandeauGarde.txt, W / 2, y + 13); }
     // la naissance
     if (age < 1.05) {
       ctx.textAlign = 'center'; ctx.font = '600 11px ui-monospace, monospace'; ctx.fillStyle = `rgba(${CY},${clamp(1.1 - age, 0, 1).toFixed(2)})`;
@@ -819,7 +861,7 @@ const JUMEAU = (() => {
   function maj() {
     const el = document.getElementById('plan'); if (!el) return;
     if (!boite || !boite.isConnected) monte(el);
-    charge(false); chargeMeteo(); chargeOu(); chargeEnfant(); lance();
+    charge(false); chargeMeteo(); chargeOu(); chargeEnfant(); chargeAlarme(); lance();
   }
   function bascule3d(on) {
     actif = on; try { localStorage.setItem('cockpit-vue', on ? '3d' : '2d'); } catch (e) { /* rien */ }
