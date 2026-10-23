@@ -4,7 +4,8 @@
    - chaque pièce s'allume comme la vraie lampe (sa vraie intensité, en fondu) : un halo, des fenêtres qui brillent,
      la lumière qui déborde sur le sol ; un scanner balaie les étages ;
    - au-dessus du toit, le cœur d'Atlas (il pulse quand Atlas parle), relié à la maison par des flux de données ;
-   - les caméras projettent leur cône et leur dernière image ; quelqu'un de vu = une silhouette holographique rouge ;
+   - les caméras projettent leur cône et leur dernière image ; quelqu'un de vu = un hologramme de personne, rouge ;
+   - les habitants en hologramme : papa là où il utilise Atlas, son fils quand Shadow le voit ;
    - Shadow, en violet, dans la chambre du petit quand il est en ligne ;
    - le ciel et la météo de la ville, vrais, à l'heure affichée (même en relecture) : nuit étoilée, soleil, lune,
      pluie, neige, orage, brouillard ;
@@ -17,11 +18,13 @@
 const JUMEAU = (() => {
   // la maison, d'après le plan dessiné par papa : une maison de ville tout en longueur, de la rue (x < 0) à la cour (x > 0),
   // trois niveaux (rez-de-chaussée, 1er, 2e), un toit à deux pans avec un velux, la cour derrière et le plateau au niveau du 1er
-  const L = 10, D = 5, H = 2.6, TOIT = 3 * H, FAITE = TOIT + 1.9, COUR = 3.6, CX = 1.7, CYV = 4.7;
+  const L = 10, D = 5, H = 2.6, TOIT = 3 * H, FAITE = TOIT + 1.9, COUR = 3.6, CX = 1.7, ECART = 0.55, CYV = 4.7 + 1.5 * 0.55, MANS = 1.4; // MANS : la mansarde (le mur du 2e côté cour, en pente)
+  // la vue éclatée : chaque niveau est séparé du suivant par un petit vide (sinon les étages transparents se mélangent)
+  const niveauDe = y => clamp(Math.floor((y + 1e-6) / H), 0, 3);
   const VU = /détection «|quelqu|personne|mouvement|bruit|véhicule|human|motion/i, PAS_VU = /activée|désactivée|hors ligne|en ligne|offline/i;
   const CY = '95,211,255', AM = '255,181,71', RO = '255,107,74', VE = '110,240,184', VI = '180,140,255';
   let actif = false, cv = null, ctx = null, boite = null, W = 0, Hc = 0, dpr = 1;
-  let yaw = -0.55, pitch = 0.5, zoom = 1, vyaw = 0, glisse = null, repriseAuto = 0, anime = 0, dernierT = 0, dernierDessin = 0, naissance = 0;
+  let yaw = -0.45, pitch = 0.36, zoom = 1, base = -0.45, phase = 0, vyaw = 0, glisse = null, repriseAuto = 0, anime = 0, dernierT = 0, dernierDessin = 0, naissance = 0;
   let donnees = null, chargeA = 0, curseur = null, lecture = false, precedent = null; // curseur : null = en direct ; sinon un instant (s)
   let meteo = null, meteoA = 0, eclair = 0;
   const images = {}, photosAl = {}, etats = new Map(), cartes = [], doigts = new Map();
@@ -37,7 +40,7 @@ const JUMEAU = (() => {
   const PLAN = [ // [motif du nom, niveau, x0, x1, z0, z1, genre]
     [/cuisine/, 0, -5, -1.7, -2.5, 2.5], [/lingerie|buanderie/, 0, -1.7, 1.3, -2.5, 2.5], [/salon|sejour/, 0, 1.3, 5, -2.5, 2.5],
     [/escalier (premier|1er|du 1er|etage)|escalier.*etage/, 1, 1.4, 4.7, -2.5, -1.5, 'escalier'], [/escalier/, 0, -1.6, 1.6, -2.5, -1.5, 'escalier'], // le long du mur gauche : au milieu (vers le 1er), côté cour (vers le 2e)
-    [/toilettes?|wc/, 1, -1.0, 1.2, 0.6, 2.5], [/salle de bains?|salle d eau/, 1, 3.0, 5, 0.6, 2.5], [/chambre papa|chambre de papa|parents/, 2, -5, 5, -2.5, 2.5],
+    [/toilettes?|wc/, 1, -1.0, 1.2, 0.6, 2.5], [/salle de bains?|salle d eau/, 1, 3.0, 5, 0.6, 2.5], [/chambre papa|chambre de papa|parents/, 2, -5, 5, -2.5, 2.5, 'mansarde'],
     [/chambre/, 1, -5, -1.0, -2.5, 2.5], // l'autre chambre : celle du petit, au 1er, côté rue, sur toute la largeur
   ];
   // les pièces sans lampe connectée (on les dessine quand même, éteintes) : les toilettes, entre la chambre du petit et la salle de bain
@@ -49,7 +52,7 @@ const JUMEAU = (() => {
       const e = T == null ? { allume: a.allume, lum: a.lum, sur: true } : etatA(a, T);
       if (!r) { libres.push([a, e]); continue; }
       pris.add(r);
-      l.push({ a, k: r[1], x0: r[2], x1: r[3], y0: r[1] * H, y1: (r[1] + 1) * H, z0: r[4], z1: r[5], genre: r[6] || 'piece', ...e });
+      l.push({ a, k: r[1], x0: r[2], x1: r[3], y0: r[1] * H, y1: (r[1] + 1) * H, z0: r[4], z1: r[5], genre: r[6] === 'escalier' ? 'escalier' : 'piece', mansarde: r[6] === 'mansarde', ...e });
     }
     // une lampe qu'on ne sait pas placer : sur le palier du 1er, côte à côte
     libres.forEach(([a, e], i) => { const w = 2.4 / libres.length; l.push({ a, k: 1, x0: -1.0 + i * w, x1: -1.0 + (i + 1) * w, y0: H, y1: 2 * H, z0: -1.3, z1: 0.5, genre: 'piece', ...e }); });
@@ -62,7 +65,7 @@ const JUMEAU = (() => {
     if (/toit/.test(n)) return { p: [-L / 2 + 0.1, TOIT + 0.25, -D / 2 + 0.2], d: [0.75, 0.45, 0.55] };      // l'angle avant du toit, tournée vers le velux
     if (/cour|jardin/.test(n)) return { p: [L / 2 + COUR - 0.1, 2.4, -D / 2 + 0.3], d: [-1, -0.45, 0.35] }; // au fond de la cour, elle regarde la maison
     if (/plateau/.test(n)) return { p: [L / 2 + 0.12, H + 1.2, 0.6], d: [1, -0.35, -0.05] };                // le mur arrière du 1er, au-dessus du plateau
-    if (/facade|rue|portail/.test(n)) return { p: [-L / 2 - 0.12, H + 0.4, -D / 2 + 0.15], d: [-1, -0.4, 0.25] }; // l'angle avant du 1er, sur la rue
+    if (/facade|rue|portail/.test(n)) return { p: [-L / 2 - 0.12, H + 0.35, -1.7], d: [-1, -0.45, 0.2] }; // au 1er, juste au-dessus de la porte d'entrée
     return { p: [-L / 2 - 0.12, 1.6, 0], d: [-1, -0.2, 0] };
   }
 
@@ -112,14 +115,25 @@ const JUMEAU = (() => {
   const LIBELLE = c => c >= 95 ? 'ORAGE' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? 'NEIGE' : (c >= 51 && c <= 67) || (c >= 80 && c <= 82) ? 'PLUIE' : c === 45 || c === 48 ? 'BROUILLARD' : c >= 2 ? 'NUAGEUX' : 'DÉGAGÉ';
 
   /* ---------- la projection 3D → écran ---------- */
-  let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, f_ = 1;
-  function prepare() { cy_ = Math.cos(yaw); sy_ = Math.sin(yaw); cp_ = Math.cos(pitch); sp_ = Math.sin(pitch); f_ = Math.min(W * 0.62, Hc * 1.02) * zoom; }
-  function proj(x, y, z) {
-    const xx = x - CX, X = xx * cy_ - z * sy_, Z = xx * sy_ + z * cy_, Y = y - CYV;
-    const Y2 = Y * cp_ - Z * sp_, Z2 = Y * sp_ + Z * cp_, k = f_ / (19 + Z2);
-    return [W / 2 + X * k, Hc * 0.52 - Y2 * k, Z2, k];
+  // le cadrage automatique : à chaque image, la maison (avec la cour, le toit et le cœur d'Atlas) remplit le cadre,
+  // en laissant la place du tableau de bord en haut et en bas ; en douceur (pas de saut quand elle tourne)
+  let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, f_ = 0, ox_ = 0, oy_ = 0;
+  const BOITE = []; for (const x of [-L / 2 - 1.2, L / 2 + COUR]) for (const y of [0, FAITE + 1.6]) for (const z of [-D / 2 - 0.4, D / 2 + 0.4]) BOITE.push([x, y, z]);
+  function brut(x, y, z) {
+    const xx = x - CX, X = xx * cy_ - z * sy_, Z = xx * sy_ + z * cy_, Y = y + niveauDe(y) * ECART - CYV;
+    const Y2 = Y * cp_ - Z * sp_, Z2 = Y * sp_ + Z * cp_, k = 1 / (19 + Z2);
+    return [X * k, -Y2 * k, Z2, k];
   }
-  const prof = z => clamp(0.62 - z / 16, 0.28, 1); // le côté loin est plus pâle : la profondeur
+  function prepare() {
+    cy_ = Math.cos(yaw); sy_ = Math.sin(yaw); cp_ = Math.cos(pitch); sp_ = Math.sin(pitch);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const b of BOITE) { const q = brut(...b); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
+    const petit = Hc < 330, haut = petit ? 22 : 44, bas = petit ? 24 : 50, f = Math.min((W * 0.92) / (x1 - x0), (Hc - haut - bas) / (y1 - y0)) * zoom;
+    const ox = W / 2 - f * (x0 + x1) / 2, oy = haut + (Hc - haut - bas) / 2 - f * (y0 + y1) / 2;
+    if (!f_ || glisse) { f_ = f; ox_ = ox; oy_ = oy; } else { f_ += (f - f_) * 0.12; ox_ += (ox - ox_) * 0.12; oy_ += (oy - oy_) * 0.12; }
+  }
+  function proj(x, y, z) { const q = brut(x, y, z); return [ox_ + q[0] * f_, oy_ + q[1] * f_, q[2], q[3] * f_]; }
+  const prof = z => clamp(0.6 - z / 12, 0.2, 1); // le côté loin est plus pâle : la profondeur
   // un trait lumineux : un halo large et doux, puis le trait fin (sans shadowBlur, trop lent sur tablette)
   function trait(a, b, rgb, al, lw = 1, halo = false) {
     const p = proj(...a), q = proj(...b), f = prof((p[2] + q[2]) / 2) * al;
@@ -170,11 +184,12 @@ const JUMEAU = (() => {
     const mt = ease(age * 1.7 - 1.15);
     if (mt > 0) {
       const y0 = TOIT, yf = y0 + (FAITE - TOIT) * mt;
-      [-D / 2, D / 2].forEach(z => poly([[-L / 2, y0, z], [0, yf, z], [L / 2, y0, z]], CY, 0.5 * mt, 1.2, false, true)); // les pignons
+      const xb = L / 2 - MANS; // le pan de la cour commence en haut de la mansarde
+      [-D / 2, D / 2].forEach(z => poly([[-L / 2, y0, z], [0, yf, z], [xb, y0, z]], CY, 0.5 * mt, 1.2, false, true)); // les pignons
       trait([0, yf, -D / 2], [0, yf, D / 2], CY, 0.7 * mt, 1.4, true);
-      for (let i = 1; i < 6; i++) { const z = -D / 2 + (D * i) / 6; trait([-L / 2, y0, z], [0, yf, z], CY, 0.1 * mt); trait([L / 2, y0, z], [0, yf, z], CY, 0.1 * mt); } // les chevrons
+      for (let i = 1; i < 6; i++) { const z = -D / 2 + (D * i) / 6; trait([-L / 2, y0, z], [0, yf, z], CY, 0.1 * mt); trait([xb, y0, z], [0, yf, z], CY, 0.1 * mt); } // les chevrons
       face([[-L / 2, y0, -D / 2], [-L / 2, y0, D / 2], [0, yf, D / 2], [0, yf, -D / 2]], CY, 0.035 * mt);
-      face([[L / 2, y0, -D / 2], [L / 2, y0, D / 2], [0, yf, D / 2], [0, yf, -D / 2]], CY, 0.035 * mt);
+      face([[xb, y0, -D / 2], [xb, y0, D / 2], [0, yf, D / 2], [0, yf, -D / 2]], CY, 0.035 * mt);
       // le velux, sur le pan de la rue, près du faîte (une fenêtre de toit : il brille si la chambre de papa est allumée)
       const pp = ps.find(p => p.a && p.k === 2), lv = pp ? pp.v || 0 : 0, f = (u, w) => [-L / 2 + (L / 2) * u, y0 + (yf - y0) * u, w];
       const vel = [f(0.55, 0.3), f(0.55, 1.3), f(0.8, 1.3), f(0.8, 0.3)];
@@ -184,17 +199,19 @@ const JUMEAU = (() => {
     }
     // le scanner : un plan qui monte et descend, et souligne la maison là où il passe
     if (nait > 0.9) {
-      const s = (t / 6200) % 1, ys = (s < 0.5 ? s * 2 : 2 - s * 2) * (FAITE - 0.2) + 0.1, lx = ys > TOIT ? (L / 2) * (1 - (ys - TOIT) / (FAITE - TOIT)) : L / 2, lz = D / 2;
-      poly([[-lx, ys, -lz], [lx, ys, -lz], [lx, ys, lz], [-lx, ys, lz]], CY, 0.55, 1.2, true, true);
-      face([[-lx - 1, ys, -lz - 1], [lx + 1, ys, -lz - 1], [lx + 1, ys, lz + 1], [-lx - 1, ys, lz + 1]], CY, 0.022);
+      const s = (t / 6200) % 1, ys = (s < 0.5 ? s * 2 : 2 - s * 2) * (FAITE - 0.2) + 0.1, lz = D / 2;
+      const u = ys > TOIT ? 1 - (ys - TOIT) / (FAITE - TOIT) : 1, xa = -L / 2 * u, xb = ys > TOIT ? (L / 2 - MANS) * u : ys > 2 * H ? L / 2 - MANS * (ys - 2 * H) / H : L / 2;
+      poly([[xa, ys, -lz], [xb, ys, -lz], [xb, ys, lz], [xa, ys, lz]], CY, 0.55, 1.2, true, true);
+      face([[xa - 1, ys, -lz - 1], [xb + 1, ys, -lz - 1], [xb + 1, ys, lz + 1], [xa - 1, ys, lz + 1]], CY, 0.022);
     }
-    if (nait > 0.75) { cameras(ps, T, t, ease((age - 0.75) * 4)); coeur(ps, T, t, ease((age - 0.8) * 4)); shadowOrbe(ps, T, t); }
+    if (nait > 0.75) { cameras(ps, T, t, ease((age - 0.75) * 4)); coeur(ps, T, t, ease((age - 0.8) * 4)); shadowOrbe(ps, T, t); habitants(ps, T, t); }
     meteoDessin(C, t, dt);
     motes(t, dt);
     cartesDessin(t);
     // les noms des pièces
     ctx.globalCompositeOperation = 'source-over';
-    if (nait > 0.9) for (const p of ps) if (p.a && p.centre) etiquette(p, T, (age - 0.9) * 8); else if (p.nomFixe && p.centre) texte(p.nomFixe, p.centre[0], p.centre[1] + 4, `rgba(238,243,248,${(0.5 * prof(p.centre[2])).toFixed(2)})`, W > 700 ? 10 : 9);
+    if (nait > 0.9) for (const p of ps) if (p.a && p.centre) etiquette(p, T, (age - 0.9) * 8); else if (p.nomFixe && p.lab) texte(p.nomFixe, p.lab[0], p.lab[1], `rgba(238,243,248,${(0.5 * prof(p.lab[2])).toFixed(2)})`, W > 700 ? 10 : 9);
+    poseTextes();
     hud(C, T, ps, t, age);
   }
 
@@ -238,12 +255,21 @@ const JUMEAU = (() => {
     const niv = ['RDC', '1ER', '2E'];
     for (let k = 0; k < 3; k++) {
       const m = monte(k); if (m <= 0) continue;
-      const y0 = k * H, y1 = y0 + H * m;
+      const y0 = k * H, y1 = y0 + H * m - 0.002;
       poly([[-L / 2, y0, -D / 2], [L / 2, y0, -D / 2], [L / 2, y0, D / 2], [-L / 2, y0, D / 2]], CY, 0.4, 1.1, true, true);
-      for (const [x, z] of [[-L / 2, -D / 2], [L / 2, -D / 2], [L / 2, D / 2], [-L / 2, D / 2]]) trait([x, y0, z], [x, y1, z], CY, 0.38, 1.1, true);
+      for (const [x, z] of [[-L / 2, -D / 2], [L / 2, -D / 2], [L / 2, D / 2], [-L / 2, D / 2]]) trait([x, y0, z], [k === 2 && x > 0 ? x - MANS * m : x, y1, z], CY, 0.38, 1.1, true);
       if (m > 0.95) { const q = proj(-L / 2 - 0.5, y0 + H / 2, -D / 2 - 0.3); ctx.globalCompositeOperation = 'source-over'; texte(niv[k], q[0], q[1], `rgba(${CY},.55)`, 9); ctx.globalCompositeOperation = 'lighter'; }
     }
-    if (monte(2) > 0.98) poly([[-L / 2, TOIT, -D / 2], [L / 2, TOIT, -D / 2], [L / 2, TOIT, D / 2], [-L / 2, TOIT, D / 2]], CY, 0.4, 1.1, true, true);
+    if (monte(2) > 0.98) poly([[-L / 2, TOIT, -D / 2], [L / 2 - MANS, TOIT, -D / 2], [L / 2 - MANS, TOIT, D / 2], [-L / 2, TOIT, D / 2]], CY, 0.4, 1.1, true, true);
+    // la porte d'entrée : au rez-de-chaussée, sur la rue, à gauche
+    if (monte(0) > 0.95) {
+      const x = -L / 2 - 0.02, za = -2.15, zb = -1.25, ph = 2.15;
+      poly([[x, 0, za], [x, 0, zb], [x, ph, zb], [x, ph, za]], AM, 0.75, 1.3, true, true);
+      face([[x, 0, za], [x, 0, zb], [x, ph, zb], [x, ph, za]], AM, 0.05);
+      trait([x - 0.01, 1.05, zb - 0.15], [x - 0.01, 1.05, zb - 0.28], AM, 0.9, 2); // la poignée
+      trait([x - 0.5, 0.02, za - 0.1], [x - 0.5, 0.02, zb + 0.1], AM, 0.4); trait([x - 0.5, 0.02, za - 0.1], [x, 0.02, za - 0.1], AM, 0.4); trait([x - 0.5, 0.02, zb + 0.1], [x, 0.02, zb + 0.1], AM, 0.4); // la marche
+      const q = proj(x - 0.3, ph + 0.35, (za + zb) / 2); texte('ENTRÉE', q[0], q[1], `rgba(${AM},.8)`, 9, '', 0, 2);
+    }
     // la cour (au sol) et le plateau (au niveau du 1er), derrière la maison
     const mc = ease(age * 1.7 - 0.6); if (mc <= 0) return;
     const x0 = L / 2, x1 = L / 2 + COUR * mc, z0 = -D / 2, z1 = D / 2;
@@ -264,7 +290,8 @@ const JUMEAU = (() => {
     const esc = p.genre === 'escalier', y1 = p.y0 + (p.y1 - p.y0) * m;
     const v = p.v || 0, hs = p.a && p.allume == null && curseur == null, fl = p.flash || 0, on = v > 0.02;
     const c = cube(p.x0 + 0.06, p.x1 - 0.06, p.y0 + 0.04, y1 - 0.04, p.z0 + 0.05, p.z1 - 0.05), zm = (p.z0 + p.z1) / 2, xm = (p.x0 + p.x1) / 2;
-    p.centre = proj(xm, (p.y0 + y1) / 2, zm);
+    if (p.mansarde) { const r = MANS * ((y1 - p.y0) / H); c.haut[1][0] -= r; c.haut[2][0] -= r; } // le plafond recule côté cour : la pente de la mansarde
+    p.centre = proj(xm, (p.y0 + y1) / 2, zm); p.lab = proj(xm, p.y0 + Math.min(1, (y1 - p.y0) * 0.4), zm);
     p.coins = c.bas.concat(c.haut).map(q => proj(...q));
     if (esc) { escalier(p, m, v, hs); if (fl > 0) halo(p.centre[0], p.centre[1], p.centre[3] * 2.5 * (1.4 - fl), on ? AM : CY, 0.35 * fl); return; }
     if (on) {
@@ -279,8 +306,13 @@ const JUMEAU = (() => {
     poly(c.bas, col, a0, on ? 1.5 : 1, true, on); poly(c.haut, col, a0, on ? 1.5 : 1, true, on);
     for (let i = 0; i < 4; i++) trait(c.bas[i], c.haut[i], col, a0, on ? 1.3 : 1, on);
     // les fenêtres : seulement sur la rue et sur la cour (les côtés sont des murs mitoyens)
+    if (m > 0.95 && p.mansarde) { // la fenêtre de la mansarde, dans la pente côté cour
+      const q = (u, z) => [L / 2 - MANS * u + 0.02, p.y0 + H * u, z];
+      for (const zc of [zm - 1.1, zm + 1.1]) { const f = [q(0.3, zc - 0.6), q(0.3, zc + 0.6), q(0.75, zc + 0.6), q(0.75, zc - 0.6)]; if (on) { face(f, '255,214,150', 0.1 + v * 0.22); poly(f, AM, 0.5 + v * 0.4, 1, true, true); } else poly(f, CY, 0.22, 1); }
+    }
     if (m > 0.95) for (const [xf, s] of [[-L / 2, -1], [L / 2, 1]]) {
       if (Math.abs(p.x0 - xf) > 0.01 && Math.abs(p.x1 - xf) > 0.01) continue;
+      if (p.mansarde && s > 0) continue;
       const x = xf + s * 0.01, w = Math.min(0.75, (p.z1 - p.z0) * 0.2), ya = p.y0 + 0.9, yb = p.y0 + 1.95;
       for (const zc of (p.z1 - p.z0 > 3.5 ? [zm - 1.1, zm + 1.1] : [zm])) {
         const f = [[x, ya, zc - w], [x, ya, zc + w], [x, yb, zc + w], [x, yb, zc - w]];
@@ -325,7 +357,7 @@ const JUMEAU = (() => {
   function cameras(ps, T, t, m) {
     for (const c of cams) {
       const { p, d } = placeCam(c), det = detections(c, T), vue = det.length > 0, hors = !c.en_ligne;
-      const n = Math.hypot(...d), u = d.map(v => v / n), lg = 3.6 * m;
+      const n = Math.hypot(...d), u = d.map(v => v / n), lg = 4.4 * m;
       const bout = p.map((v, i) => v + u[i] * lg);
       let a1 = [u[1], -u[0], 0]; if (Math.hypot(...a1) < 0.1) a1 = [0, u[2], -u[1]];
       const na = Math.hypot(...a1); a1 = a1.map(v => v / na);
@@ -338,12 +370,12 @@ const JUMEAU = (() => {
       // le balayage : une ligne qui parcourt le cône
       const s = (t / 1800 + c.nom.length * 0.13) % 1, bal = base.map(b => p.map((v, i) => v + (b[i] - v) * s));
       poly(bal, col, 0.3 * (1 - s), 1);
-      if (vue) { face([p, base[0], base[1]], col, 0.07 * clig); face([p, base[2], base[3]], col, 0.07 * clig); face(base, col, 0.05 * clig); silhouette(bout, t); }
+      if (vue) { face([p, base[0], base[1]], col, 0.07 * clig); face([p, base[2], base[3]], col, 0.07 * clig); face(base, col, 0.05 * clig); const surPlateau = /plateau/.test(N(c.nom)) && bout[0] > L / 2; personne(bout[0], surPlateau ? H : 0, bout[2], RO, 1.75, 'QUELQU\'UN', t, 4.5); }
       const q = proj(...p);
       halo(q[0], q[1], 16, col, 0.5); ctx.fillStyle = `rgb(${col})`; ctx.beginPath(); ctx.arc(q[0], q[1], 3.4, 0, 6.283); ctx.fill();
       if (vue) { const ph = (t / 1400) % 1; ctx.beginPath(); ctx.arc(q[0], q[1], 6 + ph * 34, 0, 6.283); ctx.strokeStyle = `rgba(${col},${(1 - ph).toFixed(2)})`; ctx.lineWidth = 2; ctx.stroke(); }
       // ce qu'elle voit : en direct sa dernière image ; dans le passé, la photo de la détection (si elle en a gardé une)
-      const img = imageDe(c, T, det), qb = proj(...bout), taille = Math.max(46, Math.min(120, qb[3] * 2.3)) * m;
+      const img = imageDe(c, T, det), qb = proj(...bout), taille = Math.max(40, Math.min(90, qb[3] * 1.9)) * m;
       if (img && img.complete && img.naturalWidth && m > 0.5) {
         const w = taille * 1.6, h = taille, x = qb[0] - w / 2, y = qb[1] - h / 2;
         ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 0.85;
@@ -356,26 +388,55 @@ const JUMEAU = (() => {
         ctx.fillText(T == null ? `● ${c.at || 'DIRECT'}` : '◷ IMAGE DE LA DÉTECTION', x + 4, y + h - 4);
       }
       ctx.globalCompositeOperation = 'source-over';
-      texte(c.nom.toUpperCase() + (hors ? ' · HORS LIGNE' : vue ? ' · DÉTECTION' : ''), q[0], q[1] - 12, `rgba(${col},.95)`, 10);
+      texte(c.nom.toUpperCase() + (hors ? ' · HORS LIGNE' : vue ? ' · DÉTECTION' : ''), q[0], q[1] - 12, `rgba(${col},.95)`, 9.5, '', 0, vue ? 5 : 2.5);
       ctx.globalCompositeOperation = 'lighter';
     }
   }
-  // quelqu'un, vu par une caméra : une silhouette holographique au bout du cône, posée au sol
-  function silhouette(bout, t) {
-    const x = bout[0], z = bout[2], bob = Math.sin(t / 300) * 0.03, col = RO, al = 0.75;
-    const tete = proj(x, 1.62 + bob, z), r = tete[3] * 0.17;
-    halo(tete[0], tete[1], r * 6, col, 0.25);
-    ctx.strokeStyle = `rgba(${col},${al})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(tete[0], tete[1], r, 0, 6.283); ctx.stroke();
-    trait([x, 1.42 + bob, z], [x, 0.85, z], col, al, 1.6, true);
-    trait([x - 0.32, 1.25 + bob, z], [x, 1.38 + bob, z], col, al, 1.4); trait([x + 0.32, 1.25 + bob, z], [x, 1.38 + bob, z], col, al, 1.4);
-    trait([x, 0.85, z], [x - 0.22, 0, z], col, al, 1.4); trait([x, 0.85, z], [x + 0.22, 0, z], col, al, 1.4);
-    const pts = []; for (let i = 0; i < 24; i++) { const a = (i / 24) * 6.283; pts.push([x + Math.cos(a) * 0.6, 0.02, z + Math.sin(a) * 0.6]); } poly(pts, col, 0.5 + 0.3 * Math.sin(t / 200), 1.2);
+  // une personne en hologramme : un corps de lumière, des anneaux qui la parcourent de bas en haut, un socle qui tourne, son nom
+  function personne(x, y0, z, rgb, taille, nom, t, prio = 3) {
+    const k = taille / 1.75, bob = Math.sin(t / 420 + x) * 0.025, Y = h => y0 + h * k + bob;
+    // le faisceau de lumière qui la projette, depuis le sol
+    face([[x - 0.35, y0 + 0.01, z - 0.35], [x + 0.35, y0 + 0.01, z - 0.35], [x + 0.35, y0 + 0.01, z + 0.35], [x - 0.35, y0 + 0.01, z + 0.35]], rgb, 0.12);
+    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) trait([x + dx, y0, z + dz], [x + dx * 0.2, Y(1.95), z + dz * 0.2], rgb, 0.08);
+    // le corps
+    const tete = proj(x, Y(1.6), z), r = tete[3] * 0.13 * k;
+    halo(tete[0], tete[1], r * 5, rgb, 0.3);
+    ctx.strokeStyle = `rgba(${rgb},.9)`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(tete[0], tete[1], Math.max(2, r), 0, 6.283); ctx.stroke();
+    const ep = 0.23 * k, ha = 0.15 * k;
+    poly([[x - ep, Y(1.4), z], [x + ep, Y(1.4), z], [x + ha, Y(0.88), z], [x - ha, Y(0.88), z]], rgb, 0.85, 1.4, true, true); // le buste
+    face([[x - ep, Y(1.4), z], [x + ep, Y(1.4), z], [x + ha, Y(0.88), z], [x - ha, Y(0.88), z]], rgb, 0.12);
+    const bras = Math.sin(t / 700 + z) * 0.05;
+    trait([x - ep, Y(1.38), z], [x - ep - 0.08, Y(0.9 + bras), z + 0.05], rgb, 0.8, 1.3, true); trait([x + ep, Y(1.38), z], [x + ep + 0.08, Y(0.9 - bras), z - 0.05], rgb, 0.8, 1.3, true);
+    trait([x - ha * 0.6, Y(0.88), z], [x - ha * 0.8, y0 + 0.02, z], rgb, 0.8, 1.4, true); trait([x + ha * 0.6, Y(0.88), z], [x + ha * 0.8, y0 + 0.02, z], rgb, 0.8, 1.4, true);
+    trait([x, Y(1.47), z], [x, Y(1.4), z], rgb, 0.8, 1.2);
+    // les anneaux qui la parcourent (le scan de l'hologramme)
+    for (const off of [0, 0.5]) { const h = ((t / 1600 + off) % 1) * 1.75, pts = []; for (let i = 0; i < 18; i++) { const a = (i / 18) * 6.283; pts.push([x + Math.cos(a) * 0.32 * k, Y(h), z + Math.sin(a) * 0.32 * k]); } poly(pts, rgb, 0.45 * Math.sin(Math.PI * h / 1.75), 1); }
+    // le socle qui tourne
+    const rot = t / 900; for (let i = 0; i < 28; i += 2) { const a = (i / 28) * 6.283 + rot, b = ((i + 1) / 28) * 6.283 + rot; trait([x + Math.cos(a) * 0.55, y0 + 0.02, z + Math.sin(a) * 0.55], [x + Math.cos(b) * 0.55, y0 + 0.02, z + Math.sin(b) * 0.55], rgb, 0.75, 1.3); }
+    const q = proj(x, Y(2.0), z); texte(nom, q[0], q[1], `rgba(${rgb},.95)`, 9.5, '', 0, prio);
+  }
+  // qui est à la maison, et où : papa là où un de ses Atlas est actif (la pièce de l'appareil), son fils quand Shadow le voit
+  let ou = null, ouA = 0;
+  async function chargeOu() { if (Date.now() - ouA < 20000) return; ouA = Date.now(); try { ou = await appel('/atlas/ou'); } catch (e) { /* rien */ } }
+  function habitants(ps, T, t) {
+    const dans = (p, dx, dz) => [(p.x0 + p.x1) / 2 + dx, p.y0, (p.z0 + p.z1) / 2 + dz];
+    if (T == null && ou && ou.pourquoi === 'actif' && (ou.depuis || 0) < 600) {
+      const n = N(ou.piece || '');
+      let p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
+      if (!p) p = ou.role === 'tablette' ? ps.find(x => x.a && /salon|sejour/.test(N(x.a.nom))) : ou.role === 'ordinateur' ? ps.find(x => x.a && x.k === 2) : null;
+      if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); }
+    }
+    let lui = false;
+    if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); lui = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
+    else lui = !!donnees && donnees.shadow.some(e => Math.abs(e.t - T) < 10 * 60);
+    const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom)));
+    if (lui && ch) { const [x, y, z] = dans(ch, 0.9, -0.6); personne(x, y, z, VI, 1.3, 'AVEC SHADOW', t, 4); }
   }
   // le cœur d'Atlas : une sphère d'anneaux au-dessus du toit, reliée par des flux aux caméras et aux pièces allumées
   function coeur(ps, T, t, m) {
     if (m <= 0) return;
     let parle = false; try { parle = !!(window.parent !== window && window.parent.voice && window.parent.voice.occupe && window.parent.voice.occupe()); } catch (e) { /* rien */ }
-    const pulse = parle ? 0.5 + 0.5 * Math.sin(t / 90) : 0.5 + 0.5 * Math.sin(t / 900), c = [0, FAITE + 1.7 + Math.sin(t / 1300) * 0.12, 0], q = proj(...c), r = 0.62 * m;
+    const pulse = parle ? 0.5 + 0.5 * Math.sin(t / 90) : 0.5 + 0.5 * Math.sin(t / 900), c = [0, FAITE + 1.3 + Math.sin(t / 1300) * 0.12, 0], q = proj(...c), r = 0.62 * m;
     halo(q[0], q[1], q[3] * r * (3.2 + pulse * (parle ? 2 : 0.6)), CY, 0.22 + pulse * 0.18);
     halo(q[0], q[1], q[3] * r * 0.9, '210,245,255', 0.6);
     const anneaux = [[t / 2100, 0.35], [-t / 1700, 1.15], [t / 2600, 2.05]];
@@ -402,7 +463,7 @@ const JUMEAU = (() => {
     if (!la) return;
     const x = (ch.x0 + ch.x1) / 2 + Math.cos(t / 1500) * 0.5, y = ch.y0 + 1.3 + Math.sin(t / 700) * 0.15, z = (ch.z0 + ch.z1) / 2 + Math.sin(t / 1500) * 0.5, q = proj(x, y, z);
     halo(q[0], q[1], q[3] * 1.4, VI, 0.45); halo(q[0], q[1], q[3] * 0.35, '235,220,255', 0.8);
-    ctx.globalCompositeOperation = 'source-over'; texte('SHADOW', q[0], q[1] - q[3] * 0.6, `rgba(${VI},.95)`, 9); ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = 'source-over'; texte('SHADOW', q[0], q[1] - q[3] * 0.6, `rgba(${VI},.95)`, 9, '', 0, 3.5); ctx.globalCompositeOperation = 'lighter';
   }
 
   function meteoDessin(C, t, dt) {
@@ -442,19 +503,37 @@ const JUMEAU = (() => {
     ctx.globalCompositeOperation = 'lighter';
   }
   function etiquette(p, T, m) {
-    const lg = Math.hypot(p.coins[1][0] - p.coins[0][0], p.coins[1][1] - p.coins[0][1]), al = clamp(m, 0, 1) * prof(p.centre[2]) * 1.3;
+    const q = p.lab || p.centre, lg = Math.hypot(p.coins[1][0] - p.coins[0][0], p.coins[1][1] - p.coins[0][1]), al = clamp(m, 0, 1) * prof(q[2]) * 1.4;
     const on = p.v > 0.05;
-    texte(p.a.nom.toUpperCase(), p.centre[0], p.centre[1] + 4, on ? `rgba(255,244,224,${clamp(al, 0, 1).toFixed(2)})` : `rgba(238,243,248,${clamp(al * 0.62, 0, 1).toFixed(2)})`, W > 700 ? 11 : 9.5,
-      on ? (p.lum != null ? `${p.lum} %` : 'ALLUMÉE') + (p.sur === false ? ' ?' : '') : p.a.allume == null && T == null ? 'SANS COURANT' : '', lg * 0.95);
+    texte(p.a.nom.toUpperCase(), q[0], q[1], on ? `rgba(255,244,224,${clamp(al, 0, 1).toFixed(2)})` : `rgba(238,243,248,${clamp(al * 0.62, 0, 1).toFixed(2)})`, W > 700 ? 10.5 : 9.5,
+      on ? (p.lum != null ? `${p.lum} %` : 'ALLUMÉE') + (p.sur === false ? ' ?' : '') : p.a.allume == null && T == null ? 'SANS COURANT' : '', lg * 0.95, on ? 3 : 1.5 - q[2] / 40);
   }
-  function texte(t, x, y, col, taille, sous, large) {
-    ctx.font = `${taille}px ui-monospace, 'DejaVu Sans Mono', monospace`; ctx.textAlign = 'center'; ctx.fillStyle = col;
-    ctx.shadowColor = 'rgba(0,0,0,.9)'; ctx.shadowBlur = 4;
-    const mots = String(t).split(' '); let l1 = t, l2 = ''; // un nom trop long pour la pièce : sur deux lignes
-    if (large && ctx.measureText(t).width > large && mots.length > 1) { const m = Math.ceil(mots.length / 2); l1 = mots.slice(0, m).join(' '); l2 = mots.slice(m).join(' '); }
-    ctx.fillText(l1, x, l2 ? y - taille * 0.55 : y); if (l2) ctx.fillText(l2, x, y + taille * 0.55);
-    if (sous) { ctx.font = `${taille - 2}px ui-monospace, monospace`; ctx.fillStyle = 'rgba(255,217,160,.85)'; ctx.fillText(sous, x, y + taille * (l2 ? 1.7 : 1) + 2); }
-    ctx.shadowBlur = 0;
+  // les textes vont dans une file, puis sont posés à la fin, du plus important au moins important :
+  // un texte qui en chevaucherait un autre se décale un peu, ou s'efface (rien ne se mange)
+  const file = [];
+  function texte(t, x, y, col, taille, sous, large, prio = 1) { file.push({ t: String(t), x, y, col, taille, sous, large, prio }); }
+  function poseTextes() {
+    ctx.globalCompositeOperation = 'source-over';
+    const places = [], chevauche = b => places.some(a => b[0] < a[0] + a[2] && b[0] + b[2] > a[0] && b[1] < a[1] + a[3] && b[1] + b[3] > a[1]);
+    file.sort((a, b) => b.prio - a.prio);
+    for (const e of file) {
+      ctx.font = `${e.taille}px ui-monospace, 'DejaVu Sans Mono', monospace`;
+      const mots = e.t.split(' '); let l1 = e.t, l2 = ''; // un nom trop long pour la pièce : sur deux lignes
+      if (e.large && ctx.measureText(e.t).width > e.large && mots.length > 1) { const m = Math.ceil(mots.length / 2); l1 = mots.slice(0, m).join(' '); l2 = mots.slice(m).join(' '); }
+      let w = Math.max(ctx.measureText(l1).width, l2 ? ctx.measureText(l2).width : 0);
+      if (e.sous) { ctx.font = `${e.taille - 2}px ui-monospace, monospace`; w = Math.max(w, ctx.measureText(e.sous).width); }
+      const h = e.taille * ((l2 ? 2.1 : 1.1) + (e.sous ? 1.1 : 0)) + 4;
+      let y = e.y, b = [e.x - w / 2 - 4, y - e.taille - 2, w + 8, h];
+      if (chevauche(b)) { for (const d of [-h, h, -2 * h]) { const b2 = [b[0], b[1] + d, b[2], b[3]]; if (!chevauche(b2)) { b = b2; y += d; break; } } }
+      if (chevauche(b) && e.prio < 4) continue; // pas de place : on l'efface plutôt que de le superposer
+      places.push(b);
+      ctx.font = `${e.taille}px ui-monospace, 'DejaVu Sans Mono', monospace`; ctx.textAlign = 'center'; ctx.fillStyle = e.col;
+      ctx.shadowColor = 'rgba(0,0,0,.95)'; ctx.shadowBlur = 4;
+      ctx.fillText(l1, e.x, l2 ? y - e.taille * 0.55 : y); if (l2) ctx.fillText(l2, e.x, y + e.taille * 0.55);
+      if (e.sous) { ctx.font = `${e.taille - 2}px ui-monospace, monospace`; ctx.fillStyle = 'rgba(255,217,160,.85)'; ctx.fillText(e.sous, e.x, y + e.taille * (l2 ? 1.7 : 1) + 2); }
+      ctx.shadowBlur = 0;
+    }
+    file.length = 0;
   }
   function coinsCadre(x, y, w, h, rgb, al) {
     const l = Math.min(14, w / 5); ctx.strokeStyle = `rgba(${rgb},${al})`; ctx.lineWidth = 1.5; ctx.beginPath();
@@ -467,12 +546,12 @@ const JUMEAU = (() => {
     coinsCadre(6, 6, W - 12, Hc - 12, CY, 0.35);
     ctx.font = '600 10px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillStyle = T == null ? `rgba(${VE},.85)` : `rgba(${AM},.9)`;
     ctx.fillText(T == null ? `● JUMEAU · EN DIRECT${(t / 600) % 2 < 1 ? '' : ' ▮'}` : '◷ JUMEAU · RELECTURE', 16, 22);
-    ctx.font = '9.5px ui-monospace, monospace'; ctx.fillStyle = `rgba(${CY},.5)`; ctx.fillText(`AZIMUT ${String(Math.round(((yaw * 180) / Math.PI % 360 + 360) % 360)).padStart(3, '0')}° · ZOOM ${zoom.toFixed(1)}×`, 16, 36);
+    if (Hc >= 330) { ctx.font = '9.5px ui-monospace, monospace'; ctx.fillStyle = `rgba(${CY},.5)`; ctx.fillText(`AZIMUT ${String(Math.round(((yaw * 180) / Math.PI % 360 + 360) % 360)).padStart(3, '0')}° · ZOOM ${zoom.toFixed(1)}×`, 16, 36); }
     // l'heure et le temps qu'il fait
-    ctx.textAlign = 'right'; ctx.font = `200 ${W > 700 ? 26 : 20}px ui-monospace, monospace`; ctx.fillStyle = 'rgba(255,255,255,.92)';
-    ctx.fillText(hh(C.d), W - 16, 36);
+    ctx.textAlign = 'right'; ctx.font = `200 ${Hc < 330 ? 16 : W > 700 ? 26 : 20}px ui-monospace, monospace`; ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.fillText(hh(C.d), W - 16, Hc < 330 ? 26 : 36);
     ctx.font = '9.5px ui-monospace, monospace'; ctx.fillStyle = `rgba(${CY},.6)`;
-    ctx.fillText(`${C.temp != null ? `${Math.round(C.temp)}° · ` : ''}${LIBELLE(C.code)} · ${C.jour ? 'JOUR' : 'NUIT'}`, W - 16, 50);
+    ctx.fillText(`${C.temp != null ? `${Math.round(C.temp)}° · ` : ''}${LIBELLE(C.code)} · ${C.jour ? 'JOUR' : 'NUIT'}`, W - 16, Hc < 330 ? 38 : 50);
     // les compteurs
     const on = ps.filter(p => p.a && p.v > 0.05).length, tot = ps.filter(p => p.a).length;
     const watts = T == null ? appareils.reduce((s, a) => s + (a.allume && a.watts ? a.watts : 0), 0) : null;
@@ -516,7 +595,8 @@ const JUMEAU = (() => {
     const dt = Math.min(100, t - (dernierT || t)); dernierT = t; dernierDessin = t;
     if (!glisse) {
       yaw += vyaw * dt; vyaw *= Math.pow(0.94, dt / 16); // l'élan du doigt
-      if (Date.now() > repriseAuto && Math.abs(vyaw) < 0.0001) yaw += dt * 0.00011; // un tour toutes les minutes environ
+      if (Date.now() > repriseAuto && Math.abs(vyaw) < 0.0001) { phase += dt / 15000; yaw = base + 0.42 * Math.sin(phase); } // un lent balancement de trois quarts : la maison reste lisible
+      else base = yaw - 0.42 * Math.sin(phase);
     }
     if (lecture && curseur != null && donnees) { curseur += dt * 0.6; if (curseur >= donnees.maintenant) { curseur = null; lecture = false; } majCurseur(); } // une heure en 6 secondes
     if (curseur !== precedent) { surgit(precedent, curseur); precedent = curseur; }
@@ -565,8 +645,9 @@ const JUMEAU = (() => {
   /* ---------- l'interface ---------- */
   const CSS = `#jumeau { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
     #jumeau .j-scene { position: relative; flex: 1; min-height: 0; }
+    #jumeau.plein { position: fixed; inset: 0; z-index: 40; padding: 10px 14px 12px; background: #02050b; }
     #jumeau canvas.j3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; border-radius: 4px; }
-    .j-barre { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; margin-top: 6px; }
+    .j-barre { display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 8px; align-items: center; margin-top: 6px; }
     .j-barre button { font: 600 10px ui-monospace, monospace; letter-spacing: .14em; color: var(--cyan); background: rgba(95,211,255,.06); border: 1px solid var(--ligne); border-radius: 4px; padding: 6px 9px; cursor: pointer; }
     .j-barre button.on { color: var(--ok); border-color: rgba(110,240,184,.5); }
     .j-rail { position: relative; height: 30px; } .j-rail canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -583,7 +664,7 @@ const JUMEAU = (() => {
     el.innerHTML = `<div id="jumeau"><div class="j-scene"><canvas class="j3d"></canvas></div>
       <div class="j-barre"><button id="j-play" title="Rejouer la journée">▶</button>
         <div class="j-rail"><canvas id="j-piste"></canvas><input id="j-temps" type="range" min="0" max="1000" value="1000" aria-label="Revoir la journée"></div>
-        <span id="j-lab">EN DIRECT</span><button id="j-direct" class="on">DIRECT</button></div>
+        <span id="j-lab">EN DIRECT</span><button id="j-direct" class="on">DIRECT</button><button id="j-plein" title="Plein écran">⛶</button></div>
       <div id="j-fil"></div></div>`;
     boite = el.querySelector('#jumeau'); cv = boite.querySelector('canvas.j3d'); ctx = cv.getContext('2d');
     naissance = performance.now(); etats.clear(); cartes.length = 0;
@@ -613,7 +694,7 @@ const JUMEAU = (() => {
       const g = glisse; if (doigts.size) return; glisse = null; repriseAuto = Date.now() + 8000;
       if (!g || g.bouge || g.pince) return;
       vyaw = 0;
-      const now = performance.now(); if (now - dernierTap < 320) { yaw = -0.55; pitch = 0.5; zoom = 1; dernierTap = 0; return; } dernierTap = now;
+      const now = performance.now(); if (now - dernierTap < 320) { yaw = base = -0.45; pitch = 0.36; zoom = 1; phase = 0; dernierTap = 0; return; } dernierTap = now;
       if (curseur != null || e.type !== 'pointerup') return;
       const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
       let mieux = null, aire = Infinity;
@@ -625,18 +706,20 @@ const JUMEAU = (() => {
     const r = boite.querySelector('#j-temps');
     r.addEventListener('input', () => { if (!donnees) return; lecture = false; const v = donnees.depuis + (+r.value / 1000) * (donnees.maintenant - donnees.depuis); curseur = +r.value >= 998 ? null : v; majCurseur(); });
     boite.querySelector('#j-direct').onclick = () => { curseur = null; lecture = false; charge(true); majCurseur(); };
+    boite.querySelector('#j-plein').onclick = () => { const on = boite.classList.toggle('plein'); boite.querySelector('#j-plein').textContent = on ? '✕' : '⛶'; f_ = 0; };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && boite && boite.classList.contains('plein')) boite.querySelector('#j-plein').click(); });
     boite.querySelector('#j-play').onclick = () => {
       if (!donnees) return;
       if (lecture) { lecture = false; majCurseur(); return; }
       if (curseur == null) curseur = Math.max(donnees.depuis, donnees.maintenant - 12 * 3600); // relancer : les 12 dernières heures
       precedent = curseur; lecture = true; majCurseur();
     };
-    charge(true).then(majCurseur); chargeMeteo();
+    charge(true).then(majCurseur); chargeMeteo(); chargeOu();
   }
   function maj() {
     const el = document.getElementById('plan'); if (!el) return;
     if (!boite || !boite.isConnected) monte(el);
-    charge(false); chargeMeteo(); lance();
+    charge(false); chargeMeteo(); chargeOu(); lance();
   }
   function bascule3d(on) {
     actif = on; try { localStorage.setItem('cockpit-vue', on ? '3d' : '2d'); } catch (e) { /* rien */ }
@@ -645,5 +728,5 @@ const JUMEAU = (() => {
     boite = null; cv = null; ctx = null;
     if (on) maj(); else if (typeof plan === 'function') plan();
   }
-  return { actif: () => actif, maj, bascule: bascule3d, rejoue: h => { if (!donnees) return; curseur = donnees.maintenant - (h || 12) * 3600; precedent = curseur; lecture = true; majCurseur(); } };
+  return { actif: () => actif, maj, bascule: bascule3d, _vue: () => ({ yaw, pitch, base, phase, f: f_ }), rejoue: h => { if (!donnees) return; curseur = donnees.maintenant - (h || 12) * 3600; precedent = curseur; lecture = true; majCurseur(); } };
 })();
