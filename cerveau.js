@@ -136,10 +136,25 @@ const AI = {
   chat(messages, opts) { return this.robust(m => this.chatOnce(m, messages, opts), opts && opts.think ? this.THINK_MODEL : (opts && opts.prefer) || null); },
   chatStream(messages, opts, onSentence) { return this.robust(m => this.chatStreamOnce(m, messages, opts, onSentence), opts && opts.think ? this.THINK_MODEL : null); },
   // cerveau local Qwen3 : on lui dit de ne pas « réfléchir à voix basse » (beaucoup plus rapide)
+  // Mistral est strict : pas de message vide, pas deux messages de suite du même rôle, une conversation qui finit par lui
+  _propre(c, messages) {
+    if (!c.mistral) return messages;
+    const out = [];
+    for (const m of messages) {
+      const t = String(m.content == null ? '' : m.content).trim();
+      if (!t) continue;
+      const der = out[out.length - 1];
+      if (der && der.role === m.role && m.role !== 'system') der.content += `\n${t}`;
+      else if (m.role === 'system' && out.length && out[0].role === 'system') out[0].content += `\n${t}`;
+      else out.push({ role: m.role, content: t });
+    }
+    while (out.length > 1 && out[out.length - 1].role === 'assistant') out.pop();
+    return out;
+  },
   _local(c, messages) { return c.local && /qwen3/i.test(c.model || '') ? messages.map((m, i) => (i === 0 && m.role === 'system' ? { role: 'system', content: `${m.content} /no_think` } : m)) : messages; },
   async chatOnce(model, messages, { maxTokens = 220, temperature = 0.8, timeout = 20000, think = false } = {}) {
     const c = typeof model === 'object' ? model : Object.assign({}, this.cfg(), { model });
-    messages = this._local(c, messages);
+    messages = this._propre(c, this._local(c, messages));
     const body = { model: c.model, messages, temperature: c.local ? Math.min(temperature, 0.35) : temperature, max_tokens: maxTokens };
     if (!c.local && !c.mistral) {
       // Les modèles « qui réfléchissent » : réflexion courte (ou plus longue pour une question difficile), on ne garde que la réponse
@@ -158,7 +173,7 @@ const AI = {
   // pour que Shadow commence à parler sans attendre la fin.
   async chatStreamOnce(model, messages, { maxTokens = 200, temperature = 0.8, timeout = 20000, think = false } = {}, onSentence) {
     const c = typeof model === 'object' ? model : Object.assign({}, this.cfg(), { model });
-    messages = this._local(c, messages);
+    messages = this._propre(c, this._local(c, messages));
     const body = { model: c.model, messages, temperature: c.local ? Math.min(temperature, 0.35) : temperature, max_tokens: maxTokens, stream: true }; // petit cerveau local : plus prudent
     if (think) timeout = Math.max(timeout, 30000);
     if (!c.local && !c.mistral) {
@@ -350,7 +365,7 @@ const AI = {
 // Une erreur de Groq, avec son code (401 = clé refusée, 429 = limite atteinte, 5xx = souci chez Groq…)
 async function httpError(res) {
   let detail = '';
-  try { const j = await res.json(); detail = (j.error && j.error.message) || ''; } catch (e) { /* pas de détail */ }
+  try { const j = await res.json(); detail = (j.error && (j.error.message || j.error)) || j.message || (Array.isArray(j.detail) ? j.detail.map(d => d.msg || '').join(' ; ') : j.detail) || ''; detail = String(detail).slice(0, 200); } catch (e) { /* pas de détail */ }
   const e = new Error(`Erreur ${res.status}${detail ? ` : ${detail}` : ''}`);
   e.status = res.status;
   const ra = parseFloat(res.headers.get('retry-after'));
