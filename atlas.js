@@ -260,7 +260,7 @@ async function ask(text, { wait: w = 20000 } = {}) {
   const a = await hear({ maxWait: w });
   return a || '';
 }
-const ORDRE_DIRECT = /^(radio atlas|journal de bord|(lance le |active le )?protocole [a-z0-9 ]{2,30}|(ouvre|affiche) (les |tes )?(reglages|parametres)|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
+const ORDRE_DIRECT = /^(radio atlas|((montre|affiche|ouvre) (moi )?)?(le jumeau|la maison en 3d)|(rejoue|revois) (ma|la) journee|jumeau|journal de bord|(lance le |active le )?protocole [a-z0-9 ]{2,30}|(ouvre|affiche) (les |tes )?(reglages|parametres)|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
 const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
 const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
 async function askYesNo(text) {
@@ -317,7 +317,7 @@ Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h
 Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
 Programmes : « qu'est-ce que tu as programmé ? », « annule les programmes ».
 Protocoles : « crée le protocole <nom> : … », « protocole <nom> » (le lance), « mes protocoles », « supprime le protocole <nom> ».
-Ordinateur de bord : « radio atlas » (l'émission du matin), « radio atlas longue », « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
+Ordinateur de bord : « radio atlas » (l'émission du matin), « montre le jumeau » (la maison en 3D dans le cockpit), « rejoue ma journée », « radio atlas longue », « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
 Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».
@@ -644,7 +644,28 @@ async function testLarsen() {
 // chaque ordre donné à Atlas (pas une conversation) est noté sur l'ordinateur de la maison : la sentinelle y repère tes habitudes ;
 // et s'il a appris un enchaînement (« après "je viens de me réveiller", la météo »), il le fait juste après
 let profondeur = 0, enchaineSuite = [], enchaineAt = 0;
+/* ---------- quand c'est un enfant qui parle : la maison reste à papa ----------
+   Il peut allumer sa lampe, mettre la radio, demander une blague… mais pas tout éteindre, toucher à la sécurité,
+   aux réglages, au trading, effacer des souvenirs ou programmer la maison. */
+const estEnfant = qui => { const p = LIEN.prenom(); return !!(p && qui && N(qui) === N(p)); };
+const enfantParle = () => !!dlg.enfant && Date.now() - (dlg.quiAt || 0) < 45000;
+const INTERDIT_ENFANT = [ // seulement des ordres (une phrase de conversation comme « j'ai oublié ma trousse » passe)
+  /\b(eteins|eteindre|coupe|couper)\b.*\b(tout|toute la maison|toutes les (lumieres|lampes|prises)|partout)\b/,
+  /\b(reglages?|parametres?|test du larsen)\b/,
+  /\b(active|desactive|coupe|arrete|eteins|declenche|lance|mets|enleve|change|passe)\b.*\b(alarme|sentinelle|surveillance|verisure|mode absent|dissuasion|sirene|protocole danger|defense)\b/,
+  /^(dissuasion|sirene|protocole danger|mode absent|defense)\b/,
+  /\b(trading|topstep|boite noire)\b|^(j achete|je vends|achete|vends)\b/,
+  /^(oublie|efface|supprime|vide)\b/,
+  /\b(tous les (jours|matins|soirs|lundis|mardis|mercredis|jeudis|vendredis|samedis|dimanches)|chaque (jour|matin|soir|semaine))\b.*\b(allume|eteins|mets|lance|coupe|rappelle|reveille|joue)\b|\b(allume|eteins|mets|lance|coupe|rappelle|reveille)\b.*\b(tous les (jours|matins|soirs)|chaque (jour|matin|soir))\b/,
+  /^(programme|automatise)\b|\b(cree (un|le) protocole|nouveau protocole|apprends la voix|oublie la voix|cle (mistral|groq)|cerveau (economique|maximum))\b/,
+];
+async function refusEnfant(n) {
+  const p = LIEN.prenom() || '';
+  journal(n, dlg.qui, 'un enfant : refusé (c\'est papa qui décide)');
+  return say(pick([`Ça, c'est papa qui décide${p ? `, ${p}` : ''}. Demande-lui !`, `Désolé${p ? ` ${p}` : ''}, ça, seul papa peut me le demander.`, `Pas ça${p ? `, ${p}` : ''} : c'est un ordre pour papa. Mais je peux allumer ta lampe ou mettre de la musique !`]));
+}
 async function handle(text) {
+  if (enfantParle() && !window.__enchaine) { const nn = N(String(text).replace(/^\s*atlas[\s,.:!]*/i, '')); if (INTERDIT_ENFANT.some(r => r.test(nn))) return refusEnfant(nn); }
   const premier = !profondeur && !window.__ordreDuCerveau && !window.__agentCapture && !window.__enchaine;
   profondeur++; if (premier) dlg.parCerveau = false;
   try { return await handleBrut(text); } finally {
@@ -705,7 +726,7 @@ async function handleBrut(text) {
   if (R.convOn.test(n)) { S.settings.conversation = true; dlg.discret = false; save(); return say("Je participe à vos conversations. Je n'interviens que si j'ai quelque chose d'utile à dire, et je reste discret le reste du temps. Dis « reste discret » si tu veux que je me taise."); }
   if (R.convOff.test(n)) { S.settings.conversation = false; save(); return say("Je reste discret : je ne réponds plus que quand on m'appelle par mon nom."); }
   if (R.apprendVoix.test(n)) return apprendreVoix(t);
-  if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && VOIX.forget(nom)) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
+  if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && typeof VOIXPC !== 'undefined') VOIXPC.oublie(nom); if (nom && !/^invité/.test(nom) && (VOIX.forget(nom) || (typeof VOIXPC !== 'undefined' && VOIXPC.connus().some(p => N(p.nom) === N(nom))))) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
   if (R.quiParle.test(n)) return say(!dlg.qui ? (OREILLES.engine() === 'whisper' ? "Je ne reconnais pas ta voix. Dis « apprends ma voix », et je la retiendrai." : "Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq.") : /^invité/.test(dlg.qui) ? "Je ne connais pas encore ta voix. Dis « apprends ma voix », et je la retiendrai." : `C'est ${dlg.qui}. Je reconnais ta voix.`);
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const ag = typeof AGENT !== 'undefined' && AGENT.route(t, n); // « qu'est-ce que tu as programmé ? », « annule les programmes »
@@ -800,6 +821,7 @@ const CONV = (() => {
   function contexte() {
     const r = recents(12), connus = VOIX.people().map(p => p.name);
     let t = connus.length ? `Les voix que tu connais : ${connus.join(', ')}.` : '';
+    if (enfantParle()) return `${t} C'EST UN ENFANT QUI TE PARLE : ${dlg.qui}, le fils de la maison (il est à l'école primaire). Réponds-lui comme à un enfant : une à trois phrases très simples et chaleureuses, des mots d'enfant, un brin d'humour ; pas de sujets d'adultes (trading, actualité violente, argent). Ne lance pour lui aucune commande qui éteint toute la maison, touche à la sécurité, aux réglages ou programme la maison : dis-lui gentiment que c'est papa qui décide.${r.length > 1 ? `\nLa conversation dans la pièce, juste avant :\n${r.map(ligne).join('\n')}` : ''}`;
     t += dlg.qui ? (/^invité/.test(dlg.qui) ? ` Cette phrase vient d'une voix que tu ne connais pas (${dlg.qui}, peut-être un invité) : sois accueillant et poli.` : ` Tu reconnais la voix : c'est ${dlg.qui} qui te parle (adresse-toi à cette personne ; si c'est un enfant, parle simplement et gentiment).`) : '';
     if (r.length > 1) t += `\nLa conversation dans la pièce, juste avant (pour comprendre le contexte ; « invité » = une voix inconnue) :\n${r.map(ligne).join('\n')}`;
     return t;
@@ -921,18 +943,25 @@ async function apprendreVoix(text) {
   nom = nom.replace(/[.,!?;:«»"]+/g, '').trim();
   nom = nom.charAt(0).toUpperCase() + nom.slice(1);
   const phrases = [`Très bien, ${nom}. Parle-moi un peu de ta journée, en quelques phrases.`, "Maintenant, dis-moi ce que tu as prévu demain.", 'Et pour finir, compte lentement jusqu\'à quinze.'];
-  const prints = [];
+  const prints = [], sons = [];
   for (const q of phrases) {
     let l = q;
     for (let k = 0; k < 2; k++) {
       await ask(l, { wait: 25000 });
-      const p = OREILLES.takePrint();
-      if (p) { prints.push(p); break; }
+      const p = OREILLES.takePrint(), w = OREILLES.takeWav();
+      if (p) { prints.push(p); if (w) sons.push(w); break; }
       l = 'Parle un peu plus longtemps, que je retienne bien ta voix.';
     }
   }
   if (prints.length < 2) return say("Je n'ai pas assez bien entendu ta voix. On réessaiera dans un endroit plus calme.");
   VOIX.enroll(nom, prints);
+  // et l'ordinateur de la maison l'apprend aussi, avec son vrai modèle de voix (qui est papa, qui est l'enfant)
+  if (typeof VOIXPC !== 'undefined' && sons.length && VOIXMAISON.root()) {
+    const role = estEnfant(nom) ? 'enfant' : S.nom && N(nom) === N(S.nom) ? 'papa' : (await askYesNo("Dernière question : c'est toi, le papa de la maison ?")) ? 'papa' : 'autre';
+    let ok = 0; for (const w of sons) { const r = await VOIXPC.apprends(nom, role, w); if (r && r.ok) ok++; }
+    dlg.enfant = role === 'enfant'; dlg.quiAt = Date.now();
+    if (!ok) console.warn('voix : l\'ordinateur de la maison n\'a pas appris la voix');
+  }
   dlg.qui = nom; fx.ok();
   return say(`C'est fait, ${nom}. Je reconnaîtrai ta voix, même au milieu d'une conversation.`);
 }
@@ -969,7 +998,12 @@ async function vie() {
     if (r0 && !r) { journal(r0, '', 'un bruit : ignoré'); continue; }
     if (!r) { if (talk && ++dlg.silence >= 2) { dlg.state = 'standby'; face.set('idle'); } continue; }
     const n = N(r);
-    dlg.qui = CONV.nomPour(OREILLES.takePrint()); // qui vient de parler (à la voix)
+    { // qui vient de parler (à la voix) : le modèle de l'ordinateur d'abord, sinon l'empreinte calculée sur l'appareil
+      const print = OREILLES.takePrint(), pc = typeof VOIXPC !== 'undefined' ? await VOIXPC.resultat() : null;
+      dlg.qui = pc && pc.nom ? pc.nom : CONV.nomPour(print);
+      dlg.enfant = pc && pc.nom ? pc.role === 'enfant' : estEnfant(dlg.qui);
+      dlg.quiAt = Date.now(); dlg.quiPC = !!(pc && pc.nom);
+    }
     const appele = R.reveil.test(n) || /^(la classe|l atlas|la tlas|la place)\s+/.test(n) && ADRESSE.test(n.replace(/^(la classe|l atlas|la tlas|la place)\s+/, ''));
     if (appele) fx.tone([[1175, 0.05]]); // un petit bip : il a entendu son nom
     // la radio joue ici : les voix de la radio ne sont pas pour lui — seulement son nom, ou les ordres de la radio elle-même

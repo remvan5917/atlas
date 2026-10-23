@@ -168,3 +168,39 @@ const VOIX = (() => {
   function forget(name) { const p = own().find(x => x.name.toLowerCase() === String(name).toLowerCase()); if (!p) return false; tomb('voices', p); S.voices = own().filter(x => x !== p); save(); return true; }
   return { print, identify, enroll, learn, forget, dist, people, own };
 })();
+
+/* ---------- les voix reconnues par l'ordinateur de la maison (un vrai modèle de voix : CAM++) ----------
+   Pendant qu'on transcrit une phrase, Atlas envoie le même son à l'ordinateur de la maison, qui répond qui l'a dite
+   (papa, son fils, une voix inconnue). L'ordinateur ne garde jamais le son : seulement une empreinte de 512 nombres. */
+const VOIXPC = (() => {
+  let connus = null, verifie = 0, dernier = null;
+  const root = () => (typeof VOIXMAISON !== 'undefined' ? VOIXMAISON.root() : '');
+  const actif = () => !!root() && S.settings.voixPC !== false && !window.__BANC;
+  async function etat(force) {
+    if (!actif()) return [];
+    if (!force && connus && Date.now() - verifie < 10 * 60000) return connus;
+    verifie = Date.now();
+    try { connus = (await (await fetch(`${root()}/maison/voix/etat`, { cache: 'no-store' })).json()).personnes || []; } catch (e) { connus = connus || []; }
+    return connus;
+  }
+  const b64 = blob => new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = ko; r.readAsDataURL(blob); });
+  async function post(chemin, corps, ms = 4000) {
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), ms);
+    try { return await (await fetch(`${root()}${chemin}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps), signal: ctl.signal })).json(); } finally { clearTimeout(tm); }
+  }
+  // une phrase vient d'être entendue : on demande à l'ordinateur qui l'a dite (en même temps que la transcription)
+  function analyse(blob, secondes) {
+    dernier = null;
+    if (!actif() || !(secondes >= 1)) return;
+    dernier = (async () => { const l = await etat(); if (!l.length) return null; return post('/maison/voix/qui', { audio: await b64(blob) }); })().catch(() => null);
+  }
+  // le résultat (il arrive d'habitude avant la transcription ; sinon on n'attend pas plus de 0,7 s)
+  async function resultat(ms = 700) {
+    const d = dernier; dernier = null;
+    if (!d) return null;
+    return Promise.race([d, new Promise(r => setTimeout(() => r(null), ms))]);
+  }
+  async function apprends(nom, role, blob) { if (!actif() || !blob) return null; try { const r = await post('/maison/voix/apprends', { nom, role, audio: await b64(blob) }, 8000); verifie = 0; return r; } catch (e) { return null; } }
+  async function oublie(nom) { if (!actif()) return; try { await post('/maison/voix/oublie', { nom }); verifie = 0; } catch (e) { /* plus tard */ } }
+  return { analyse, resultat, apprends, oublie, etat, connus: () => connus || [] };
+})();

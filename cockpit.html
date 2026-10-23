@@ -260,7 +260,7 @@ function cartes() {
       <section class="carte z-marche"><h2><div><i>03</i>MARCHÉS</div><span>24 H</span></h2><div class="marche" id="marche"></div></section>
     </div>
     <div class="col">
-      <section class="carte grand z-plan"><h2><div><i>04</i>LA MAISON</div><span>TOUCHER UNE PIÈCE : ALLUMER / ÉTEINDRE</span></h2><div id="plan"></div></section>
+      <section class="carte grand z-plan"><h2><div><i>04</i>LA MAISON</div><span>TOUCHER UNE PIÈCE : ALLUMER / ÉTEINDRE <button class="vue" id="vue3d">${typeof JUMEAU !== 'undefined' && JUMEAU.actif() ? 'PLAN 2D' : 'JUMEAU 3D'}</button></span></h2><div id="plan"></div></section>
       <section class="carte lum z-lum"><h2><div><i>05</i>LUMIÈRES ET PRISES</div><span id="lum-res"></span></h2><div class="grille defile" id="lumieres"></div></section>
     </div>
     <div class="col">
@@ -272,6 +272,7 @@ function cartes() {
     .concat(ATLAS ? SCENES : []).concat([['alerte', 'Danger', null, danger, 'danger']]);
   $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}">${ic(i)}<span>${esc(t)}</span></button>`).join('');
   document.querySelectorAll('.scene').forEach(b => b.onclick = () => { const x = sc[+b.dataset.k]; if (x[3]) x[3](b); else dis(x[2], b); });
+  $('#vue3d').onclick = () => { if (typeof JUMEAU !== 'undefined') JUMEAU.bascule(!JUMEAU.actif()); };
 }
 
 function cartesTravail() {
@@ -321,6 +322,7 @@ let alertesRecentes = [];
 const vuRecemment = c => alertesRecentes.some(a => a.texte.includes(`« ${c.nom} »`) && Date.now() - a.at < 10 * 60000 && /détection «|quelqu|personne|mouvement|bruit|véhicule|human|motion/i.test(a.texte) && !/activée|désactivée|hors ligne|en ligne|offline/i.test(a.texte));
 function plan() {
   const el = $('#plan'); if (!el) return;
+  if (typeof JUMEAU !== 'undefined' && JUMEAU.actif()) { JUMEAU.maj(); return; } // le jumeau holographique (la maison en 3D)
   const lampes = appareils.filter(a => a.type === 'lampe');
   const etage = a => /\b(chambres?|salle de bains?|premier etage|etage|bureau|grenier)\b/.test(N(a.nom));
   const niveaux = [['ÉTAGE', lampes.filter(etage)], ['REZ-DE-CHAUSSÉE', lampes.filter(a => !etage(a))]];
@@ -541,7 +543,9 @@ function demarre() {
   setInterval(() => cams.filter(c => !c.ezviz).forEach(photo), 30000); setInterval(chargeCams, 5 * 60000);
   setInterval(chargeMarche, 120000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000); setInterval(chargeAgenda, 5 * 60000); setInterval(chargeTrading, 30000);
 }
-if (ROOT) demarre();
+// le jumeau holographique (jumeau.js, de la même version que le cockpit) : chargé avant le démarrage
+function avecJumeau(f) { const s = document.createElement('script'); s.src = `jumeau.js?v=${encodeURIComponent(new URLSearchParams(location.search).get('v') || '')}`; s.onload = s.onerror = f; document.head.appendChild(s); }
+if (ROOT) avecJumeau(demarre);
 else {
   $('#boot').remove(); $('#config').hidden = false;
   $('#adresse-ok').onclick = () => { const v = $('#adresse').value.trim().replace(/\/+$/, '').replace(/\/v1$/, ''); if (!/^https:\/\//.test(v)) return; try { localStorage.setItem('cockpit-adresse', v); } catch (e) { /* rien */ } location.reload(); };

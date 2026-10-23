@@ -18,7 +18,7 @@ const OREILLES = (() => {
   let ctx = null, stream = null, proc = null, src = null;
   let muted = false, muteUntil = 0;
   let noise = 0.004, speaking = false, voiced = 0, silent = 0, buf = [], pre = [], peak = 0, frames = 0, dernierPic = 0;
-  let level = 0, threshold = 0.012, lastHeard = '', lastPrint = null;
+  let level = 0, threshold = 0.012, lastHeard = '', lastPrint = null, lastWav = null;
   // Interrompre Shadow en lui parlant : on écoute aussi pendant qu'il parle (en gardant ~1,7 s de son)
   let ring = [], ttsFrames = 0, ttsPeak = 0, loud = 0, bargedAt = 0;
   // Sensibilité du micro (réglage de papa) : seuil minimum et marge au-dessus du bruit de la pièce
@@ -200,9 +200,11 @@ const OREILLES = (() => {
     emit('thinking');
     // empreinte de la voix, calculée sur l'appareil (jamais envoyée)
     try { lastPrint = (typeof VOIX !== 'undefined') ? VOIX.print(audio) : null; } catch (e) { lastPrint = null; }
+    const son = wav(louder(audio)); lastWav = son;
+    try { if (typeof VOIXPC !== 'undefined') VOIXPC.analyse(son, audio.reduce((a, c) => a + c.length, 0) / RATE); } catch (e) { /* sans l'ordinateur : l'empreinte de l'appareil suffit */ }
     try {
       const t0 = performance.now();
-      const t = await AI.transcribe(wav(louder(audio)), p.prompt, { cheap: !!p.cheap }); // en veille : les oreilles de la maison d'abord
+      const t = await AI.transcribe(son, p.prompt, { cheap: !!p.cheap }); // en veille : les oreilles de la maison d'abord
       timings.push(Math.round(performance.now() - t0)); if (timings.length > 20) timings.shift();
       if (pending !== p) return;
       p.busy = false;
@@ -281,6 +283,7 @@ const OREILLES = (() => {
     reopen: async () => { closeMic(); return start(); },
     ctx: () => ctx, // (le test du larsen met ses sons en pause)
     takePrint: () => { const p = lastPrint; lastPrint = null; return p; },
+    takeWav: () => { const w = lastWav; lastWav = null; return w; }, // le son de la dernière phrase (pour apprendre une voix)
     hearing: () => speaking || !!(pending && pending.busy),
     on: (ev, fn) => handlers[ev].push(fn),
   };

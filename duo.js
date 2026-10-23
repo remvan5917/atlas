@@ -35,6 +35,7 @@ const DUO = (() => {
     if (i >= 0) { const w = attentes.splice(i, 1)[0]; clearTimeout(w.t); w.res(m); return; }
     if (m.type === 'question') { repondre(m); return; }
     if (m.type === 'dissuasion') { if (typeof FUTUR !== 'undefined') FUTUR.voixSentinelle(); return; } // la tablette, avec la sono
+    if (m.type === 'aventure' || m.type === 'aventure-fin') { glitch(m.texte, m.type === 'aventure-fin'); return; } // l'aventure de la maison : Atlas joue le méchant
     boite.push(m); if (boite.length > 20) boite.shift();
   }
   async function tire(sec) {
@@ -60,6 +61,40 @@ const DUO = (() => {
     }
   }
   setTimeout(boucle, 8000);
+
+  /* ---------- l'aventure dans la maison : le Professeur Glitch a « piraté » Atlas (Shadow mène le jeu) ----------
+     L'écran se brouille, une voix de méchant (la voix d'Atlas, en plus grave quand c'est possible), puis à la fin
+     « système restauré » et Atlas reprend sa voix. */
+  let glitchEl = null, glitchFin = 0;
+  const glitchEnleve = ms => { clearTimeout(glitchFin); glitchFin = setTimeout(() => { if (glitchEl) { glitchEl.remove(); glitchEl = null; } }, ms); };
+  async function glitch(texte, fin) {
+    if (!texte || !dlg.started || voice.endormi) return;
+    clearTimeout(glitchFin);
+    if (!glitchEl) {
+      glitchEl = document.createElement('div');
+      glitchEl.style.cssText = 'position:fixed;inset:0;z-index:72;display:grid;place-items:center;pointer-events:none;font-family:ui-monospace,monospace;background:rgba(10,0,18,.82);overflow:hidden';
+      glitchEl.innerHTML = `<style>@keyframes gl1{0%,100%{transform:translate(0)}20%{transform:translate(-4px,2px)}40%{transform:translate(3px,-2px)}60%{transform:translate(-2px,-1px)}80%{transform:translate(4px,1px)}}
+        @keyframes gl2{0%{clip-path:inset(10% 0 70% 0)}25%{clip-path:inset(60% 0 15% 0)}50%{clip-path:inset(30% 0 45% 0)}75%{clip-path:inset(80% 0 5% 0)}100%{clip-path:inset(5% 0 85% 0)}}
+        .glt{position:relative;font:900 clamp(34px,8vw,92px) system-ui;letter-spacing:.06em;color:#f0abfc;text-shadow:3px 0 #22d3ee,-3px 0 #f43f5e;animation:gl1 .35s steps(2) infinite}
+        .glt::after{content:attr(data-t);position:absolute;inset:0;color:#a3e635;animation:gl2 .9s steps(4) infinite}
+        .gls{margin-top:14px;font-size:clamp(14px,2.4vw,22px);letter-spacing:.3em;color:#f5d0fe;text-align:center}
+        .glb{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 2px,transparent 2px 4px)}</style>
+        <div class="glb"></div><div style="text-align:center"><div class="glt" data-t="PROFESSEUR GLITCH">PROFESSEUR GLITCH</div><div class="gls" id="gl-s">INTRUSION · ATLAS PIRATÉ</div></div>`;
+      document.body.appendChild(glitchEl);
+    }
+    try { const c = fx.audio(), t0 = c.currentTime, o = c.createOscillator(), g = c.createGain(); o.type = 'square'; g.gain.value = 0.08; o.connect(g); g.connect(c.destination); for (let i = 0; i < 8; i++) o.frequency.setValueAtTime(i % 2 ? 140 : 95, t0 + i * 0.07); o.start(t0); o.stop(t0 + 0.6); } catch (e) { /* pas de son */ }
+    await wait(500);
+    try { await say(texte); } catch (e) { /* rien */ }
+    if (!fin) { glitchEnleve(1500); return; }
+    if (!glitchEl) return;
+    // la victoire du capitaine : la maison revient à Atlas
+    const s = glitchEl.querySelector('#gl-s'); glitchEl.style.background = 'rgba(2,20,12,.86)';
+    glitchEl.querySelector('.glt').textContent = 'SYSTÈME RESTAURÉ'; glitchEl.querySelector('.glt').dataset.t = 'SYSTÈME RESTAURÉ'; glitchEl.querySelector('.glt').style.color = '#4ade80';
+    if (s) s.textContent = 'ATLAS · DE NOUVEAU AUX COMMANDES';
+    sfx('final'); await wait(900);
+    try { await say(`Merci, capitaine${enfant() ? ` ${enfant()}` : ''}. Le Professeur Glitch est parti, et la maison est de nouveau sous contrôle. Je n'aurais pas pu le faire sans toi.`); } catch (e) { /* rien */ }
+    glitchEnleve(2500);
+  }
 
   /* ---------- le petit pose une question à Atlas, par Shadow ---------- */
   let derniereQ = 0;
@@ -296,5 +331,5 @@ const DUO = (() => {
     if (/\b(accueille|accueillez|souhaite la bienvenue a|dis bonjour a) (nos|mes|les) (invites|amis|visiteurs|hotes)\b|\bnos invites (sont la|arrivent|sont arrives)\b|\bmode accueil\b/.test(n)) return () => invites(true);
     return null;
   }
-  return { route, attends, vide, accueille, invites, depuisMaison, visage, sketch, _holo: holo };
+  return { route, attends, vide, accueille, invites, depuisMaison, visage, sketch, _holo: holo, _glitch: glitch };
 })();

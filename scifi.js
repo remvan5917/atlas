@@ -448,10 +448,10 @@ const SCIFI = (() => {
     if (!document.body.classList.contains('cockpit') || document.fullscreenElement) return;
     document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => { const h = document.getElementById('cockpit-pe'); if (h) h.remove(); }).catch(() => {});
   }
-  function modeCockpit(on) {
+  function modeCockpit(on, maisonForcee) {
     document.body.classList.toggle('cockpit', on);
     let f = document.getElementById('cockpit-cadre');
-    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = `cockpit.html?v=${window.ATLAS_VERSION || ''}${typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur' ? '&poste=travail' : ''}`; f.title = 'Cockpit de la maison'; document.body.appendChild(f); f.addEventListener('load', () => { try { f.contentDocument.addEventListener('pointerdown', pleinEcran); } catch (e) { /* rien */ } }); }
+    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = `cockpit.html?v=${window.ATLAS_VERSION || ''}${!maisonForcee && typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur' ? '&poste=travail' : ''}`; f.title = 'Cockpit de la maison'; document.body.appendChild(f); f.addEventListener('load', () => { try { f.contentDocument.addEventListener('pointerdown', pleinEcran); } catch (e) { /* rien */ } }); }
     if (!on && f) f.remove();
     // le plein écran (sans les barres d'Android) : le navigateur l'accorde au premier toucher de l'écran
     if (on && !document.fullscreenElement && document.documentElement.requestFullscreen) {
@@ -772,6 +772,16 @@ const SCIFI = (() => {
       if (aj && aj[1] && !/\b(maison|cameras?|perimetre|alarme|enfant|fils|reseau|ordi)\b/.test(N(aj[1])) && /\b(infos?|actu|actualites?|nouvelles|nouveau|veille|surveille)\b/.test(n)) return () => veille('ajoute', aj[1].replace(/^(?:sur|de)\s+/i, '').trim());
     }
     if (/\b(ferme|quitte|sors du|enleve|cache)\b.*\b(cockpit|tableau de bord)\b|\bfin du (mode )?cockpit\b/.test(n)) return () => { modeCockpit(false); return say('Mode cockpit fermé.'); };
+    // le jumeau holographique : la maison en 3D dans le cockpit, et la journée qu'on rejoue
+    const jum = /\b(jumeau|maison en (3d|trois d)|hologramme de la maison|maison holographique)\b/.test(n), rejoue = /\b(rejoue|revois|repasse|montre moi) (ma|la) journee\b/.test(n);
+    if (jum || rejoue) return () => {
+      try { localStorage.setItem('cockpit-vue', '3d'); } catch (e) { /* rien */ }
+      let f0 = document.getElementById('cockpit-cadre');
+      if (f0 && /poste=travail/.test(f0.src)) { modeCockpit(false); f0 = null; } // le poste de travail n'a pas le plan : on ouvre celui de la maison
+      const vaJ = () => { try { const w = (document.getElementById('cockpit-cadre') || {}).contentWindow; if (w && w.eval) { w.eval("typeof JUMEAU !== 'undefined' && !JUMEAU.actif() && JUMEAU.bascule(true)"); if (rejoue) setTimeout(() => w.eval("typeof JUMEAU !== 'undefined' && JUMEAU.rejoue(12)"), 2500); } } catch (e) { /* rien */ } };
+      if (!f0) modeCockpit(true, true); setTimeout(vaJ, f0 ? 50 : 3500);
+      return say(rejoue ? "Je te rejoue les douze dernières heures de la maison : une heure toutes les six secondes. Fais glisser le curseur pour t'arrêter sur un moment." : "Le jumeau de la maison : chaque pièce s'allume comme la vraie lampe, et les caméras montrent ce qu'elles voient. Fais-le tourner du doigt, et glisse le curseur pour revoir la journée.");
+    };
     if (/\b(cockpit|tableau de bord|ecran de controle|panneau de controle de la maison)\b/.test(n) && !/\breglages\b/.test(n)) return () => { modeCockpit(true); return say("Mode cockpit : le tableau de bord de la maison, en direct. Je reste là, dans le coin, et je t'écoute toujours."); };
     if (/\b(combien|consommation|consomme|consomment|coute|coutent|facture|energie|electricite|kilowatt|gourmand)\b/.test(n) && /\b(maison|prise|prises|station|tele|television|fusee|musique|lumieres?|ampoules?|appareils?|ce mois|aujourd hui|energie|electricite|consomme)\b/.test(n) && !/\b(or|argent|bitcoin|action|nasdaq|cuivre)\b/.test(n) && !/\b(kilowatt ?heure coute|prix du kilowatt)\b/.test(n)) return () => energie(t, n);
     if (/\b(le kilowatt ?heure|le kwh|prix du kilowatt ?heure)\b.*\d/.test(n)) return () => prixKwh(t);
