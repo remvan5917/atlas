@@ -49,9 +49,10 @@ const PC = (() => {
   }
   // quand Atlas parle, ou que tu lui parles, la radio baisse (puis remonte doucement)
   setInterval(() => { majBouton(); if (!lecteur) return; const cible = voice.occupe() || Date.now() < baisseJusqua ? lecteurVol * 0.15 : lecteurVol; lecteur.volume = Math.max(0, Math.min(1, lecteur.volume + (cible - lecteur.volume) * 0.5)); }, 200);
-  async function radioIci(cle, nom) {
+  async function radioIci(cle, nom) { return radioJoue(`https://icecast.radiofrance.fr/${cle}-midfi.mp3`, nom); }
+  async function radioJoue(src, nom) {
     if (lecteur) { lecteur.pause(); lecteur = null; }
-    const a = new Audio(`https://icecast.radiofrance.fr/${cle}-midfi.mp3`); a.preload = 'none'; a.volume = 0.15;
+    const a = new Audio(src); a.preload = 'none'; a.volume = 0.15;
     lecteur = a; lecteurNom = nom;
     await say(`${nom}.`);
     try { await a.play(); } catch (e) { if (lecteur === a) lecteur = null; return say(`${nom} ne passe pas.`); }
@@ -209,6 +210,57 @@ const PC = (() => {
   // les noms des radios, et ce que l'oreille en fait parfois (« France AFO », « francs impôts », « Saint-Fo »)
   const RADIOS = [[/\b(france ?infos?|france (afo|impos|impots?|in fo|en fo|infaux|enfo|info)|francs? (impots?|infos?|afo)|saint fo|les infos|les informations|info en continu)\b/, 'franceinfo', 'France Info'], [/\b(france ?inter|france (enter|un terre|anter)|francs? inter)\b|^(mets |met |mais |allume |lance )?(la )?radio$/, 'franceinter', 'France Inter'], [/\b(fip|fipe|fib)\b/, 'fip', 'FIP'],
     [/\bfrance culture\b/, 'franceculture', 'France Culture'], [/\bfrance musique\b/, 'francemusique', 'France Musique'], [/\bmouv\b/, 'mouv', 'Mouv']];
+  // toutes les autres radios : l'annuaire mondial Radio Browser (les françaises d'abord), avec les surnoms et ce que l'oreille en fait
+  const SURNOMS = [[/\b(nrj|n r j|energie|enerji|haine air ji)\b/, 'NRJ'], [/\brtl ?2\b|\brtl deux\b/, 'RTL2'], [/\b(rtl|r t l|air t l)\b/, 'RTL'], [/\b(skyrock|sky rock|skai rock)\b/, 'Skyrock'],
+    [/\b(fun radio|fan radio)\b/, 'Fun Radio'], [/\bnostalgie\b/, 'Nostalgie'], [/\b(rmc|r m c)\b/, 'RMC'], [/\b(europe 1|europe un|europe one)\b/, 'Europe 1'], [/\b(cherie fm|cheri fm|cherie)\b/, 'Chérie FM'],
+    [/\b(rfm|r f m)\b/, 'RFM'], [/\b(virgin|virgine)( radio)?\b/, 'Virgin Radio'], [/\b(radio classique)\b/, 'Radio Classique'], [/\brire et chansons?\b/, 'Rire et Chansons'], [/\b(tsf jazz|tsf)\b/, 'TSF Jazz'],
+    [/\b(radio nova|nova)\b/, 'Radio Nova'], [/\b(oui fm|ouifm|oui f m)\b/, 'OUI FM'], [/\bbfm( business)?\b/, 'BFM Business'], [/\bsud radio\b/, 'Sud Radio'], [/\b(radio fg)\b/, 'Radio FG'],
+    [/\bjazz radio\b/, 'Jazz Radio'], [/\bm radio\b/, 'M Radio'], [/\b(radio latina|latina)\b/, 'Latina'], [/\bmfm\b/, 'MFM Radio'], [/\bvoltage\b/, 'Voltage'], [/\b(radio scoop)\b/, 'Radio Scoop'],
+    [/\b(radio contact|contact fm)\b/, 'Radio Contact'],
+    // Lille et le Nord
+    [/\b(ici nord|france bleu nord|france bleu lille|ici lille)\b/, 'ICI NORD'], [/\b(mona fm|monna fm|mona f m|radio mona)\b/, 'Mona FM'], [/\b(radio campus( lille)?)\b/, 'Radio Campus Lille'],
+    [/\b(rcf( nord)?|r c f)\b/, 'RCF Nord de France'], [/\b(radio pfm|pfm|p f m)\b/, 'Radio PFM'], [/\b(galaxie( radio)?)\b/, 'Galaxie Radio'], [/\b(metropole fm)\b/, 'Métropole FM'],
+    [/\b(radio boomerang|boomerang)\b/, 'Radio Boomerang'], [/\b(radio uylenspiegel|uylenspiegel)\b/, 'Radio Uylenspiegel'], [/\b(planete fm)\b/, 'Planète FM'], [/\b(delta fm)\b/, 'Delta FM Dunkerque'],
+    [/\b(radio club)\b/, 'Radio Club'], [/\b(chic radio)\b/, 'CHIC RADIO HITS'], [/\b(metropolys)\b/, 'Metropolys Lille'], [/\b(nrj lille)\b/, 'NRJ Lille'], [/\b(cherie fm lille)\b/, 'Chérie FM Lille'], [/\b(radio meuh)\b/, 'Radio Meuh'], [/\b(radio swiss jazz)\b/, 'Radio Swiss Jazz'], [/\b(bbc radio ?1)\b/, 'BBC Radio 1']];
+  const MIROIRS = ['de1', 'fi1', 'nl1', 'at1'];
+  const nomRadio = n => { const l = SURNOMS.filter(([re]) => re.test(n)); const x = l.sort((a, b) => b[1].length - a[1].length)[0]; return x ? x[1] : ''; }; // le plus précis : « NRJ Lille » plutôt que « NRJ »
+  async function chercheRadio(q) {
+    const cle = N(q), cache = (S.radiosTrouvees = S.radiosTrouvees || {});
+    if (cache[cle] && Date.now() - cache[cle].at < 7 * 86400000) return cache[cle];
+    const score = x => {
+      const nx = N(x.name); let v = 0;
+      if (nx === cle) v += 100; else if (new RegExp(`^${cle}( (fm|radio|france|officiel|officielle|live|direct|hd|hq|\\d+))*$`).test(nx)) v += 80; else if (nx.startsWith(`${cle} `)) v += 40; else if (nx.includes(cle)) v += 20;
+      if (x.countrycode === 'FR') v += 30;
+      if (/^https:/.test(x.url_resolved || '')) v += 10;
+      v += Math.min(20, (x.votes || 0) / 500);
+      if (/\b(hits|klassics?|80|90|2000|rap|rnb|dance|love|kids|christmas|noel|urban|electro|chill|lounge|old school|classics?)\b/.test(nx) && !/\b(hits|classique|jazz)\b/.test(cle)) v -= 25;
+      return v;
+    };
+    for (const fr of [true, false]) {
+      for (const m of MIROIRS) {
+        let l; try {
+          const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 8000);
+          l = await (await fetch(`https://${m}.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(q)}${fr ? '&countrycode=FR' : ''}&hidebroken=true&order=votes&reverse=true&limit=60`, { signal: ctl.signal })).json();
+          clearTimeout(tm);
+        } catch (e) { continue; } // un miroir en panne : le suivant
+        const best = (l || []).filter(x => x.url_resolved).sort((a, b) => score(b) - score(a))[0];
+        if (best && score(best) >= 40) { const r = { nom: best.name.trim(), url: best.url_resolved, id: best.stationuuid, at: Date.now() }; cache[cle] = r; save(); return r; }
+        break; // ce miroir a répondu : on passe au monde entier (ou on abandonne)
+      }
+    }
+    return null;
+  }
+  async function radioLibre(q) {
+    face.set('think');
+    const r = await chercheRadio(q);
+    if (!r) return say(`Je ne trouve pas la radio « ${q} ». Dis-moi son nom exact, par exemple « mets Skyrock ».`);
+    if (/^https:/.test(r.url)) return radioJoue(r.url, r.nom);
+    const r0 = typeof VOIXMAISON !== 'undefined' ? VOIXMAISON.root() : '';
+    if (!r0) return say(`${r.nom} ne passe que par l'ordinateur de la maison, et il ne répond pas.`);
+    return radioJoue(`${r0}/maison/radio/flux?id=${r.id}`, r.nom); // un flux « http » : relayé par l'ordinateur
+  }
+  const nomDans = n => n.replace(/^(et )?(mets|met|mais|allume|lance|joue|ecoute|ecouter|branche|passe|fais moi ecouter|je veux ecouter|on ecoute|tu peux mettre|peux tu mettre)( moi)?\b/, '')
+    .replace(/\b(s il te plait|stp|sur (la )?tablette|sur (le )?telephone|ici|maintenant|s il vous plait)\b/g, '').replace(/\b(la|une|de la|sur la)? ?(station de )?radio\b/g, '').replace(/\s+/g, ' ').trim();
   async function radio(cle, nom) {
     if (ici()) return radioIci(cle, nom); // ici : la tablette (et sa sono), le téléphone
     let r; try { r = await pc({ action: 'radio', cle }); } catch (e) { return injoignable(); }
@@ -276,14 +328,24 @@ const PC = (() => {
     }
     // la radio
     if (/\b(arrete|coupe|eteins|stop) (la radio|france ?info|france inter|fip|les infos)\b/.test(n)) return radioStop;
-    if (/^(mets|met|allume|lance|joue|fais moi ecouter|branche)\b/.test(n)) {
+    if (/^(mets|met|allume|lance|joue|fais moi ecouter|branche|ecoute|je veux ecouter|on ecoute)\b/.test(n)) {
       const ra = RADIOS.find(([re]) => re.test(n));
       if (ra) return () => radio(ra[1], ra[2]);
+      const sn = nomRadio(n); // NRJ, RTL, Skyrock… (même sans le mot « radio »)
+      if (sn) return () => radioLibre(sn);
     }
+    if (/\b(arrete|coupe|eteins|stop)\b/.test(n) && nomRadio(n) && n.split(' ').length <= 5) return radioStop;
+    if (/\bradios? (de|a|du|sur) (lille|la region|du nord|locales?)\b|\bradios? locales?\b/.test(n) && !/^(mets|met|allume|lance|joue)\b/.test(n)) return () => say("Les radios de Lille et du Nord : Ici Nord, l'ancien France Bleu Nord, Mona FM, Radio Campus Lille, RCF Nord de France, Radio PFM, Galaxie, Radio Contact, Métropole FM et Radio Boomerang. Et aussi NRJ Lille et Chérie FM Lille. Dis par exemple « mets Mona FM ».");
+    if (/^(mets|met|allume|lance|joue) (une |la )?radio (de lille|du nord|locale)$/.test(n)) return () => radioLibre('ICI NORD');
+    if (/\b(quelles?|lesquelles|tu connais|liste|toutes les)\b.*\bradios\b|\bradios (tu connais|disponibles|que tu (as|connais))\b/.test(n)) return () => say("Je trouve presque toutes les radios : Radio France bien sûr, mais aussi NRJ, RTL, Skyrock, Nostalgie, RMC, Europe 1, Chérie FM, Radio Nova, TSF Jazz, Radio Classique, et les radios locales. Dis simplement « mets » et son nom.");
     // « la radio France Info », « mais la radio… » (le « mets » mal entendu) : le mot radio, ou une station, suffit
     if (/\bradio\b/.test(n) && !/\b(arrete|coupe|eteins|stop|c est quoi|quelle radio|pourquoi|comment)\b/.test(n) && n.split(' ').length <= 9) {
-      const ra = RADIOS.find(([re]) => re.test(n)) || RADIOS[1];
-      return () => radio(ra[1], ra[2]);
+      const ra = RADIOS.find(([re]) => re.test(n));
+      if (ra) return () => radio(ra[1], ra[2]);
+      const q = nomRadio(n) || nomDans(n);
+      if (!q) return () => radio(RADIOS[1][1], RADIOS[1][2]); // « mets la radio » tout court : France Inter
+      if (/\b(quelles?|lesquelles|tu connais|liste)\b/.test(n)) return () => say("Je trouve presque toutes les radios du monde : Radio France, mais aussi NRJ, RTL, Skyrock, Nostalgie, RMC, Europe 1, Chérie FM, Radio Nova, TSF Jazz, Radio Classique… Dis simplement « mets » et son nom.");
+      return () => radioLibre(q);
     }
     // la musique par YouTube : « mets du Daft Punk », « joue Bohemian Rhapsody », « mets la chanson X », « mets X sur YouTube »
     const yt = String(t).match(/^\s*(?:mets|met|joue|lance|fais[- ]moi écouter|fais moi ecouter|passe)\s+(?:moi\s+)?(?:(?:de la |la |une )?(?:musique|chanson|vidéo|video)\s+(?:de\s+|d['’]\s*)?|du\s+|de la\s+|des\s+|de\s+l['’])?(.+?)\s*(?:sur youtube|sur l['’]ordi(?:nateur)?)?[.!?]*\s*$/i);
