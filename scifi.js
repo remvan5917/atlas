@@ -133,7 +133,9 @@ const SCIFI = (() => {
     let l = []; try { l = (await appel('/maison/appareils', null, 15000)).appareils || []; } catch (e) { /* tant pis */ }
     const h = new Date().getHours(), soir = h >= 18 || h < 7;
     const bas = l.filter(a => a.type === 'lampe' && !chambre(a) && a.allume != null);
-    if (bas.length) await regle(bas.map(a => a.id), true, soir ? 70 : 85, soir ? 15 : 65).catch(() => {});
+    let allume = false; // il ne dit « la maison s'allume » que si c'est vrai
+    if (bas.length) allume = await regle(bas.map(a => a.id), true, soir ? 70 : 85, soir ? 15 : 65).then(() => true).catch(() => false);
+    const phrase = !l.length ? "Bon retour. Je n'arrive pas à joindre la maison, les lumières restent comme elles sont." : allume ? "Bon retour. La maison s'allume." : 'Bon retour.';
     const depuis = S.absentDepuis || Date.now() - 12 * 3600000;
     const al = await alertes(depuis);
     S.absentDepuis = null; save();
@@ -141,11 +143,11 @@ const SCIFI = (() => {
     const imgs = [];
     const avecPhoto = (al || []).filter(a => a.image).slice(-2);
     for (const a of avecPhoto) { try { const b = await appel(`/maison/alerte/image?id=${a.id}`, null, 10000); if (b instanceof Blob) imgs.push({ nom: quand(a.at), blob: b, etat: 'alerte' }); } catch (e) { /* rien */ } }
-    hud('Protocole retour', [['Mode absent', 'terminé', 'ok'], ['Lumières', bas.length ? `${bas.length} allumée${bas.length > 1 ? 's' : ''}` : '—', 'ok'], ['Pendant ton absence', al == null ? 'inconnu' : al.length ? `${al.length} alerte${al.length > 1 ? 's' : ''}` : 'rien à signaler', al && al.length ? 'alerte' : 'ok']], imgs);
+    hud('Protocole retour', [['Mode absent', 'terminé', 'ok'], ['Lumières', allume ? `${bas.length} allumée${bas.length > 1 ? 's' : ''}` : !l.length ? 'maison injoignable' : '—', allume || l.length ? 'ok' : 'alerte'], ['Pendant ton absence', al == null ? 'inconnu' : al.length ? `${al.length} alerte${al.length > 1 ? 's' : ''}` : 'rien à signaler', al && al.length ? 'alerte' : 'ok']], imgs);
     fx.ok();
-    if (al == null) return say('Bon retour. La maison s\'allume.');
-    if (!al.length) return say(`Bon retour. La maison s'allume. Pendant ton absence : rien à signaler.`);
-    return say(`Bon retour. La maison s'allume. Pendant ton absence, ${al.length} alerte${al.length > 1 ? 's' : ''}. ${al.slice(-3).map(a => { const q = quand(a.at); return `${q.charAt(0).toUpperCase()}${q.slice(1)} : ${a.texte}`; }).join(' ')}`);
+    if (al == null) return say(phrase);
+    if (!al.length) return say(`${phrase} Pendant ton absence : rien à signaler.`);
+    return say(`${phrase} Pendant ton absence, ${al.length} alerte${al.length > 1 ? 's' : ''}. ${al.slice(-3).map(a => { const q = quand(a.at); return `${q.charAt(0).toUpperCase()}${q.slice(1)} : ${a.texte}`; }).join(' ')}`);
   }
 
   /* ---------- l'état des systèmes ---------- */
