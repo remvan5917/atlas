@@ -23,7 +23,7 @@ const AGENT = (() => {
 
   /* ---------- quand passer par l'agent : plusieurs actions, une heure, ou « prépare… » ---------- */
   const VERBES = /\b(allume|allumer|eteins|eteindre|mets|mettre|lance|lancer|prepare|preparer|previens|prevenir|rappelle|rappeler|programme|programmer|coupe|couper|ferme|fermer|active|activer|envoie|envoyer|dis a|demande a|baisse|baisser|monte|monter|regle|regler|arrete|arreter|note|noter|ajoute|ajouter|joue|reveille|verrouille|tamise|eteint)\b/g;
-  const TEMPS = /\b(a \d{1,2} ?h|\d{1,2} h \d{2}|a midi|a minuit|dans \d+ (min|minutes?|heures?|h)|dans (une|deux|trois) heures?|dans un quart d heure|dans une demi heure|ce soir|cette nuit|demain|tout a l heure|apres|puis|ensuite|en meme temps|pendant que)\b/;
+  const TEMPS = /\b(tous les (jours|matins|soirs)|chaque (jour|matin|soir)|le week end|a chaque fois|a \d{1,2} ?h|\d{1,2} h \d{2}|a midi|a minuit|dans \d+ (min|minutes?|heures?|h)|dans (une|deux|trois) heures?|dans un quart d heure|dans une demi heure|ce soir|cette nuit|demain|tout a l heure|apres|puis|ensuite|en meme temps|pendant que)\b/;
   function agentique(text) {
     const n = N(text); if (n.split(' ').length < 5) return false;
     const v = (n.match(VERBES) || []).length;
@@ -35,10 +35,11 @@ const AGENT = (() => {
   const OUTILS = [
     { type: 'function', function: { name: 'commande', description: "Exécute tout de suite UNE commande d'Atlas. « phrase » : une phrase de la liste des commandes, adaptée (le nom exact de l'appareil, le bon texte). Le résultat est ce qu'Atlas a vraiment répondu.", parameters: { type: 'object', properties: { phrase: { type: 'string', description: 'la commande, par exemple « mets le salon à 40 % »' } }, required: ['phrase'] } } },
     { type: 'function', function: { name: 'programmer', description: "Programme UNE commande d'Atlas pour plus tard. Donne « heure » (HH:MM ; demain si l'heure est déjà passée, ou jour = demain), ou « dans_minutes ».", parameters: { type: 'object', properties: { phrase: { type: 'string' }, heure: { type: 'string', description: 'HH:MM' }, jour: { type: 'string', enum: ['aujourd_hui', 'demain'] }, dans_minutes: { type: 'number' } }, required: ['phrase'] } } },
+    { type: 'function', function: { name: 'automatiser', description: "Crée une habitude durable que la maison fera toute seule : soit chaque jour à une heure (« heure » HH:MM et « jours » : 0 = lundi … 6 = dimanche ; tous les jours par défaut), soit juste après une phrase (« apres », par exemple « je viens de me réveiller »). « phrase » : la commande d'Atlas à faire.", parameters: { type: 'object', properties: { phrase: { type: 'string' }, heure: { type: 'string', description: 'HH:MM' }, jours: { type: 'array', items: { type: 'integer' } }, apres: { type: 'string' } }, required: ['phrase'] } } },
     { type: 'function', function: { name: 'etat_maison', description: "L'état réel de la maison à l'instant : présence, lumières allumées, caméras, alertes, alarme, agenda.", parameters: { type: 'object', properties: {} } } },
   ];
   const REGLES = `
-MODE AGENT : tu as des outils, et tu agis toi-même. Pour chaque action, appelle « commande » avec une phrase de la liste (une action par appel ; s'il y a plusieurs étapes, fais-les toutes, dans l'ordre). Une action demandée pour plus tard (« à 22 h 30 », « dans 20 minutes », « ce soir ») : appelle SEULEMENT « programmer », jamais « commande » maintenant pour cette action. « Baisse le son » concerne le volume ; pour une lumière, « mets <appareil> à N % ». Pour connaître la maison, « etat_maison ».
+MODE AGENT : tu as des outils, et tu agis toi-même. Pour chaque action, appelle « commande » avec une phrase de la liste (une action par appel ; s'il y a plusieurs étapes, fais-les toutes, dans l'ordre). Une habitude qui revient (« tous les matins », « chaque soir », « le week-end », « à chaque fois que je dis… ») : « automatiser ». Une action demandée pour plus tard (« à 22 h 30 », « dans 20 minutes », « ce soir ») : appelle SEULEMENT « programmer », jamais « commande » maintenant pour cette action. « Baisse le son » concerne le volume ; pour une lumière, « mets <appareil> à N % ». Pour connaître la maison, « etat_maison ».
 Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacun son appel). Lis le résultat de chaque outil : s'il dit que ça n'a pas marché ou qu'Atlas ne sait pas faire, dis-le franchement. Ne dis JAMAIS qu'une chose est faite si un outil ne l'a pas faite. N'écris pas de commande entre crochets [[…]] dans ce mode.
 À la fin, réponds en une ou deux phrases courtes, à l'oral : ce qui est fait, et ce qui est programmé (avec l'heure).`;
 
@@ -73,6 +74,16 @@ Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacu
       const d = new Date(at), demain = d.toDateString() !== new Date().toDateString();
       dansHud(`${hm(d)} · ${ph}`); etapes.push(`${ph} à ${hm(d)}`); (etapes.programmes = etapes.programmes || []).push(`${demain ? 'demain ' : ''}à ${hm(d)}, ${ph}`);
       return `programmé ${demain ? 'demain ' : ''}à ${hm(d)} : ${ph}`;
+    }
+    if (nom === 'automatiser') {
+      const ph = String(a.phrase || '').trim().slice(0, 160); if (!ph) return 'phrase vide';
+      const corps = a.apres ? { phrase: ph, apres: N(a.apres) } : { phrase: ph, heure: String(a.heure || '').replace('h', ':'), jours: Array.isArray(a.jours) && a.jours.length ? a.jours : [0, 1, 2, 3, 4, 5, 6] };
+      if (!corps.apres && !/^\d{1,2}:\d{2}$/.test(corps.heure)) return "il manque l'heure (HH:MM) ou la phrase « apres »";
+      try { await appel('/maison/habitudes', { ajoute: corps }); } catch (e) { return "pas enregistré : l'ordinateur de la maison ne répond pas"; }
+      const j = corps.jours ? (corps.jours.length === 7 ? 'tous les jours' : corps.jours.join() === '0,1,2,3,4' ? 'du lundi au vendredi' : corps.jours.join() === '5,6' ? 'le week-end' : 'certains jours') : '';
+      const t = corps.apres ? `après « ${a.apres} », ${ph}` : `${j} à ${corps.heure.replace(/^0/, '').replace(':', ' h ').replace(' h 00', ' h')}, ${ph}`;
+      dansHud(`habitude · ${t}`); (etapes.programmes = etapes.programmes || []).push(`désormais ${t}`);
+      return `habitude créée : ${t}`;
     }
     if (nom === 'etat_maison') { await VRAI.frais(); dansHud('état de la maison'); return VRAI.texte() || "l'état de la maison n'est pas disponible"; }
     return 'outil inconnu';
@@ -136,7 +147,7 @@ Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacu
     const vrai = [...new Set(etapes.resultats || [])].filter(x => !/^fait \(/.test(x));
     if (vrai.length || (etapes.programmes || []).length) {
       // le résumé vient des vraies réponses de chaque action : il ne peut pas annoncer ce qui n'a pas eu lieu
-      final = `${vrai.length ? `C'est fait. ${vrai.join(' ')}` : ''}${(etapes.programmes || []).length ? ` Et je m'occupe du reste : ${etapes.programmes.join(' ; ')}.` : ''}`.replace(/\s+/g, ' ').trim();
+      final = `${vrai.length ? `C'est fait. ${vrai.join(' ')}` : ''}${(etapes.programmes || []).length ? ` ${vrai.length ? 'Et je m\'occupe du reste' : 'C\'est noté'} : ${etapes.programmes.join(' ; ')}.` : ''}`.replace(/\s+/g, ' ').trim();
     } else final = sansJeu(String(final || '').replace(/\[\[[^\]]*\]\]/g, '')).replace(/[*`#]/g, '').trim() || "Je n'ai rien eu à faire.";
     c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now(), who: dlg.qui || '' });
     c.push({ role: 'assistant', content: final.slice(0, 2000), at: Date.now() });

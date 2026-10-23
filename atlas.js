@@ -359,7 +359,9 @@ const JEU_ORAL = /\b(rit|rire|sourit|sourire|clin|soupir\w*|pause|chuchot\w*|mur
 const sansJeu = t => String(t).replace(/\*([^*\n]{1,80})\*/g, (m, x) => (/^[«"“]/.test(x.trim()) ? x : JEU_ORAL.test(x) || x.trim().split(/\s+/).length <= 3 ? ' ' : x))
   .replace(/\(([^()\n]{0,100})\)/g, (m, x) => (JEU_ORAL.test(x) ? ' ' : m)).replace(/\[(?!\[)([^\[\]\n]{0,50})\](?!\])/g, (m, x) => (JEU_ORAL.test(x) ? ' ' : m)).replace(/[ \t]{2,}/g, ' ');
 async function repondre(text) {
+  dlg.parCerveau = true; // une conversation, pas un ordre
   if (!AI.ready()) return say("Mon cerveau n'est pas branché : règle-le dans mes réglages. Mes outils marchent quand même : calculs, conversions, minuteurs, réveil, listes, notes, météo, état du PC et le point du jour.");
+  dlg.parCerveau = true; // une conversation (ou l'agent), pas un ordre : pas dans le journal des habitudes
   if (!window.__ordreDuCerveau && typeof AGENT !== 'undefined') { try { if (await AGENT.lance(text)) return; } catch (e) { console.warn('agent', e); } } // une demande à plusieurs étapes : l'agent la fait lui-même
   const c = S.chat || (S.chat = []);
   c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now(), who: dlg.qui || '' });
@@ -638,7 +640,30 @@ async function testLarsen() {
   } finally { pause(false); hideBoard(); note('fin'); }
   await say('Fin du test. Alors : ça sifflait pendant la phase 1, la phase 2, ou la phase 3 ?');
 }
+// chaque ordre donné à Atlas (pas une conversation) est noté sur l'ordinateur de la maison : la sentinelle y repère tes habitudes ;
+// et s'il a appris un enchaînement (« après "je viens de me réveiller", la météo »), il le fait juste après
+let profondeur = 0, enchaineSuite = [], enchaineAt = 0;
 async function handle(text) {
+  const premier = !profondeur && !window.__ordreDuCerveau && !window.__agentCapture && !window.__enchaine;
+  profondeur++; if (premier) dlg.parCerveau = false;
+  try { return await handleBrut(text); } finally {
+    profondeur--;
+    if (premier && !dlg.parCerveau) {
+      const ph = String(text).replace(/^\s*atlas[\s,.:!]*/i, '').trim(), n = N(ph);
+      if (n && !/^(stop|pause|oui|non|merci|ok|d accord|repete|tais toi|chut)$/.test(n)) {
+        const r0 = VOIXMAISON.root(); if (r0 && !window.__BANC) fetch(`${r0}/atlas/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phrase: ph.slice(0, 160), role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '' }) }).catch(() => {});
+        suitesHabitudes(n);
+      }
+    }
+  }
+}
+async function suitesHabitudes(n) {
+  const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
+  if (Date.now() - enchaineAt > 30 * 60000) { try { enchaineSuite = ((await (await fetch(`${r0}/maison/habitudes`, { cache: 'no-store' })).json()).auto || []).filter(x => x.type === 'apres'); enchaineAt = Date.now(); } catch (e) { return; } }
+  const l = enchaineSuite.filter(x => N(x.apres) === n);
+  for (const x of l) { await wait(1500); window.__enchaine = true; try { await handle(x.phrase); } finally { window.__enchaine = false; } }
+}
+async function handleBrut(text) {
   if (!window.__ordreDuCerveau) { dlg.ordrePrecedent = dlg.dernierOrdre; dlg.dernierOrdre = { t: String(text).replace(/^\s*atlas[\s,]*/i, '').slice(0, 120), at: Date.now() }; }
   if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('papa', text); // une seule mémoire
   let n = N(text);

@@ -355,7 +355,7 @@ const SCIFI = (() => {
 
   /* ---------- il apprend tes habitudes : il propose, tu dis oui, c'est automatique ---------- */
   const JOURS2 = j => (j.length === 7 ? 'tous les jours' : j.join() === '0,1,2,3,4' ? 'du lundi au vendredi' : j.join() === '5,6' ? 'le week-end' : 'certains jours');
-  const habTxt = x => `tu ${x.allume ? 'allumes' : 'éteins'} ${liste(x.noms.map(v => v.charAt(0).toLowerCase() + v.slice(1)))}${x.allume && x.lum != null ? ` à ${x.lum} %` : ''} vers ${hTxt(x.heure)}, ${JOURS2(x.jours)}`;
+  const habTxt = x => x.type === 'apres' ? `après « ${x.apres} », tu me demandes « ${x.phrase} »` : x.type === 'phrase' ? `tu me demandes « ${x.phrase} » vers ${hTxt(x.heure)}, ${JOURS2(x.jours)}` : `tu ${x.allume ? 'allumes' : 'éteins'} ${liste(x.noms.map(v => v.charAt(0).toLowerCase() + v.slice(1)))}${x.allume && x.lum != null ? ` à ${x.lum} %` : ''} vers ${hTxt(x.heure)}, ${JOURS2(x.jours)}`;
   let enAttente = null; // la proposition à laquelle il attend un oui ou un non
   async function habitudesVerifie() {
     if (!root()) return;
@@ -370,7 +370,7 @@ const SCIFI = (() => {
     const p = enAttente; enAttente = null;
     try { await appel('/maison/habitudes', oui ? { accepte: p.id } : { refuse: p.id }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     fx.ok();
-    return say(oui ? `C'est noté : désormais, je le fais tout seul, ${JOURS2(p.x.jours)} à ${hTxt(p.x.heure)}, quand tu es là.` : "D'accord, je ne te le proposerai plus.");
+    return say(oui ? (p.x.type === 'apres' ? `C'est noté : désormais, après « ${p.x.apres} », je fais « ${p.x.phrase} » tout seul.` : `C'est noté : désormais, je le fais tout seul, ${JOURS2(p.x.jours)} à ${hTxt(p.x.heure)}, quand tu es là.`) : "D'accord, je ne te le proposerai plus.");
   }
   async function automatismes(effacer) {
     let r; try { r = await appel('/maison/habitudes', effacer ? { supprime: 'tout' } : null, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
