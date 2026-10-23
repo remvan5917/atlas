@@ -49,6 +49,13 @@ function charge() {
   return fresh();
 }
 let S = charge();
+// le cerveau plus puissant (oct. 2026) : GPT-OSS 120B chez Groq, une fois pour toutes (Qwen 27B reste en secours)
+if (!S.settings.modeleV2) {
+  if (!S.settings.model || /qwen3\.8-27b|gpt-oss-20b/.test(S.settings.model)) S.settings.model = AI.DEFAULT_MODEL;
+  if (S.settings.key && S.settings.brain === 'local') S.settings.brain = 'groq'; // le cerveau de la maison (petit) reste en secours si Groq ne répond pas
+  S.settings.modeleV2 = true;
+  try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ }
+}
 (S.voices || []).forEach(v => { if (v && typeof v.name === 'string') v.name = v.name.replace(/[.,!?;:«»"]+/g, '').trim(); }); // « Rémi. » → « Rémi »
 function save() { if (voice.endormi) return; S.updatedAt = Date.now(); try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* plein */ } SYNC.sale(); }
 function tomb(liste, item) { (S.tomb[liste] = S.tomb[liste] || {})[String(item.id)] = Date.now(); }
@@ -119,7 +126,7 @@ document.addEventListener('click', e => {
 /* ---------- la mémoire partagée (l'ordinateur de la maison : /atlas/etat) ---------- */
 const SYNC = (() => {
   let sale = false, occupe = false, derniere = 0, erreur = '';
-  const LISTES = ['notes', 'listes', 'voices', 'memoire', 'scenes'];
+  const LISTES = ['notes', 'listes', 'voices', 'memoire', 'scenes', 'proches', 'rangements', 'prets'];
   function fusion(a, b) {
     const tombs = {};
     [a.tomb || {}, b.tomb || {}].forEach(src => Object.keys(src).forEach(l => Object.keys(src[l]).forEach(k => { tombs[l] = tombs[l] || {}; tombs[l][k] = Math.max(tombs[l][k] || 0, src[l][k]); })));
@@ -139,7 +146,7 @@ const SYNC = (() => {
   const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches', 'proteges'];
   const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
-    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.tomb = m.tomb;
+    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.proches = m.proches || S.proches || []; S.rangements = m.rangements || S.rangements || []; S.prets = m.prets || S.prets || []; S.tomb = m.tomb;
     if (m.partage) {
       if (m.partage.ville) S.settings.ville = m.partage.ville;
       if (m.partage.voix) S.settings.voix = m.partage.voix;
@@ -158,7 +165,7 @@ const SYNC = (() => {
     try {
       for (let essai = 0; essai < 3; essai++) {
         const g = await (await fetch(`${root}/atlas/etat`, { cache: 'no-store' })).json();
-        const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
+        const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], proches: S.proches || [], rangements: S.rangements || [], prets: S.prets || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
         const m = g && g.data ? fusion(local, g.data) : local;
         applique(m);
         const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? (/Mobile|iPhone/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
@@ -307,6 +314,7 @@ const CATALOGUE = `Lumières et prises : « allume <appareil> », « éteins <ap
 Maison et sécurité : « je pars », « je suis rentré », « je vais me coucher », « je viens de me réveiller », « rapport de sécurité », « il s'est passé quoi ? », « rapport de nuit », « montre-moi la façade », « montre la dernière alerte », « la batterie des caméras », « l'alarme est activée ? », « active l'alarme en mode total », « scan de sécurité », « mode cockpit ».
 Son fils et Shadow : « dis à mon fils que … », « demande à mon fils de … », « qu'est-ce que Shadow a appris aujourd'hui ? », « donne une médaille à mon fils pour … », « discute avec Shadow », « lance la fusée ».
 Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h 30 », « rappelle-moi de … dans 20 minutes », « ajoute du lait à la liste de courses », « lis la liste de courses », « note que … », « lis mes notes », « mon agenda d'aujourd'hui », « fais-moi le point ».
+Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
 Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».
@@ -341,7 +349,7 @@ EXEMPLES (suis-les) :
 « Préviens le petit que le dîner est prêt. » → [[commande:dis à mon fils que le dîner est prêt]]
 « L'alarme est mise ? » → réponds avec l'état réel de l'alarme ; s'il est inconnu, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
 Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
-${VRAI.texte() ? `ÉTAT RÉEL DE LA MAISON, à l'instant (la seule vérité sur la maison ; « il » = papa) :\n${VRAI.texte()}\n` : "L'état réel de la maison n'est pas disponible en ce moment : ne dis rien sur ce qui s'y passe, propose « rapport de sécurité ».\n"}${notes ? `Ses notes :\n${notes}\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
+${VRAI.texte() ? `ÉTAT RÉEL DE LA MAISON, à l'instant (la seule vérité sur la maison ; « il » = papa) :\n${VRAI.texte()}\n` : "L'état réel de la maison n'est pas disponible en ce moment : ne dis rien sur ce qui s'y passe, propose « rapport de sécurité ».\n"}${notes ? `Ses notes :\n${notes}\n` : ''}${typeof FOYER !== 'undefined' && FOYER.contexte() ? `${FOYER.contexte()}\n` : ''}${dlg.ordrePrecedent && Date.now() - dlg.ordrePrecedent.at < 120000 ? `Le dernier ordre qu'il t'a donné (il y a ${Math.round((Date.now() - dlg.ordrePrecedent.at) / 1000)} s) : « ${dlg.ordrePrecedent.t} ». S'il enchaîne avec une suite courte (« et la cuisine ? », « pareil pour le salon », « encore », « plus fort »), refais cet ordre adapté avec [[commande:…]].\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
 ${CONV.contexte()}`;
 }
 async function repondre(text) {
@@ -349,7 +357,8 @@ async function repondre(text) {
   const c = S.chat || (S.chat = []);
   c.push({ role: 'user', content: String(text).slice(0, 4000), at: Date.now(), who: dlg.qui || '' });
   const think = difficile(text);
-  if (window.__ordreDuCerveau) { c.pop(); return say("Ça, je ne sais pas encore le faire."); } // une commande traduite par le cerveau que personne ne comprend : pas de boucle
+  if (window.__ordreDuCerveau) { c.pop(); return say("Ça, je ne sais pas encore le faire."); }
+  if (dlg.ordrePrecedent) dlg.dernierOrdre = dlg.ordrePrecedent; // une conversation n'est pas un ordre : la suite (« et la cuisine ? ») vise toujours le dernier vrai ordre // une commande traduite par le cerveau que personne ne comprend : pas de boucle
   await VRAI.frais();
   const msgs = [{ role: 'system', content: systeme(text) }].concat(c.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 3000) })));
   if (AI.lastConfident === false && Date.now() - (AI.lastHeardAt || 0) < 15000) msgs[0].content += "\nATTENTION : la transcription de sa dernière phrase est PEU SÛRE (le micro a mal entendu). Si elle n'a pas un sens clair, réponds seulement [[pardon]].";
@@ -621,6 +630,7 @@ async function testLarsen() {
   await say('Fin du test. Alors : ça sifflait pendant la phase 1, la phase 2, ou la phase 3 ?');
 }
 async function handle(text) {
+  if (!window.__ordreDuCerveau) { dlg.ordrePrecedent = dlg.dernierOrdre; dlg.dernierOrdre = { t: String(text).replace(/^\s*atlas[\s,]*/i, '').slice(0, 120), at: Date.now() }; }
   if (typeof CONSTELLATION !== 'undefined') CONSTELLATION.note('papa', text); // une seule mémoire
   let n = N(text);
   cacheEcran();
@@ -662,6 +672,8 @@ async function handle(text) {
   if (R.oublieVoix.test(n)) { const m = t.match(/oublie (?:la|ma) voix (?:de |d['’])?\s*(.+)$/i); const nom = m ? m[1].trim() : dlg.qui; if (nom && !/^invité/.test(nom) && VOIX.forget(nom)) return say(`J'ai oublié la voix de ${nom}.`); return say("Je ne connais pas cette voix."); }
   if (R.quiParle.test(n)) return say(!dlg.qui ? (OREILLES.engine() === 'whisper' ? "Je ne reconnais pas ta voix. Dis « apprends ma voix », et je la retiendrai." : "Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq.") : /^invité/.test(dlg.qui) ? "Je ne connais pas encore ta voix. Dis « apprends ma voix », et je la retiendrai." : `C'est ${dlg.qui}. Je reconnais ta voix.`);
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
+  const foyer = typeof FOYER !== 'undefined' && FOYER.route(t, n); // ses proches, ses affaires rangées, ce qu'il a prêté
+  if (foyer) return foyer();
   const souvenir = MEMOIRE.route(t, n); // sa mémoire : « souviens-toi que… », « qu'est-ce que tu sais sur moi ? »
   if (souvenir) return souvenir();
   const ailleurs = typeof CONSTELLATION !== 'undefined' && CONSTELLATION.route(t, n); // « envoie ça sur mon téléphone », « montre les caméras sur l'ordi »
@@ -1153,7 +1165,7 @@ async function diagnostic() {
   const m = OREILLES.meter ? OREILLES.meter() : {};
   const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`, antiecho: typeof OREILLES_AEC !== 'undefined' ? OREILLES_AEC : null, larsen: LARSEN.slice(),
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
-    cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
+    cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', modele: AI.ready() ? AI.cfg().model : '', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',
       erreur: ELEVEN.erreur ? `${new Date(ELEVEN.erreurAt || Date.now()).toLocaleTimeString('fr-FR')} ${ELEVEN.explique({ message: ELEVEN.erreur, status: ELEVEN.erreurStatus })}` : '', repos: ELEVEN.downUntil > Date.now() ? Math.round((ELEVEN.downUntil - Date.now()) / 60000) + ' min' : '',
       son: (() => { try { return fx.audio().state; } catch (e) { return '?'; } })() },

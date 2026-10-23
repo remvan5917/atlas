@@ -22,7 +22,7 @@ function countUsage(tokens, audioSec) {
 }
 const AI = {
   GROQ: 'https://api.groq.com/openai/v1',
-  DEFAULT_MODEL: 'qwen/qwen3.8-27b',
+  DEFAULT_MODEL: 'openai/gpt-oss-120b', // le plus solide de Groq : il suit mieux les consignes (et invente moins) ; Qwen 27B en secours
   RETIRED: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
   STT_MODEL: 'whisper-large-v3', // le modèle complet comprend mieux les voix d'enfants que « turbo »
 
@@ -31,11 +31,14 @@ const AI = {
     const s = S.settings;
     // cerveau de la maison d'abord ; s'il ne répond pas (ordi éteint, loin de la maison), Groq prend le relais quelques minutes
     if (s.brain === 'local' && !(s.key && this.localDownUntil > Date.now())) return { base: (s.localUrl || '').replace(/\/+$/, ''), model: s.localModel, key: '', local: true };
+    // Groq a épuisé tous ses modèles (le quota du jour) : le cerveau de la maison prend le relais un moment
+    if (this.groqDownUntil > Date.now() && s.localUrl && s.localModel && !(this.localDownUntil > Date.now())) return { base: s.localUrl.replace(/\/+$/, ''), model: s.localModel, key: '', local: true };
     return { base: this.GROQ, model: s.model || this.DEFAULT_MODEL, key: s.key, local: false };
   },
   // Pas de réseau ? (le téléphone le dit, ou un appel vient d'échouer) : on n'essaie même pas Groq
   netDownUntil: 0,
   localDownUntil: 0,
+  groqDownUntil: 0,
   online() { return navigator.onLine !== false && Date.now() > this.netDownUntil; },
   hasKey() { const s = S.settings; return s.brain === 'local' ? !!(s.localUrl && s.localModel) || !!s.key : !!s.key; },
   ready() { return this.hasKey() && (this.cfg().local || this.online()); },
@@ -44,7 +47,7 @@ const AI = {
   canTranscribe() { return (!!S.settings.key || !!this.homeEars()) && !!window.MediaRecorder && !!navigator.mediaDevices && this.online(); },
 
   // Modèles de secours si Groq retire celui qu'on utilise
-  FALLBACK: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'],
+  FALLBACK: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'],
   // Chez Groq, chaque modèle a sa propre limite gratuite : quand l'un est épuisé (429),
   // on le met « au repos » jusqu'à la fin de son attente et on passe au suivant.
   // Le modèle qui « réfléchit » : pour les questions difficiles (plus lent, mais plus juste)
@@ -89,6 +92,10 @@ const AI = {
       last = new Error('Erreur 429 : tous les modèles sont au repos');
       last.status = 429;
       last.retryAfter = Math.max(60, Math.round((soon - now) / 1000));
+    }
+    if (last.status === 429 && S.settings.localUrl && S.settings.localModel && !(this.localDownUntil > Date.now()) && !(this.groqDownUntil > Date.now())) {
+      this.groqDownUntil = Date.now() + Math.min(30 * 60, Math.max(120, last.retryAfter || 600)) * 1000;
+      return this.robust(once, null);
     }
     throw last;
   },
