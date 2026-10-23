@@ -27,7 +27,7 @@ const AGENT = (() => {
   function agentique(text) {
     const n = N(text); if (n.split(' ').length < 5) return false;
     const v = (n.match(VERBES) || []).length;
-    return v >= 2 || (v >= 1 && TEMPS.test(n)) || /\b(prepare|organise|occupe toi de|fais en sorte|planifie|programme moi|scenario)\b/.test(n);
+    return v >= 2 || (v >= 1 && TEMPS.test(n)) || /\b(prepare|organise|occupe toi de|fais en sorte|planifie|programme moi|scenario)\b/.test(n) || /\b(cree|creer|enregistre|invente|nouveau|ajoute)\b.*\bprotocole\b/.test(n);
   }
   const pret = () => typeof AI !== 'undefined' && AI.mistralPret && AI.mistralPret();
 
@@ -36,10 +36,11 @@ const AGENT = (() => {
     { type: 'function', function: { name: 'commande', description: "Exécute tout de suite UNE commande d'Atlas. « phrase » : une phrase de la liste des commandes, adaptée (le nom exact de l'appareil, le bon texte). Le résultat est ce qu'Atlas a vraiment répondu.", parameters: { type: 'object', properties: { phrase: { type: 'string', description: 'la commande, par exemple « mets le salon à 40 % »' } }, required: ['phrase'] } } },
     { type: 'function', function: { name: 'programmer', description: "Programme UNE commande d'Atlas pour plus tard. Donne « heure » (HH:MM ; demain si l'heure est déjà passée, ou jour = demain), ou « dans_minutes ».", parameters: { type: 'object', properties: { phrase: { type: 'string' }, heure: { type: 'string', description: 'HH:MM' }, jour: { type: 'string', enum: ['aujourd_hui', 'demain'] }, dans_minutes: { type: 'number' } }, required: ['phrase'] } } },
     { type: 'function', function: { name: 'automatiser', description: "Crée une habitude durable que la maison fera toute seule : soit chaque jour à une heure (« heure » HH:MM et « jours » : 0 = lundi … 6 = dimanche ; tous les jours par défaut), soit juste après une phrase (« apres », par exemple « je viens de me réveiller »). « phrase » : la commande d'Atlas à faire.", parameters: { type: 'object', properties: { phrase: { type: 'string' }, heure: { type: 'string', description: 'HH:MM' }, jours: { type: 'array', items: { type: 'integer' } }, apres: { type: 'string' } }, required: ['phrase'] } } },
+    { type: 'function', function: { name: 'creer_protocole', description: "Enregistre un protocole (une scène à son nom, qu'il lancera plus tard en disant « protocole <nom> »). « etapes » : les commandes d'Atlas, dans l'ordre ; une étape peut avoir « heure » (HH:MM) ou « dans_minutes » si elle doit se faire plus tard une fois le protocole lancé.", parameters: { type: 'object', properties: { nom: { type: 'string' }, etapes: { type: 'array', items: { type: 'object', properties: { phrase: { type: 'string' }, heure: { type: 'string' }, dans_minutes: { type: 'number' } }, required: ['phrase'] } } }, required: ['nom', 'etapes'] } } },
     { type: 'function', function: { name: 'etat_maison', description: "L'état réel de la maison à l'instant : présence, lumières allumées, caméras, alertes, alarme, agenda.", parameters: { type: 'object', properties: {} } } },
   ];
   const REGLES = `
-MODE AGENT : tu as des outils, et tu agis toi-même. Pour chaque action, appelle « commande » avec une phrase de la liste (une action par appel ; s'il y a plusieurs étapes, fais-les toutes, dans l'ordre). Une habitude qui revient (« tous les matins », « chaque soir », « le week-end », « à chaque fois que je dis… ») : « automatiser ». Une action demandée pour plus tard (« à 22 h 30 », « dans 20 minutes », « ce soir ») : appelle SEULEMENT « programmer », jamais « commande » maintenant pour cette action. « Baisse le son » concerne le volume ; pour une lumière, « mets <appareil> à N % ». Pour connaître la maison, « etat_maison ».
+MODE AGENT : tu as des outils, et tu agis toi-même. Pour chaque action, appelle « commande » avec une phrase de la liste (une action par appel ; s'il y a plusieurs étapes, fais-les toutes, dans l'ordre). Créer un protocole (« crée le protocole soirée jeux : … ») : « creer_protocole » avec ses étapes (ne les exécute pas maintenant). Une habitude qui revient (« tous les matins », « chaque soir », « le week-end », « à chaque fois que je dis… ») : « automatiser ». Une action demandée pour plus tard (« à 22 h 30 », « dans 20 minutes », « ce soir ») : appelle SEULEMENT « programmer », jamais « commande » maintenant pour cette action. « Baisse le son » concerne le volume ; pour une lumière, « mets <appareil> à N % ». Pour connaître la maison, « etat_maison ».
 Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacun son appel). Lis le résultat de chaque outil : s'il dit que ça n'a pas marché ou qu'Atlas ne sait pas faire, dis-le franchement. Ne dis JAMAIS qu'une chose est faite si un outil ne l'a pas faite. N'écris pas de commande entre crochets [[…]] dans ce mode.
 À la fin, réponds en une ou deux phrases courtes, à l'oral : ce qui est fait, et ce qui est programmé (avec l'heure).`;
 
@@ -84,6 +85,12 @@ Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacu
       const t = corps.apres ? `après « ${a.apres} », ${ph}` : `${j} à ${corps.heure.replace(/^0/, '').replace(':', ' h ').replace(' h 00', ' h')}, ${ph}`;
       dansHud(`habitude · ${t}`); (etapes.programmes = etapes.programmes || []).push(`désormais ${t}`);
       return `habitude créée : ${t}`;
+    }
+    if (nom === 'creer_protocole') {
+      const p = enregistre(a.nom, a.etapes);
+      if (!p) return 'protocole vide ou sans nom';
+      dansHud(`protocole ${p.nom} · ${p.etapes.length} étapes`); (etapes.programmes = etapes.programmes || []).push(`le protocole « ${p.nom} » est prêt, avec ${p.etapes.length} étape${p.etapes.length > 1 ? 's' : ''} ; dis « protocole ${p.nom} » pour le lancer`);
+      return `protocole « ${p.nom} » enregistré : ${p.etapes.map(e => e.phrase + (e.heure ? ` (à ${e.heure})` : e.dans_minutes ? ` (dans ${e.dans_minutes} min)` : '')).join(' ; ')}`;
     }
     if (nom === 'etat_maison') { await VRAI.frais(); dansHud('état de la maison'); return VRAI.texte() || "l'état de la maison n'est pas disponible"; }
     return 'outil inconnu';
@@ -158,6 +165,51 @@ Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacu
     return true;
   }
 
+  /* ---------- les protocoles : une scène à ton nom (« protocole soirée jeux »), créée à la voix ---------- */
+  const PL = () => (S.protocoles = S.protocoles || []);
+  const nomPropre = t => String(t || '').replace(/^\s*(le |la |les |l['’]|un |une )?(protocole|mode|scene|scène)\s+/i, '').replace(/[«»"“”.!?]/g, '').trim().slice(0, 40);
+  function enregistre(nom0, etapes0) {
+    const nom = nomPropre(nom0); const l = (Array.isArray(etapes0) ? etapes0 : []).map(e => (typeof e === 'string' ? { phrase: e } : e)).filter(e => e && String(e.phrase || '').trim()).slice(0, 12)
+      .map(e => ({ phrase: String(e.phrase).trim().slice(0, 160), ...(/^\d{1,2}[:h]\d{2}$/.test(String(e.heure || '')) ? { heure: String(e.heure).replace('h', ':') } : {}), ...(+e.dans_minutes > 0 ? { dans_minutes: Math.min(1440, +e.dans_minutes) } : {}) }));
+    if (!nom || !l.length) return null;
+    PL().filter(p => N(p.nom) === N(nom)).forEach(p => tomb('protocoles', p));
+    S.protocoles = PL().filter(p => N(p.nom) !== N(nom)).concat([{ id: Date.now(), nom, etapes: l, at: Date.now() }]); save();
+    return S.protocoles[S.protocoles.length - 1];
+  }
+  const trouve = n => { const q = N(nomPropre(n)); return PL().find(p => N(p.nom) === q) || PL().find(p => q.length > 3 && (N(p.nom).includes(q) || q.includes(N(p.nom)))); };
+  async function lanceProtocole(p) {
+    const titre = `PROTOCOLE ${p.nom.toUpperCase()}`;
+    const lignes = p.etapes.map(e => ({ t: e.phrase + (e.heure ? ` · à ${e.heure.replace(':', ' h ')}` : e.dans_minutes ? ` · dans ${e.dans_minutes} min` : ''), etat: 'en attente' }));
+    const dessine = () => showBoard(`<div style="font-family:ui-monospace,Menlo,monospace;background:linear-gradient(160deg,#020b14,#0a2540);border:1px solid #1e6a8a;border-radius:14px;padding:14px 16px;color:#e0f2fe;min-width:min(520px,86vw);text-align:left">
+      <div style="font-size:11px;letter-spacing:.24em;color:#7dd3fc">◢ ${esc(titre)} · ACTIVATION</div><div style="height:1px;background:linear-gradient(90deg,transparent,#38bdf8,transparent);margin:9px 0 12px"></div>
+      ${lignes.map((l, i) => `<div style="display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:5px 0;font-size:15px"><span style="color:#38bdf8">${String(i + 1).padStart(2, '0')}</span><span>${esc(l.t)}</span><span style="color:${l.etat === 'fait' || l.etat === 'programmé' ? '#6ef0b8' : l.etat === 'en cours' ? '#fbbf24' : l.etat === 'échec' ? '#fca5a5' : '#64748b'};letter-spacing:.12em;font-size:11px">${esc(l.etat.toUpperCase())}</span></div>`).join('')}</div>`, 'graphe-board');
+    fx.tone([[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.18]]); dessine();
+    await say(`Protocole ${p.nom} : activation.`);
+    const rep = [];
+    for (const [i, e] of p.etapes.entries()) {
+      lignes[i].etat = 'en cours'; dessine();
+      if (e.heure || e.dans_minutes) {
+        const out = await execute('programmer', e, []);
+        lignes[i].etat = /^programmé/.test(out) ? 'programmé' : 'échec';
+        if (lignes[i].etat === 'programmé') rep.push(out.replace(/^programmé /, '').replace(' : ', ', '));
+      } else {
+        const out = await execute('commande', e, []);
+        lignes[i].etat = /ne répond pas|je ne sais pas|pas fait|erreur|introuvable|je ne trouve pas/i.test(out) ? 'échec' : 'fait';
+      }
+      dessine(); await wait(250);
+    }
+    const ko = lignes.filter(l => l.etat === 'échec').length;
+    fx.ok();
+    return say(`Protocole ${p.nom} : ${ko ? `terminé, mais ${ko} étape${ko > 1 ? 's' : ''} n'${ko > 1 ? 'ont' : 'a'} pas marché` : 'terminé'}.${rep.length ? ` Programmé : ${rep.join(' ; ')}.` : ''}`);
+  }
+  // sans Mistral : « crée le protocole soirée jeux : mets le salon à 40 %, mets Radio Nova et préviens mon fils »
+  function creationSimple(t) {
+    const m = String(t).match(/protocole\s+([^:]{2,40}?)\s*(?::|avec|qui fait|pour)\s*(.+)$/i); if (!m) return null;
+    const etapes = m[2].split(/\s*(?:,|;|\bpuis\b|\bet\b(?! (?:la|le|les) (?:cuisine|salle)))\s*/i).map(x => x.trim()).filter(x => x.length > 3);
+    const p = enregistre(m[1], etapes); if (!p) return null;
+    return say(`Protocole ${p.nom} enregistré, avec ${p.etapes.length} étape${p.etapes.length > 1 ? 's' : ''}. Dis « protocole ${p.nom} » pour le lancer.`);
+  }
+
   /* ---------- les commandes programmées : à l'heure, par un Atlas allumé (la tablette d'abord) ---------- */
   const faits = new Set();
   async function veille() {
@@ -187,6 +239,11 @@ Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacu
     return say(r.annulees ? `C'est annulé : ${r.annulees} action${r.annulees > 1 ? 's' : ''} programmée${r.annulees > 1 ? 's' : ''}.` : "Il n'y avait rien de programmé.");
   }
   function route(t, n) {
+    if (/\b(quels sont mes|mes|la liste des|tu connais quels) protocoles\b|^mes protocoles$/.test(n)) return () => say(PL().length ? `Tes protocoles : ${PL().map(p => p.nom).join(', ')}. Dis « protocole » et son nom pour en lancer un.` : "Tu n'as pas encore de protocole. Dis par exemple : « crée le protocole soirée jeux : le salon à 40 %, Radio Nova, et préviens mon fils ».");
+    const sup = n.match(/\b(supprime|efface|oublie|retire) (le |la )?protocole (.+)$/); if (sup) { const p = trouve(sup[3]); if (p) return () => { S.protocoles = PL().filter(x => x !== p); tomb('protocoles', p); save(); return say(`Protocole ${p.nom} supprimé.`); }; }
+    const voir = n.match(/\b(montre|lis|dis moi|c est quoi) (le )?protocole (.+)$/); if (voir) { const p = trouve(voir[3]); if (p) return () => say(`Protocole ${p.nom} : ${p.etapes.map(e => e.phrase + (e.heure ? ` à ${e.heure.replace(':', ' h ')}` : e.dans_minutes ? ` dans ${e.dans_minutes} minutes` : '')).join(' ; ')}.`); }
+    if (/\b(cree|creer|enregistre|invente|nouveau|ajoute)\b.*\bprotocole\b/.test(n) && !pret()) return () => creationSimple(t) || say("Dis-le comme ça : « crée le protocole soirée jeux : mets le salon à 40 %, mets Radio Nova, et préviens mon fils ».");
+    const go = n.match(/^(?:(?:lance|active|demarre|declenche|enclenche) )?(?:le )?(?:protocole|mode|scene) (.+)$/); if (go && !/\b(cree|creer|enregistre|supprime|efface)\b/.test(n)) { const p = trouve(go[1]); if (p) return () => lanceProtocole(p); }
     if (/\b(qu est ce que tu as|qu as tu|ce que tu as|quels sont les|les) (programme|planifie|prevu)s?\b|^(mes|les) programmes?$/.test(n)) return liste;
     if (/\b(annule|supprime|efface|enleve)\b.*\b(programmes?|programme|planifications?|ce que tu as programme|tout ce qui est programme)\b/.test(n)) return annule;
     return null;

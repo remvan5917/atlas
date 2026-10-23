@@ -126,7 +126,7 @@ document.addEventListener('click', e => {
 /* ---------- la mémoire partagée (l'ordinateur de la maison : /atlas/etat) ---------- */
 const SYNC = (() => {
   let sale = false, occupe = false, derniere = 0, erreur = '';
-  const LISTES = ['notes', 'listes', 'voices', 'memoire', 'scenes', 'proches', 'rangements', 'prets'];
+  const LISTES = ['notes', 'listes', 'voices', 'memoire', 'scenes', 'proches', 'rangements', 'prets', 'protocoles'];
   function fusion(a, b) {
     const tombs = {};
     [a.tomb || {}, b.tomb || {}].forEach(src => Object.keys(src).forEach(l => Object.keys(src[l]).forEach(k => { tombs[l] = tombs[l] || {}; tombs[l][k] = Math.max(tombs[l][k] || 0, src[l][k]); })));
@@ -146,7 +146,7 @@ const SYNC = (() => {
   const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches', 'proteges', 'mistralModel', 'elevenQuota'];
   const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
   function applique(m) {
-    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.proches = m.proches || S.proches || []; S.rangements = m.rangements || S.rangements || []; S.prets = m.prets || S.prets || []; S.tomb = m.tomb;
+    S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.proches = m.proches || S.proches || []; S.rangements = m.rangements || S.rangements || []; S.prets = m.prets || S.prets || []; S.protocoles = m.protocoles || S.protocoles || []; S.tomb = m.tomb;
     if (m.partage) {
       if (m.partage.ville) S.settings.ville = m.partage.ville;
       if (m.partage.voix) S.settings.voix = m.partage.voix;
@@ -165,7 +165,7 @@ const SYNC = (() => {
     try {
       for (let essai = 0; essai < 3; essai++) {
         const g = await (await fetch(`${root}/atlas/etat`, { cache: 'no-store' })).json();
-        const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], proches: S.proches || [], rangements: S.rangements || [], prets: S.prets || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
+        const local = { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], proches: S.proches || [], rangements: S.rangements || [], prets: S.prets || [], protocoles: S.protocoles || [], tomb: S.tomb, partage: partage(), updatedAt: S.updatedAt };
         const m = g && g.data ? fusion(local, g.data) : local;
         applique(m);
         const r = await fetch(`${root}/atlas/etat`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: (g && g.rev) || 0, par: /Android|iPhone|iPad/.test(navigator.userAgent) ? (/Mobile|iPhone/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur', data: { notes: S.notes, listes: S.listes, voices: S.voices, memoire: S.memoire || [], scenes: S.scenes || [], tomb: S.tomb, partage: partage(), updatedAt: Math.max(S.updatedAt, m.updatedAt || 0) } }) });
@@ -260,7 +260,7 @@ async function ask(text, { wait: w = 20000 } = {}) {
   const a = await hear({ maxWait: w });
   return a || '';
 }
-const ORDRE_DIRECT = /^(journal de bord|(ouvre|affiche) (les |tes )?(reglages|parametres)|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
+const ORDRE_DIRECT = /^(journal de bord|(lance le |active le )?protocole [a-z0-9 ]{2,30}|(ouvre|affiche) (les |tes )?(reglages|parametres)|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
 const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
 const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
 async function askYesNo(text) {
@@ -316,6 +316,7 @@ Son fils et Shadow : « dis à mon fils que … », « demande à mon fils de �
 Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h 30 », « rappelle-moi de … dans 20 minutes », « ajoute du lait à la liste de courses », « lis la liste de courses », « note que … », « lis mes notes », « mon agenda d'aujourd'hui », « fais-moi le point ».
 Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
 Programmes : « qu'est-ce que tu as programmé ? », « annule les programmes ».
+Protocoles : « crée le protocole <nom> : … », « protocole <nom> » (le lance), « mes protocoles », « supprime le protocole <nom> ».
 Ordinateur de bord : « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
