@@ -293,6 +293,12 @@ const JUMEAU = (() => {
       trait([4.85, by, 1.4], [4.85, 0.88, 1.4], CY, 0.4); // le pied des écrans
       if (pc) { const qe = proj(4.7, 1.05, 1.4); halo(qe[0], qe[1], qe[3] * 2.2, CY, 0.28); }
       const qo = proj(4.6, 1.6, 1.4); texte('ORDINATEUR', qo[0], qo[1], `rgba(${CY},.7)`, 8.5, '', 0, 1.6);
+      // la tablette : dans la lingerie, au mur de droite ; elle s'allume quand on l'utilise
+      const tb = typeof ou !== 'undefined' && ou && ou.role === 'tablette' && ou.pourquoi === 'actif' && curseur == null, zt = D / 2 - 0.04;
+      const ta = [[-0.6, 1.15, zt], [0.2, 1.15, zt], [0.2, 1.65, zt], [-0.6, 1.65, zt]];
+      face(ta, tb ? '120,220,255' : CY, tb ? 0.35 : 0.07); poly(ta, CY, tb ? 0.95 : 0.5, 1.2, true, tb);
+      if (tb) { const qt = proj(-0.2, 1.4, zt); halo(qt[0], qt[1], qt[3] * 1.4, CY, 0.3); }
+      const qt2 = proj(-0.2, 1.95, zt); texte('TABLETTE', qt2[0], qt2[1], `rgba(${CY},.7)`, 8.5, '', 0, 1.6);
     }
     // la cour (au sol) et le plateau (au niveau du 1er), derrière la maison
     const mc = ease(age * 1.7 - 0.6); if (mc <= 0) return;
@@ -448,7 +454,8 @@ const JUMEAU = (() => {
       const n = N(ou.piece || '');
       let p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
       if (!p && ou.role === 'ordinateur') personne(3.75, 0, 1.55, AM, 1.8, 'PAPA', t, 4); // devant l'ordinateur (rez-de-chaussée, côté cour, à droite)
-      else { if (!p && ou.role === 'tablette') p = ps.find(x => x.a && /salon|sejour/.test(N(x.a.nom))); if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); } }
+      else if (!p && ou.role === 'tablette') personne(-0.2, 0, 1.45, AM, 1.8, 'PAPA', t, 4); // devant la tablette (la lingerie, mur de droite)
+      else if (p) { const [x, y, z] = dans(p, -0.6, 0.4); personne(x, y, z, AM, 1.8, 'PAPA', t, 4); }
     }
     let lui = false;
     if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); lui = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
