@@ -342,15 +342,12 @@ const JUMEAU = (() => {
     poly(c.bas, col, a0, on ? 1.5 : 1, true, on); poly(c.haut, col, a0, on ? 1.5 : 1, true, on);
     for (let i = 0; i < 4; i++) trait(c.bas[i], c.haut[i], col, a0, on ? 1.3 : 1, on);
     // les fenêtres : seulement sur la rue et sur la cour (les côtés sont des murs mitoyens)
-    if (m > 0.95 && p.mansarde) { // la fenêtre de la mansarde, dans la pente côté cour
-      const q = (u, z) => [L / 2 - MANS * u + 0.02, p.y0 + H * u, z];
-      for (const zc of [zm - 1.1, zm + 1.1]) { const f = [q(0.3, zc - 0.6), q(0.3, zc + 0.6), q(0.75, zc + 0.6), q(0.75, zc - 0.6)]; if (on) { face(f, '255,214,150', 0.1 + v * 0.22); poly(f, AM, 0.5 + v * 0.4, 1, true, true); } else poly(f, CY, 0.22, 1); }
-    }
-    if (m > 0.95) for (const [xf, s] of [[-L / 2, -1], [L / 2, 1]]) {
+    if (m > 0.95 && !p.mansarde) for (const [xf, s] of [[-L / 2, -1], [L / 2, 1]]) { // (la chambre de papa n'a pas de fenêtre : seulement le velux)
       if (Math.abs(p.x0 - xf) > 0.01 && Math.abs(p.x1 - xf) > 0.01) continue;
-      if (p.mansarde && s > 0) continue;
       const x = xf + s * 0.01, w = Math.min(0.75, (p.z1 - p.z0) * 0.2), ya = p.y0 + 0.9, yb = p.y0 + 1.95;
-      for (const zc of (p.z1 - p.z0 > 3.5 ? [zm - 1.1, zm + 1.1] : [zm])) {
+      const petit = p.k === 1 && /chambre/.test(N(p.a ? p.a.nom : '')); // la chambre du petit : une seule fenêtre, sur la rue, à droite
+      if (petit && s > 0) continue;
+      for (const zc of (petit ? [1.3] : p.z1 - p.z0 > 3.5 ? [zm - 1.1, zm + 1.1] : [zm])) {
         const f = [[x, ya, zc - w], [x, ya, zc + w], [x, yb, zc + w], [x, yb, zc - w]];
         if (on) { face(f, '255,214,150', 0.1 + v * 0.22); poly(f, AM, 0.5 + v * 0.4, 1, true, true); } else poly(f, CY, 0.22, 1);
         trait([x, ya, zc], [x, yb, zc], on ? AM : CY, on ? 0.35 : 0.12);
@@ -379,7 +376,7 @@ const JUMEAU = (() => {
     const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom))), sa = ps.find(p => p.a && /salon|sejour/.test(N(p.a.nom)));
     for (const a of appareils.filter(x => x.type !== 'lampe')) {
       const n = N(a.nom); let pos = null, rgb = AM, nom = '';
-      if (/fusee/.test(n) && ch) { pos = [ch.x0 + 0.4, ch.y0 + 0.7, ch.z0 + 0.7]; rgb = VI; nom = 'FUSÉE'; }
+      if (/fusee/.test(n) && ch) { pos = [ch.x0 + 0.4, ch.y0 + 0.7, ch.z1 - 0.5]; rgb = VI; nom = 'FUSÉE'; }
       else if (/tele|tv/.test(n) && sa) { pos = [sa.x1 - 0.4, sa.y0 + 1, 0]; rgb = CY; nom = 'TÉLÉ'; }
       else if (/musique/.test(n) && ch) { pos = [ch.x0 + 2.9, ch.y0 + 0.9, ch.z1 - 0.4]; rgb = VI; nom = 'MUSIQUE'; }
       if (!pos) continue;
@@ -465,7 +462,7 @@ const JUMEAU = (() => {
   const flane = (p, graine, t) => { const w = (p.x1 - p.x0) * 0.22, d = (p.z1 - p.z0) * 0.22; return [(p.x0 + p.x1) / 2 + Math.sin(t / 9000 + graine) * w, p.y0, (p.z0 + p.z1) / 2 + Math.cos(t / 11000 + graine * 1.7) * d]; }; // il marche doucement dans la pièce
   // il dort : son lit, lui allongé dessous la couverture qui se soulève quand il respire, des « z » qui montent
   function dort(p, prenom, t) {
-    const y = p.y0, xa = p.x0 + 0.5, xb = p.x0 + 2.5, za = p.z1 - 1.5, zb = p.z1 - 0.35, hl = 0.45, zc = (za + zb) / 2;
+    const y = p.y0, xa = p.x0 + 0.5, xb = p.x0 + 2.5, za = p.z0 + 0.35, zb = p.z0 + 1.5, hl = 0.45, zc = (za + zb) / 2;
     const lit = [[xa, y + hl, za], [xb, y + hl, za], [xb, y + hl, zb], [xa, y + hl, zb]];
     poly(lit, CY, 0.45, 1, true); [[xa, za], [xb, za], [xb, zb], [xa, zb]].forEach(([x, z]) => trait([x, y, z], [x, y + hl, z], CY, 0.25));
     trait([xa, y + hl, za], [xa, y + hl + 0.5, za], CY, 0.35); trait([xa, y + hl, zb], [xa, y + hl + 0.5, zb], CY, 0.35); trait([xa, y + hl + 0.5, za], [xa, y + hl + 0.5, zb], CY, 0.35); // la tête de lit
