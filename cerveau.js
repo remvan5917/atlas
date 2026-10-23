@@ -22,6 +22,13 @@ function countUsage(tokens, audioSec) {
 }
 const AI = {
   GROQ: 'https://api.groq.com/openai/v1',
+  // Mistral (Paris) : le cerveau principal quand sa clé est sur l'appareil (Groq, puis le cerveau de la maison, en secours)
+  MISTRAL: 'https://api.mistral.ai/v1',
+  MISTRAL_MODEL: 'mistral-medium-latest',
+  mistralDownUntil: 0,
+  dernier: null, // le cerveau qui vient de répondre (pour le diagnostic et l'écran d'analyse)
+  mistralPret() { return !!S.settings.mistralKey && !(this.mistralDownUntil > Date.now()) && this.online(); },
+  mistralModele() { return S.settings.mistralModel || this.MISTRAL_MODEL; },
   DEFAULT_MODEL: 'openai/gpt-oss-120b', // le plus solide de Groq : il suit mieux les consignes (et invente moins) ; Qwen 27B en secours
   RETIRED: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
   STT_MODEL: 'whisper-large-v3', // le modèle complet comprend mieux les voix d'enfants que « turbo »
@@ -41,7 +48,7 @@ const AI = {
   localDownUntil: 0,
   groqDownUntil: 0,
   online() { return navigator.onLine !== false && Date.now() > this.netDownUntil; },
-  hasKey() { const s = S.settings; return s.brain === 'local' ? !!(s.localUrl && s.localModel) || !!s.key : !!s.key; },
+  hasKey() { const s = S.settings; return !!s.mistralKey || (s.brain === 'local' ? !!(s.localUrl && s.localModel) || !!s.key : !!s.key); },
   ready() { return this.hasKey() && (this.cfg().local || this.online()); },
   // les oreilles : Groq (Whisper large) et/ou les oreilles de la maison (whisper.cpp sur l'ordinateur, sans limite)
   homeEars() { return typeof VOIXMAISON !== 'undefined' ? VOIXMAISON.root() : ''; },
@@ -54,11 +61,27 @@ const AI = {
   // Le modèle qui « réfléchit » : pour les questions difficiles (plus lent, mais plus juste)
   THINK_MODEL: 'openai/gpt-oss-120b',
   async robust(once, prefer) {
+    // Mistral d'abord, s'il a sa clé (sauf panne ou quota : il se repose un moment, Groq prend le relais)
+    if (this.mistralPret()) {
+      const mc = { base: this.MISTRAL, model: this.mistralModele(), key: S.settings.mistralKey, local: false, mistral: true };
+      try { const r = await once(mc); this.dernier = { fournisseur: 'mistral', modele: mc.model }; return r; } catch (e) {
+        const pause = e.status === 429 ? Math.max(60, Math.min(e.retryAfter || 600, 3600)) : e.status === 401 || e.status === 403 ? 3600 : (e.net || !e.status || e.status >= 500) ? 120 : 60; // toute autre erreur : Groq répond pendant une minute
+        if (isModelError(e) && S.settings.mistralModel) { S.settings.mistralModel = ''; save(); return this.robust(once, prefer); } // un nom de modèle qui n'existe plus : le modèle par défaut
+        if (!pause) throw e;
+        this.mistralDownUntil = Date.now() + pause * 1000; this.mistralErreur = e.message;
+        if (!this.hasGroqOuLocal()) throw e;
+      }
+    }
+    const r0 = await this._robustGroq(once, prefer);
+    return r0;
+  },
+  hasGroqOuLocal() { const s = S.settings; return !!s.key || !!(s.localUrl && s.localModel); },
+  async _robustGroq(once, prefer) {
     const c = this.cfg();
     if (c.local) {
-      try { return await once(c.model); } catch (e) {
+      try { const r = await once(c.model); this.dernier = { fournisseur: 'maison', modele: c.model }; return r; } catch (e) {
         // le cerveau de la maison ne répond pas : relais par Groq pendant 3 minutes (si une clé existe)
-        if (S.settings.key && (e.net || !e.status || e.status >= 500 || e.status === 404)) { this.localDownUntil = Date.now() + 180000; return this.robust(once, prefer); }
+        if (S.settings.key && (e.net || !e.status || e.status >= 500 || e.status === 404)) { this.localDownUntil = Date.now() + 180000; return this._robustGroq(once, prefer); }
         throw e;
       }
     }
@@ -71,6 +94,7 @@ const AI = {
       if (cool[m] && cool[m] > now) continue;
       try {
         const r = await once(m);
+        this.dernier = { fournisseur: 'groq', modele: m };
         if (removed && m !== c.model) { S.settings.model = m; save(); } // le modèle d'origine n'existe plus
         return r;
       } catch (e) {
@@ -85,7 +109,7 @@ const AI = {
           continue;
         }
         if (isModelError(e)) { removed = true; continue; }
-        if ((e.net || !e.status || e.status >= 500) && S.settings.localUrl && S.settings.localModel && !(this.localDownUntil > Date.now()) && !(this.groqDownUntil > Date.now())) { this.groqDownUntil = Date.now() + 180000; return this.robust(once, null); }
+        if ((e.net || !e.status || e.status >= 500) && S.settings.localUrl && S.settings.localModel && !(this.localDownUntil > Date.now()) && !(this.groqDownUntil > Date.now())) { this.groqDownUntil = Date.now() + 180000; return this._robustGroq(once, null); }
         throw e;
       }
     }
@@ -97,7 +121,7 @@ const AI = {
     }
     if (last.status === 429 && S.settings.localUrl && S.settings.localModel && !(this.localDownUntil > Date.now()) && !(this.groqDownUntil > Date.now())) {
       this.groqDownUntil = Date.now() + Math.min(30 * 60, Math.max(120, last.retryAfter || 600)) * 1000;
-      return this.robust(once, null);
+      return this._robustGroq(once, null);
     }
     throw last;
   },
@@ -107,10 +131,10 @@ const AI = {
   // cerveau local Qwen3 : on lui dit de ne pas « réfléchir à voix basse » (beaucoup plus rapide)
   _local(c, messages) { return c.local && /qwen3/i.test(c.model || '') ? messages.map((m, i) => (i === 0 && m.role === 'system' ? { role: 'system', content: `${m.content} /no_think` } : m)) : messages; },
   async chatOnce(model, messages, { maxTokens = 220, temperature = 0.8, timeout = 20000, think = false } = {}) {
-    const c = Object.assign({}, this.cfg(), { model });
+    const c = typeof model === 'object' ? model : Object.assign({}, this.cfg(), { model });
     messages = this._local(c, messages);
     const body = { model: c.model, messages, temperature: c.local ? Math.min(temperature, 0.35) : temperature, max_tokens: maxTokens };
-    if (!c.local) {
+    if (!c.local && !c.mistral) {
       // Les modèles « qui réfléchissent » : réflexion courte (ou plus longue pour une question difficile), on ne garde que la réponse
       if (c.model.startsWith('openai/gpt-oss')) { body.reasoning_effort = think ? 'medium' : 'low'; body.max_tokens = maxTokens + (think ? 1200 : 300); }
       if (c.model.startsWith('qwen/')) body.reasoning_format = 'hidden';
@@ -125,11 +149,11 @@ const AI = {
   // Même chose, mais la réponse arrive mot à mot : onSentence(phrase) est appelé dès qu'une phrase est complète,
   // pour que Shadow commence à parler sans attendre la fin.
   async chatStreamOnce(model, messages, { maxTokens = 200, temperature = 0.8, timeout = 20000, think = false } = {}, onSentence) {
-    const c = Object.assign({}, this.cfg(), { model });
+    const c = typeof model === 'object' ? model : Object.assign({}, this.cfg(), { model });
     messages = this._local(c, messages);
     const body = { model: c.model, messages, temperature: c.local ? Math.min(temperature, 0.35) : temperature, max_tokens: maxTokens, stream: true }; // petit cerveau local : plus prudent
     if (think) timeout = Math.max(timeout, 30000);
-    if (!c.local) {
+    if (!c.local && !c.mistral) {
       if (c.model.startsWith('openai/gpt-oss')) { body.reasoning_effort = think ? 'medium' : 'low'; body.max_tokens = maxTokens + (think ? 1200 : 300); }
       if (c.model.startsWith('qwen/')) body.reasoning_format = 'hidden';
     }
@@ -173,6 +197,7 @@ const AI = {
           const u = (j.x_groq && j.x_groq.usage) || j.usage;
           if (u && u.total_tokens) countUsage(u.total_tokens);
           let piece = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+          if (Array.isArray(piece)) piece = piece.filter(x => x && x.type === 'text').map(x => x.text || '').join('');
           // les modèles « qui réfléchissent » peuvent envoyer <think>…</think> : on ne le dit pas
           if (piece.indexOf('<think>') >= 0) { inThink = true; piece = piece.split('<think>')[0]; }
           if (inThink) { const k = piece.indexOf('</think>'); if (k < 0) continue; inThink = false; piece = piece.slice(k + 8); }

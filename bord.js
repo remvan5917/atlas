@@ -49,7 +49,8 @@ const BORD = (() => {
     const pro = (S.proches || []).filter(p => n.includes(N(p.nom)) || (p.lien && n.includes(N(p.lien))));
     if (pro.length) lignes.push(['PROCHES', pro.map(p => p.nom).join(', ')]);
     const c = AI.cfg();
-    lignes.push(['CERVEAU', c.local ? 'cerveau de la maison' : String(c.model || '').replace(/^.*\//, '').toUpperCase()]);
+    const mi = AI.mistralPret && AI.mistralPret();
+    lignes.push(['CERVEAU', mi ? String(AI.mistralModele()).toUpperCase() : c.local ? 'cerveau de la maison' : String(c.model || '').replace(/^.*\//, '').toUpperCase()]);
     clearTimeout(hudT); if (hud) hud.remove();
     hud = document.createElement('div'); hud.id = 'pensee';
     hud.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:85;width:min(440px,calc(100vw - 28px));padding:10px 12px 8px;border:1px solid rgba(56,189,248,.45);border-radius:10px;background:rgba(2,11,20,.88);box-shadow:0 0 24px rgba(56,189,248,.25);font:11px/1.55 ui-monospace,Menlo,monospace;color:#bae6fd;pointer-events:none;opacity:0;transition:opacity .25s;backdrop-filter:blur(3px)';

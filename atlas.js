@@ -1047,6 +1047,8 @@ function ouvreReglages() {
   $('#r-brain').value = s.brain;
   $('#r-local-url').value = s.localUrl || '';
   $('#r-local-model').value = s.localModel || '';
+  $('#r-mistral').value = s.mistralKey || '';
+  $('#r-mistral-model').value = s.mistralModel || '';
   $('#r-key').value = s.key || '';
   $('#r-model').value = s.model || '';
   $('#r-see').checked = !!s.seeCloud;
@@ -1104,6 +1106,8 @@ function lieReglages() {
   bind('#r-brain', el => { s().brain = el.value; });
   bind('#r-local-url', el => { s().localUrl = el.value.trim(); VOIXMAISON.downUntil = 0; setTimeout(async () => { await SYNC.sync(); LIEN.lire(); ouvreReglages(); toast('Réglages repris de tes autres appareils'); }, 300); });
   bind('#r-local-model', el => { s().localModel = el.value.trim(); });
+  bind('#r-mistral', el => { s().mistralKey = el.value.trim(); AI.mistralDownUntil = 0; });
+  bind('#r-mistral-model', el => { s().mistralModel = el.value.trim(); });
   bind('#r-key', el => { s().key = el.value.trim(); });
   bind('#r-model', el => { s().model = el.value.trim() || AI.DEFAULT_MODEL; });
   bind('#r-see', el => { s().seeCloud = el.checked; });
@@ -1170,7 +1174,7 @@ async function diagnostic() {
   const m = OREILLES.meter ? OREILLES.meter() : {};
   const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`, antiecho: typeof OREILLES_AEC !== 'undefined' ? OREILLES_AEC : null, larsen: LARSEN.slice(),
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
-    cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', modele: AI.ready() ? AI.cfg().model : '', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
+    cerveau: AI.ready() ? (AI.dernier ? AI.dernier.fournisseur : AI.cfg().local ? 'maison' : 'groq') : 'aucun', modele: AI.ready() ? (AI.dernier ? AI.dernier.modele : AI.cfg().model) : '', mistral: !!S.settings.mistralKey, voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',
       erreur: ELEVEN.erreur ? `${new Date(ELEVEN.erreurAt || Date.now()).toLocaleTimeString('fr-FR')} ${ELEVEN.explique({ message: ELEVEN.erreur, status: ELEVEN.erreurStatus })}` : '', repos: ELEVEN.downUntil > Date.now() ? Math.round((ELEVEN.downUntil - Date.now()) / 60000) + ' min' : '',
       son: (() => { try { return fx.audio().state; } catch (e) { return '?'; } })() },

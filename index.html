@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '96';
+    window.ATLAS_VERSION = '97';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -30,7 +30,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=96">
+  <link rel="stylesheet" href="style.css?v=97">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -84,6 +84,8 @@
           <select id="r-brain"><option value="local">L'ordinateur de la maison d'abord (Groq en secours)</option><option value="groq">En ligne (Groq)</option></select></label>
         <label>Adresse de l'ordinateur de la maison<input id="r-local-url" type="url" autocomplete="off" placeholder="https://….ts.net/v1"></label>
         <label>Modèle de la maison<input id="r-local-model" type="text" autocomplete="off" placeholder="shadow-cerveau"></label>
+        <label>Clé Mistral (gardée sur cet appareil seulement ; le cerveau principal si elle est là)<input id="r-mistral" type="password" autocomplete="off" placeholder="clé de console.mistral.ai"></label>
+        <label>Modèle Mistral<input id="r-mistral-model" type="text" autocomplete="off" placeholder="mistral-medium-latest"></label>
         <label>Clé Groq (gardée sur cet appareil seulement)<input id="r-key" type="password" autocomplete="off" placeholder="gsk_…"></label>
         <label>Modèle Groq<input id="r-model" type="text" autocomplete="off"></label>
         <label class="check"><input id="r-see" type="checkbox"> Vision détaillée : quand tu lui demandes de regarder, une photo de la caméra est envoyée à Groq pour la décrire</label>
@@ -153,30 +155,30 @@
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=96"></script>
-  <script src="cerveau.js?v=96"></script>
-  <script src="oreilles.js?v=96"></script>
-  <script src="voix.js?v=96"></script>
-  <script src="empreintes.js?v=96"></script>
-  <script src="yeux.js?v=96"></script>
-  <script src="atlas.js?v=96"></script>
-  <script src="outils.js?v=96"></script>
-  <script src="memoire.js?v=96"></script>
-  <script src="marche.js?v=96"></script>
-  <script src="proactif.js?v=96"></script>
-  <script src="foyer.js?v=96"></script>
-  <script src="bord.js?v=96"></script>
-  <script src="maison.js?v=96"></script>
-  <script src="securite.js?v=96"></script>
-  <script src="pc.js?v=96"></script>
-  <script src="visio.js?v=96"></script>
-  <script src="scifi.js?v=96"></script>
-  <script src="trading.js?v=96"></script>
-  <script src="duo.js?v=96"></script>
-  <script src="constellation.js?v=96"></script>
-  <script src="agenda.js?v=96"></script>
-  <script src="futur.js?v=96"></script>
-  <script src="scene.js?v=96"></script>
-  <script src="noyau.js?v=96"></script>
+  <script src="orthographe.js?v=97"></script>
+  <script src="cerveau.js?v=97"></script>
+  <script src="oreilles.js?v=97"></script>
+  <script src="voix.js?v=97"></script>
+  <script src="empreintes.js?v=97"></script>
+  <script src="yeux.js?v=97"></script>
+  <script src="atlas.js?v=97"></script>
+  <script src="outils.js?v=97"></script>
+  <script src="memoire.js?v=97"></script>
+  <script src="marche.js?v=97"></script>
+  <script src="proactif.js?v=97"></script>
+  <script src="foyer.js?v=97"></script>
+  <script src="bord.js?v=97"></script>
+  <script src="maison.js?v=97"></script>
+  <script src="securite.js?v=97"></script>
+  <script src="pc.js?v=97"></script>
+  <script src="visio.js?v=97"></script>
+  <script src="scifi.js?v=97"></script>
+  <script src="trading.js?v=97"></script>
+  <script src="duo.js?v=97"></script>
+  <script src="constellation.js?v=97"></script>
+  <script src="agenda.js?v=97"></script>
+  <script src="futur.js?v=97"></script>
+  <script src="scene.js?v=97"></script>
+  <script src="noyau.js?v=97"></script>
 </body>
 </html>
