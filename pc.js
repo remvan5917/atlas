@@ -221,7 +221,7 @@ const PC = (() => {
     [/\b(ici nord|france bleu nord|france bleu lille|ici lille)\b/, 'ICI NORD'], [/\b(mona fm|monna fm|mona f m|radio mona)\b/, 'Mona FM'], [/\b(radio campus( lille)?)\b/, 'Radio Campus Lille'],
     [/\b(rcf( nord)?|r c f)\b/, 'RCF Nord de France'], [/\b(radio pfm|pfm|p f m)\b/, 'Radio PFM'], [/\b(galaxie( radio)?)\b/, 'Galaxie Radio'], [/\b(metropole fm)\b/, 'Métropole FM'],
     [/\b(radio boomerang|boomerang)\b/, 'Radio Boomerang'], [/\b(radio uylenspiegel|uylenspiegel)\b/, 'Radio Uylenspiegel'], [/\b(planete fm)\b/, 'Planète FM'], [/\b(delta fm)\b/, 'Delta FM Dunkerque'],
-    [/\b(radio club)\b/, 'Radio Club'], [/\b(chic radio)\b/, 'CHIC RADIO HITS'], [/\b(metropolys)\b/, 'Metropolys Lille'], [/\b(nrj lille)\b/, 'NRJ Lille'], [/\b(cherie fm lille)\b/, 'Chérie FM Lille'], [/\b(radio meuh)\b/, 'Radio Meuh'], [/\b(radio swiss jazz)\b/, 'Radio Swiss Jazz'], [/\b(bbc radio ?1)\b/, 'BBC Radio 1']];
+    [/\b(radio club)\b/, 'Radio Club'], [/\b(chic radio)\b/, 'CHIC RADIO HITS'], [/\b(metropolys|metropolis|metro polis|metropoli|metropolice)\b/, 'Metropolys Lille'], [/\b(nrj lille)\b/, 'NRJ Lille'], [/\b(cherie fm lille)\b/, 'Chérie FM Lille'], [/\b(radio meuh)\b/, 'Radio Meuh'], [/\b(radio swiss jazz)\b/, 'Radio Swiss Jazz'], [/\b(bbc radio ?1)\b/, 'BBC Radio 1']];
   const MIROIRS = ['de1', 'fi1', 'nl1', 'at1'];
   const nomRadio = n => { const l = SURNOMS.filter(([re]) => re.test(n)); const x = l.sort((a, b) => b[1].length - a[1].length)[0]; return x ? x[1] : ''; }; // le plus précis : « NRJ Lille » plutôt que « NRJ »
   async function chercheRadio(q) {
