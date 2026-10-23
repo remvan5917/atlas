@@ -449,7 +449,7 @@ const SCIFI = (() => {
   function modeCockpit(on) {
     document.body.classList.toggle('cockpit', on);
     let f = document.getElementById('cockpit-cadre');
-    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = `cockpit.html${typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur' ? '?poste=travail' : ''}`; f.title = 'Cockpit de la maison'; document.body.appendChild(f); f.addEventListener('load', () => { try { f.contentDocument.addEventListener('pointerdown', pleinEcran); } catch (e) { /* rien */ } }); }
+    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = `cockpit.html?v=${window.ATLAS_VERSION || ''}${typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur' ? '&poste=travail' : ''}`; f.title = 'Cockpit de la maison'; document.body.appendChild(f); f.addEventListener('load', () => { try { f.contentDocument.addEventListener('pointerdown', pleinEcran); } catch (e) { /* rien */ } }); }
     if (!on && f) f.remove();
     // le plein écran (sans les barres d'Android) : le navigateur l'accorde au premier toucher de l'écran
     if (on && !document.fullscreenElement && document.documentElement.requestFullscreen) {

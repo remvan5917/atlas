@@ -1095,7 +1095,7 @@ window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.
 async function diagnostic() {
   const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
   const m = OREILLES.meter ? OREILLES.meter() : {};
-  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden,
+  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`,
     oreilles: OREILLES.engine && OREILLES.engine(), via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
     cerveau: AI.ready() ? (AI.cfg().local ? 'maison' : 'groq') : 'aucun', voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',

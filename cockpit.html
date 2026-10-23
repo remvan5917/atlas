@@ -10,7 +10,7 @@
     --ligne: rgba(95, 211, 255, .16); --ligneA: rgba(255, 181, 71, .28); --ok: #6ef0b8; --alerte: #ff6b4a; color-scheme: dark; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; background: var(--bg); color: var(--texte); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-  body { padding: 10px 14px 12px; min-height: 100vh; overflow-x: hidden;
+  body { padding: 10px 14px 12px; min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column;
     background: radial-gradient(55% 45% at 50% -5%, rgba(95, 211, 255, .09), transparent 70%), radial-gradient(45% 40% at 0% 100%, rgba(255, 181, 71, .05), transparent 70%), var(--bg); }
   body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 7; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .018) 0 1px, transparent 1px 3px); }
   body.nuit::after { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, .5); pointer-events: none; z-index: 8; }
@@ -36,8 +36,9 @@
   .led.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); } .led.al { background: var(--alerte); box-shadow: 0 0 8px var(--alerte); animation: clig 1.2s steps(2) infinite; } .led.am { background: var(--ambre); box-shadow: 0 0 8px var(--ambre); }
   @keyframes clig { 50% { opacity: .25; } }
 
-  /* la grille : trois colonnes, sans défilement (tablette en paysage) */
-  main { display: grid; gap: 10px; grid-template-columns: minmax(250px, 285px) minmax(0, 1fr) minmax(280px, 335px); height: calc(100vh - 112px); }
+  /* la grille : trois colonnes, sans défilement (tablette en paysage) ; la hauteur VISIBLE (dvh : sans la barre de Chrome) */
+  body { height: 100vh; height: 100dvh; min-height: 0; } header { flex: 0 0 auto; }
+  main { display: grid; gap: 10px; grid-template-columns: minmax(250px, 285px) minmax(0, 1fr) minmax(280px, 335px); flex: 1 1 auto; min-height: 0; }
   .col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
   .carte { position: relative; background: var(--carte); border: 1px solid var(--ligne); border-radius: 6px; padding: 12px 13px 13px; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
   .carte::before, .carte::after { content: ''; position: absolute; width: 12px; height: 12px; border-color: var(--cyan); border-style: solid; opacity: .8; pointer-events: none; }
@@ -47,7 +48,8 @@
   .carte h2 { margin: 0 0 10px; font: 600 10.5px ui-monospace, monospace; letter-spacing: .32em; color: var(--cyan); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex: 0 0 auto; }
   .carte h2 i { font-style: normal; color: var(--ambre); margin-right: 8px; }
   .carte h2 span { color: var(--doux); letter-spacing: .12em; font-weight: 400; font-size: 10px; }
-  .defile { overflow-y: auto; min-height: 0; scrollbar-width: none; } .defile::-webkit-scrollbar { display: none; }
+  .defile { overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: rgba(95, 211, 255, .35) transparent; }
+  .defile::-webkit-scrollbar { width: 3px; } .defile::-webkit-scrollbar-thumb { background: rgba(95, 211, 255, .35); border-radius: 2px; } /* une fine barre : il y a la suite plus bas */
 
   /* les scènes */
   .scenes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
@@ -139,10 +141,25 @@
   .config { max-width: 520px; margin: 40px auto; }
   .config input { width: 100%; font: inherit; padding: 12px; border-radius: 6px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); margin: 8px 0; }
   .config button { font: inherit; color: var(--texte); background: rgba(95, 211, 255, .1); border: 1px solid var(--ligne); border-radius: 6px; padding: 10px 14px; }
-  /* en portrait, ou sur un téléphone : une seule colonne qui défile */
-  @media (max-width: 980px), (orientation: portrait) {
+  /* une tablette en paysage un peu étroite : les colonnes des côtés se resserrent */
+  @media (orientation: landscape) and (max-width: 1150px) {
+    main { grid-template-columns: minmax(205px, 245px) minmax(0, 1fr) minmax(225px, 285px); }
+    .puce { padding: 5px 7px; font-size: 9.5px; }
+  }
+  /* la tablette en portrait : deux colonnes, tout sur un seul écran (rien qui disparaît en bas) */
+  @media (orientation: portrait) and (min-width: 700px) {
+    body:not(.travail) main { grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1.3fr) auto minmax(0, 1fr) auto;
+      grid-template-areas: 'scenes scenes' 'plan plan' 'cams log' 'lum log' 'agenda marche'; }
+    body:not(.travail) .col { display: contents; } body:not(.travail) .reserve { display: none; }
+    .z-scenes { grid-area: scenes; } .z-agenda { grid-area: agenda; } .z-marche { grid-area: marche; } .z-plan { grid-area: plan; } .z-lum { grid-area: lum; } .z-cams { grid-area: cams; } .z-log { grid-area: log; }
+    body:not(.travail) .scenes { grid-template-columns: repeat(6, 1fr); } #agenda { max-height: 190px; } body:not(.travail) .carte.lum { max-height: none; }
+  }
+  /* un téléphone, ou une tablette en paysage très étroite : une seule colonne qui défile */
+  @media (max-width: 699px), (orientation: landscape) and (max-width: 860px) {
+    body { height: auto; }
     header { grid-template-columns: 1fr; grid-template-areas: 'titre' 'etat' 'bandeau'; } .etat { justify-content: flex-start; }
-    main { grid-template-columns: 1fr; height: auto; }
+    main, body:not(.travail) main { grid-template-columns: 1fr; grid-template-rows: none; grid-template-areas: none; height: auto; }
+    .col, body:not(.travail) .col { display: flex; } .z-scenes, .z-agenda, .z-marche, .z-plan, .z-lum, .z-cams, .z-log { grid-area: auto; }
     .carte.grand, .carte.lum { flex: 0 0 auto; max-height: none; } #plan { min-height: 300px; } .defile { overflow: visible; } .reserve { height: 140px; }
   }
 </style>
@@ -235,17 +252,17 @@ function cartes() {
   if (POSTE === 'travail') return cartesTravail();
   $('#main').innerHTML = `
     <div class="col">
-      <section class="carte"><h2><div><i>01</i>SCÈNES</div><span>${ATLAS ? 'UN TOUCHER' : ''}</span></h2><div class="scenes" id="scenes"></div></section>
-      <section class="carte grand"><h2><div><i>02</i>AUJOURD'HUI</div><span id="ag-res"></span></h2><div class="defile" id="agenda"></div></section>
-      <section class="carte"><h2><div><i>03</i>MARCHÉS</div><span>24 H</span></h2><div class="marche" id="marche"></div></section>
+      <section class="carte z-scenes"><h2><div><i>01</i>SCÈNES</div><span>${ATLAS ? 'UN TOUCHER' : ''}</span></h2><div class="scenes" id="scenes"></div></section>
+      <section class="carte grand z-agenda"><h2><div><i>02</i>AUJOURD'HUI</div><span id="ag-res"></span></h2><div class="defile" id="agenda"></div></section>
+      <section class="carte z-marche"><h2><div><i>03</i>MARCHÉS</div><span>24 H</span></h2><div class="marche" id="marche"></div></section>
     </div>
     <div class="col">
-      <section class="carte grand"><h2><div><i>04</i>LA MAISON</div><span>TOUCHER UNE PIÈCE : ALLUMER / ÉTEINDRE</span></h2><div id="plan"></div></section>
-      <section class="carte lum"><h2><div><i>05</i>LUMIÈRES ET PRISES</div><span id="lum-res"></span></h2><div class="grille defile" id="lumieres"></div></section>
+      <section class="carte grand z-plan"><h2><div><i>04</i>LA MAISON</div><span>TOUCHER UNE PIÈCE : ALLUMER / ÉTEINDRE</span></h2><div id="plan"></div></section>
+      <section class="carte lum z-lum"><h2><div><i>05</i>LUMIÈRES ET PRISES</div><span id="lum-res"></span></h2><div class="grille defile" id="lumieres"></div></section>
     </div>
     <div class="col">
-      <section class="carte"><h2><div><i>06</i>CAMÉRAS</div><span>TOUCHER : IMAGE FRAÎCHE</span></h2><div class="cams" id="cams"></div></section>
-      <section class="carte grand"><h2><div><i>07</i>JOURNAL</div><span id="al-res"></span></h2><div class="defile log" id="alertes"></div></section>
+      <section class="carte z-cams"><h2><div><i>06</i>CAMÉRAS</div><span>TOUCHER : IMAGE FRAÎCHE</span></h2><div class="cams" id="cams"></div></section>
+      <section class="carte grand z-log"><h2><div><i>07</i>JOURNAL</div><span id="al-res"></span></h2><div class="defile log" id="alertes"></div></section>
       <div class="reserve"></div>
     </div>`;
   sc = [['power', 'Tout éteindre', null, toutEteindre], [absent ? 'maison' : 'porte', absent ? 'Je suis rentré' : 'Je pars', null, basculeAbsent]]
