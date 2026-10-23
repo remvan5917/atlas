@@ -210,6 +210,73 @@ Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacu
     return say(`Protocole ${p.nom} enregistré, avec ${p.etapes.length} étape${p.etapes.length > 1 ? 's' : ''}. Dis « protocole ${p.nom} » pour le lancer.`);
   }
 
+  /* ---------- « Atlas, rembobine » : la mémoire de la maison (tout ce qui s'est passé, sur l'ordinateur) ---------- */
+  const PASSE = /\b(rembobine|qui a (allume|eteint|laisse|mis|lance|ouvert|ferme|fait|eteint|touche|programme)|quand est ce que (j ai|tu as|on a|il a|elle a|mon fils a|le petit a)|a quelle heure (j ai|tu as|on a|il a|est ce que|mon fils|le petit)|il s est passe quoi (pendant|quand|hier|ce matin|cette nuit|cet apres midi|ce soir|avant)|qu est ce qui s est passe (pendant|quand|hier|ce matin|cette nuit|cet apres midi|ce soir|a la maison|avant)|depuis quand (la|le|les|est ce que)|la derniere fois (que|qu)|qu est ce que (j ai|on a|mon fils a|le petit a|il a|tu as) fait (hier|ce matin|cet apres midi|aujourd hui|ce soir|cette nuit)|combien de fois (j ai|on a|tu as|il a|mon fils))\b/;
+  const fenetre = n => /\b(semaine|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|derniers jours)\b/.test(n) ? 7 : /\bhier|avant hier\b/.test(n) ? 3 : /\b(ce matin|aujourd hui|cette nuit|tout a l heure|ce soir|cet apres midi)\b/.test(n) ? 1 : 3;
+  async function rembobine(t, n) {
+    face.set('think');
+    const fin = typeof BORD !== 'undefined' ? BORD.pensee(t) : () => {};
+    let j; try { j = await appel(`/atlas/rembobine?jours=${fenetre(n)}`, null, 12000); } catch (e) { fin(); return say("L'ordinateur de la maison ne répond pas : je n'ai pas accès à la mémoire de la maison."); }
+    dansHud(`mémoire de la maison · ${j.n} événements`);
+    if (!AI.ready()) { fin(); return say("Pour fouiller la mémoire de la maison, il me faut mon cerveau."); }
+    let r = '';
+    try {
+      r = String(await AI.chat([{ role: 'system', content: `Tu es Atlas, l'assistant de la maison (une IA de film : calme, précise). Voici le journal de la maison, ligne par ligne (jour, heure de Paris, type, ce qui s'est passé). « par atlas · téléphone » veut dire : commandé par la voix ou à l'écran d'Atlas sur le téléphone ; « par cockpit · tablette » : un doigt sur le cockpit de la tablette. « Shadow et son fils » : ce que son fils a fait avec Shadow. Nous sommes ${new Date().toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.
+Réponds à sa question UNIQUEMENT d'après ce journal, en trois phrases courtes au plus, à voix haute : donne le jour et l'heure ; s'il y a beaucoup d'événements, résume (pas d'énumération heure par heure). Si le journal ne contient pas la réponse, dis simplement que tu n'en as pas de trace (n'invente rien, ne devine pas). Pas de symbole, pas de liste.
+JOURNAL :
+${j.texte || '(vide)'}` }, { role: 'user', content: t }], { maxTokens: 260, temperature: 0.2 }) || '');
+    } catch (e) { fin(); return say("Mon cerveau ne répond pas pour fouiller la mémoire de la maison. Réessaie dans un instant."); }
+    fin(); face.set('idle');
+    return say(r.replace(/\[\[[^\]]*\]\]/g, '').replace(/[*_`#]/g, '').replace(/\s*\n+\s*/g, ' ').trim() || "Je n'en ai pas de trace.");
+  }
+
+  /* ---------- l'oracle : il anticipe (ton agenda, la météo, la maison, tes habitudes) et te propose de préparer à ta place ---------- */
+  let oracleOffre = null;
+  async function oracle() {
+    const d = new Date(), h = d.getHours();
+    if (S.settings.oracle === false || !pret() || !dlg.started || dlg.busy || voice.endormi || h < 7 || h >= 22 || window.__BANC) return;
+    if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return; // seulement là où il est
+    const jour = d.toDateString(); S.oracle = S.oracle && S.oracle.jour === jour ? S.oracle : { jour, n: 0, vus: [], at: 0 };
+    if (S.oracle.n >= 4 || Date.now() - S.oracle.at < 40 * 60000) return; // au plus 4 fois par jour, pas plus d'une fois par 40 minutes
+    let ev = []; try { ev = (await appel('/maison/agenda?jours=1', null, 8000)).evenements || []; } catch (e) { return; }
+    const now = Date.now() / 1000;
+    const proche = ev.find(e => !e.journee && e.debut - now >= 15 * 60 && e.debut - now <= 50 * 60 && !S.oracle.vus.includes(`${e.titre}|${e.debut}`) && !/\b(MYM|MNQ|MGC|M6E|Open US|Fen[êe]tre active|Impact|PMI|CPI|NFP|FOMC|Journal performance)\b/i.test(e.titre));
+    if (!proche) return;
+    S.oracle.vus.push(`${proche.titre}|${proche.debut}`); save();
+    let meteo = '';
+    try { const v = S.settings.ville; if (v) { const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${v.lat}&longitude=${v.lon}&hourly=precipitation_probability,temperature_2m&forecast_hours=4&timezone=auto`)).json(); meteo = `Pluie dans les 3 prochaines heures : ${Math.max(...w.hourly.precipitation_probability.slice(0, 3))} % ; température ${Math.round(w.hourly.temperature_2m[1])} °C.`; } } catch (e) { meteo = ''; }
+    await VRAI.frais();
+    const dans = Math.round((proche.debut - now) / 60);
+    const ctx = `Il est ${hhmm()}. Dans ${dans} minutes : « ${proche.titre} »${proche.lieu ? ` (lieu : ${proche.lieu})` : ''}.
+${meteo}
+État réel de la maison :
+${VRAI.texte()}
+Ses protocoles : ${(S.protocoles || []).map(p => p.nom).join(', ') || 'aucun'}.
+Ce qu'Atlas sait faire (phrases de commande) :
+${CATALOGUE}`;
+    let j;
+    try {
+      const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 20000);
+      const r = await fetch(`${AI.MISTRAL}/chat/completions`, { method: 'POST', signal: ctl.signal, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${S.settings.mistralKey}` },
+        body: JSON.stringify({ model: 'mistral-medium-latest', temperature: 0.3, max_tokens: 400, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: `Tu es Atlas, l'assistant de la maison d'un papa (une IA de film, attentionnée, jamais envahissante). Un événement de son agenda approche. Décide si tu peux lui proposer UNE aide vraiment utile pour s'y préparer (prévenir son fils s'il part, éteindre en bas à l'heure du départ, un rappel pour un objet à prendre s'il pleut, lancer un protocole…), avec les commandes d'Atlas. Si rien n'est vraiment utile, ne propose rien.
+Réponds en JSON : {"proposer": true ou false, "question": "ce que tu lui dis : une ou deux phrases courtes qui finissent par une question oui ou non", "actions": [{"phrase": "une commande d'Atlas", "heure": "HH:MM (facultatif)", "dans_minutes": 0}]}. N'invente aucun fait ; pas de symbole dans la question. Ne touche jamais aux chambres, à la Fusée (la veilleuse de son fils) ni à ce qui doit rester allumé ; pour éteindre au départ, dis plutôt « éteins tout » ou nomme les pièces du bas.` }, { role: 'user', content: ctx }] }) });
+      clearTimeout(tm); if (!r.ok) return;
+      const x = await r.json(); if (x.usage && typeof compteMois === 'function') compteMois('mistral', 'mistral-medium-latest', x.usage.prompt_tokens, x.usage.completion_tokens);
+      j = JSON.parse(x.choices[0].message.content);
+    } catch (e) { return; }
+    if (!j || !j.proposer || !j.question || !Array.isArray(j.actions) || !j.actions.length) return;
+    S.oracle.n++; S.oracle.at = Date.now(); save();
+    PROACTIF.annonce(`oracle-${proche.debut}`, async () => { oracleOffre = { actions: j.actions.slice(0, 5), at: Date.now() }; dlg.attendReponse = Date.now() + 90000; const q = sansJeu(String(j.question)).replace(/[*`#]/g, '').trim(); return /[?]$/.test(q) ? q : `${q} ?`; }, { expire: Date.now() + 15 * 60000 });
+  }
+  setInterval(oracle, 5 * 60000); setTimeout(oracle, 90000);
+  async function oracleOui() {
+    const o = oracleOffre; oracleOffre = null; dlg.attendReponse = 0;
+    const etapes = [];
+    for (const a of o.actions) await execute(a.heure || a.dans_minutes ? 'programmer' : 'commande', a, etapes);
+    const vrai = [...new Set(etapes.resultats || [])].filter(x => !/^fait \(/.test(x));
+    return say(`${vrai.length ? `C'est fait. ${vrai.join(' ')}` : ''}${(etapes.programmes || []).length ? ` ${vrai.length ? 'Et' : "C'est noté"} : ${etapes.programmes.join(' ; ')}.` : ''}`.replace(/\s+/g, ' ').trim() || "C'est fait.");
+  }
+
   /* ---------- les commandes programmées : à l'heure, par un Atlas allumé (la tablette d'abord) ---------- */
   const faits = new Set();
   async function veille() {
@@ -239,6 +306,13 @@ Fais TOUTES les demandes, une par une (un réveil, un rappel, un message : chacu
     return say(r.annulees ? `C'est annulé : ${r.annulees} action${r.annulees > 1 ? 's' : ''} programmée${r.annulees > 1 ? 's' : ''}.` : "Il n'y avait rien de programmé.");
   }
   function route(t, n) {
+    if (oracleOffre && Date.now() - oracleOffre.at < 5 * 60000) {
+      if (/^(oui|ouais|ok|d accord|vas y|carrement|bien sur|fais le|oui merci|volontiers|avec plaisir|go)\b/.test(n)) return oracleOui;
+      if (/^(non|non merci|pas la peine|laisse|c est bon|ca ira)\b/.test(n)) return () => { oracleOffre = null; dlg.attendReponse = 0; return say(pick(["D'accord.", 'Très bien, je ne touche à rien.'])); };
+    }
+    if (/\b(coupe|desactive|arrete) (l oracle|tes propositions|d anticiper)\b/.test(n)) return () => { S.settings.oracle = false; save(); return say("D'accord, je n'anticipe plus. Dis « active l'oracle » pour reprendre."); };
+    if (/\b(active|remets|reactive) (l oracle|tes propositions)\b/.test(n)) return () => { S.settings.oracle = true; save(); return say("Oracle activé : je te proposerai de préparer ce qui arrive."); };
+    if (PASSE.test(n)) return () => rembobine(t, n);
     if (/\b(quels sont mes|mes|la liste des|tu connais quels) protocoles\b|^mes protocoles$/.test(n)) return () => say(PL().length ? `Tes protocoles : ${PL().map(p => p.nom).join(', ')}. Dis « protocole » et son nom pour en lancer un.` : "Tu n'as pas encore de protocole. Dis par exemple : « crée le protocole soirée jeux : le salon à 40 %, Radio Nova, et préviens mon fils ».");
     const sup = n.match(/\b(supprime|efface|oublie|retire) (le |la )?protocole (.+)$/); if (sup) { const p = trouve(sup[3]); if (p) return () => { S.protocoles = PL().filter(x => x !== p); tomb('protocoles', p); save(); return say(`Protocole ${p.nom} supprimé.`); }; }
     const voir = n.match(/\b(montre|lis|dis moi|c est quoi) (le )?protocole (.+)$/); if (voir) { const p = trouve(voir[3]); if (p) return () => say(`Protocole ${p.nom} : ${p.etapes.map(e => e.phrase + (e.heure ? ` à ${e.heure.replace(':', ' h ')}` : e.dans_minutes ? ` dans ${e.dans_minutes} minutes` : '')).join(' ; ')}.`); }

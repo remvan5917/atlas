@@ -1003,7 +1003,9 @@ async function vie() {
       const frag = !appele && !suite && !seul && !dlg.discret && !!MAISON.fragment(r, n);
       // les ordres évidents de la maison (« mode cockpit », « fin du film », « pause » au cinéma) : pas besoin de dire son nom
       const direct = !appele && n.split(' ').length <= 5 && ORDRE_DIRECT.test(n);
-      if (!appele && !suite && !seul && !frag && !direct) {
+      // il vient de te poser une question (une habitude, l'oracle) : un « oui » ou un « non » tout court lui répond
+      const reponse = !appele && dlg.attendReponse > Date.now() && /^(oui|ouais|ok|d accord|vas y|carrement|bien sur|fais le|volontiers|non|non merci|pas la peine|laisse|surtout pas)\b/.test(n);
+      if (!appele && !suite && !seul && !frag && !direct && !reponse) {
         journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
         if (dlg.discret) continue;
         dlg.busy = true;

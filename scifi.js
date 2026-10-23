@@ -363,7 +363,7 @@ const SCIFI = (() => {
     const vues = S.habVues = S.habVues || [];
     const x = (r.suggestions || []).find(y => !vues.includes(y.id));
     if (!x) return;
-    PROACTIF.annonce(`habitude-${x.id}`, async () => { enAttente = { id: x.id, x, at: Date.now() }; if (!vues.includes(x.id)) { vues.push(x.id); save(); } return `J'ai remarqué quelque chose : ${habTxt(x)}. Tu veux que je le fasse tout seul ? Dis oui, ou non merci.`; }, { expire: Date.now() + 3 * 3600000 });
+    PROACTIF.annonce(`habitude-${x.id}`, async () => { enAttente = { id: x.id, x, at: Date.now() }; dlg.attendReponse = Date.now() + 90000; if (!vues.includes(x.id)) { vues.push(x.id); save(); } return `J'ai remarqué quelque chose : ${habTxt(x)}. Tu veux que je le fasse tout seul ? Dis oui, ou non merci.`; }, { expire: Date.now() + 3 * 3600000 });
   }
   setTimeout(habitudesVerifie, 60000); setInterval(habitudesVerifie, 30 * 60000);
   async function habitudeReponse(oui) {
