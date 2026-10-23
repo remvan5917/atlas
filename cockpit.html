@@ -197,10 +197,29 @@ const reglages = S.settings || {};
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = (reglages.localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 if (!/^https?:\/\//.test(ROOT) || /localhost:11434/.test(ROOT)) ROOT = '';
+// la liaison avec l'ordinateur de la maison : si elle tombe (souvent Tailscale coupé sur la tablette), on le dit en grand
+const liaison = { ok: Date.now(), ko: 0, perdue: false };
+function liaisonMaj() {
+  const perdue = liaison.ko > 0 && Date.now() - liaison.ok > 45000;
+  if (perdue === liaison.perdue) return;
+  liaison.perdue = perdue;
+  let el = document.getElementById('liaison');
+  if (perdue && !el) {
+    el = document.createElement('div'); el.id = 'liaison';
+    el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;max-width:560px;width:calc(100% - 32px);padding:22px 24px;border-radius:8px;background:rgba(30,6,4,.96);border:1px solid var(--alerte);box-shadow:0 0 40px rgba(255,107,74,.35);text-align:center;font:13px/1.6 ui-monospace,monospace;letter-spacing:.06em;color:var(--texte)';
+    el.innerHTML = '<div style="font-weight:600;letter-spacing:.3em;color:var(--alerte);margin-bottom:10px">LIAISON PERDUE AVEC LA MAISON</div>Cet écran ne joint plus l\'ordinateur de la maison : les lumières, les caméras et l\'agenda ne peuvent pas s\'afficher.<br><br>Sur cet appareil, ouvre l\'appli <b>Tailscale</b> et touche « Connecter ». Tout revient tout seul dès que la liaison est rétablie.<div class="muted" id="liaison-t" style="margin-top:10px"></div>';
+    document.body.appendChild(el);
+  }
+  if (!perdue && el) { el.remove(); tout(); } // la liaison est revenue : on recharge tout
+}
+setInterval(() => { liaisonMaj(); const t = document.getElementById('liaison-t'); if (t) t.textContent = `DERNIER CONTACT : ${hh(new Date(liaison.ok))}`; }, 5000);
 async function appel(chemin, corps, ms = 15000) {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(ROOT + chemin, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl.signal });
+    let r;
+    try { r = await fetch(ROOT + chemin, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl.signal }); }
+    catch (e) { liaison.ko++; liaisonMaj(); throw e; }
+    liaison.ok = Date.now(); liaison.ko = 0; liaisonMaj();
     if (!r.ok) throw new Error(r.status);
     return /image/.test(r.headers.get('Content-Type') || '') ? r.blob() : r.json();
   } finally { clearTimeout(tm); }
