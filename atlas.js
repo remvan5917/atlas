@@ -260,7 +260,7 @@ async function ask(text, { wait: w = 20000 } = {}) {
   const a = await hear({ maxWait: w });
   return a || '';
 }
-const ORDRE_DIRECT = /^(journal de bord|(lance le |active le )?protocole [a-z0-9 ]{2,30}|(ouvre|affiche) (les |tes )?(reglages|parametres)|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
+const ORDRE_DIRECT = /^(radio atlas|journal de bord|(lance le |active le )?protocole [a-z0-9 ]{2,30}|(ouvre|affiche) (les |tes )?(reglages|parametres)|test du (larsen|larcene)|mode (cockpit|cinema|soiree|visio|trading)|(ferme|quitte|sors du) (le )?(cockpit|mode cockpit)|fin du (film|mode cinema|mode soiree|mode visio)|fin de (la seance|session)|scan de securite|rapport de nuit|je viens de me (reveiller|lever)|je vais me coucher|protocole (depart|retour|danger)|lance la fusee|discute avec shadow|lance le jeu televise|(active|desactive) les gestes|pause|reprends|mets pause)\b/;
 const isNo = t => /\b(non|nan|pas du tout|surtout pas|annule|laisse tomber|jamais)\b/.test(N(t));
 const isYes = t => !isNo(t) && /\b(oui|ouais|ok|d accord|vas y|bien sur|carrement|exactement|parfait|go|c est bon|volontiers)\b/.test(N(t));
 async function askYesNo(text) {
@@ -317,7 +317,7 @@ Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h
 Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
 Programmes : « qu'est-ce que tu as programmé ? », « annule les programmes ».
 Protocoles : « crée le protocole <nom> : … », « protocole <nom> » (le lance), « mes protocoles », « supprime le protocole <nom> ».
-Ordinateur de bord : « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
+Ordinateur de bord : « radio atlas » (l'émission du matin), « radio atlas longue », « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
 Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».

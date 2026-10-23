@@ -151,7 +151,90 @@ const BORD = (() => {
     return say(t.join(' '));
   }
 
+  /* ---------- Radio Atlas : l'émission du matin, faite pour lui (les vraies infos du jour, sa voix, des jingles, puis la musique) ---------- */
+  const jingle = (fin = false) => fx.tone(fin ? [[784, 0.1], [659, 0.1], [523, 0.1], [392, 0.3]] : [[523, 0.07], [784, 0.07], [1047, 0.07], [1568, 0.16]]);
+  async function titres(q) { try { const r0 = VOIXMAISON.root(); const j = await (await fetch(`${r0}/shadow/web?${new URLSearchParams({ q, mode: 'actus' })}`)).json(); return (j.actus || []).slice(0, 4).map(a => `${a.titre} (${a.source})`); } catch (e) { return []; } }
+  function antenne(seg, i, texte) {
+    showBoard(`<div style="font-family:ui-monospace,Menlo,monospace;background:radial-gradient(120% 90% at 50% 0%,#1b0a2e,#05030c 70%);border:1px solid #7c3aed;border-radius:14px;padding:14px 18px;box-shadow:0 0 34px rgba(124,58,237,.3);text-align:left;max-width:780px;color:#ede9fe">
+      <style>@keyframes onAir{50%{opacity:.35}}</style>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.24em;color:#c4b5fd"><span>◢ RADIO ATLAS · ${esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase())}</span><span style="color:#f87171;animation:onAir 1.2s steps(2) infinite">● ON AIR</span></div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,#a78bfa,transparent);margin:9px 0 10px"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${seg.map((x, k) => `<span style="font-size:10px;letter-spacing:.14em;padding:4px 8px;border-radius:999px;border:1px solid ${k === i ? '#f0abfc' : 'rgba(167,139,250,.35)'};color:${k === i ? '#fdf4ff' : k < i ? '#a78bfa' : '#6b7280'};background:${k === i ? 'rgba(217,70,239,.25)' : 'transparent'}">${esc(x.titre)}</span>`).join('')}</div>
+      <div id="emission-texte" style="font:400 clamp(16px,2.3vw,21px)/1.55 system-ui,sans-serif;color:#f5f3ff">${esc(texte || '')}</div></div>`, 'graphe-board');
+  }
+  let pretee = null; // l'émission du jour, écrite en avance
+  async function emission(longue = false) {
+    if (!AI.ready()) return say("Pour faire Radio Atlas, il me faut mon cerveau.");
+    if (!longue && pretee && Date.now() - pretee.at < 3 * 3600000) { const seg = pretee.seg; pretee = null; return diffuse(seg); }
+    face.set('think');
+    const prep = say(pick(['Radio Atlas : je prépare ton émission.', "Une seconde, je prépare l'antenne."]));
+    const seg = await ecrit(longue);
+    await prep; face.set('idle');
+    if (!seg || !seg.length) return say("Mon cerveau n'a pas réussi à écrire l'émission ce matin. Réessaie dans un instant.");
+    return diffuse(seg);
+  }
+  // vers 6 h 45, sur la tablette : l'émission du jour s'écrit en silence (elle sera prête au réveil)
+  setInterval(async () => {
+    const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+    if (h < 6.7 || h > 7.2 || (pretee && Date.now() - pretee.at < 3 * 3600000) || !AI.ready() || !VOIXMAISON.root() || window.__BANC) return;
+    if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role !== 'tablette') return;
+    const seg = await ecrit(false); if (seg && seg.length) pretee = { seg, at: Date.now() };
+  }, 5 * 60000);
+  async function ecrit(longue) {
+    const sujets = S.settings.emissionSujets || ['', 'géopolitique', 'bourse marchés pétrole or', 'Lille'];
+    const v = S.settings.ville, ac = typeof AbortController !== 'undefined';
+    const [actus, ag, w, msg, tr] = await Promise.all([
+      Promise.all(sujets.map(titres)),
+      (async () => { try { const r0 = VOIXMAISON.root(); return ((await (await fetch(`${r0}/maison/agenda?jours=1`, { cache: 'no-store' })).json()).evenements || []).filter(e => !/\b(MYM|MNQ|MGC|M6E|Open US|Fen[êe]tre active|Impact)\b/i.test(e.titre)); } catch (e) { return []; } })(),
+      v ? fetch(`https://api.open-meteo.com/v1/forecast?latitude=${v.lat}&longitude=${v.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone=auto&forecast_days=1`).then(r => r.json()).catch(() => null) : null,
+      (async () => { try { const r0 = VOIXMAISON.root(); return ((await (await fetch(`${r0}/maison/messages?pour=papa`, { cache: 'no-store' })).json()).messages || []).slice(-2); } catch (e) { return []; } })(),
+      (async () => { try { const r0 = VOIXMAISON.root(); return await (await fetch(`${r0}/maison/trading`, { cache: 'no-store' })).json(); } catch (e) { return null; } })(),
+    ]);
+    const vus = new Set(); const net = l => l.filter(t => { const k = N(t).slice(0, 40); if (vus.has(k)) return false; vus.add(k); return true; });
+    const now = Date.now() / 1000;
+    const faits = [
+      `Date : ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, ${hhmm()}.`,
+      `À la une (titres d'actualité) : ${net(actus[0]).join(' ; ') || 'rien'}.`,
+      `Géopolitique (titres) : ${net(actus[1] || []).join(' ; ') || 'rien'}.`,
+      `Marchés (titres) : ${net(actus[2] || []).join(' ; ') || 'rien'}. ${MARCHE.contexte() || ''}`,
+      (tr && (tr.annonces || []).length) ? `Annonces économiques importantes du jour : ${(tr.annonces || []).filter(a => a.at > now).slice(0, 4).map(a => `${hhmm(new Date(a.at * 1000))} ${a.titre}`).join(' ; ')}.` : '',
+      `Lille (titres) : ${net(actus[3] || []).join(' ; ') || 'rien'}.`,
+      `Son agenda aujourd'hui : ${ag.filter(e => e.fin > now).slice(0, 6).map(e => `${e.journee ? 'toute la journée' : hhmm(new Date(e.debut * 1000))} « ${e.titre} »`).join(' ; ') || 'rien de prévu'}.`,
+      w ? `Météo à ${v.name || 'la maison'} : de ${Math.round(w.daily.temperature_2m_min[0])} à ${Math.round(w.daily.temperature_2m_max[0])} degrés, ${w.daily.precipitation_probability_max[0]} % de risque de pluie.` : '',
+      `Son fils avec Shadow (hier et aujourd'hui) : ${/pas encore la m[ée]moire|doit être allumé/i.test(LIEN.journee()) ? 'rien de noté' : LIEN.journee()}.`,
+      msg.length ? `Messages de son fils pour lui : ${msg.map(m => `« ${m.texte} »`).join(' ; ')}.` : '',
+    ].filter(Boolean).join('\n');
+    const musique = S.settings.emissionMusique || 'FIP';
+    let seg = null;
+    try {
+      const r = String(await AI.chat([{ role: 'system', content: `Tu es Atlas, l'animateur de « Radio Atlas », l'émission personnelle de ${S.nom || 'papa'} (il trade les marchés et s'intéresse à la géopolitique). Ton style : une IA de film, chaleureuse, vive, élégante, un brin pince-sans-rire. Écris le script d'une émission parlée d'environ ${longue ? '4 minutes (550 mots)' : '2 minutes (250 mots)'}, pour être dite à voix haute. Tu le tutoies, toujours.
+Réponds UNIQUEMENT en JSON : {"segments": [{"titre": "OUVERTURE", "texte": "…"}, {"titre": "LE MONDE", …}, {"titre": "LES MARCHÉS", …}, {"titre": "LILLE", …}, {"titre": "TA JOURNÉE", …}, {"titre": "LA MÉTÉO", …}, {"titre": "LE MOT DE SHADOW", …}, {"titre": "FIN", …}]}. Supprime un segment s'il n'y a rien à dire.
+Utilise UNIQUEMENT les faits fournis : reformule les titres sans inventer de détails ni de chiffres, cite parfois la source à l'oral (« d'après Les Échos »). Jamais de conseil d'achat ou de vente. Le segment FIN annonce la musique : ${musique}. Pas de symbole, pas d'astérisque, pas d'indication de jeu.` }, { role: 'user', content: faits }], { maxTokens: longue ? 1500 : 900, temperature: 0.6 }) || '');
+      const j = JSON.parse(r.slice(r.indexOf('{'), r.lastIndexOf('}') + 1)); seg = (j.segments || []).filter(x => x && x.texte).map(x => ({ titre: String(x.titre || '').toUpperCase().slice(0, 20), texte: sansJeu(String(x.texte)).replace(/[*`#]/g, '').trim() }));
+    } catch (e) { seg = null; }
+    return seg;
+  }
+  async function diffuse(seg) {
+    const musique = S.settings.emissionMusique || 'FIP';
+    for (const [i, x] of seg.entries()) {
+      if (dlg.interrupt) break;
+      antenne(seg, i, ''); jingle(); await wait(650);
+      const phrases = x.texte.split(/(?<=[.!?…])\s+/).filter(Boolean);
+      for (const ph of phrases) {
+        if (dlg.interrupt) break;
+        const el = document.getElementById('emission-texte'); if (el) el.textContent = `${el.textContent} ${ph}`.trim();
+        await say(ph);
+      }
+      await wait(250);
+    }
+    jingle(true); await wait(900);
+    setTimeout(() => { if (document.getElementById('emission-texte')) hideBoard(); }, 60000);
+    if (!dlg.interrupt && musique && !/^aucune?$/i.test(musique) && typeof handle === 'function') { window.__ordreDuCerveau = true; try { await handle(`mets ${musique}`); } finally { window.__ordreDuCerveau = false; } }
+  }
+
   function route(t, n) {
+    if (/\b(radio atlas|mon emission|ton emission|l emission du matin|mon journal radio)\b/.test(n) && !/\b(arrete|coupe|stop)\b/.test(n)) return () => emission(/\b(longue|complete|5 minutes|cinq minutes)\b/.test(n));
+    const mus = n.match(/\b(?:musique|radio) (?:de fin |a la fin )?(?:de |pour )?(?:l emission|radio atlas)\b.*?\b(?:mets|ce sera|c est|avec) (.+)$/); if (mus) return () => { S.settings.emissionMusique = mus[1]; save(); return say(`Noté : Radio Atlas finira avec ${mus[1]}.`); };
     const fq = n.match(/\bforfait (?:eleven ?labs|elevenlabs|de (?:la )?voix|voix)\b.*?(\d[\d ]*\d|\d+)\s*(mille|k)?/);
     if (fq) return () => { const v = parseInt(fq[1].replace(/\s/g, ''), 10) * (fq[2] ? 1000 : 1); if (!(v >= 1000)) return say("Dis par exemple : mon forfait ElevenLabs est de 100 000 caractères."); S.settings.elevenQuota = v; save(); return say(`Noté : ${v.toLocaleString('fr-FR')} caractères par mois pour la voix.`); };
     if (/\b(ma facture|la facture|combien (je depense|ca coute|ca me coute|tu me coutes|tu coutes)|ma consommation|mon budget (ia|atlas)?|ce que tu me coutes)\b/.test(n)) return facture;
