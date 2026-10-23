@@ -358,16 +358,16 @@ const JUMEAU = (() => {
     if (fl > 0) halo(p.centre[0], p.centre[1], p.centre[3] * 3.5 * (1.4 - fl), on ? AM : CY, 0.35 * fl); // le flash quand elle change d'état
   }
   // l'escalier : des marches le long du mur, d'un niveau à l'autre ; elles s'allument avec sa lampe
-  function escalier(p, m, v, hs) {
+  function escalier(p, m, v, hs) { // les marches montent du côté cour vers le côté rue
     const n = 11, on = v > 0.02, col = hs ? RO : on ? AM : CY, al = hs ? 0.6 : on ? 0.45 + v * 0.5 : 0.3;
     const z0 = p.z0 + 0.08, z1 = p.z1 - 0.08, dx = (p.x1 - p.x0) / n, dy = (p.y1 - p.y0) / n;
     for (let i = 0; i < n * m; i++) {
-      const x = p.x0 + i * dx, y = p.y0 + i * dy;
-      trait([x, y, z0], [x, y + dy, z0], col, al * 0.8); trait([x, y + dy, z0], [x + dx, y + dy, z0], col, al, 1.1, on);
-      trait([x, y + dy, z1], [x + dx, y + dy, z1], col, al * 0.6); trait([x + dx, y + dy, z0], [x + dx, y + dy, z1], col, al * 0.7);
-      if (on) face([[x, y + dy, z0], [x + dx, y + dy, z0], [x + dx, y + dy, z1], [x, y + dy, z1]], AM, 0.06 + v * 0.1);
+      const x = p.x1 - i * dx, y = p.y0 + i * dy, xe = x - dx;
+      trait([x, y, z0], [x, y + dy, z0], col, al * 0.8); trait([x, y + dy, z0], [xe, y + dy, z0], col, al, 1.1, on);
+      trait([x, y + dy, z1], [xe, y + dy, z1], col, al * 0.6); trait([xe, y + dy, z0], [xe, y + dy, z1], col, al * 0.7);
+      if (on) face([[x, y + dy, z0], [xe, y + dy, z0], [xe, y + dy, z1], [x, y + dy, z1]], AM, 0.06 + v * 0.1);
     }
-    trait([p.x0, p.y0 + 0.9, z1], [p.x0 + (p.x1 - p.x0) * m, p.y0 + 0.9 + (p.y1 - p.y0) * m, z1], col, al * 0.7, 1, on); // la rampe
+    trait([p.x1, p.y0 + 0.9, z1], [p.x1 - (p.x1 - p.x0) * m, p.y0 + 0.9 + (p.y1 - p.y0) * m, z1], col, al * 0.7, 1, on); // la rampe
     if (on) halo(p.centre[0], p.centre[1], p.centre[3] * 1.8, AM, 0.16 * v);
   }
   // les prises qui ont une place : la Fusée dans la chambre du petit, la télévision au salon
@@ -389,10 +389,27 @@ const JUMEAU = (() => {
     }
   }
 
+  // le suivi : quand une caméra voit quelqu'un, la personne marche dans sa zone et le cône pivote pour la suivre
+  // (comme le suivi automatique des EZVIZ) ; sans personne, il revient doucement à sa position de garde.
+  // Ce n'est que le dessin : les vraies caméras gardent leurs propres réglages.
+  const suivi = new Map();
+  function cible(c, p, d, t) {
+    const n = N(c.nom), h = Math.hypot(d[0], d[2]) || 1, fx = d[0] / h, fz = d[2] / h, graine = c.nom.length * 1.7;
+    const loin = (/toit/.test(n) ? 4.5 : 7) + Math.cos(t / 3700 + graine) * 1.3, cote = Math.sin(t / 2600 + graine) * 2.4;
+    let x = p[0] + fx * loin - fz * cote, z = p[2] + fz * loin + fx * cote, y = 0;
+    if (/plateau/.test(n)) { x = clamp(x, L / 2 + 0.4, L / 2 + COUR - 0.3); z = clamp(z, -D / 2 + 0.3, D / 2 - 0.3); y = H; } // sur le plateau
+    else if (/toit/.test(n)) { x = clamp(x, -L / 2 + 0.6, -0.6); z = clamp(z, -D / 2 + 0.4, D / 2 - 0.4); y = TOIT + (FAITE - TOIT) * ((x + L / 2) / (L / 2)); } // sur le pan du toit
+    else if (/cour|jardin/.test(n)) { x = clamp(x, L / 2 + 0.3, L / 2 + COUR - 0.3); z = clamp(z, -D / 2 + 0.3, D / 2 - 0.3); } // dans la cour
+    return [x, y, z];
+  }
   function cameras(ps, T, t, m) {
     for (const c of cams) {
       const { p, d } = placeCam(c), det = detections(c, T), vue = det.length > 0, hors = !c.en_ligne;
-      const n = Math.hypot(...d), u = d.map(v => v / n), lg = 4.4 * m;
+      const n0 = Math.hypot(...d), garde_ = d.map(v => v / n0), quelqu = vue ? cible(c, p, d, t) : null;
+      let vise = garde_;
+      if (quelqu) { const dd = [quelqu[0] - p[0], quelqu[1] + 1.1 - p[1], quelqu[2] - p[2]], l = Math.hypot(...dd); vise = dd.map(v => v / l); }
+      let u = suivi.get(c.nom) || garde_; u = u.map((v, i) => v + (vise[i] - v) * 0.08); const nu = Math.hypot(...u); u = u.map(v => v / nu); suivi.set(c.nom, u);
+      const lg = 4.4 * m;
       const bout = p.map((v, i) => v + u[i] * lg);
       let a1 = [u[1], -u[0], 0]; if (Math.hypot(...a1) < 0.1) a1 = [0, u[2], -u[1]];
       const na = Math.hypot(...a1); a1 = a1.map(v => v / na);
@@ -413,7 +430,7 @@ const JUMEAU = (() => {
       // le balayage : une ligne qui parcourt le cône
       const s = (t / 1800 + c.nom.length * 0.13) % 1, bal = base.map(b => p.map((v, i) => v + (b[i] - v) * s));
       poly(bal, col, 0.3 * (1 - s), 1);
-      if (vue) { face([p, base[0], base[1]], col, 0.07 * clig); face([p, base[2], base[3]], col, 0.07 * clig); face(base, col, 0.05 * clig); const surPlateau = /plateau/.test(N(c.nom)) && bout[0] > L / 2; personne(bout[0], surPlateau ? H : 0, bout[2], RO, 1.75, 'QUELQU\'UN', t, 4.5); }
+      if (vue) { face([p, base[0], base[1]], col, 0.07 * clig); face([p, base[2], base[3]], col, 0.07 * clig); face(base, col, 0.05 * clig); personne(quelqu[0], quelqu[1], quelqu[2], RO, 1.75, 'QUELQU\'UN', t, 4.5); }
       const q = proj(...p);
       halo(q[0], q[1], 16, col, 0.5); ctx.fillStyle = `rgb(${col})`; ctx.beginPath(); ctx.arc(q[0], q[1], 3.4, 0, 6.283); ctx.fill();
       if (vue) { const ph = (t / 1400) % 1; ctx.beginPath(); ctx.arc(q[0], q[1], 6 + ph * 34, 0, 6.283); ctx.strokeStyle = `rgba(${col},${(1 - ph).toFixed(2)})`; ctx.lineWidth = 2; ctx.stroke(); }
@@ -491,6 +508,12 @@ const JUMEAU = (() => {
     for (let i = 0; i < 3; i++) { const ph = (t / 2400 + i / 3) % 1, q = proj(xm - ph * 0.3, L_.y + 0.45 + ph * 1.0, L_.za + 0.3 - ph * 0.2); texte(i === 2 ? 'Z' : 'z', q[0], q[1], `rgba(${VI},${(0.9 * (1 - ph)).toFixed(2)})`, 9 + i * 2 + ph * 4, '', 0, 0.5); }
     const q = proj(xm, L_.y + 1.25, (L_.za + L_.zb) / 2); texte(`${prenom} · DORT`, q[0], q[1], `rgba(${VI},.95)`, 9.5, '', 0, 4.5);
   }
+  const AUTO = /sentinelle|routine|programme|planif|habitude|reveil|oracle|dissuasion|aventure|soiree/; // une lumière allumée par la maison elle-même n'est pas un indice
+  function derniereMain(id, T) { // la dernière fois qu'une main (pas un automatisme) l'a allumée, et il y a combien de minutes
+    if (!donnees) return null; const now = T == null ? Date.now() / 1000 : T; let der = null;
+    for (const e of donnees.lumieres) { if (e.t > now) break; if (e.ids.includes(id) && e.allume && !AUTO.test(N(e.par || ''))) der = e; }
+    return der ? (now - der.t) / 60 : null;
+  }
   function habitants(ps, T, t) {
     const monteOk = (performance.now() - naissance) > 2400;
     const now = T == null ? Date.now() / 1000 : T, d = new Date(now * 1000), h = d.getHours() + d.getMinutes() / 60, soir = h >= 19.5 || h < 9;
@@ -536,7 +559,7 @@ const JUMEAU = (() => {
     const best = lieux[0];
     if (!best || best[0] < 15) return; // on ne sait pas où il est : on ne l'invente pas
     let [sc, x, y, z, p] = best;
-    if (p && p.genre === 'escalier') { const u = 0.5, x2 = p.x0 + (p.x1 - p.x0) * u; personne(x2, p.y0 + (p.y1 - p.y0) * u, (p.z0 + p.z1) / 2, AM, 1.8, sc >= 60 ? 'PAPA' : 'PAPA ?', t, 4); return; }
+    if (p && p.genre === 'escalier') { const u = 0.5, x2 = p.x1 - (p.x1 - p.x0) * u; personne(x2, p.y0 + (p.y1 - p.y0) * u, (p.z0 + p.z1) / 2, AM, 1.8, sc >= 60 ? 'PAPA' : 'PAPA ?', t, 4); return; }
     if (p) [x, y, z] = flane(p, 1.3, t);
     personne(x, y, z, AM, 1.8, sc >= 60 ? 'PAPA' : 'PAPA ?', t, 4, clamp(sc / 40, 0.5, 1));
   }
