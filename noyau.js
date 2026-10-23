@@ -201,7 +201,7 @@ const NOYAU = (() => {
     $h('hud-latence').textContent = bt.length ? `${(bt.reduce((a, b) => a + b, 0) / bt.length / 1000).toFixed(1)} s` : '—';
     $h('hud-micro').textContent = OREILLES.listening && OREILLES.listening() ? 'ACTIF' : 'VEILLE';
     const hm = $h('hud-minuteur'); if (hm) hm.textContent = typeof OUTILS !== 'undefined' ? OUTILS.prochain() : '—';
-    $h('hud-meteo').textContent = OUTILS.meteoCourte();
+    $h('hud-meteo').textContent = typeof OUTILS !== 'undefined' ? OUTILS.meteoCourte() : '—';
     $h('hud-notes').textContent = String((S.notes || []).length);
     $h('hud-enfant').textContent = LIEN.ok() ? `${LIEN.minutes()} MIN` : '—';
     $h('hud-enfant-nom').textContent = (LIEN.prenom() || 'ENFANT').toUpperCase();

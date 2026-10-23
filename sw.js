@@ -1,6 +1,6 @@
 // Garde Atlas disponible même sans réseau (les outils sans Internet marchent toujours).
 // Les fichiers sont toujours vérifiés auprès du serveur (sinon le navigateur ressert une ancienne version).
-const CACHE = 'atlas-app-v99';
+const CACHE = 'atlas-app-v100';
 const FILES = ['./', 'index.html', 'style.css', 'orthographe.js', 'cerveau.js', 'oreilles.js', 'voix.js', 'empreintes.js', 'yeux.js', 'atlas.js', 'outils.js', 'memoire.js', 'marche.js', 'proactif.js', 'foyer.js', 'bord.js', 'maison.js', 'securite.js', 'pc.js', 'visio.js', 'scifi.js', 'trading.js', 'duo.js', 'constellation.js', 'agenda.js', 'futur.js', 'scene.js', 'noyau.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {
@@ -17,11 +17,16 @@ self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
   // seulement les fichiers d'Atlas (pas Shadow, qui vit sur le même site, ni les appels au cerveau ou à l'ordinateur)
   if (req.method !== 'GET' || url.origin !== location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
+  // le réseau d'abord ; s'il traîne (une tablette chargée), la copie gardée ; et s'il n'y a pas de copie, on attend le réseau
+  // (avant, un fichier lent et pas encore gardé ne se chargeait pas du tout : « OUTILS is not defined »)
+  const net = fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
+    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+    return res;
+  });
   e.respondWith(
-    withTimeout(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }), 3500).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-      return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : Promise.reject(new Error('hors-ligne')))))
+    withTimeout(net, 3500)
+      .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || net))
+      .catch(() => (req.mode === 'navigate' ? caches.match('index.html') : Promise.reject(new Error('hors-ligne'))))
   );
 });
 

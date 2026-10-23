@@ -1168,7 +1168,12 @@ async function verifierMaj() {
 
 /* ---------- le diagnostic à distance : l'ordinateur sait s'il écoute, avec quelles oreilles, ce qu'il a entendu ---------- */
 let derniereErreur = '';
-window.addEventListener('error', e => { derniereErreur = `${e.message || 'erreur'} (${(e.filename || '').split('/').pop()}:${e.lineno || ''})`.slice(0, 160); });
+const premieresErreurs = []; // les premières erreurs (la vraie cause est souvent la première)
+window.addEventListener('error', e => {
+  const t = e.target && e.target !== window && e.target.src ? `fichier non chargé : ${e.target.src.split('/').pop()}` : `${e.message || 'erreur'} (${(e.filename || '').split('/').pop()}:${e.lineno || ''})`;
+  derniereErreur = t.slice(0, 160);
+  if (premieresErreurs.length < 5 && !premieresErreurs.includes(derniereErreur)) premieresErreurs.push(`${new Date().toLocaleTimeString('fr-FR')} ${derniereErreur}`);
+}, true);
 window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.reason && e.reason.message) || e.reason || 'promesse').slice(0, 160); });
 async function diagnostic() {
   const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
@@ -1181,7 +1186,7 @@ async function diagnostic() {
       son: (() => { try { return fx.audio().state; } catch (e) { return '?'; } })() },
     dits: dits.slice(),
     temps: { oreilles: OREILLES.timings ? OREILLES.timings().slice(-8) : [], cerveau: brainTimes.slice(-8) }, // pour mesurer la réactivité (ms)
-    entendus: entendus.slice(-12).map(x => `${new Date(x.at).toLocaleTimeString('fr-FR')} [${x.qui}] ${x.t} → ${x.quoi}`), erreur: derniereErreur };
+    entendus: entendus.slice(-12).map(x => `${new Date(x.at).toLocaleTimeString('fr-FR')} [${x.qui}] ${x.t} → ${x.quoi}`), erreur: derniereErreur, erreurs: premieresErreurs.slice() };
   try { await fetch(`${r0}/atlas/diag`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d), keepalive: true }); } catch (e) { /* plus tard */ }
 }
 setInterval(diagnostic, 30000); setTimeout(diagnostic, 8000);
