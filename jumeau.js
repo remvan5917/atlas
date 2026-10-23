@@ -485,28 +485,28 @@ const JUMEAU = (() => {
   const prenomEnfant = ps => { const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom))); const n = ch ? ch.a.nom.replace(/chambre\s*(de\s*|d['’]\s*)?/i, '').trim() : ''; return n && n.length < 16 ? n.toUpperCase() : 'TON FILS'; };
 
   const flane = (p, graine, t) => { const w = (p.x1 - p.x0) * 0.22, d = (p.z1 - p.z0) * 0.22; return [(p.x0 + p.x1) / 2 + Math.sin(t / 9000 + graine) * w, p.y0, (p.z0 + p.z1) / 2 + Math.cos(t / 11000 + graine * 1.7) * d]; }; // il marche doucement dans la pièce
-  // il dort : son lit en hauteur (une mezzanine), le long du mur des toilettes dans le sens de la longueur, avec son échelle ;
-  // lui allongé dessus, la couverture qui se soulève quand il respire, des « z » qui montent
+  // il dort : son lit en hauteur (une mezzanine), contre le mur de droite, la tête vers le mur des toilettes et les pieds
+  // vers la Fusée, avec son échelle côté chambre ; lui allongé dessus, la couverture qui respire, des « z » qui montent
   function lit(p, on) {
-    const y = p.y0, hl = 1.45, xa = p.x1 - 1.0, xb = p.x1 - 0.08, za = 0.3, zb = 2.4, col = on ? VI : CY, al = on ? 0.6 : 0.35;
-    poly([[xa, y + hl, za], [xb, y + hl, za], [xb, y + hl, zb], [xa, y + hl, zb]], col, al, 1.1, true, on); // le sommier
-    [[xa, za], [xa, zb], [xb, za], [xb, zb]].forEach(([x, z]) => trait([x, y, z], [x, y + hl + 0.35, z], col, al * 0.7)); // les montants
-    trait([xa, y + hl + 0.35, za], [xa, y + hl + 0.35, zb - 0.7], col, al * 0.8); trait([xb, y + hl + 0.35, za], [xb, y + hl + 0.35, zb], col, al * 0.6); // la barrière
-    trait([xa, y + hl + 0.35, za], [xb, y + hl + 0.35, za], col, al * 0.6); trait([xa, y + hl + 0.35, zb], [xb, y + hl + 0.35, zb], col, al * 0.6);
-    const ze = zb - 0.65, ze2 = zb - 0.25; // l'échelle, côté chambre
-    trait([xa - 0.05, y, ze], [xa - 0.05, y + hl + 0.35, ze], col, al); trait([xa - 0.05, y, ze2], [xa - 0.05, y + hl + 0.35, ze2], col, al);
-    for (let k = 1; k <= 5; k++) { const yy = y + (hl * k) / 5.5; trait([xa - 0.05, yy, ze], [xa - 0.05, yy, ze2], col, al * 0.8); }
-    return { y: y + hl, xa, xb, za, zb };
+    const y = p.y0, hl = 1.45, xt = p.x1 - 0.08, xp = p.x1 - 2.15, zm = p.z1 - 0.08, zc_ = p.z1 - 1.0, col = on ? VI : CY, al = on ? 0.6 : 0.35; // xt : la tête (côté toilettes), xp : les pieds (côté Fusée)
+    poly([[xp, y + hl, zc_], [xt, y + hl, zc_], [xt, y + hl, zm], [xp, y + hl, zm]], col, al, 1.1, true, on); // le sommier
+    [[xp, zc_], [xt, zc_], [xp, zm], [xt, zm]].forEach(([x, z]) => trait([x, y, z], [x, y + hl + 0.35, z], col, al * 0.7)); // les montants
+    trait([xp + 0.7, y + hl + 0.35, zc_], [xt, y + hl + 0.35, zc_], col, al * 0.8); trait([xp, y + hl + 0.35, zm], [xt, y + hl + 0.35, zm], col, al * 0.6); // la barrière
+    trait([xp, y + hl + 0.35, zc_], [xp, y + hl + 0.35, zm], col, al * 0.6); trait([xt, y + hl + 0.35, zc_], [xt, y + hl + 0.35, zm], col, al * 0.6);
+    const xe = xp + 0.15, xe2 = xp + 0.55; // l'échelle, côté chambre, au pied du lit
+    trait([xe, y, zc_ - 0.05], [xe, y + hl + 0.35, zc_ - 0.05], col, al); trait([xe2, y, zc_ - 0.05], [xe2, y + hl + 0.35, zc_ - 0.05], col, al);
+    for (let k = 1; k <= 5; k++) { const yy = y + (hl * k) / 5.5; trait([xe, yy, zc_ - 0.05], [xe2, yy, zc_ - 0.05], col, al * 0.8); }
+    return { y: y + hl, xt, xp, za: zc_, zb: zm };
   }
   function dort(p, prenom, t) {
-    const L_ = lit(p, true), xm = (L_.xa + L_.xb) / 2, souffle = 0.03 * Math.sin(t / 900), yc = L_.y + 0.14 + souffle;
-    const tete = proj(xm, L_.y + 0.16, L_.za + 0.35), r = tete[3] * 0.12;
+    const B = lit(p, true), zm = (B.za + B.zb) / 2, souffle = 0.03 * Math.sin(t / 900), yc = B.y + 0.14 + souffle;
+    const tete = proj(B.xt - 0.35, B.y + 0.16, zm), r = tete[3] * 0.12; // la tête vers le mur des toilettes
     halo(tete[0], tete[1], r * 6, VI, 0.35);
     ctx.strokeStyle = `rgba(${VI},.9)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(tete[0], tete[1], Math.max(2, r), 0, 6.283); ctx.stroke();
-    const cv_ = [[L_.xa + 0.1, yc, L_.za + 0.65], [L_.xb - 0.1, yc, L_.za + 0.65], [L_.xb - 0.1, yc - 0.03, L_.zb - 0.15], [L_.xa + 0.1, yc - 0.03, L_.zb - 0.15]]; // la couverture
+    const cv_ = [[B.xt - 0.65, yc, B.za + 0.1], [B.xp + 0.15, yc - 0.03, B.za + 0.1], [B.xp + 0.15, yc - 0.03, B.zb - 0.1], [B.xt - 0.65, yc, B.zb - 0.1]]; // la couverture, jusqu'aux pieds
     face(cv_, VI, 0.18); poly(cv_, VI, 0.75, 1.2, true, true);
-    for (let i = 0; i < 3; i++) { const ph = (t / 2400 + i / 3) % 1, q = proj(xm - ph * 0.3, L_.y + 0.45 + ph * 1.0, L_.za + 0.3 - ph * 0.2); texte(i === 2 ? 'Z' : 'z', q[0], q[1], `rgba(${VI},${(0.9 * (1 - ph)).toFixed(2)})`, 9 + i * 2 + ph * 4, '', 0, 0.5); }
-    const q = proj(xm, L_.y + 1.25, (L_.za + L_.zb) / 2); texte(`${prenom} · DORT`, q[0], q[1], `rgba(${VI},.95)`, 9.5, '', 0, 4.5);
+    for (let i = 0; i < 3; i++) { const ph = (t / 2400 + i / 3) % 1, q = proj(B.xt - 0.35 - ph * 0.2, B.y + 0.45 + ph * 1.0, zm - ph * 0.3); texte(i === 2 ? 'Z' : 'z', q[0], q[1], `rgba(${VI},${(0.9 * (1 - ph)).toFixed(2)})`, 9 + i * 2 + ph * 4, '', 0, 0.5); }
+    const q = proj((B.xt + B.xp) / 2, B.y + 1.25, zm); texte(`${prenom} · DORT`, q[0], q[1], `rgba(${VI},.95)`, 9.5, '', 0, 4.5);
   }
   const AUTO = /sentinelle|routine|programme|planif|habitude|reveil|oracle|dissuasion|aventure|soiree/; // une lumière allumée par la maison elle-même n'est pas un indice
   function derniereMain(id, T) { // la dernière fois qu'une main (pas un automatisme) l'a allumée, et il y a combien de minutes
@@ -577,24 +577,23 @@ const JUMEAU = (() => {
     const alerte = cams.some(c => detections(c, null).length), rgb = alerte || g.verisure ? RO : VE;
     const cxd = (-L / 2 - 1.3 + L / 2 + COUR + 0.3) / 2, rx = (L + COUR + 1.6) / 2 + 0.6, rz = D / 2 + 1.4, ry = FAITE + 1.0;
     const pulse = alerte ? 0.6 + 0.4 * Math.sin(t / 120) : 0.75 + 0.25 * Math.sin(t / 1400);
-    // le dôme : des parallèles et des méridiens, une onde qui le parcourt de bas en haut
-    const onde = (t / 3800) % 1;
-    for (let i = 1; i <= 6; i++) {
-      const la = (i / 7) * (Math.PI / 2), y = ry * Math.sin(la), r = Math.cos(la), pts = [];
-      for (let k = 0; k < 40; k++) { const a = (k / 40) * 6.283; pts.push([cxd + Math.cos(a) * rx * r, y, Math.sin(a) * rz * r]); }
-      const br = Math.max(0, 1 - Math.abs(i / 7 - onde) * 5);
-      poly(pts, rgb, (0.08 + 0.35 * br) * pulse * m, 1, true, br > 0.3);
+    // le dôme : au calme, rien qu'un anneau de lumière qui monte de temps en temps (le bouclier qui « respire ») ;
+    // en cas de détection seulement, le dôme entier apparaît, en rouge (sinon, avec le reste, c'était trop chargé)
+    const onde = (t / 7000) % 1, ondeOn = alerte || onde < 0.55, fo = alerte ? (t / 2200) % 1 : onde / 0.55;
+    if (ondeOn) {
+      const la = fo * (Math.PI / 2) * 0.92, y = ry * Math.sin(la), r = Math.cos(la), pts = [];
+      for (let k = 0; k < 44; k++) { const a = (k / 44) * 6.283; pts.push([cxd + Math.cos(a) * rx * r, y, Math.sin(a) * rz * r]); }
+      poly(pts, rgb, (alerte ? 0.5 : 0.32) * Math.sin(Math.PI * fo) * m, 1.2, true, true);
     }
-    const rot = t / 30000;
-    for (let k = 0; k < 18; k++) {
-      const a = (k / 18) * 6.283 + rot, pts = [];
-      for (let i = 0; i <= 8; i++) { const la = (i / 8) * (Math.PI / 2); pts.push([cxd + Math.cos(a) * rx * Math.cos(la), ry * Math.sin(la), Math.sin(a) * rz * Math.cos(la)]); }
-      poly(pts, rgb, 0.07 * pulse * m, 1, false);
+    if (alerte) {
+      for (let i = 1; i <= 4; i++) { const la = (i / 5) * (Math.PI / 2), y = ry * Math.sin(la), r = Math.cos(la), pts = []; for (let k = 0; k < 40; k++) { const a = (k / 40) * 6.283; pts.push([cxd + Math.cos(a) * rx * r, y, Math.sin(a) * rz * r]); } poly(pts, rgb, 0.1 * pulse * m, 1); }
+      const rot = t / 30000;
+      for (let k = 0; k < 8; k++) { const a = (k / 8) * 6.283 + rot, pts = []; for (let i = 0; i <= 8; i++) { const la = (i / 8) * (Math.PI / 2); pts.push([cxd + Math.cos(a) * rx * Math.cos(la), ry * Math.sin(la), Math.sin(a) * rz * Math.cos(la)]); } poly(pts, rgb, 0.08 * pulse * m, 1, false); }
     }
     // la barrière laser autour du terrain, et la lumière qui en fait le tour
     const x0 = -L / 2 - 1.3, x1 = L / 2 + COUR + 0.3, z0 = -D / 2 - 0.6, z1 = D / 2 + 0.6, tour = [[x0, z0], [x1, z0], [x1, z1], [x0, z1]];
-    for (const hy of [0.35, 0.8]) poly(tour.map(([x, z]) => [x, hy, z]), rgb, 0.4 * pulse * m, 1, true, true);
-    tour.forEach(([x, z]) => trait([x, 0, z], [x, 1.0, z], rgb, 0.6 * m, 1.3, true));
+    for (const hy of (alerte ? [0.35, 0.8] : [0.4])) poly(tour.map(([x, z]) => [x, hy, z]), rgb, (alerte ? 0.45 : 0.28) * pulse * m, 1, true, alerte);
+    tour.forEach(([x, z]) => trait([x, 0, z], [x, alerte ? 1.0 : 0.6, z], rgb, 0.45 * m, 1.2, alerte));
     const per = 2 * (x1 - x0 + z1 - z0); let u = ((t / 6000) % 1) * per, pt;
     for (let k = 0; k < 4 && !pt; k++) { const [ax, az] = tour[k], [bx, bz] = tour[(k + 1) % 4], l = Math.hypot(bx - ax, bz - az); if (u <= l) pt = [ax + (bx - ax) * u / l, 0.58, az + (bz - az) * u / l]; else u -= l; }
     if (pt) { const q = proj(...pt); halo(q[0], q[1], 14, rgb, 0.8 * m); }
