@@ -379,12 +379,14 @@ const JUMEAU = (() => {
     const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom))), sa = ps.find(p => p.a && /salon|sejour/.test(N(p.a.nom)));
     for (const a of appareils.filter(x => x.type !== 'lampe')) {
       const n = N(a.nom); let pos = null, rgb = AM, nom = '';
-      if (/fusee/.test(n) && ch) { pos = [ch.x0 + 0.8, ch.y0 + 0.7, ch.z1 - 0.6]; rgb = VI; nom = 'FUSÉE'; }
+      if (/fusee/.test(n) && ch) { pos = [ch.x0 + 0.4, ch.y0 + 0.7, ch.z0 + 0.7]; rgb = VI; nom = 'FUSÉE'; }
       else if (/tele|tv/.test(n) && sa) { pos = [sa.x1 - 0.4, sa.y0 + 1, 0]; rgb = CY; nom = 'TÉLÉ'; }
+      else if (/musique/.test(n) && ch) { pos = [ch.x0 + 2.9, ch.y0 + 0.9, ch.z1 - 0.4]; rgb = VI; nom = 'MUSIQUE'; }
       if (!pos) continue;
       const q = proj(...pos), on = !!a.allume && curseur == null;
       halo(q[0], q[1], q[3] * (on ? 0.9 : 0.35), rgb, on ? 0.45 + 0.15 * Math.sin(t / 500) : 0.12);
-      if (/fusee/.test(n)) poly([[pos[0], pos[1] + 0.55, pos[2]], [pos[0] - 0.14, pos[1], pos[2]], [pos[0] + 0.14, pos[1], pos[2]]], rgb, on ? 0.9 : 0.35, 1.2, true, on);
+      if (/musique/.test(n)) { const o = pos, on2 = !!a.allume && curseur == null, b = Math.sin(t / 300) * 0.04; trait([o[0], o[1] + b, o[2]], [o[0], o[1] + 0.45 + b, o[2]], rgb, on2 ? 0.9 : 0.35, 1.3, on2); trait([o[0], o[1] + 0.45 + b, o[2]], [o[0] + 0.2, o[1] + 0.38 + b, o[2]], rgb, on2 ? 0.9 : 0.35, 1.3, on2); const qq = proj(o[0] - 0.07, o[1] + b, o[2]); ctx.strokeStyle = `rgba(${rgb},${on2 ? 0.9 : 0.35})`; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(qq[0], qq[1], Math.max(2, qq[3] * 0.07), 0, 6.283); ctx.stroke(); }
+      else if (/fusee/.test(n)) poly([[pos[0], pos[1] + 0.55, pos[2]], [pos[0] - 0.14, pos[1], pos[2]], [pos[0] + 0.14, pos[1], pos[2]]], rgb, on ? 0.9 : 0.35, 1.2, true, on);
       else poly([[pos[0], pos[1], pos[2] - 0.5], [pos[0], pos[1], pos[2] + 0.5], [pos[0], pos[1] + 0.55, pos[2] + 0.5], [pos[0], pos[1] + 0.55, pos[2] - 0.5]], rgb, on ? 0.9 : 0.35, 1.1, true, on);
       if (on) { ctx.globalCompositeOperation = 'source-over'; texte(nom, q[0], q[1] - q[3] * 0.4, `rgba(${rgb},.85)`, 8.5); ctx.globalCompositeOperation = 'lighter'; }
     }
@@ -462,8 +464,8 @@ const JUMEAU = (() => {
   //  3. une pièce allumée = quelqu'un dedans : sa chambre → lui (s'il est chez papa), la chambre de papa → papa,
   //     une autre pièce → papa s'il n'est pas déjà ailleurs, sinon « présence » ; l'escalier → quelqu'un sur les marches ;
   //     la télé allumée → quelqu'un au salon ; une lumière restée allumée plus de 3 h sans bouger : sans doute oubliée.
-  let enfantMaison = true, enfantA = 0;
-  async function chargeEnfant() { if (Date.now() - enfantA < 60000) return; enfantA = Date.now(); try { enfantMaison = (await appel('/maison/shadow')).a_la_maison !== false; } catch (e) { /* on suppose */ } }
+  let enfantMaison = true, coucher = false, enfantA = 0;
+  async function chargeEnfant() { if (Date.now() - enfantA < 60000) return; enfantA = Date.now(); try { const r = await appel('/maison/shadow'); enfantMaison = r.a_la_maison !== false; coucher = !!r.coucher; } catch (e) { /* on suppose */ } }
   const prenomEnfant = ps => { const ch = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom))); const n = ch ? ch.a.nom.replace(/chambre\s*(de\s*|d['’]\s*)?/i, '').trim() : ''; return n && n.length < 16 ? n.toUpperCase() : 'TON FILS'; };
   function allumeeDepuis(id, T) { // depuis quand cette lampe est dans son état (en secondes), d'après le journal ; null si on ne sait pas
     if (!donnees) return null; const now = T == null ? Date.now() / 1000 : T;
@@ -471,6 +473,21 @@ const JUMEAU = (() => {
     return der ? now - der.t : null;
   }
   const flane = (p, graine, t) => { const w = (p.x1 - p.x0) * 0.22, d = (p.z1 - p.z0) * 0.22; return [(p.x0 + p.x1) / 2 + Math.sin(t / 9000 + graine) * w, p.y0, (p.z0 + p.z1) / 2 + Math.cos(t / 11000 + graine * 1.7) * d]; }; // il marche doucement dans la pièce
+  // il dort : son lit, lui allongé dessous la couverture qui se soulève quand il respire, des « z » qui montent
+  function dort(p, prenom, t) {
+    const y = p.y0, xa = p.x0 + 0.5, xb = p.x0 + 2.5, za = p.z1 - 1.5, zb = p.z1 - 0.35, hl = 0.45, zc = (za + zb) / 2;
+    const lit = [[xa, y + hl, za], [xb, y + hl, za], [xb, y + hl, zb], [xa, y + hl, zb]];
+    poly(lit, CY, 0.45, 1, true); [[xa, za], [xb, za], [xb, zb], [xa, zb]].forEach(([x, z]) => trait([x, y, z], [x, y + hl, z], CY, 0.25));
+    trait([xa, y + hl, za], [xa, y + hl + 0.5, za], CY, 0.35); trait([xa, y + hl, zb], [xa, y + hl + 0.5, zb], CY, 0.35); trait([xa, y + hl + 0.5, za], [xa, y + hl + 0.5, zb], CY, 0.35); // la tête de lit
+    const souffle = 0.03 * Math.sin(t / 900), yc = y + hl + 0.14 + souffle;
+    const tete = proj(xa + 0.32, y + hl + 0.14, zc), r = tete[3] * 0.12;
+    halo(tete[0], tete[1], r * 6, VI, 0.35);
+    ctx.strokeStyle = `rgba(${VI},.9)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(tete[0], tete[1], Math.max(2, r), 0, 6.283); ctx.stroke();
+    const cv_ = [[xa + 0.6, yc, za + 0.1], [xb - 0.1, yc - 0.03, za + 0.1], [xb - 0.1, yc - 0.03, zb - 0.1], [xa + 0.6, yc, zb - 0.1]]; // la couverture
+    face(cv_, VI, 0.18); poly(cv_, VI, 0.7, 1.2, true, true);
+    for (let i = 0; i < 3; i++) { const ph = (t / 2400 + i / 3) % 1, q = proj(xa + 0.3 + ph * 0.4, y + hl + 0.5 + ph * 1.1, zc - ph * 0.3); texte(i === 2 ? 'Z' : 'z', q[0], q[1], `rgba(${VI},${(0.9 * (1 - ph)).toFixed(2)})`, 9 + i * 2 + ph * 4, '', 0, 0.5); }
+    const q = proj((xa + xb) / 2, y + hl + 1.5, zc); texte(`${prenom} · DORT`, q[0], q[1], `rgba(${VI},.95)`, 9.5, '', 0, 4.5);
+  }
   function habitants(ps, T, t) {
     const dans = (p, dx, dz) => [(p.x0 + p.x1) / 2 + dx, p.y0, (p.z0 + p.z1) / 2 + dz];
     const chEnfant = ps.find(p => p.a && p.genre === 'piece' && p.k === 1 && /chambre/.test(N(p.a.nom)));
@@ -500,6 +517,15 @@ const JUMEAU = (() => {
       if (p.genre === 'escalier') { const u = 0.5 + 0.25 * Math.sin(t / 5000 + i), x = p.x0 + (p.x1 - p.x0) * u; personne(x, p.y0 + (p.y1 - p.y0) * u, (p.z0 + p.z1) / 2, rgb, taille, nom, t, 3, a); return; } // sur les marches
       const [x, y, z] = flane(p, i * 2.3, t); personne(x, y, z, rgb, taille, nom, t, 3, a);
     });
+    // sa veilleuse (la Fusée) ou sa musique allumées : il est dans sa chambre ; le soir et la nuit, il dort
+    const fus = appareils.find(a => a.type !== 'lampe' && /fusee/.test(N(a.nom))), mus = appareils.find(a => a.type !== 'lampe' && /musique/.test(N(a.nom)));
+    const marche = a => !!a && (T == null ? !!a.allume : !!etatA(a, T).allume);
+    if (!lui && chEnfant && enfantMaison && (marche(fus) || marche(mus))) {
+      const d = new Date((T == null ? Date.now() / 1000 : T) * 1000), h = d.getHours() + d.getMinutes() / 60;
+      if (h >= 19.5 || h < 9 || (T == null && coucher)) dort(chEnfant, prenom, t);
+      else { const [x, y, z] = flane(chEnfant, 4.1, t); personne(x, y, z, VI, 1.3, prenom, t, 4); }
+      lui = true;
+    }
     // la télé allumée : quelqu'un au salon (s'il n'y a pas déjà quelqu'un)
     const tele = T == null && appareils.find(a => a.type !== 'lampe' && /tele|tv/.test(N(a.nom)) && a.allume), sa = ps.find(p => p.a && /salon|sejour/.test(N(p.a.nom)));
     if (tele && sa && !allumees.includes(sa)) personne(sa.x0 + 1.2, 0, 0.3, papa ? CY : AM, 1.75, papa ? 'DEVANT LA TÉLÉ' : 'PAPA ?', t, 3);
@@ -742,7 +768,7 @@ const JUMEAU = (() => {
     naissance = performance.now(); etats.clear(); cartes.length = 0;
     // la taille vient du cadre (pas du canevas lui-même : sinon, sur un écran très fin, il grandissait sans fin)
     const scene = boite.querySelector('.j-scene');
-    const taille = () => { dpr = Math.min(2, window.devicePixelRatio || 1); W = scene.clientWidth; Hc = scene.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(Hc * dpr); piste(); };
+    const taille = () => { dpr = Math.min(2, window.devicePixelRatio || 1); W = scene.clientWidth; Hc = scene.clientHeight; f_ = 0; cv.width = Math.round(W * dpr); cv.height = Math.round(Hc * dpr); piste(); };
     new ResizeObserver(taille).observe(scene); taille();
     // un doigt : tourner (avec de l'élan) ; deux doigts ou la molette : zoomer ; toucher une pièce (en direct) : l'allumer ou l'éteindre ; double toucher : la vue de départ
     let dernierTap = 0;
