@@ -32,6 +32,7 @@
   .etat { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .puce { display: flex; align-items: center; gap: 7px; border: 1px solid var(--ligne); border-radius: 8px; padding: 6px 9px; font: 10.5px ui-monospace, monospace; letter-spacing: .08em; color: var(--doux); text-transform: uppercase; white-space: nowrap; }
   .puce b { color: var(--texte); font-weight: 600; }
+  .puce.reglages { cursor: pointer; background: none; padding: 5px 7px; color: var(--doux); } .puce.reglages svg.ic { width: 16px; height: 16px; } .puce.reglages:active { color: var(--cyan); border-color: var(--cyan); }
   .led { width: 7px; height: 7px; border-radius: 50%; background: var(--doux); flex: 0 0 auto; }
   .led.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); } .led.al { background: var(--alerte); box-shadow: 0 0 8px var(--alerte); animation: clig 1.2s steps(2) infinite; } .led.am { background: var(--ambre); box-shadow: 0 0 8px var(--ambre); }
   @keyframes clig { 50% { opacity: .25; } }
@@ -210,6 +211,7 @@ const nf = (v, d = 2) => Number(v).toLocaleString('fr-FR', { maximumFractionDigi
 /* ---------- les icônes (des traits, pas d'émoji) ---------- */
 const IC = {
   power: '<path d="M12 3v8"/><path d="M6.3 6.6a8 8 0 1 0 11.4 0"/>',
+  reglages: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
   porte: '<path d="M6 21V3h11v18"/><path d="M14 12h.01"/><path d="M3 21h18"/>',
   maison: '<path d="M3 11l9-7 9 7v10H3z"/><path d="M9 21v-6h6v6"/>',
   lune: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
@@ -235,6 +237,7 @@ document.addEventListener('pointerdown', () => { try { if (window.parent !== win
 const ic = k => `<svg class="ic" viewBox="0 0 24 24">${IC[k]}</svg>`;
 
 /* ---------- les scènes : elles passent par Atlas (le cockpit vit dans Atlas), comme si on les lui disait ---------- */
+const REGLAGES = (() => { try { return window.parent !== window && typeof window.parent.ouvreReglages === 'function' ? window.parent.ouvreReglages : null; } catch (e) { return null; } })(); // les réglages d'Atlas, depuis le cockpit
 const ATLAS = (() => { try { return window.parent !== window && typeof window.parent.handle === 'function' ? window.parent.handle : null; } catch (e) { return null; } })();
 function toast(t) { const el = $('#toast'); el.textContent = t; el.style.opacity = '1'; clearTimeout(el._f); el._f = setTimeout(() => { el.style.opacity = '0'; }, 2200); }
 function dis(texte, bouton) {
@@ -491,7 +494,9 @@ function majEtat() {
   $('#etat').innerHTML = `<span class="puce"><span class="led ${absent ? 'am' : 'ok'}"></span>MAISON <b>${absent ? 'ABSENT' : 'OCCUPÉE'}</b></span>`
     + `<span class="puce"><span class="led ${nbAlertes ? 'al' : 'ok'}"></span>PÉRIMÈTRE <b>${nbAlertes ? `${nbAlertes} ALERTE${nbAlertes > 1 ? 'S' : ''}` : 'CALME'}</b></span>`
     + `<span class="puce"><span class="led ${shOk ? 'ok' : ''}"></span>SHADOW <b>${shOk ? (sh[1].enfantVu ? 'AVEC LUI' : 'EN LIGNE') : 'EN VEILLE'}</b></span>`
-    + `<span class="puce"><span class="led ${pb == null ? '' : pb ? 'al' : 'ok'}"></span>SYSTÈMES <b>${pb == null ? '…' : pb ? 'À VÉRIFIER' : 'NOMINAUX'}</b></span>`;
+    + `<span class="puce"><span class="led ${pb == null ? '' : pb ? 'al' : 'ok'}"></span>SYSTÈMES <b>${pb == null ? '…' : pb ? 'À VÉRIFIER' : 'NOMINAUX'}</b></span>`
+    + (REGLAGES ? '<button class="puce reglages" id="btn-r" title="Réglages" aria-label="Réglages">' + ic('reglages') + '</button>' : '');
+  const br = $('#btn-r'); if (br) br.onclick = () => { try { REGLAGES(); } catch (e) { /* rien */ } };
 }
 // la ligne d'état qui défile : une information à la fois
 let bandeauL = [], bandeauI = 0;
