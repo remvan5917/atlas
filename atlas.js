@@ -956,24 +956,33 @@ async function apprendreVoix(text) {
   nom = nom.charAt(0).toUpperCase() + nom.slice(1);
   const phrases = petit ? [`Super, ${nom} ! Raconte-moi ce que tu as fait aujourd'hui.`, 'Maintenant, dis-moi quel est ton dessin animé préféré, et pourquoi.', 'Et pour finir, compte jusqu\'à dix, bien fort !']
     : [`Très bien, ${nom}. Parle-moi un peu de ta journée, en quelques phrases.`, "Maintenant, dis-moi ce que tu as prévu demain.", 'Et pour finir, compte lentement jusqu\'à quinze.'];
+  // chaque réponse : Atlas attend que l'écho de sa question se soit éteint (sinon le micro enregistrait SA voix), et
+  // l'ordinateur vérifie aussitôt que ce n'est pas une voix de robot (Atlas, Shadow) ; sinon il redemande
+  const role0 = petit || estEnfant(nom) ? 'enfant' : S.nom && N(nom) === N(S.nom) ? 'papa' : '';
   const prints = [], sons = [];
+  let roleFinal = role0;
   for (const q of phrases) {
     let l = q;
-    for (let k = 0; k < 2; k++) {
-      await ask(l, { wait: 25000 });
+    for (let k = 0; k < 3; k++) {
+      await say(l); await wait(1300);
+      OREILLES.takePrint(); OREILLES.takeWav(); // (ce qu'il a pu entendre pendant qu'il parlait : jeté)
+      await hear({ maxWait: 25000 });
       const p = OREILLES.takePrint(), w = OREILLES.takeWav();
-      if (p) { prints.push(p); if (w) sons.push(w); break; }
-      l = 'Parle un peu plus longtemps, que je retienne bien ta voix.';
+      if (!p) { l = 'Parle un peu plus longtemps, que je retienne bien ta voix.'; continue; }
+      if (w && typeof VOIXPC !== 'undefined' && VOIXMAISON.root()) {
+        const r = await VOIXPC.apprends(nom, roleFinal || 'autre', w);
+        if (r && r.robot) { l = `Attends que j'aie fini de parler, puis réponds-moi. ${q}`; continue; } // c'était l'écho de ma voix
+      }
+      prints.push(p); if (w) sons.push(w); break;
     }
   }
   if (prints.length < 2) return say("Je n'ai pas assez bien entendu ta voix. On réessaiera dans un endroit plus calme.");
   VOIX.enroll(nom, prints);
   // et l'ordinateur de la maison l'apprend aussi, avec son vrai modèle de voix (qui est papa, qui est l'enfant)
   if (typeof VOIXPC !== 'undefined' && sons.length && VOIXMAISON.root()) {
-    const role = petit || estEnfant(nom) ? 'enfant' : S.nom && N(nom) === N(S.nom) ? 'papa' : (await askYesNo("Dernière question : c'est toi, le papa de la maison ?")) ? 'papa' : 'autre';
-    let ok = 0; for (const w of sons) { const r = await VOIXPC.apprends(nom, role, w); if (r && r.ok) ok++; }
+    const role = roleFinal || ((await askYesNo("Dernière question : c'est toi, le papa de la maison ?")) ? 'papa' : 'autre');
+    if (role !== 'autre') await VOIXPC.apprends(nom, role, sons[0]); // (le rôle, une fois sûr, est enregistré avec une phrase de plus)
     dlg.enfant = role === 'enfant'; dlg.quiAt = Date.now();
-    if (!ok) console.warn('voix : l\'ordinateur de la maison n\'a pas appris la voix');
   }
   dlg.qui = nom; fx.ok();
   return say(petit ? `Bravo ${nom} ! Maintenant, je reconnais ta voix. Quand tu me parles, je sais que c'est toi !` : `C'est fait, ${nom}. Je reconnaîtrai ta voix, même au milieu d'une conversation.`);

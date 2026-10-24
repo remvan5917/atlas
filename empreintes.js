@@ -189,10 +189,10 @@ const VOIXPC = (() => {
     try { return await (await fetch(`${root()}${chemin}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps), signal: ctl.signal })).json(); } finally { clearTimeout(tm); }
   }
   // une phrase vient d'être entendue : on demande à l'ordinateur qui l'a dite (en même temps que la transcription)
-  function analyse(blob, secondes) {
+  function analyse(blob, secondes, hauteur) { // hauteur : la hauteur de la voix (log2 Hz), calculée sur l'appareil
     dernier = null;
     if (!actif() || !(secondes >= 1)) return;
-    dernier = (async () => { const l = await etat(); if (!l.length) return null; return post('/maison/voix/qui', { audio: await b64(blob) }); })().catch(() => null);
+    dernier = (async () => { const l = await etat(); if (!l.length) return null; return post('/maison/voix/qui', { audio: await b64(blob), pitch: hauteur == null ? null : hauteur }); })().catch(() => null);
   }
   // le résultat (il arrive d'habitude avant la transcription ; sinon on n'attend pas plus de 0,7 s)
   async function resultat(ms = 700) {

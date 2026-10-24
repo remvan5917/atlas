@@ -201,7 +201,7 @@ const OREILLES = (() => {
     // empreinte de la voix, calculée sur l'appareil (jamais envoyée)
     try { lastPrint = (typeof VOIX !== 'undefined') ? VOIX.print(audio) : null; } catch (e) { lastPrint = null; }
     const son = wav(louder(audio)); lastWav = son;
-    try { if (typeof VOIXPC !== 'undefined') VOIXPC.analyse(son, audio.reduce((a, c) => a + c.length, 0) / RATE); } catch (e) { /* sans l'ordinateur : l'empreinte de l'appareil suffit */ }
+    try { if (typeof VOIXPC !== 'undefined') VOIXPC.analyse(son, audio.reduce((a, c) => a + c.length, 0) / RATE, lastPrint && lastPrint.pitch); } catch (e) { /* sans l'ordinateur : l'empreinte de l'appareil suffit */ }
     try {
       const t0 = performance.now();
       const t = await AI.transcribe(son, p.prompt, { cheap: !!p.cheap }); // en veille : les oreilles de la maison d'abord
