@@ -36,6 +36,7 @@ const DUO = (() => {
     if (m.type === 'question') { repondre(m); return; }
     if (m.type === 'dissuasion') { if (typeof FUTUR !== 'undefined') FUTUR.voixSentinelle(); return; } // la tablette, avec la sono
     if (m.type === 'aventure' || m.type === 'aventure-fin') { glitch(m.texte, m.type === 'aventure-fin'); return; } // l'aventure de la maison : Atlas joue le méchant
+    if (m.type === 'annonce') { annonce(m); return; } // l'interphone : un message de son fils, ou une nouvelle de la maison, dit tout de suite
     boite.push(m); if (boite.length > 20) boite.shift();
   }
   async function tire(sec) {
@@ -94,6 +95,19 @@ const DUO = (() => {
     sfx('final'); await wait(900);
     try { await say(`Merci, capitaine${enfant() ? ` ${enfant()}` : ''}. Le Professeur Glitch est parti, et la maison est de nouveau sous contrôle. Je n'aurais pas pu le faire sans toi.`); } catch (e) { /* rien */ }
     glitchEnleve(2500);
+  }
+
+  /* ---------- l'interphone : ce que son fils dit à Shadow pour papa, dit tout de suite par la tablette ---------- */
+  async function annonce(m) {
+    if (!dlg.started || voice.endormi) return;
+    const de = String(m.de || ''), id = Number(de.split('#')[1]);
+    for (let k = 0; k < 40 && voice.occupe(); k++) await wait(500);
+    sfx('scan');
+    if (/^enfant/.test(de)) {
+      const t = String(m.texte || '').trim();
+      await say(`Message de ${enfant() || 'ton fils'} : « ${t} ».`);
+      if (id) appel('/maison/messages', { lu: id }).catch(() => {}); // (déjà dit : il ne reviendra pas)
+    } else if (m.texte) await say(String(m.texte));
   }
 
   /* ---------- le petit pose une question à Atlas, par Shadow ---------- */

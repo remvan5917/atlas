@@ -327,9 +327,10 @@ const MAISON = (() => {
       } catch (e) { /* tel quel */ }
     }
     t = t.charAt(0).toUpperCase() + t.slice(1);
-    try { await appel('/maison/messages', { de: 'papa', pour: 'enfant', texte: t }); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison : le message n'est pas parti."); }
+    let r; try { r = await appel('/maison/messages', { de: 'papa', pour: 'enfant', texte: t }); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison : le message n'est pas parti."); }
     fx.ok();
-    return say(`C'est transmis. Shadow dira à ${enfant()} : « ${t} », dès qu'il le verra.`);
+    // l'interphone : Shadow allumé à la maison le dit tout de suite ; sinon il attend dans sa boîte aux lettres
+    return say(r && r.direct ? `Je le dis tout de suite à ${enfant()} sur Shadow : « ${t} ».` : `C'est transmis. Shadow dira à ${enfant()} : « ${t} », dès qu'il le verra.`);
   }
   const annonceMsg = m => `Message de ${enfant()} : « ${m.texte} ».`;
   // la réponse du petit, en hologramme sur l'écran d'Atlas

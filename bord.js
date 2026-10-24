@@ -232,7 +232,92 @@ Utilise UNIQUEMENT les faits fournis : reformule les titres sans inventer de dé
     if (!dlg.interrupt && musique && !/^aucune?$/i.test(musique) && typeof handle === 'function') { window.__ordreDuCerveau = true; try { await handle(`mets ${musique}`); } finally { window.__ordreDuCerveau = false; } }
   }
 
+  /* ---------- qui est où : « où est mon fils ? », « qui est à la maison ? », « préviens-moi quand il se réveille » ---------- */
+  async function presences() { const r0 = VOIXMAISON.root(); return (await fetch(`${r0}/atlas/presences`, { cache: 'no-store' })).json(); }
+  const hm = ts => { const d = new Date(ts * 1000); return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`; };
+  function dirEnfant(e, p) {
+    if (!e) return `${p} n'est pas à la maison : son téléphone n'est pas sur le Wi-Fi, il est sans doute chez sa maman.`;
+    if (e.etat === 'dort') return `${p} dort${e.depuis ? ` depuis ${hm(e.depuis)}` : ''}, dans son lit${e.sur ? '' : ' — enfin, je le crois : c\'est la nuit et il est à la maison'}.`;
+    return `${p} est ${e.ou}${e.sur ? '' : ', je crois'} : ${e.pourquoi}.`;
+  }
+  async function presence(quoi) {
+    let r; try { r = await presences(); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison."); }
+    const p = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'Ton fils';
+    if (quoi === 'enfant') return say(dirEnfant(r.enfant, p));
+    const pa = r.papa || {};
+    const toi = pa.ou === 'dehors' ? 'Toi, tu es sorti' : `Toi, tu es ${/^(au |dans |sur |à )/.test(pa.ou) ? pa.ou : `dans la pièce ${pa.ou}`}`;
+    return say(`${toi}. ${dirEnfant(r.enfant, p)}`);
+  }
+  async function veilleReveil() {
+    let r; try { const r0 = VOIXMAISON.root(); r = await (await fetch(`${r0}/atlas/presences`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ veille: 'reveil' }) })).json(); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison."); }
+    const p = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    return say(r.dort ? `D'accord. ${p} dort : je te préviens sur ton téléphone dès qu'il se réveille.` : `D'accord. ${p} n'a pas l'air de dormir en ce moment : je te préviens dès qu'il se sera endormi puis réveillé.`);
+  }
+
+  /* ---------- le film du mois : les beaux moments gardés par Shadow, racontés par Atlas ---------- */
+  const MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  async function filmDuMois(n) {
+    const r0 = VOIXMAISON.root(); if (!r0) return say("Il me faut l'ordinateur de la maison pour le film.");
+    const d = new Date(); let m = d.getMonth(), a = d.getFullYear();
+    const im = MOIS_FR.findIndex(x => n.includes(N(x))); if (im >= 0) { m = im; if (im > d.getMonth()) a--; } else if (/\b(dernier|precedent|passe)\b/.test(n)) { m = (m + 11) % 12; if (m === 11) a--; }
+    const cle = `${a}-${String(m + 1).padStart(2, '0')}`, p = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    let l = []; try { l = (await (await fetch(`${r0}/maison/souvenirs?mois=${cle}`, { cache: 'no-store' })).json()).souvenirs || []; } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison."); }
+    if (l.length < 3) return say(`Pas encore assez de souvenirs pour le film de ${MOIS_FR[m]} : ${l.length ? `j'en ai ${l.length}` : "je n'en ai aucun"}. Shadow en garde un à chaque mission réussie, ou quand ${p} lui dit « Shadow, prends une photo souvenir ».`);
+    l = l.slice(-24);
+    const imgs = await Promise.all(l.map(async x => { try { const b = await (await fetch(`${r0}/maison/souvenirs/image?id=${x.id}`, { cache: 'no-store' })).blob(); return URL.createObjectURL(b); } catch (e) { return ''; } }));
+    // le commentaire : Mistral l'écrit à partir des moments (sinon, une phrase simple par photo)
+    const jour = x => new Date(x.at * 1000).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    let txt = [];
+    try {
+      const rep = await AI.chat([{ role: 'system', content: `Tu es Atlas. Tu racontes à papa « le film de ${MOIS_FR[m]} » : les beaux moments de son fils ${p} avec Shadow, son robot. Une phrase courte et chaleureuse par moment (moins de 20 mots), au présent, tu tutoies papa, jamais inventer ce qui n'est pas écrit. Réponds en JSON : {"intro": "…", "phrases": ["…", …], "fin": "…"}, autant de phrases que de moments, dans l'ordre.` },
+        { role: 'user', content: l.map((x, i) => `${i + 1}. ${jour(x)} — ${x.type} — ${x.texte}`).join('\n') }], { maxTokens: 900, temperature: 0.6, json: true });
+      const j = JSON.parse(String(rep).replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
+      txt = [j.intro, ...(j.phrases || []), j.fin];
+    } catch (e) { txt = []; }
+    if (txt.length < l.length + 2) txt = [`Le film de ${MOIS_FR[m]}, avec ${p} et Shadow.`, ...l.map(x => `${jour(x)} : ${x.texte}.`), `C'était le mois de ${MOIS_FR[m]}. À très vite pour le prochain film.`];
+    // l'écran : le titre, puis chaque photo qui glisse doucement (en fondu), la date et le moment en bas
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:75;background:#000;overflow:hidden;font-family:system-ui,sans-serif;color:#fff';
+    el.innerHTML = `<style>@keyframes kb0{from{transform:scale(1.02) translate(0,0)}to{transform:scale(1.14) translate(-2%,-1.5%)}}@keyframes kb1{from{transform:scale(1.14) translate(2%,1%)}to{transform:scale(1.03) translate(0,0)}}
+      .fd-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity 1.2s}.fd-img.on{opacity:1}
+      .fd-bas{position:absolute;left:0;right:0;bottom:0;padding:22px 28px 26px;background:linear-gradient(transparent,rgba(0,0,0,.75));font:500 clamp(16px,2.4vw,24px)/1.4 system-ui}
+      .fd-titre{position:absolute;inset:0;display:grid;place-items:center;text-align:center;transition:opacity 1s}</style>
+      <div class="fd-titre"><div><div style="font:600 13px ui-monospace,monospace;letter-spacing:.4em;color:#7dd3fc">ATLAS PRÉSENTE</div><div style="font:800 clamp(34px,7vw,76px) system-ui;margin-top:12px">Le film de ${MOIS_FR[m]}</div><div style="margin-top:10px;font-size:18px;opacity:.8">${p} &amp; Shadow · ${l.length} souvenirs</div></div></div>
+      <div class="fd-bas" style="opacity:0"></div>`;
+    document.body.appendChild(el);
+    let fini = false; el.onclick = () => { fini = true; dlg.interrupt = true; try { voice.stop(); } catch (e) { /* rien */ } };
+    jingle(false);
+    await say(txt[0]);
+    el.querySelector('.fd-titre').style.opacity = '0';
+    const bas = el.querySelector('.fd-bas');
+    for (let i = 0; i < l.length && !fini; i++) {
+      if (!imgs[i]) continue;
+      const im = document.createElement('img'); im.className = 'fd-img'; im.src = imgs[i]; im.style.animation = `kb${i % 2} 9s ease-out forwards`;
+      el.insertBefore(im, bas); await wait(60); im.classList.add('on');
+      const prec = el.querySelectorAll('.fd-img'); if (prec.length > 2) prec[0].remove();
+      bas.style.opacity = '1'; bas.innerHTML = `<div style="font:600 12px ui-monospace,monospace;letter-spacing:.25em;color:#7dd3fc;text-transform:uppercase">${esc(jour(l[i]))}</div><div style="margin-top:4px">${esc(l[i].texte)}</div>`;
+      const t0 = Date.now(); await say(txt[i + 1] || ''); const reste = 4500 - (Date.now() - t0); if (reste > 0) await wait(reste);
+    }
+    if (!fini) { bas.style.opacity = '0'; const fin = el.querySelector('.fd-titre'); fin.innerHTML = `<div><div style="font:800 clamp(30px,6vw,64px) system-ui">Fin</div><div style="margin-top:10px;opacity:.8">Le film de ${MOIS_FR[m]}</div></div>`; fin.style.opacity = '1'; jingle(true); await say(txt[txt.length - 1]); await wait(3000); }
+    el.remove(); imgs.forEach(u => u && URL.revokeObjectURL(u)); dlg.interrupt = false;
+  }
+
   function route(t, n) {
+    if (/\b(le |notre |mon )?film (du mois|de (ce mois|octobre|novembre|decembre|janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre)|des souvenirs)\b|\bnos souvenirs du mois\b/.test(n)) return () => filmDuMois(n);
+    const pr = typeof LIEN !== 'undefined' && LIEN.prenom() ? N(LIEN.prenom()) : '', FILS = new RegExp(`\\b(mon fils|le petit|mon garcon|fiston${pr ? `|${pr}` : ''})\\b`);
+    if (FILS.test(n) && /\b(previens|dis|alerte|appelle|reveille|avertis) moi (quand|des que|lorsqu)\b/.test(n) && /\b(reveill?e|leve|debout|reveil)\b/.test(n)) return veilleReveil;
+    if (FILS.test(n) && /\b(ou est|ou se trouve|il est ou|il est dans quelle|il fait quoi|qu est ce qu il fait|il dort|il est reveille|il est la|il est a la maison)\b/.test(n)) return () => presence('enfant');
+    if (/\b(qui est (a la maison|la|ici|present|dans la maison)|il y a qui|y a qui|y a t il quelqu un|qui est rentre)\b/.test(n)) return () => presence('tous');
+    // le précepteur : le bilan scolaire de son fils (ses exercices avec Shadow)
+    if (FILS.test(n) && /\b(bilan|progres|il s en sort|ecole|scolaire|ses notes|exercices|devoirs de la semaine)\b/.test(n) || /\b(bilan scolaire|bilan de l ecole)\b/.test(n)) return async () => {
+      let r; try { const r0 = VOIXMAISON.root(); r = await (await fetch(`${r0}/atlas/ecole`, { cache: 'no-store' })).json(); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison."); }
+      return say(r.texte.replace(/ton fils/g, (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils'));
+    };
+    // le coach de trading : des constats sur ses trades (la boîte noire + Silver Terminal), jamais un conseil
+    if (/\b(mon coach|coach de trading|analyse mes trades|mes habitudes (de trading|de trader)|rapport de trading|qu est ce que disent mes trades|mes points faibles en trading)\b/.test(n)) return async () => {
+      let r; try { const r0 = VOIXMAISON.root(); r = await (await fetch(`${r0}/atlas/coach`, { cache: 'no-store' })).json(); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison."); }
+      return say(r.texte);
+    };
     if (/\b(radio atlas|mon emission|ton emission|l emission du matin|mon journal radio)\b/.test(n) && !/\b(arrete|coupe|stop)\b/.test(n)) return () => emission(/\b(longue|complete|5 minutes|cinq minutes)\b/.test(n));
     const mus = n.match(/\b(?:musique|radio) (?:de fin |a la fin )?(?:de |pour )?(?:l emission|radio atlas)\b.*?\b(?:mets|ce sera|c est|avec) (.+)$/); if (mus) return () => { S.settings.emissionMusique = mus[1]; save(); return say(`Noté : Radio Atlas finira avec ${mus[1]}.`); };
     const fq = n.match(/\bforfait (?:eleven ?labs|elevenlabs|de (?:la )?voix|voix)\b.*?(\d[\d ]*\d|\d+)\s*(mille|k)?/);
