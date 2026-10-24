@@ -58,9 +58,14 @@ const OREILLES = (() => {
       // l'anti-écho fait passer Android en « mode appel » : branchée en jack sur la sono, la tablette renvoie alors un peu du micro
       // dans la sortie (le larsen quand Atlas se tait). Sur la tablette, il est coupé (sa propre voix, il la reconnaît autrement).
       const tablette = /Android/.test(navigator.userAgent) && !/Mobile/.test(navigator.userAgent);
-      const aec = S.settings.micAEC != null ? S.settings.micAEC !== false : !tablette;
+      let aec = S.settings.micAEC != null ? S.settings.micAEC !== false : !tablette;
+      // un micro de conférence (Jabra Speak, Anker PowerConf…) branché : on le prend lui, et on laisse SON anti-écho travailler
+      // (il est bien meilleur que celui du téléphone, et sans « mode appel » il n'y a pas de larsen)
+      const conf = await micConference();
+      micNom = conf ? conf.label : '';
+      if (conf) aec = false;
       OREILLES_AEC = aec;
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: aec, noiseSuppression: aec && !far && S.settings.micNS !== false, autoGainControl: true } });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: Object.assign({ echoCancellation: aec, noiseSuppression: aec && !far && S.settings.micNS !== false, autoGainControl: true }, conf ? { deviceId: { exact: conf.deviceId } } : {}) });
       if (!ctx) ctx = new AC();
       src = ctx.createMediaStreamSource(stream);
       // une tablette (moins puissante, et qui fait aussi tourner le cockpit) : des morceaux plus longs, sinon des bouts de voix sautent quand elle est occupée
@@ -76,6 +81,19 @@ const OREILLES = (() => {
     }
     if (ctx.state === 'suspended') await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 1500))]);
   }
+  // le micro de conférence, s'il est branché (en USB-C ou en Bluetooth)
+  const CONF = /jabra|speak ?2|powerconf|anker|speakerphone|conf[eé]rence|emeet|poly ?sync|yealink/i;
+  let micNom = '';
+  async function micConference() {
+    try { return (await navigator.mediaDevices.enumerateDevices()).find(d => d.kind === 'audioinput' && CONF.test(d.label || '')) || null; } catch (e) { return null; }
+  }
+  // on le branche (ou on le débranche) pendant qu'Atlas tourne : il bascule tout seul
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', async () => {
+    if (engine !== 'whisper' || !stream) return;
+    const conf = await micConference(), nom = conf ? conf.label : '';
+    if (nom === micNom) return;
+    closeMic(); try { await openMic(); } catch (e) { console.warn('micro', e); }
+  });
   function closeMic() {
     if (proc) proc.disconnect();
     if (src) src.disconnect();
@@ -282,6 +300,7 @@ const OREILLES = (() => {
     timings: () => timings.slice(),
     reopen: async () => { closeMic(); return start(); },
     ctx: () => ctx, // (le test du larsen met ses sons en pause)
+    micro: () => micNom || 'micro de l\'appareil',
     takePrint: () => { const p = lastPrint; lastPrint = null; return p; },
     takeWav: () => { const w = lastWav; lastWav = null; return w; }, // le son de la dernière phrase (pour apprendre une voix)
     hearing: () => speaking || !!(pending && pending.busy),
