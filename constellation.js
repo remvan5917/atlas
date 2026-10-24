@@ -90,9 +90,21 @@ const CONSTELLATION = (() => {
   }
   function recoit(m) {
     fx.tone([[1319, 0.06], [880, 0.1]]);
+    if (m.type === 'commande' && /^micro/.test(m.de || '')) { etage(m.texte); return; } // un ordre dit au micro de l'étage : la réponse sort à l'étage
     if (m.type === 'commande') { if (m.texte && typeof handle === 'function') handle(m.texte); return; }
     showBoard(`<div style="font:11px ui-monospace,monospace;letter-spacing:.25em;color:#7dd3fc;margin-bottom:8px">◢ REÇU DEPUIS ${esc(String(m.de || '').toUpperCase())} · ${esc(hhmm(new Date(m.at * 1000)))}</div>${m.html || esc(m.texte || '')}`, 'graphe-board');
     clearTimeout(effaceT); effaceT = setTimeout(cacheEcran, 5 * 60000);
+  }
+  // un ordre venu du micro de l'étage : Atlas le fait, mais sa réponse est dite par le haut-parleur de l'étage (pas ici)
+  let etageFile = Promise.resolve();
+  function etage(texte) {
+    if (!texte || typeof handle !== 'function') return;
+    etageFile = etageFile.then(async () => {
+      const cap = []; window.__agentCapture = cap; window.__ordreDuCerveau = true;
+      try { await Promise.race([handle(texte), wait(20000)]); } catch (e) { /* rien */ } finally { window.__agentCapture = null; window.__ordreDuCerveau = false; }
+      const rep = cap.join(' ').replace(/\s+/g, ' ').trim();
+      if (rep) { try { await appel('/maison/canal/etage', { type: 'dire', texte: rep.slice(0, 600), de: 'atlas' }, 8000); } catch (e) { await say(rep); } } // (l'étage ne répond pas : il le dit ici)
+    });
   }
   async function boucle() {
     for (;;) {
