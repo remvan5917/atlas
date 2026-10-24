@@ -554,7 +554,7 @@ async function effacerNotes() {
 /* ---------- le point de situation au démarrage ---------- */
 function briefing(fin = true) {
   const h = new Date().getHours(), parts = [`${h < 5 ? 'Bonne nuit' : h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'}${appel()}.`];
-  if (LIEN.ok() && LIEN.minutes()) parts.push(`${LIEN.prenom() || 'Ton fils'} a passé ${LIEN.minutes()} minutes avec Shadow aujourd'hui.`);
+  // (plus le temps passé par son fils avec Shadow à chaque ouverture : il le demande s'il veut — « la journée de mon fils »)
   if (S.notes.length) parts.push(`Tu as ${S.notes.length} note${S.notes.length > 1 ? 's' : ''}.`);
   const up = LIEN.upcoming(2)[0];
   if (up) parts.push(`${up.e.text.charAt(0).toUpperCase()}${up.e.text.slice(1)} ${up.days === 0 ? "aujourd'hui" : up.days === 1 ? 'demain' : `dans ${up.days} jours`}.`);
