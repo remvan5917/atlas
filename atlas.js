@@ -998,6 +998,15 @@ async function presentation() {
 
 /* ---------- la boucle de vie : il écoute tout le temps ---------- */
 // ce qui ressemble à une demande qu'on lui fait (une question, un ordre) — le reste, sans son nom, ne le concerne pas
+// un ordre naturel pour la maison : il commence par l'ordre, et parle d'un objet de la maison (une lampe, la radio, le son…)
+const ORDRE_NATUREL = /^(et |stp |s il te plait |tu peux |peux tu |tu pourrais |tu veux bien )?(allume|allumes|allumer|rallume|eteins|eteint|eteindre|mets|met|mettre|remets|lance|lancer|coupe|couper|baisse|baisser|monte|monter|augmente|diminue|tamise|arrete|arreter|change|changer|passe|active|desactive|ouvre|ferme)\b/;
+const OBJETS_MAISON = /\b(lumieres?|lampes?|prises?|radio|musique|son|volume|tele|television|fip|france ?(inter|info|culture|musique)|nostalgie|rtl|chaine|cockpit|jumeau|film|mode|cinema|soiree|tout|toutes|partout|ici|en bas|en haut|etage)\b/;
+function ordreNaturel(n) {
+  if (!ORDRE_NATUREL.test(n)) return false;
+  if (OBJETS_MAISON.test(n)) return true;
+  // le nom d'une lampe ou d'une pièce de la maison (« éteins la cuisine », « allume la chambre papa »)
+  try { return (MAISON._appareils() || []).some(a => { const m = N(a.nom).split(' ').filter(x => x.length > 2); return m.length && m.every(x => n.includes(x)) || m.some(x => x.length > 4 && n.includes(x)); }); } catch (e) { return false; }
+}
 const ADRESSE = /^(et )?(dis|dit|dites|donne|mets|met|allume|allumes|eteins|eteint|eteindre|baisse|monte|augmente|diminue|coupe|tamise|lance|ajoute|rappelle|note|cherche|trouve|montre|affiche|explique|raconte|calcule|convertis|combien|quelle?s?|quel|quels|ou|comment|pourquoi|quand|qui|est ce qu|est ce que|qu est ce|c est quoi|tu peux|tu sais|tu connais|peux tu|sais tu|pourrais tu|j ai besoin|je veux|je voudrais|fais|fait|ouvre|ferme|active|envoie|envoyer|previens|arrete|stop|repete|lis|regarde|aide|traduis|ecris|programme|reveille|minuteur|il fait|il va|ca fait|y a t il|il y a)\b/;
 let monId = ''; try { monId = localStorage.getItem('atlas-appareil') || ''; if (!monId) { monId = Math.random().toString(36).slice(2, 10); localStorage.setItem('atlas-appareil', monId); } } catch (e) { monId = Math.random().toString(36).slice(2, 10); }
 async function quiRepond(texte) {
@@ -1063,16 +1072,20 @@ async function vie() {
       const frag = !appele && !suite && !seul && !dlg.discret && !!MAISON.fragment(r, n);
       // les ordres évidents de la maison (« mode cockpit », « fin du film », « pause » au cinéma) : pas besoin de dire son nom
       const direct = !appele && n.split(' ').length <= 5 && ORDRE_DIRECT.test(n);
+      // parler naturellement : un ordre clair pour la maison, sans dire son nom, même à plusieurs (« allume la cuisine »,
+      // « mets FIP », « baisse le son ») — une phrase courte qui COMMENCE par l'ordre et parle d'un objet de la maison ;
+      // seulement une voix de la maison (pas un invité inconnu quand il y a du monde) ; les questions, elles, demandent son nom
+      const naturel = !appele && !direct && S.settings.sansNom !== false && !bout && n.split(' ').length <= 10 && ordreNaturel(n) && (!!dlg.qui && !/^invité/.test(dlg.qui) || CONV.autres(dlg.qui) === 0);
       // il vient de te poser une question (une habitude, l'oracle) : un « oui » ou un « non » tout court lui répond
       const reponse = !appele && dlg.attendReponse > Date.now() && /^(oui|ouais|ok|d accord|vas y|carrement|bien sur|fais le|volontiers|non|non merci|pas la peine|laisse|surtout pas)\b/.test(n);
-      if (!appele && !suite && !seul && !frag && !direct && !reponse) {
+      if (!appele && !suite && !seul && !frag && !direct && !reponse && !naturel) {
         journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
         if (dlg.discret) continue;
         dlg.busy = true;
         try { await CONV.peutEtre(r, dlg.qui); } catch (e) { console.warn('conversation', e); } finally { dlg.busy = false; }
         continue;
       }
-      journal(r, dlg.qui, appele ? 'appelé : il répond' : direct ? 'un ordre de la maison : il répond' : suite ? 'à la suite : il répond' : frag ? 'un bout de phrase sur la maison : il demande' : 'seul avec lui : il répond');
+      journal(r, dlg.qui, appele ? 'appelé : il répond' : direct ? 'un ordre de la maison : il répond' : naturel ? 'un ordre naturel (sans son nom) : il le fait' : suite ? 'à la suite : il répond' : frag ? 'un bout de phrase sur la maison : il demande' : 'seul avec lui : il répond');
       dlg.suites = appele ? 0 : (dlg.suites || 0) + 1;
       CONV.parleAtlas(dlg.qui);
       dlg.discret = false;
