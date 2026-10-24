@@ -192,6 +192,8 @@ const VOIXPC = (() => {
   function analyse(blob, secondes, hauteur) { // hauteur : la hauteur de la voix (log2 Hz), calculée sur l'appareil
     dernier = null;
     if (!actif() || !(secondes >= 1)) return;
+    // sa propre voix (pendant qu'il parle, ou dans les 2 s qui suivent : l'écho) n'est jamais une personne
+    try { if (voice.occupe() || Date.now() - (voice.endedAt || 0) < 2000 + secondes * 1000) return; } catch (e) { /* rien */ }
     dernier = (async () => { const l = await etat(); if (!l.length) return null; return post('/maison/voix/qui', { audio: await b64(blob), pitch: hauteur == null ? null : hauteur }); })().catch(() => null);
   }
   // le résultat (il arrive d'habitude avant la transcription ; sinon on n'attend pas plus de 0,7 s)
