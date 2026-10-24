@@ -933,16 +933,29 @@ const ARRIVEE = (() => {
 /* ---------- apprendre une voix ---------- */
 async function apprendreVoix(text) {
   if (OREILLES.engine() !== 'whisper') return say("Pour reconnaître les voix, il me faut les oreilles de la maison ou celles de Groq, réglées dans mes réglages.");
-  let nom = (String(text).match(/\b(?:je suis|je m['’]appelle|c['’]est|moi c['’]est)\s+([A-Za-zÀ-ÿ-]{2,20})/i) || [])[1] || '';
+  // son fils : « apprends la voix de mon fils » (dit par papa), ou une voix d'enfant qui dit « apprends ma voix » —
+  // Atlas connaît déjà son prénom : pas de question difficile (un prénom d'enfant est souvent mal transcrit)
+  const prenomE = LIEN.prenom(), nn = N(text);
+  const proche = (a, b) => { a = N(a); b = N(b); if (!a || !b) return false; if (a === b || a.startsWith(b) || b.startsWith(a)) return true; const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length] <= 2; };
+  let nom = '', petit = false;
+  if (prenomE && (/\bvoix (de|du|d) ?(mon fils|mon garcon|mon enfant|petit|fiston)\b/.test(nn) || (prenomE && new RegExp(`\\bvoix (de |d )?${N(prenomE)}\\b`).test(nn)))) {
+    nom = prenomE; petit = true;
+    if (!/\bma voix\b/.test(nn)) await say(`D'accord ! ${prenomE}, approche-toi de moi : je vais apprendre ta voix. Réponds à mes questions avec ta voix normale.`);
+  }
+  if (!nom) nom = (String(text).match(/\b(?:je suis|je m['’]appelle|c['’]est|moi c['’]est)\s+([A-Za-zÀ-ÿ-]{2,20})/i) || [])[1] || '';
+  if (nom && prenomE && proche(nom, prenomE)) { nom = prenomE; petit = true; }
+  if (!nom && prenomE && dlg.pitch != null && dlg.pitch >= 7.6 && (await askYesNo(`C'est toi, ${prenomE} ?`))) { nom = prenomE; petit = true; } // une voix aiguë : sûrement lui
   for (let i = 0; i < 2 && !nom; i++) {
     const a = await ask('Comment tu t\'appelles ?');
     const m = String(a).replace(/^(je m['’]appelle|je suis|c['’]est|moi c['’]est|moi)\s+/i, '').trim().split(/\s+/)[0] || '';
+    if (prenomE && proche(m, prenomE)) { nom = prenomE; petit = true; break; } // son prénom, même mal entendu
     if (m.length >= 2 && (await askYesNo(`${m.charAt(0).toUpperCase()}${m.slice(1)}, c'est bien ça ?`))) nom = m;
   }
   if (!nom) return say("Je n'ai pas compris le prénom. On réessaiera.");
   nom = nom.replace(/[.,!?;:«»"]+/g, '').trim();
   nom = nom.charAt(0).toUpperCase() + nom.slice(1);
-  const phrases = [`Très bien, ${nom}. Parle-moi un peu de ta journée, en quelques phrases.`, "Maintenant, dis-moi ce que tu as prévu demain.", 'Et pour finir, compte lentement jusqu\'à quinze.'];
+  const phrases = petit ? [`Super, ${nom} ! Raconte-moi ce que tu as fait aujourd'hui.`, 'Maintenant, dis-moi quel est ton dessin animé préféré, et pourquoi.', 'Et pour finir, compte jusqu\'à dix, bien fort !']
+    : [`Très bien, ${nom}. Parle-moi un peu de ta journée, en quelques phrases.`, "Maintenant, dis-moi ce que tu as prévu demain.", 'Et pour finir, compte lentement jusqu\'à quinze.'];
   const prints = [], sons = [];
   for (const q of phrases) {
     let l = q;
@@ -957,13 +970,13 @@ async function apprendreVoix(text) {
   VOIX.enroll(nom, prints);
   // et l'ordinateur de la maison l'apprend aussi, avec son vrai modèle de voix (qui est papa, qui est l'enfant)
   if (typeof VOIXPC !== 'undefined' && sons.length && VOIXMAISON.root()) {
-    const role = estEnfant(nom) ? 'enfant' : S.nom && N(nom) === N(S.nom) ? 'papa' : (await askYesNo("Dernière question : c'est toi, le papa de la maison ?")) ? 'papa' : 'autre';
+    const role = petit || estEnfant(nom) ? 'enfant' : S.nom && N(nom) === N(S.nom) ? 'papa' : (await askYesNo("Dernière question : c'est toi, le papa de la maison ?")) ? 'papa' : 'autre';
     let ok = 0; for (const w of sons) { const r = await VOIXPC.apprends(nom, role, w); if (r && r.ok) ok++; }
     dlg.enfant = role === 'enfant'; dlg.quiAt = Date.now();
     if (!ok) console.warn('voix : l\'ordinateur de la maison n\'a pas appris la voix');
   }
   dlg.qui = nom; fx.ok();
-  return say(`C'est fait, ${nom}. Je reconnaîtrai ta voix, même au milieu d'une conversation.`);
+  return say(petit ? `Bravo ${nom} ! Maintenant, je reconnais ta voix. Quand tu me parles, je sais que c'est toi !` : `C'est fait, ${nom}. Je reconnaîtrai ta voix, même au milieu d'une conversation.`);
 }
 
 /* ---------- « présente-toi » : pour les invités ---------- */
@@ -999,7 +1012,9 @@ async function vie() {
     if (!r) { if (talk && ++dlg.silence >= 2) { dlg.state = 'standby'; face.set('idle'); } continue; }
     const n = N(r);
     { // qui vient de parler (à la voix) : le modèle de l'ordinateur d'abord, sinon l'empreinte calculée sur l'appareil
-      const print = OREILLES.takePrint(), pc = typeof VOIXPC !== 'undefined' ? await VOIXPC.resultat() : null;
+      const print = OREILLES.takePrint(); let pc = typeof VOIXPC !== 'undefined' ? await VOIXPC.resultat() : null;
+      dlg.pitch = print && print.pitch != null ? print.pitch : null;
+      if (pc && pc.nom && pc.role === 'papa' && dlg.pitch != null && dlg.pitch >= 7.6) pc = null; // une voix aiguë (plus de 195 Hz) n'est pas celle de papa : le modèle s'est trompé
       dlg.qui = pc && pc.nom ? pc.nom : CONV.nomPour(print);
       dlg.enfant = pc && pc.nom ? pc.role === 'enfant' : estEnfant(dlg.qui);
       dlg.quiAt = Date.now(); dlg.quiPC = !!(pc && pc.nom);
