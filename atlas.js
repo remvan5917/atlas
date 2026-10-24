@@ -1003,6 +1003,8 @@ async function vie() {
       dlg.qui = pc && pc.nom ? pc.nom : CONV.nomPour(print);
       dlg.enfant = pc && pc.nom ? pc.role === 'enfant' : estEnfant(dlg.qui);
       dlg.quiAt = Date.now(); dlg.quiPC = !!(pc && pc.nom);
+      // le jumeau 3D : le petit est ici (sa voix, entendue par cet Atlas) — au plus une fois par minute
+      if (dlg.enfant && Date.now() - (dlg.enfantSignale || 0) > 60000) { dlg.enfantSignale = Date.now(); const r0 = VOIXMAISON.root(); if (r0 && !window.__BANC) fetch(`${r0}/atlas/enfant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '', piece: S.settings.piece || '' }) }).catch(() => {}); }
     }
     const appele = R.reveil.test(n) || /^(la classe|l atlas|la tlas|la place)\s+/.test(n) && ADRESSE.test(n.replace(/^(la classe|l atlas|la tlas|la place)\s+/, ''));
     if (appele) fx.tone([[1175, 0.05]]); // un petit bip : il a entendu son nom

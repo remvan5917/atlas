@@ -522,20 +522,33 @@ const JUMEAU = (() => {
     const fus = appareils.find(a => a.type !== 'lampe' && /fusee/.test(N(a.nom))), mus = appareils.find(a => a.type !== 'lampe' && /musique/.test(N(a.nom)));
     const tele = appareils.find(a => a.type !== 'lampe' && /tele|tv/.test(N(a.nom))), sa = ps.find(p => p.a && /salon|sejour/.test(N(p.a.nom)));
     const centre = p => [(p.x0 + p.x1) / 2, p.y0, (p.z0 + p.z1) / 2];
-    // ---- son fils : seulement s'il est chez papa, et seulement avec un indice
+    // ---- son fils : dès qu'il est chez papa (son téléphone, Shadow, est sur le Wi-Fi de la maison), on le montre,
+    // à l'endroit le plus probable : le lit (sa veilleuse le soir), là où un Atlas a entendu sa voix, sa chambre allumée,
+    // avec Shadow quand Shadow parle ; sans aucun indice : dans son lit la nuit, et « ? » dans sa chambre le jour
     let enfant = null;
     if (enfantMaison && chEnfant) {
+      const sig = T == null && ou && ou.enfant ? ou.enfant : {};
       let vuShadow = false;
       if (T == null) { try { const sh = Object.entries(diag || {}).find(([k]) => /^shadow/.test(k)); vuShadow = !!(sh && recent(sh[1]) && sh[1].enfantVu); } catch (e) { /* rien */ } }
-      else vuShadow = !!donnees && donnees.shadow.some(e => Math.abs(e.t - T) < 10 * 60);
-      const veilleuse = marche(fus) || marche(mus), allumee = (chEnfant.v || 0) > 0.05;
+      const joue = T == null ? (sig.shadow_il_y_a != null && sig.shadow_il_y_a < 600) : !!donnees && donnees.shadow.some(e => Math.abs(e.t - T) < 15 * 60);
+      const voix = sig.voix && sig.voix.il_y_a < 600 ? sig.voix : null;
+      const veilleuse = marche(fus) || marche(mus), allumee = (chEnfant.v || 0) > 0.05, nuit = h >= 21 || h < 8;
       if (veilleuse && (soir || (T == null && coucher)) && !allumee) enfant = { dort: true };
+      else if (voix) {
+        const n = N(voix.piece || ''), p = n ? ps.find(x => x.a && x.genre === 'piece' && N(x.a.nom).includes(n)) : null;
+        enfant = { nom: prenom, pos: voix.role === 'tablette' && !p ? [0.5, 0, 0.9] : voix.role === 'ordinateur' && !p ? [3.1, 0, 0.6] : p ? [(p.x0 + p.x1) / 2 + 0.7, p.y0, (p.z0 + p.z1) / 2 - 0.5] : null };
+      }
       else if (vuShadow) enfant = { nom: `${prenom} · AVEC SHADOW` };
-      else if (allumee || veilleuse) enfant = { nom: prenom };
+      else if (allumee) enfant = { nom: prenom };
+      else if (joue) enfant = { nom: `${prenom} · AVEC SHADOW` };
+      else if (veilleuse) enfant = { nom: prenom };
+      else if (nuit) enfant = { dort: true };
+      else enfant = { nom: `${prenom} ?`, a: 0.6 };
     }
-    if (chEnfant && !(enfant && enfant.dort) && monteOk) lit(chEnfant, false);
+    if (chEnfant && !(enfant && enfant.dort) && monteOk) lit(chEnfant, false); // son lit, discret quand il n'y dort pas
     if (enfant && enfant.dort) dort(chEnfant, prenom, t);
-    else if (enfant) { const [x, y, z] = flane(chEnfant, 4.1, t); personne(x, y, z, VI, 1.3, enfant.nom, t, 4); }
+    else if (enfant && enfant.pos) personne(enfant.pos[0], enfant.pos[1], enfant.pos[2], VI, 1.3, enfant.nom, t, 4);
+    else if (enfant) { const [x, y, z] = flane(chEnfant, 4.1, t); personne(x, y, z, VI, 1.3, enfant.nom, t, 4, enfant.a || 1); }
     // ---- papa : le lieu le plus probable
     if (T == null && ou && ou.pourquoi === 'dehors') return; // il est sorti (son téléphone n'est plus à la maison)
     const lieux = []; // [score, x, y, z, comment le dessiner]
