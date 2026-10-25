@@ -115,7 +115,7 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
         if (r.google) await say(`C'est dans ton Google Agenda : ${r.n} rendez-vous. Je te préviendrai avant chacun, et la veille au soir.`);
         else if (r.google === false) await say(`J'ai noté les ${r.n} rendez-vous chez moi, et je te préviendrai avant chacun ; mais Google Agenda n'a pas répondu. Je réessaierai.`);
         else await say(`C'est noté : ${r.n} rendez-vous, et je te préviendrai avant chacun, et la veille au soir. Pour qu'ils arrivent aussi dans ton Google Agenda sur ton téléphone, il faut relier l'écriture une seule fois, sur l'ordinateur.`);
-        if (titre === 'TON PLANNING') return apres();
+        if (titre === 'TON PLANNING' && !rituel) return apres();
         return;
       }
       if (!a) { if (++silences < 2) continue; hideBoard(); return say("Je n'ai pas eu de réponse : je ne note rien pour l'instant. Redis « on fait mon planning » quand tu veux."); }
@@ -140,7 +140,9 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     if (!a.changes.length) return say('Tes menus collent déjà à ton planning : je ne change rien.');
     return say(`J'ai adapté les menus : ${a.changes.join(' ; ')}.${a.ajoutes && a.ajoutes.length ? ` J'ai ajouté ${a.ajoutes.length} article${a.ajoutes.length > 1 ? 's' : ''} aux courses.` : ''}${S.settings.imprimeMenus !== false ? ' Le nouveau menu part aussi à l’impression.' : ''}`);
   }
-  async function planifie() {
+  let rituel = false;
+  async function planifie(o = {}) {
+    rituel = !!o.rituel;
     if (!AI.ready()) return say("Pour ranger ton planning, il me faut mon cerveau en ligne.");
     planningOffre = null; dlg.attendReponse = 0;
     const jours = semaineCible(), d0 = jours[0], d1 = jours[jours.length - 1];
@@ -190,12 +192,12 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
     if (d.getDay() !== 0 || h < 17.5 || h > 21.5 || !dlg.started || S.settings.planningAuto === false || S.planningSemaine === cleSemaine()) return;
     if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
-    PROACTIF.annonce(`planning-${cleSemaine()}`, () => { planningOffre = { at: Date.now() }; dlg.attendReponse = Date.now() + 150000; return "C'est dimanche soir : on fait ton planning de la semaine ? Tu me dictes le pro et le perso, je range tout dans ton agenda."; }, { expire: Date.now() + 3 * 3600000 });
+    PROACTIF.annonce(`planning-${cleSemaine()}`, () => { planningOffre = { at: Date.now() }; dlg.attendReponse = Date.now() + 150000; return typeof SECRETAIRE !== 'undefined' ? "C'est dimanche soir : on prépare ta semaine ? Ton planning, les repas, les courses, la maison, et je t'imprime ta Gazette." : "C'est dimanche soir : on fait ton planning de la semaine ? Tu me dictes le pro et le perso, je range tout dans ton agenda."; }, { expire: Date.now() + 3 * 3600000 });
   }, 10 * 60000);
   // avant tout le reste (sinon « planifie ma semaine » partirait vers les menus)
   function routePlanning(t, n) {
     if (planningOffre && Date.now() - planningOffre.at < 150000) {
-      if (/^(oui|ouais|ok|d accord|vas y|bien sur|carrement|go|on y va|c est parti)\b/.test(n)) return planifie;
+      if (/^(oui|ouais|ok|d accord|vas y|bien sur|carrement|go|on y va|c est parti)\b/.test(n)) return typeof SECRETAIRE !== 'undefined' ? () => { planningOffre = null; dlg.attendReponse = 0; return SECRETAIRE.semaine(); } : planifie;
       if (/^(non|pas ce soir|pas maintenant|plus tard|laisse)\b/.test(n)) return () => { planningOffre = null; dlg.attendReponse = 0; S.planningSemaine = cleSemaine(); save(); return say("D'accord. Dis « on fait mon planning » quand tu veux."); };
     }
     if (/\b(ne me propose plus|arrete de me proposer)\b.*\bplanning\b/.test(n)) return () => { S.settings.planningAuto = false; save(); return say("D'accord, je ne te propose plus le planning le dimanche. Dis « on fait mon planning » quand tu veux."); };

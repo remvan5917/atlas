@@ -281,7 +281,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     const courses = RAYONS.filter(r => groupes[r]).map(r => ({ rayon: r, items: groupes[r] }));
     try { const r = await fetch(`${root()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jours: j, courses, batch: batch || [], magasin: o.magasin || '' }) }); return r.ok; } catch (e) { return false; }
   }
-  const imprimeAuto = () => S.settings.imprimeMenus !== false;
+  const imprimeAuto = () => S.settings.imprimeMenus !== false && !window.__RITUEL; // pendant « on prépare la semaine » : tout part dans la Gazette
   const prepareImages = j => { try { if (typeof CUISINEUI !== 'undefined' && CUISINEUI.prepare) CUISINEUI.prepare(j.flatMap(x => [x.plat, x.matin, x.midi, x.collation])); } catch (e) { /* rien */ } };
   function tableauMenus(j, co) {
     const l_ = (ic, t, x) => x ? `<div style="display:flex;gap:8px;font-size:15px;line-height:1.35;padding:2px 0"><span style="flex:0 0 74px;color:#94a3b8;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding-top:2px">${ic}</span><span>${t}</span></div>` : '';
@@ -500,5 +500,5 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     if (items.length) { await appel({ action: 'ajoute', items }); cacheAt = 0; }
     return items.length;
   }
-  return { route, apresRecette, ajouteStock, semaine, adapte, menus, _charge: charge, _contexte: contexte };
+  return { route, apresRecette, ajouteStock, semaine, adapte, menus, rayonDe, _charge: charge, _contexte: contexte };
 })();

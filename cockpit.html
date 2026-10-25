@@ -368,7 +368,7 @@ const SCENES_TRAVAIL = [['courbe', 'Mode trading', 'mode trading'], ['stop', 'Fi
 /* ---------- le panneau de commandes : un bouton pour chaque chose qu'Atlas sait faire, rangé par thème ----------
    Chaque bouton passe par Atlas, comme si on le lui disait (la phrase est écrite dessous : elle apprend aussi la voix).
    « … » : il demande d'abord un mot (le message, la durée, la ville). Les derniers boutons touchés reviennent en tête. */
-const GROUPES = [['maison', 'ampoule', 'Maison'], ['surete', 'bouclier', 'Sécurité'], ['famille', 'famille', 'Mon fils et Shadow'], ['vivant', 'coeur', "Cochons d'Inde et potager"], ['cuisine', 'ampoule', 'Cuisine'], ['orga', 'calendrier', 'Organisation'],
+const GROUPES = [['maison', 'ampoule', 'Maison'], ['surete', 'bouclier', 'Sécurité'], ['famille', 'famille', 'Mon fils et Shadow'], ['vivant', 'coeur', "Cochons d'Inde et potager"], ['cuisine', 'ampoule', 'Cuisine'], ['secretaire', 'note', 'Le secrétaire'], ['orga', 'calendrier', 'Organisation'],
   ['infos', 'nuage', 'Infos et marchés'], ['son', 'musique', 'Musique et son'], ['trading', 'courbe', 'Trading'], ['bord', 'cube', 'Ordinateur de bord']];
 const jumeauIci = () => { if (typeof JUMEAU === 'undefined' || !$('#plan')) return false; const z = document.querySelector('.z-plan'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (!JUMEAU.actif()) JUMEAU.bascule(true); return true; };
 const COMMANDES = [
@@ -410,7 +410,22 @@ const COMMANDES = [
   ['famille', 'manette', 'Jeu télévisé', 'lance le jeu télévisé'],
   ['famille', 'coeur', 'Ma famille', 'ma famille'],
   ['cuisine', 'bowl', "Ouvrir l'appli Cuisine", 'ouvre la cuisine'],
-  ['cuisine', 'trophee', 'Préparer toute ma semaine', 'prépare ma semaine'],
+  ['cuisine', 'trophee', 'Menus, courses et drive', 'prépare les menus et les courses de la semaine'],
+  ['secretaire', 'trophee', 'On prépare la semaine (+ Gazette)', 'on prépare la semaine'],
+  ['secretaire', 'note', 'Ranger un papier (photo)', 'range ce papier'],
+  ['secretaire', 'note', 'Ce que je dois payer', "qu'est-ce que je dois payer ce mois-ci ?"],
+  ['secretaire', 'note', 'Retrouver un papier…', 'où est mon', { saisie: 'Quel papier ?', ex: 'attestation d’assurance' }],
+  ['secretaire', 'courbe', 'Mon budget', 'mon budget'],
+  ['secretaire', 'courbe', 'Mes abonnements', 'mes abonnements'],
+  ['secretaire', 'courbe', 'Mes dépenses du mois', "combien j'ai dépensé ce mois-ci ?"],
+  ['secretaire', 'courbe', "Mon chiffre d'affaires", "mon chiffre d'affaires du mois"],
+  ['secretaire', 'note', 'Déclaration URSSAF faite', "c'est déclaré"],
+  ['secretaire', 'ampoule', "Carnet d'entretien", "mon carnet d'entretien"],
+  ['secretaire', 'ampoule', 'Remplir le carnet', "on remplit le carnet d'entretien"],
+  ['secretaire', 'famille', 'Une sortie ce week-end', 'des idées de sortie pour le week-end avec mon fils'],
+  ['secretaire', 'calendrier', 'Mon planning de la semaine', 'on fait mon planning'],
+  ['secretaire', 'calendrier', 'Imprimer mon planning', 'imprime mon planning'],
+  ['secretaire', 'courbe', 'Relire mon fichier budget', 'mets à jour mon budget'],
   ['cuisine', 'note', 'Une recette…', 'une recette de', { saisie: 'Laquelle ?', ex: 'saumon et patates douces pour 2' }],
   ['cuisine', 'ampoule', 'Nouvelles recettes', 'renouvelle les recettes'],
   ['cuisine', 'calendrier', "J'ai commandé le drive…", "j'ai commandé le drive pour", { saisie: 'Le retrait : quel jour, quelle heure ?', ex: 'samedi 10 heures' }],

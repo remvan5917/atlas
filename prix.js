@@ -79,6 +79,7 @@ const PRIX = (() => {
     const o = ticketOffre; ticketOffre = null; dlg.attendReponse = 0;
     try { await appel({ action: 'ajoute', magasin: o.mg, at: o.quand, lignes: o.lignes, source: 'ticket' }); } catch (e) { return injoignable(); }
     cacheAt = 0;
+    try { if (typeof SECRETAIRE !== 'undefined') SECRETAIRE.ajouteDepense({ date: new Date(o.quand * 1000).toISOString().slice(0, 10), montant: Math.round(o.lignes.reduce((s_, x) => s_ + +x.prix, 0) * 100) / 100, libelle: `Courses ${MAG[o.mg]}`, categorie: 'alimentation', source: 'ticket' }, false); } catch (e) { /* tant pis */ }
     if (garde && typeof CUISINE !== 'undefined' && CUISINE.ajouteStock) { try { await CUISINE.ajouteStock(o.lignes.map(x => x.article || x.libelle)); } catch (e) { /* tant pis */ } }
     fx.ok(); return say(`C'est retenu : ${o.lignes.length} prix chez ${MAG[o.mg]}${garde ? ', et les produits sont au garde-manger' : ''}. Plus tu me montres de tickets, plus je trouve les meilleurs prix.`);
   }

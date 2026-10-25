@@ -59,11 +59,31 @@ const FOYER = (() => {
       const [m, j] = p.anniv.split('-').map(Number);
       let d = new Date(auj.getFullYear(), m - 1, j, 12); if (d < auj) d = new Date(auj.getFullYear() + 1, m - 1, j, 12);
       const k = Math.round((d - auj) / 86400000);
-      if (![0, 1, 7].includes(k)) continue;
+      if (![0, 1, 10].includes(k)) continue;
       const qui = `${p.nom}${p.lien ? `, ${tonTa(p.lien)} ${p.lien}` : ''}`;
-      const t = k === 0 ? `Aujourd'hui, c'est l'anniversaire de ${qui}. Pense à lui souhaiter.` : k === 1 ? `Demain, c'est l'anniversaire de ${qui}.` : `Dans une semaine, c'est l'anniversaire de ${qui}. Il est encore temps de trouver un cadeau.`;
+      const t = k === 0 ? () => messageAnniv(p, qui) : k === 1 ? `Demain, c'est l'anniversaire de ${qui}.${(p.idees || []).length ? ` Tes idées de cadeau : ${p.idees.slice(-3).join(', ')}.` : ''}` : () => cadeaux(p, qui, true);
       PROACTIF.annonce(`anniv-${p.id}-${auj.getFullYear()}-${k}`, t, { expire: Date.now() + 14 * 3600000 });
     }
+  }
+  // dix jours avant : ses idées notées au fil de l'année, et trois suggestions (le cerveau), à l'écran
+  async function cadeaux(p, qui, annonce) {
+    const idees = (p.idees || []).slice(-6);
+    let sug = [];
+    if (AI.ready()) { try { const raw = String(await AI.chat([{ role: 'system', content: "Propose 3 idées de cadeau précises et réalistes (de 15 à 60 €), d'après ce qu'on sait de la personne. Pas de banalités. JSON UNIQUEMENT : {\"idees\": [\"…\", \"…\", \"…\"]}" }, { role: 'user', content: `${p.nom}${p.lien ? `, ${art(p.lien)} ${p.lien}` : ''}. Ce qu'il a noté : ${idees.join(' ; ') || 'rien'}.` }], { maxTokens: 200, temperature: 0.7, json: true })); sug = (JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)).idees || []).slice(0, 3); } catch (e) { sug = []; } }
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(90vw,520px)"><small style="letter-spacing:.3em;color:#f9a8d4">L'ANNIVERSAIRE DE ${esc(p.nom.toUpperCase())} · LE ${esc(dateDit(p.anniv).toUpperCase())}</small>${idees.length ? `<div style="margin-top:10px;color:#fbcfe8;font-size:13px;letter-spacing:.2em">TES IDÉES</div>${idees.map(x => `<div style="font-size:17px;padding:3px 0">• ${esc(x)}</div>`).join('')}` : ''}${sug.length ? `<div style="margin-top:10px;color:#fbcfe8;font-size:13px;letter-spacing:.2em">MES SUGGESTIONS</div>${sug.map(x => `<div style="font-size:17px;padding:3px 0">• ${esc(x)}</div>`).join('')}` : ''}</div>`);
+    const debut = annonce ? `Dans dix jours, c'est l'anniversaire de ${qui}. ` : '';
+    return `${debut}${idees.length ? `Tu m'avais dit : ${idees.slice(-3).join(', ')}. ` : ''}${sug.length ? `Mes idées : ${sug.join(' ; ')}.` : "Je n'ai pas encore d'idée : dis-moi ce qu'il ou elle aime."}`;
+  }
+  // le jour J : un message proposé, à l'écran (à copier pour l'envoyer)
+  async function messageAnniv(p, qui) {
+    let msg = `Joyeux anniversaire ${p.nom} ! Plein de bonnes choses pour cette nouvelle année.`;
+    if (AI.ready()) { try { msg = String(await AI.chat([{ role: 'system', content: "Écris un message d'anniversaire court (2 phrases), chaleureux et naturel, en français, en tutoyant, de la part d'un père de famille. Sans émoji. Rien d'autre que le message." }, { role: 'user', content: `Pour ${p.nom}${p.lien ? `, ${art(p.lien)} ${p.lien}` : ''}. Ce qu'il sait : ${(p.idees || []).slice(-3).join(' ; ') || 'rien de particulier'}.` }], { maxTokens: 120, temperature: 0.8 })).replace(/^["«\s]+|["»\s]+$/g, '').trim() || msg; } catch (e) { /* le message simple */ } }
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(90vw,520px)"><small style="letter-spacing:.3em;color:#f9a8d4">AUJOURD'HUI · L'ANNIVERSAIRE DE ${esc(p.nom.toUpperCase())}</small><p id="fy-msg" style="font-size:20px;line-height:1.45;margin-top:10px">${esc(msg)}</p><button id="fy-copie" style="padding:12px 18px;border-radius:12px;border:0;background:#db2777;color:#fff;font:700 16px system-ui;cursor:pointer">Copier le message</button></div>`);
+    setTimeout(() => { const b = document.getElementById('fy-copie'); if (b) b.addEventListener('click', () => { try { navigator.clipboard.writeText(msg); b.textContent = 'Copié ✓'; } catch (e) { /* rien */ } }); }, 50);
+    return `Aujourd'hui, c'est l'anniversaire de ${qui}. Je te propose un message : ${msg} Il est à l'écran, tu peux le copier pour l'envoyer.`;
+  }
+  function retiensIdee(p, idee) {
+    p.idees = (p.idees || []).filter(x => N(x) !== N(idee)).concat([idee]).slice(-12); p.at = Date.now(); save();
   }
   let suiviFait = '';
   async function suivi() {
@@ -108,6 +128,18 @@ const FOYER = (() => {
   function route(t, n) {
     const raw = propre(t);
     let m;
+    // « idée cadeau pour Léa : un livre de cuisine », « pour l'anniversaire de Léa, offrir un livre »
+    if ((m = raw.match(new RegExp(`^(?:une )?id[ée]e (?:de )?cadeau (?:pour|à)\\s+(${NOM})\\s*[:,]?\\s+(.{3,80})$`, 'i')) || raw.match(new RegExp(`^pour l['’]anniversaire (?:de|d['’])\\s*(${NOM})\\s*,?\\s*(?:lui )?(?:offrir|offre|acheter)\\s+(.{3,80})$`, 'i')))) {
+      const p = trouve(m[1]); if (p) { const idee = m[2].trim(); return () => { retiensIdee(p, idee); fx.ok(); return say(`Noté pour ${p.nom} : ${idee}.${p.anniv ? ' Je te le rappellerai dix jours avant son anniversaire.' : ' Dis-moi la date de son anniversaire, je te le rappellerai.'}`); }; }
+    }
+    // « Léa adore la poterie », « Paul aime le jazz », « Marie rêve d'aller au Japon » (pour quelqu'un de ses proches)
+    if ((m = raw.match(new RegExp(`^(${NOM})\\s+(adore|aime|kiffe|r[êe]ve d['’e]|voudrait|a envie d['’e]|collectionne|est fan d['’e]|joue)\\s+(.{3,70})$`)))) {
+      const p = trouve(m[1]); if (p && !/^(Il|Elle|Ce|Atlas|Shadow)$/.test(m[1])) { const idee = `${p.nom} ${m[2]} ${m[3]}`.replace(/\s+/g, ' ').trim(); return () => { retiensIdee(p, idee); fx.ok(); return say(`C'est retenu : ${idee}. Ça m'aidera pour ses cadeaux.`); }; }
+    }
+    // « des idées de cadeau pour Léa ? »
+    if ((m = raw.match(new RegExp(`id[ée]es? (?:de )?cadeaux? (?:pour|à)\\s+(${NOM})`, 'i')))) {
+      const p = trouve(m[1]); if (p) return async () => say(await cadeaux(p, p.nom, false));
+    }
     // « Marie est ma sœur », « Paul, c'est mon meilleur ami »
     if ((m = raw.match(new RegExp(`^(${NOM})\\s*,?\\s*(?:est|c['’]est)\\s+(?:mon|ma|notre)\\s+(${LIENS})\\b`))) && !/^(Il|Elle|Ce|Ça|Ca|On|Tout|Rien|Lui|Atlas|Shadow)\b/.test(m[1])) {
       const [, nom, lien] = m; return () => { const p = retiensProche(nom, lien); fx.ok(); return say(`C'est noté : ${p.nom}, ${tonTa(p.lien)} ${p.lien}.${p.anniv ? '' : ' Tu peux me dire la date de son anniversaire, je te la rappellerai.'}`); };
@@ -162,5 +194,5 @@ const FOYER = (() => {
     }
     return null;
   }
-  return { route, contexte, _annivs: annivs, _suivi: suivi };
+  return { route, contexte, _annivs: annivs, _suivi: suivi, _cadeaux: cadeaux };
 })();
