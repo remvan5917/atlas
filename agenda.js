@@ -150,13 +150,10 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
   }
   async function apres() {
     const imp = S.settings.imprimePlanning !== false && await imprimePlanning();
-    if (typeof CUISINE === 'undefined' || !CUISINE.adapte) return imp ? say("Et je l'imprime sur l'imprimante du bureau.") : null;
-    await say(`${imp ? "Je l'imprime sur l'imprimante du bureau. " : ''}Et je regarde si tes menus collent à ta semaine.`);
-    const a = await CUISINE.adapte();
-    if (!a) return say("Je n'ai pas pu vérifier les menus pour le moment.");
-    if (a.rien) { if (await askYesNo("Tu n'as pas encore de menus pour cette semaine. Je les prépare, adaptés à ton planning ?")) return CUISINE.menus(); return say("D'accord. Dis « fais les menus de la semaine » quand tu veux."); }
-    if (!a.changes.length) return say('Tes menus collent déjà à ton planning : je ne change rien.');
-    return say(`J'ai adapté les menus : ${a.changes.join(' ; ')}.${a.ajoutes && a.ajoutes.length ? ` J'ai ajouté ${a.ajoutes.length} article${a.ajoutes.length > 1 ? 's' : ''} aux courses.` : ''}${S.settings.imprimeMenus !== false ? ' Le nouveau menu part aussi à l’impression.' : ''}`);
+    if (imp) await say("Je l'imprime sur l'imprimante du bureau.");
+    if (typeof CUISINE === 'undefined' || !CUISINE.semaineValidee) return;
+    await say('Maintenant, les repas de la semaine.');
+    return CUISINE.semaineValidee({ debut: dJ(semaineCible()[0]), imprime: true });
   }
   let rituel = false;
   async function planifie(o = {}) {

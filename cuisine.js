@@ -215,7 +215,7 @@ const CUISINE = (() => {
     return dates.map(d => { const ev = evs.filter(e => e.journee ? e.debut <= d.getTime() / 1000 + 43200 && e.fin > d.getTime() / 1000 + 43200 : dateJ(new Date(e.debut * 1000)) === dateJ(d)); return `${JOURS_SEM[d.getDay()]} ${d.getDate()} : ${ev.map(e => `${e.journee ? 'toute la journée' : `${hh(e.debut)}-${hh(e.fin)}`} ${net(e.titre)}${SPORT.test(N(e.titre)) ? ' [sport]' : ''}`).join(', ') || 'rien de prévu (repos)'}${fils(d) === true ? ' [avec son fils]' : fils(d) === false ? ' [seul]' : ''}`; });
   }
   // le planning a changé (le dimanche, à la voix) : les menus déjà faits s'adaptent aux jours chargés, sans tout refaire
-  async function adapte() {
+  async function adapte(o = {}) {
     if (!AI.ready()) return null;
     let c; try { c = await charge(true); } catch (e) { return null; }
     const j = (c.menus || []).filter(x => x.date >= auj());
@@ -240,7 +240,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"date": "AAAA-MM-JJ", "matin": "…", 
     cacheAt = 0; prepareImages(nj);
     const co = ((r.courses || []).filter(x => x && x.article).slice(0, 20).map(x => `${x.article}${x.quantite ? ` (${x.quantite})` : ''}`));
     const ajoutes = co.length ? ajouteCourses(co) : [];
-    if (imprimeAuto()) imprimeMenu(nj, (S.listes || []).filter(x => x.liste === 'courses'), c.batch).catch(() => {});
+    if (imprimeAuto() && !o.sansImpression) imprimeMenu(nj, (S.listes || []).filter(x => x.liste === 'courses'), c.batch).catch(() => {});
     return { changes, ajoutes, j: nj };
   }
 
@@ -397,12 +397,13 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
   }
   // le dimanche soir : quel genre de menus (équilibrés, ou avec ce qu'il a), montrés à l'écran, lus, « c'est bon » ; une correction (« change mardi soir ») ;
   // puis la liste de courses, toujours, rangée par rayon (sans ce qu'il a déjà)
-  async function choixMode() {
-    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,620px)"><small style="letter-spacing:.3em;color:#fcd34d">LES REPAS DE LA SEMAINE · DEUX CHOIX</small><div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">${[['equilibre', '⚖️', 'Équilibrés', 'Je compose la semaine la plus équilibrée et variée'], ['stock', '🧺', 'Avec ce que j’ai', 'Je pars de ton frigo, du congélateur et des placards']].map(([k, ic, t, d]) => `<button type="button" data-mode="${k}" style="flex:1 1 240px;min-width:0;box-sizing:border-box;text-align:left;padding:18px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(255,255,255,.06);color:#e2e8f0;cursor:pointer"><div style="font-size:30px">${ic}</div><b style="font-size:20px">${t}</b><div style="font-size:14px;color:#94a3b8;margin-top:4px">${d}</div></button>`).join('')}</div></div>`);
+  async function choixMode(deja) {
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,620px)"><small style="letter-spacing:.3em;color:#fcd34d">LES REPAS DE LA SEMAINE · ${deja ? 'TROIS' : 'DEUX'} CHOIX</small><div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">${[['equilibre', '⚖️', 'Équilibrés', 'Je compose la semaine la plus équilibrée et variée'], ['stock', '🧺', 'Avec ce que j’ai', 'Je pars de ton frigo, du congélateur et des placards']].concat(deja ? [['garder', '📋', 'Garder mes menus', 'Ceux de la semaine, adaptés à ton planning']] : []).map(([k, ic, t, d]) => `<button type="button" data-mode="${k}" style="flex:1 1 240px;min-width:0;box-sizing:border-box;text-align:left;padding:18px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(255,255,255,.06);color:#e2e8f0;cursor:pointer"><div style="font-size:30px">${ic}</div><b style="font-size:20px">${t}</b><div style="font-size:14px;color:#94a3b8;margin-top:4px">${d}</div></button>`).join('')}</div></div>`);
     let res = null; const clic = new Promise(r => { res = r; });
     setTimeout(() => document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => { try { voice.reprise = null; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); } catch (e) { /* rien */ } res(b.dataset.mode); }; }), 60);
-    const a = await Promise.race([clic, ask("Pour les repas, deux choix : des menus équilibrés que je compose, ou des menus avec ce que tu as déjà. Lequel ?", { wait: 20000 })]);
-    if (a === 'stock' || a === 'equilibre') return a;
+    const a = await Promise.race([clic, ask(deja ? "Pour les repas, trois choix : des menus équilibrés que je compose, des menus avec ce que tu as déjà, ou tu gardes tes menus de la semaine. Lequel ?" : "Pour les repas, deux choix : des menus équilibrés que je compose, ou des menus avec ce que tu as déjà. Lequel ?", { wait: 20000 })]);
+    if (a === 'stock' || a === 'equilibre' || a === 'garder') return a;
+    if (deja && /\b(garde|garder|gardes|les memes|ceux la|mes menus|troisieme|on garde)\b/.test(N(a))) return 'garder';
     return /\b(ce que j ai|ce qu on a|ce que tu as|frigo|placards?|stock|deja|restes?|avec ce|deuxieme|second)\b/.test(N(a)) ? 'stock' : 'equilibre';
   }
   async function dispoDit(mode) {
@@ -441,7 +442,13 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     const d0 = o.debut ? new Date(`${o.debut}T12:00:00`) : new Date(), du = dateJ(d0), au = (() => { const d = new Date(d0); d.setDate(d.getDate() + 6); return dateJ(d); })();
     let c = null; try { c = await charge(true); } catch (e) { c = null; }
     let j = ((c && c.menus) || []).filter(x => x.date >= du && x.date <= au), co = [], mode = '', dispo = '', silences = 0, change = false;
-    if (j.length < 5) { j = null; mode = await choixMode(); dispo = await dispoDit(mode); }
+    mode = await choixMode(j.length >= 5);
+    if (mode === 'garder') {
+      const a = await adapte({ sansImpression: true });
+      if (a && a.j) j = a.j.filter(x => x.date >= du && x.date <= au);
+      if (a && a.changes && a.changes.length) await say(`J'ai adapté tes menus à ton planning : ${a.changes.slice(0, 3).join(' ; ')}.`);
+      mode = '';
+    } else { j = null; dispo = await dispoDit(mode); }
     for (let tour = 0; tour < 7; tour++) {
       if (!j) { const r = await menus(true, Object.assign({}, o, { mode, dispo, brouillon: true })); if (!r) return null; j = r.j; co = r.co; change = false; }
       tableauMenus(j, [], true);
@@ -468,7 +475,8 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     try { if (typeof PRIX !== 'undefined') await PRIX.planDrive(); } catch (e) { /* sans */ }
     S.semainePrete = { at: Date.now() }; save(); fx.ok();
     const nb = tableauCourses();
-    await say(`C'est validé. La liste de courses est faite : ${nb} article${nb > 1 ? 's' : ''}${ajoutes.length && ajoutes.length < nb ? `, dont ${ajoutes.length} pour ces menus` : ''}, rangés par rayon.`);
+    const imp = o.imprime && S.settings.imprimeMenus !== false && await imprimeMenu(j, (S.listes || []).filter(x => x.liste === 'courses'), []);
+    await say(`C'est validé. La liste de courses est faite : ${nb} article${nb > 1 ? 's' : ''}${ajoutes.length && ajoutes.length < nb ? `, dont ${ajoutes.length} pour ces menus` : ''}, rangés par rayon.${imp ? " J'imprime le menu et la liste sur l'imprimante du bureau." : ''}`);
     return { j, co, ajoutes };
   }
   // « j'ai commandé le drive pour samedi 10 h » : le rappel du retrait (45 minutes avant)

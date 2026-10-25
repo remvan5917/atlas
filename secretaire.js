@@ -356,8 +356,7 @@ const SECRETAIRE = (() => {
       const sem0 = AGENDA._semaine ? AGENDA._semaine() : [new Date()], du0 = dJ(sem0[0]);
       try {
         const deja = ((await CUISINE._charge(true)).menus || []).filter(x => x.date >= du0 && x.date <= dJ(sem0[sem0.length - 1]));
-        if (deja.length >= 5) { const a = await CUISINE.adapte(); if (a && a.changes && a.changes.length) await say(`J'ai adapté tes menus à ton planning : ${a.changes.slice(0, 3).join(' ; ')}.`); }
-        else await say('Maintenant, les repas, faits pour ton planning.');
+        await say('Maintenant, les repas de la semaine.');
         await CUISINE.semaineValidee({ debut: du0, avantDrive: new Date().getDay() === 0 });
         menus = ((await CUISINE._charge(true)).menus || []);
       } catch (e) { /* on continue */ }
