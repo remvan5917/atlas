@@ -92,6 +92,13 @@ const face = {
 
 /* ---------- le détail à l'écran (seulement si papa le demande) ---------- */
 function showBoard(html, cls) { const b = $('#board'); b.className = `board ${cls || ''}`; b.innerHTML = html; b.hidden = false; }
+// pendant qu'il travaille (ranger le planning, composer les menus…) : l'écran le dit, avec les secondes qui passent — on ne se demande plus ce qu'il fait
+let patienteT = 0;
+function patiente(titre, sous = '') {
+  showBoard(`<div style="text-align:center;font-family:system-ui;min-width:min(80vw,440px);padding:12px 4px"><div style="width:48px;height:48px;margin:4px auto 16px;border-radius:50%;border:4px solid rgba(253,230,138,.18);border-top-color:#fde68a;animation:patiente 1s linear infinite"></div><b style="font-size:21px;color:#fde68a">${esc(titre)}</b>${sous ? `<div style="color:#94a3b8;font-size:15px;margin-top:6px">${esc(sous)}</div>` : ''}<div id="patiente-t" style="color:#64748b;font-size:13px;margin-top:10px">&nbsp;</div></div>`);
+  const t0 = Date.now(); clearInterval(patienteT);
+  patienteT = setInterval(() => { const el = document.getElementById('patiente-t'); if (!el) return clearInterval(patienteT); el.textContent = `je travaille… ${Math.round((Date.now() - t0) / 1000)} s`; }, 1000);
+}
 function hideBoard() { if (typeof SECURITE !== 'undefined' && SECURITE._enDirect) SECURITE.finDirect(); const b = $('#board'); b.hidden = true; b.innerHTML = ''; }
 function md(t) {
   const blocs = [];

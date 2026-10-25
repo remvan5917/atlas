@@ -180,9 +180,9 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
       try { fx.tone([[988, 0.06]]); } catch (e) { /* rien */ }
     }
     if (!dicte.length) { hideBoard(); await say(rituel ? "Je n'ai rien entendu de ton planning." : "Je n'ai rien entendu. On le fera quand tu veux : dis « on fait mon planning »."); return { statut: 'rien', l: [] }; }
-    face.set('think'); await say('Je range tout.');
+    face.set('think'); patiente('Je range ton planning…', 'jour par jour, matin, midi, après-midi et soir'); await say('Je range tout.');
     let l; try { l = await analyse(dicte.join('. '), jours, ex); } catch (e) { l = null; } finally { face.set('idle'); }
-    if (!l) { await say("Je n'ai pas réussi à ranger ton planning. Redis-le-moi dans un instant."); return { statut: 'rien', l: [] }; }
+    if (!l) { hideBoard(); await say("Je n'ai pas réussi à ranger ton planning. Redis-le-moi dans un instant."); return { statut: 'rien', l: [] }; }
     return valideEtEcris(l, ex, 'TON PLANNING');
   }
   // un seul rendez-vous : « ajoute à mon agenda dentiste jeudi à 15 h »
@@ -225,7 +225,7 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     if (/\b(enleve|retire|supprime|annule|efface)\b.*\b(de|dans) (mon|l) (agenda|planning)\b/.test(n)) return () => enleve(n);
     if (/\b(imprime|imprimer)\b.*\b(planning|agenda|semaine pro|emploi du temps)\b/.test(n) && !/\bmenus?\b/.test(n)) return async () => { const ok = await imprimePlanning(); return say(ok ? "C'est parti : ton planning de la semaine s'imprime sur l'imprimante du bureau." : "Je n'arrive pas à joindre l'ordinateur pour imprimer."); };
     if (/\b(arrete|n imprime plus|ne plus imprimer)\b.*\bplanning\b/.test(n)) return () => { S.settings.imprimePlanning = false; save(); return say("D'accord, je n'imprime plus le planning tout seul. Dis « imprime mon planning » quand tu en veux un."); };
-    if (/\b(adapte|ajuste|cale)\b.*\bmenus?\b.*\b(planning|agenda|semaine)\b/.test(n)) return async () => { const a = await CUISINE.adapte(); if (!a) return say("Je n'ai pas pu adapter les menus pour le moment."); if (a.rien) return say("Tu n'as pas de menus en cours. Dis « fais les menus de la semaine » : ils suivront ton agenda."); return say(a.changes.length ? `J'ai adapté : ${a.changes.join(' ; ')}.` : 'Tes menus collent déjà à ton agenda.'); };
+    if (/\b(adapte|ajuste|cale)\b.*\bmenus?\b.*\b(planning|agenda|semaine)\b/.test(n)) return async () => { const a = await CUISINE.adapte(); hideBoard(); if (!a) return say("Je n'ai pas pu adapter les menus pour le moment."); if (a.rien) return say("Tu n'as pas de menus en cours. Dis « fais les menus de la semaine » : ils suivront ton agenda."); return say(a.changes.length ? `J'ai adapté : ${a.changes.join(' ; ')}.` : 'Tes menus collent déjà à ton agenda.'); };
     return null;
   }
 

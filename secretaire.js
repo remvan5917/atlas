@@ -360,6 +360,7 @@ const SECRETAIRE = (() => {
         await CUISINE.semaineValidee({ debut: du0, avantDrive: new Date().getDay() === 0 });
         menus = ((await CUISINE._charge(true)).menus || []);
       } catch (e) { /* on continue */ }
+      patiente('Je prépare ta Gazette…', 'le planning, le menu, les courses, et ce qu’il ne faut pas oublier');
       // 3. le reste : la maison, son fils, les papiers, l'argent, les proches
       const [pa, en, ta, bu] = await Promise.all(['papiers', 'entretien', 'taches', 'budget'].map(k => carnet(k).catch(() => ({ items: [] }))));
       const j0 = (AGENDA._semaine ? AGENDA._semaine() : [new Date()]), du = dJ(j0[0]), au = dJ(j0[j0.length - 1]);
@@ -378,6 +379,7 @@ const SECRETAIRE = (() => {
       let imp = false;
       try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan, garde: typeof VIE !== 'undefined' ? VIE.phraseSemaine(Array.from({ length: 7 }, (v, i) => plusJours(i, du))) : '' }) }); imp = r.ok; } catch (e) { imp = false; }
       const n = afaire.length;
+      showBoard(`<div style="text-align:center;font-family:system-ui;min-width:min(80vw,460px);padding:14px 4px"><div style="font-size:46px">✔</div><b style="font-size:22px;color:#86efac">Ta semaine est prête</b><div style="color:#cbd5e1;font-size:15px;margin-top:8px">${imp ? 'La Gazette s’imprime : le planning, le menu, les courses' : 'Planning, menus et courses : c’est fait'}${n ? ` · ${n} chose${n > 1 ? 's' : ''} à ne pas oublier` : ''}</div></div>`); setTimeout(() => { const b = document.getElementById('board'); if (b && /Ta semaine est prête/.test(b.textContent)) hideBoard(); }, 60000);
       S.semaineFaite = (AGENDA._semaine ? dJ(AGENDA._semaine()[0]) : auj()); save();
       if (o.seul) { S.semaineSansLui = S.semaineFaite; save(); return say(`Ta semaine est prête, et ta Gazette s'imprime sur l'imprimante du bureau. Demain matin, dis-moi « on fait mon planning » pour ajouter tes rendez-vous.`); }
       return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? ` Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : une page pour le planning, une pour le menu, une pour les courses, et une pour les choses à ne pas oublier.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}` : ''} Bonne semaine !`);

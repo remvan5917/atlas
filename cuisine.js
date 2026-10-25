@@ -223,7 +223,7 @@ const CUISINE = (() => {
     let ag = null; try { ag = await (await fetch(`${root()}/maison/agenda?jours=9&frais=1`, { cache: 'no-store' })).json(); } catch (e) { return null; }
     const dates = j.map(x => new Date(`${x.date}T12:00:00`));
     const sem = semaineAgenda(dates.map(d => { const z = new Date(d); z.setHours(0, 0, 0, 0); return z; }), ag);
-    face.set('think');
+    face.set('think'); patiente('J’adapte tes menus à ton planning…', 'les soirs chargés, les entraînements');
     let r = null;
     try {
       const raw = String(await AI.chat([{ role: 'system', content: `Tu es le coach nutrition et le chef d'un père sportif qui mange le moins transformé possible. ${REGLES}
@@ -246,7 +246,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"date": "AAAA-MM-JJ", "matin": "…", 
 
   async function menus(auto, o = {}) {
     if (!AI.ready()) { await say('Pour les menus, il me faut mon cerveau en ligne.'); return null; }
-    face.set('think'); NOYAU.etiquette('CUISINE'); await say(o.brouillon ? 'Je compose tes menus. Ça prend une petite minute.' : auto ? 'Je prépare toute ta semaine : les menus, les courses et le drive. Ça prend une petite minute.' : 'Je prépare les menus de la semaine, avec tes entraînements et ce que tu as déjà.');
+    face.set('think'); NOYAU.etiquette('CUISINE'); patiente('Je compose tes menus…', 'matin, midi, collation et soir · environ une minute'); await say(o.brouillon ? 'Je compose tes menus. Ça prend une petite minute.' : auto ? 'Je prépare toute ta semaine : les menus, les courses et le drive. Ça prend une petite minute.' : 'Je prépare les menus de la semaine, avec tes entraînements et ce que tu as déjà.');
     const cx = await contexte();
     try { if (typeof VIE !== 'undefined') await VIE.chargeGarde(); } catch (e) { /* sans */ }
     let ag = null; try { ag = await (await fetch(`${root()}/maison/agenda?jours=8`, { cache: 'no-store' })).json(); } catch (e) { /* rien */ }
@@ -268,7 +268,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     const j = ((r && r.jours) || []).filter(x => x && x.plat).slice(0, 7).map((x, i) => ({ date: dateJ(dates[i]), matin: String(x.matin || ''), midi: String(x.midi || ''), collation: String(x.collation || ''), collation_quand: String(x.collation_quand || ''), plat: String(x.plat), note: String(x.note || ''), double: !!x.double, decongeler: (x.decongeler || []).map(String) }));
     const co = ((r && r.courses) || []).filter(x => x && x.article).slice(0, 70).map(x => `${x.article}${x.quantite ? ` (${x.quantite})` : ''}`);
     const batch = []; // pas de batch cooking (il n'en fait pas)
-    if (!j.length) { await say("Je n'arrive pas à faire les menus pour le moment. Réessaie dans un instant."); return null; }
+    if (!j.length) { hideBoard(); await say("Je n'arrive pas à faire les menus pour le moment. Réessaie dans un instant."); return null; }
     if (o.brouillon) return { j, dates, co };
     try { await appel({ action: 'menus', jours: j, batch }); } catch (e) { /* on les a quand même ici */ }
     cacheAt = 0;
@@ -414,7 +414,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     return String(await ask("Dis-moi le principal de ce que tu as : le frigo, le congélateur, les placards.", { wait: 30000 }) || '').slice(0, 600);
   }
   async function corrigeMenus(j, texte, mode) {
-    face.set('think');
+    face.set('think'); patiente('Je change ça…', String(texte).slice(0, 80));
     try {
       const raw = String(await AI.chat([{ role: 'system', content: `Tu es le chef d'un père sportif qui mange le moins transformé possible. ${REGLES} Voici ses menus de la semaine (4 repas par jour) et ce qu'il veut changer. Change UNIQUEMENT ce qu'il demande (un jour, un repas, un ingrédient, plus de poisson…), garde tout le reste à l'identique.${mode === 'stock' ? " Il veut cuisiner surtout avec ce qu'il a." : ''} Réponds UNIQUEMENT en JSON : {"jours": [{"date": "AAAA-MM-JJ", "matin": "…", "midi": "…", "collation": "…", "collation_quand": "…", "plat": "…", "note": "…", "double": false, "decongeler": []}]}` }, { role: 'user', content: `Menus : ${JSON.stringify(j.map(x => ({ date: x.date, jour: JOURS_SEM[new Date(`${x.date}T12:00:00`).getDay()], matin: x.matin, midi: x.midi, collation: x.collation, collation_quand: x.collation_quand, plat: x.plat, note: x.note, double: x.double, decongeler: x.decongeler })))}\nCe qu'il veut changer : ${texte}` }], { maxTokens: 3000, temperature: 0.4, json: true }));
       const r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); const par = {}; (r.jours || []).forEach(x => { if (x && x.date) par[x.date] = x; });
@@ -424,7 +424,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
   async function listeCourses(j) {
     let c = null; try { c = await charge(true); } catch (e) { c = null; }
     const st = ((c && c.stock) || []).map(x => x.nom);
-    face.set('think');
+    face.set('think'); patiente('Je fais la liste de courses…', 'rangée par rayon, sans ce que tu as déjà');
     try {
       const raw = String(await AI.chat([{ role: 'system', content: `Voici les menus de la semaine d'un père (4 repas par jour ; les jours marqués avec son fils, pour deux). Fais la liste de courses complète pour les cuisiner, avec les bonnes quantités, sans ce qu'il a déjà. Réponds UNIQUEMENT en JSON : {"courses": [{"article": "…", "quantite": "…"}]}` }, { role: 'user', content: `Menus : ${JSON.stringify(j.map(x => ({ date: x.date, matin: x.matin, midi: x.midi, collation: x.collation, plat: x.plat })))}\nIl a déjà : ${st.join(', ') || 'rien de noté'}.` }], { maxTokens: 2000, temperature: 0.2, json: true }));
       const r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
