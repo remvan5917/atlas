@@ -100,7 +100,7 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,620px)"><small style="letter-spacing:.3em;color:#a5b4fc">${esc(titre)} · ${l.length} RENDEZ-VOUS · <span style="color:#93c5fd">PRO</span> / <span style="color:#86efac">PERSO</span> · <span style="color:#fcd34d">MARCHÉ</span></small>${jours.map(j => {
       const d = new Date(`${j}T12:00:00`), rdv = l.filter(x => x.date === j), eco = ecoDe(j);
       const blocs = MOMENTS.map(([k, lab]) => { const r = rdv.filter(x => momentDe(x) === k).sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), e = eco.filter(x => momentEco(x) === k); return r.length || e.length ? `<div style="margin-top:3px;color:#a5b4fc;font-size:12px;letter-spacing:.18em;text-transform:uppercase">${lab}</div>${e.map(ligneEco).join('')}${r.map(ligneRdv).join('')}` : ''; }).join('');
-      return `<div style="margin-top:12px"><b style="color:#fde68a;font-size:16px;text-transform:capitalize">${esc(libJour(d))}</b>${blocs}</div>`; }).join('')}</div>`);
+      return `<div style="margin-top:12px"><b style="color:#fde68a;font-size:16px;text-transform:capitalize">${esc(libJour(d))}</b>${blocs}</div>`; }).join('')}<div style="display:flex;gap:12px;margin-top:16px;position:sticky;bottom:0;padding-top:8px;background:linear-gradient(transparent,rgba(5,10,20,.92) 30%)"><button id="pl-oui" style="flex:2;padding:18px;border:0;border-radius:16px;background:#16a34a;color:#fff;font:800 20px system-ui;cursor:pointer">✔ Oui, c'est bon</button><button id="pl-corr" style="flex:1;padding:18px;border:0;border-radius:16px;background:rgba(255,255,255,.12);color:#e2e8f0;font:700 18px system-ui;cursor:pointer">✏ Corriger</button></div></div>`);
   }
   const hDit = h => { const [a, b] = h.split(':').map(Number); return a === 12 && !b ? 'midi' : `${a} heure${a > 1 ? 's' : ''}${b ? ` ${b}` : ''}`; };
   // à voix haute : jour par jour, et dans chaque jour, le matin, le midi, l'après-midi, le soir
@@ -120,7 +120,14 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
       await heures(l);
       montre(l, existants, titre);
       const conf = l.map(x => [x, chevauche(x, existants)]).filter(([, c]) => c);
-      const a = await ask(`${l.length > 1 ? `J'ai ${l.length} rendez-vous. ${resume(l)}.` : `${resume(l)}.`}${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} ${l.length > 1 ? 'Je les mets' : 'Je le mets'} dans ton agenda ? Dis oui, ou dis-moi ce qu'il faut changer.`, { wait: 25000 });
+      // valider pendant qu'il lit : le bouton « Oui » (il se tait et écrit tout de suite) ; « Corriger » : il se tait et écoute
+      let clic = null; const bouton = new Promise(res => { clic = res; });
+      setTimeout(() => {
+        const bo = document.getElementById('pl-oui'), bc = document.getElementById('pl-corr');
+        if (bo) bo.onclick = () => { try { dlg.interrupt = true; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); setTimeout(() => OREILLES.cancel(), 1500); } catch (e) { /* rien */ } fx.tone([[988, 0.06], [1319, 0.1]]); clic('oui'); };
+        if (bc) bc.onclick = () => { try { dlg.interrupt = true; voice.stop(); } catch (e) { /* rien */ } fx.tone([[880, 0.06]]); };
+      }, 60);
+      const a = await Promise.race([bouton, ask(`${l.length > 1 ? `J'ai ${l.length} rendez-vous. ${resume(l)}.` : `${resume(l)}.`}${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} ${l.length > 1 ? 'Je les mets' : 'Je le mets'} dans ton agenda ? Dis oui, ou dis-moi ce qu'il faut changer.`, { wait: 25000 })]);
       if (isYes(a) && N(a).split(' ').length <= 6) {
         let r; try { r = await post({ evenements: l.map(enEvt) }); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison : rien n'est noté. Réessaie dans un instant."); }
         S.planningSemaine = cleSemaine(); save(); fx.ok(); hideBoard();
