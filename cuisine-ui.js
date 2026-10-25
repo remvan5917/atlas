@@ -46,7 +46,7 @@ const CUISINEUI = (() => {
      Gardé sur l'appareil (un plat = une recherche, une fois). Seul le nom du plat part, rien de personnel. */
   const PHOTO = (() => {
     const PLAT = /\b(dish|meal|dinner|lunch|breakfast|plate|plated|recipe|cooked|roast|roasted|grilled|baked|fried|pan|stew|soup|salad|curry|bowl|served|fillet|homemade|cuisine|omelet|omelette|porridge|oatmeal|dal|dhal|dahl|chili|basquaise|gratin|risotto|tagine)\b/;
-    const CLE = 'cz.photos', MOTS = /^(with|and|the|a|an|of|on|in|style|homemade|fresh|recipe|dish|food|bowl|plate)$/;
+    const CLE = 'cz.photos', MOTS = /^(with|and|the|a|an|of|on|in|style|homemade|fresh|recipe|dish|food|bowl|plate|topped|drizzled|sprinkled|garnished|small|large|served|side|some|little|ceramic|wooden|board|top)$/;
     let memo = {}; try { memo = JSON.parse(localStorage.getItem(CLE) || '{}') || {}; } catch (e) { memo = {}; }
     const range = () => { try { const k = Object.keys(memo); k.slice(0, Math.max(0, k.length - 300)).forEach(x => delete memo[x]); localStorage.setItem(CLE, JSON.stringify(memo)); } catch (e) { /* rien */ } };
     const cle = t => N(t || '').slice(0, 90);
@@ -55,7 +55,7 @@ const CUISINEUI = (() => {
     async function anglais(titres) {
       if (!AI.ready()) return {};
       try {
-        const raw = String(await AI.chat([{ role: 'system', content: 'For each French dish name, give two English image-search queries for a photo of that plated dish: "p" precise (3 to 5 words, main ingredients, no adjectives like delicious), "s" simple (1 to 3 words, the dish as served, e.g. "salmon fillet", "chili con carne", "quinoa salad", "omelette"). Answer ONLY JSON: {"d": [{"t": "<the exact French name>", "p": "...", "s": "..."}]}' }, { role: 'user', content: titres.join('\n') }], { maxTokens: 900, temperature: 0.2, json: true }));
+        const raw = String(await AI.chat([{ role: 'system', content: 'For each French dish name, give two English image-search queries for a photo of that plated dish: "p" precise (a short visual description of the plated dish, 4 to 10 words, main ingredients first, how it looks, e.g. "fromage blanc in a small bowl drizzled with honey", "red lentil dahl topped with fresh coriander"; no adjectives like delicious), "s" simple (1 to 3 words, the dish as served, e.g. "salmon fillet", "chili con carne", "quinoa salad", "omelette"). Answer ONLY JSON: {"d": [{"t": "<the exact French name>", "p": "...", "s": "..."}]}' }, { role: 'user', content: titres.join('\n') }], { maxTokens: 900, temperature: 0.2, json: true }));
         const o = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); const r = {};
         (o.d || []).forEach(x => { if (x && x.t) r[cle(x.t)] = [x.p, x.s].filter(Boolean); });
         return r;
@@ -94,6 +94,43 @@ const CUISINEUI = (() => {
       }
       return null;
     }
+    // les images fabriquées par la carte graphique de la maison (maison/images.py, par le relais) : le PC les fabrique
+    // quand Shadow ne se sert pas de la carte ; en attendant (ou hors de la maison), la photo de Commons
+    const CLEG = 'cz.gen'; let gen = {}; try { gen = JSON.parse(localStorage.getItem(CLEG) || '{}') || {}; } catch (e) { gen = {}; }
+    const gardeGen = () => { try { const k = Object.keys(gen); k.slice(0, Math.max(0, k.length - 400)).forEach(x => delete gen[x]); localStorage.setItem(CLEG, JSON.stringify(gen)); } catch (e) { /* rien */ } };
+    const urlGen = g => (g && g.e === 'pret' && r0() ? `${r0()}/maison/image/${g.c}.jpg` : '');
+    const aDemander = new Map();
+    async function demande() {
+      if (!aDemander.size || !r0()) return;
+      const l = [...aDemander.values()].slice(0, 30); l.forEach(x => aDemander.delete(cle(x.t)));
+      try {
+        const r = await fetch(`${r0()}/maison/images`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ demandes: l.map(x => ({ titre: x.t, prompt: x.p })) }) });
+        const d = await r.json(), at = Math.floor(Date.now() / 1000);
+        for (const [t, v] of Object.entries(d.etats || {})) { gen[cle(t)] = { c: v.cle, e: v.etat, at }; if (v.etat === 'pret') montreGen(cle(t)); }
+        gardeGen(); suivi();
+      } catch (e) { /* le PC n'est pas joignable : on redemandera */ }
+    }
+    let suiviT = 0;
+    function suivi() {
+      if (suiviT) return;
+      suiviT = setTimeout(async () => {
+        suiviT = 0;
+        const att_ = Object.entries(gen).filter(([, g]) => g.e === 'attente');
+        if (!att_.length || !r0()) return;
+        try {
+          const d = await (await fetch(`${r0()}/maison/images?cles=${att_.slice(0, 60).map(([, g]) => g.c).join(',')}`, { cache: 'no-store' })).json();
+          let neuf = false;
+          for (const [k, g] of att_) { const e = (d.cles || {})[g.c]; if (e && e !== g.e) { g.e = e; neuf = true; if (e === 'pret') montreGen(k); } }
+          if (neuf) gardeGen();
+        } catch (e) { /* rien */ }
+        if (document.getElementById('cz')) suivi(); // tant que l'appli est ouverte, on regarde toutes les 30 secondes
+      }, 30000);
+    }
+    // une image vient d'être fabriquée : elle remplace la photo, en fondu, partout où le plat est à l'écran
+    function montreGen(k) {
+      const u = urlGen(gen[k]); if (!u) return;
+      document.querySelectorAll('#cz img[data-ph]').forEach(im => { if (cle(im.dataset.ph) !== k || im.dataset.maison) return; const pre = new Image(); pre.onload = () => { if (!im.isConnected) return; im.classList.remove('ok'); setTimeout(() => affiche(im, { u, maison: true }, false), 350); }; pre.src = u; });
+    }
     async function boucle() {
       if (tourne) return; tourne = true;
       try {
@@ -101,32 +138,47 @@ const CUISINEUI = (() => {
           const lot = file.splice(0, 10), sansQ = lot.map(x => x.t); // « p » et « s » pour chacun (même si la recette a déjà son « photo »)
           const tr = sansQ.length ? await anglais(sansQ) : {};
           for (const x of lot) {
-            const qs = tr[cle(x.t)] || (x.q ? [x.q] : []);
+            const k = cle(x.t), qs = tr[k] || (x.q ? [x.q] : []);
+            if (qs[0] && !gen[k]) aDemander.set(k, { t: x.t, p: qs[0] });
+            if (x.genSeul) { if (memo[k] && qs[0]) { memo[k].q = qs[0]; range(); } continue; }
             const m = qs.length ? await cherche(qs[0], qs[1]) : null;
-            memo[cle(x.t)] = Object.assign({ at: Math.floor(Date.now() / 1000) }, m || { u: '' }); range();
-            (att.get(cle(x.t)) || []).forEach(f => f(memo[cle(x.t)])); att.delete(cle(x.t));
+            memo[k] = Object.assign({ at: Math.floor(Date.now() / 1000), q: qs[0] || '' }, m || { u: '' }); range();
+            (att.get(k) || []).forEach(f => f(memo[k])); att.delete(k);
             await new Promise(r => setTimeout(r, 300)); // poli avec le service
           }
+          demande();
         }
       } finally { tourne = false; }
     }
     function veut(t, q, f) {
-      const k = cle(t); if (!k) return; const m = connu(t); if (m) return f(m);
+      const k = cle(t); if (!k) return; const m = connu(t);
+      if (m) {
+        if (!gen[k] && r0()) { if (m.q) { aDemander.set(k, { t, p: m.q }); setTimeout(demande, 100); } else if (!att.has(k)) { file.push({ t, q, genSeul: true }); setTimeout(boucle, 60); } }
+        return f(m);
+      }
       if (!att.has(k)) { att.set(k, []); file.push({ t, q }); }
       att.get(k).push(f); setTimeout(boucle, 60); // le temps de ramasser toutes les photos de l'écran en un seul lot
+    }
+    function affiche(im, m, vite) {
+      if (!m || !m.u || !im.isConnected) return;
+      if (vite) im.style.transition = 'none';
+      im.dataset.maison = m.maison ? '1' : '';
+      im.onload = () => { im.classList.add('ok'); if (vite) requestAnimationFrame(() => { im.style.transition = ''; }); const c = im.parentElement && im.parentElement.querySelector('.credit'); if (c) { c.textContent = m.maison ? 'Image créée par l’ordinateur de la maison' : m.par ? `Photo ${m.par} · ${m.lic}` : ''; c.hidden = !c.textContent; } };
+      im.onerror = () => {
+        if (m.maison) { im.dataset.maison = ''; veut(im.dataset.ph, im.dataset.q || '', m2 => affiche(im, m2, false)); return; } // le PC injoignable (hors de la maison) : la photo
+        memo[cle(im.dataset.ph)] = { u: '', at: Math.floor(Date.now() / 1000) }; range();
+      };
+      im.src = m.u;
     }
     // les images d'un écran : <img class="ph" data-ph="le plat" data-q="english query"> → remplies dès que trouvées, en fondu
     function remplis(racine) {
       racine.querySelectorAll('img[data-ph]').forEach(im => {
         if (im.dataset.fait) return; im.dataset.fait = '1';
+        const k = cle(im.dataset.ph), g = gen[k];
+        if (urlGen(g)) return affiche(im, { u: urlGen(g), maison: true }, true); // déjà fabriquée : tout de suite
+        if (g && g.e === 'attente') suivi();
         let tout = true; // déjà connue : elle s'affiche tout de suite, sans fondu (en cuisson, l'écran se redessine à chaque étape)
-        veut(im.dataset.ph, im.dataset.q || '', m => {
-          if (!m || !m.u || !im.isConnected) return;
-          const vite = tout; if (vite) im.style.transition = 'none';
-          im.onload = () => { im.classList.add('ok'); if (vite) requestAnimationFrame(() => { im.style.transition = ''; }); const c = im.parentElement && im.parentElement.querySelector('.credit'); if (c && m.par) { c.textContent = `Photo ${m.par} · ${m.lic}`; c.hidden = false; } };
-          im.onerror = () => { memo[cle(im.dataset.ph)] = { u: '', at: Math.floor(Date.now() / 1000) }; range(); };
-          im.src = m.u;
-        });
+        veut(im.dataset.ph, im.dataset.q || '', m => affiche(im, m, tout));
         tout = false;
       });
     }
