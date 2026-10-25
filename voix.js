@@ -246,7 +246,7 @@ const voice = {
   // un long texte (le planning relu, les menus de la semaine) : découpé en phrases ; la suivante se fabrique pendant qu'il dit
   // celle-ci (il commence plus vite, et ElevenLabs ne dépasse plus son délai : la voix reste la même)
   async _dire(t) {
-    if (t.length <= 280) return this._direUn(t);
+    if (t.length <= 280) { this._suite = ''; return this._direUn(t); }
     const morceaux = [], ph = t.match(/[^.!?;:]+[.!?;:]*\s*/g) || [t];
     let cur = '';
     for (const x of ph) { if ((cur + x).length > 240 && cur) { morceaux.push(cur.trim()); cur = ''; } cur += x; }
@@ -255,6 +255,7 @@ const voice = {
     for (let i = 0; i < morceaux.length; i++) {
       if (gen !== this._gen || this.endormi) break;
       if (morceaux[i + 1] && ELEVEN.usable()) ELEVEN.prefetch(morceaux[i + 1]);
+      this._suite = morceaux.slice(i + 1).join(' ');
       await this._direUn(morceaux[i]);
     }
   },
@@ -268,7 +269,7 @@ const voice = {
     return moteur.get(t).then(buf => new Promise(res => {
       OREILLES.mute(true); // il ne s'écoute pas lui-même
       const node = moteur.play(buf);
-      this._cur = node; this.speaking = true; face.talk(true);
+      this._cur = node; this.speaking = true; face.talk(true); this._tCur = t; this._t0 = performance.now(); this._dur = node.duration || 0;
       this.annonce(node.duration * 1000 + 300);
       let done = false;
       const end = () => {
@@ -282,7 +283,7 @@ const voice = {
     }));
   },
   saySynth(t) {
-    return new Promise(res => {
+    return new Promise(res => { this._tCur = t; this._t0 = performance.now(); this._dur = 0;
       if (!('speechSynthesis' in window)) return res();
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(t);
@@ -299,7 +300,17 @@ const voice = {
       speechSynthesis.speak(u);
     });
   },
+  // où il en était : la phrase en cours (reprise à son début) et la suite
+  reste() {
+    const t = this._tCur || '';
+    if (!this.speaking || !t) return '';
+    const pos = this._dur ? Math.floor(Math.min(1, (performance.now() - this._t0) / 1000 / this._dur) * t.length) : 0;
+    let b = 0; const re = /[.!?;:]\s+/g; let m;
+    while ((m = re.exec(t)) && m.index + m[0].length <= pos) b = m.index + m[0].length;
+    return `${t.slice(b)} ${this._suite || ''}`.trim();
+  },
   stop() {
+    this._coupe = this.reste();
     this._gen++; // les phrases en attente sont oubliées
     if (this._cur) { try { this._cur.src.onended && this._cur.src.onended(); } catch (e) { /* rien */ } }
     if ('speechSynthesis' in window) speechSynthesis.cancel();

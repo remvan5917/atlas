@@ -119,8 +119,9 @@ const OREILLES = (() => {
       ttsFrames++;
       const [min0, k0] = SENS[S.settings.micSens] || SENS.haute;
       const need = Math.max(ttsPeak * (S.settings.bargeRatio || 1.6), Math.max(noise * k0, min0) * 1.5);
-      if (ttsFrames > 24 && rms > need) { if (++loud >= 3) { loud = 0; ttsFrames = 0; bargedAt = now; emit('bargein'); } }
-      else { loud = 0; ttsPeak = Math.max(ttsPeak * 0.997, rms); } // son niveau à lui (une voix plus forte ne compte pas)
+      const fms = f.length / ctx.sampleRate * 1000;
+      if (ttsFrames > 24 && rms > need) { loud += fms; if (loud >= (S.settings.bargeMs || 600)) { loud = 0; ttsFrames = 0; bargedAt = now; emit('bargein'); } } // un claquement ou une toux est trop court : il continue
+      else { loud = Math.max(0, loud - fms * 0.5); ttsPeak = Math.max(ttsPeak * 0.997, rms); } // son niveau à lui (une voix plus forte ne compte pas)
     } else if (!muted) { ttsFrames = 0; ttsPeak = 0; loud = 0; }
     if (muted || now < muteUntil || !pending || pending.busy) {
       // le bruit de la pièce ne s'apprend PAS pendant qu'il parle (sa propre voix n'est pas du bruit)

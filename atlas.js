@@ -234,7 +234,17 @@ const dlg = { state: 'off', busy: false, silence: 0, lastActive: 0, interrupt: f
 const entendus = []; // le diagnostic : les dernières phrases entendues et ce qu'il en a fait (mémoire vive)
 function journal(t, qui, quoi) { entendus.push({ at: Date.now(), t: String(t).slice(0, 80), qui: qui || '?', quoi }); if (entendus.length > 12) entendus.shift(); }
 const brainTimes = [];
-async function hear({ prompt = '', maxWait = 20000, cheap = false } = {}) {
+async function hear(o = {}) {
+  const debut = Date.now();
+  let r = await hear1(o);
+  // coupé par un bruit (une porte, une toux) et personne n'a rien dit : il reprend sa phrase, pas toute la question
+  for (let k = 0; k < 3 && !r && voice.reprise && voice.reprise.at > debut - 3000; k++) {
+    const t = voice.reprise.t; voice.reprise = null; voice._dernier = '';
+    await say(t); r = await hear1(o);
+  }
+  return r;
+}
+async function hear1({ prompt = '', maxWait = 20000, cheap = false } = {}) {
   dlg.interrupt = false;
   if (face.state !== 'think') face.set(dlg.state === 'standby' ? 'idle' : 'listen');
   // la transcription connaît les noms de la maison (Atlas, Shadow, les caméras, les prises) : elle les reconnaît mieux
@@ -1124,7 +1134,7 @@ async function vie() {
     } catch (e) { console.error(e); face.set('oops'); await say('Petite anomalie dans mes circuits. Réessaie.'); } finally { dlg.busy = false; dlg.repondu = Date.now(); }
   }
 }
-OREILLES.on('bargein', () => { if (!voice.occupe()) return; dlg.interrupt = true; voice.stop(); }); // on lui parle pendant qu'il parle : il se tait
+OREILLES.on('bargein', () => { if (!voice.occupe()) return; dlg.interrupt = true; voice.stop(); voice.reprise = voice._coupe ? { at: Date.now(), t: voice._coupe } : null; }); // on lui parle pendant qu'il parle : il se tait
 OREILLES.on('speech', () => face.el && face.el.classList.add('hearing'));
 OREILLES.on('speechend', () => face.el && face.el.classList.remove('hearing'));
 
