@@ -377,7 +377,57 @@ Utilise UNIQUEMENT les faits fournis : reformule les titres sans inventer de dé
     el.remove(); imgs.forEach(u => u && URL.revokeObjectURL(u)); dlg.interrupt = false;
   }
 
+  /* ---------- la maison qui sent ton humeur (maison/voix.py) : ta voix ce soir comparée à ta voix habituelle ----------
+     Seulement ta voix, seulement des nombres (l'énergie, la hauteur, le rythme, les pauses) ; jamais le son ni les mots.
+     Le soir, si tu as l'air épuisé ou tendu, il te le dit doucement et PROPOSE une ambiance calme : rien ne change sans ton « oui ». */
+  const humeurLire = async () => { const r0 = VOIXMAISON.root(); if (!r0) return null; try { return await (await fetch(`${r0}/maison/voix/humeur`, { cache: 'no-store' })).json(); } catch (e) { return null; } };
+  const liste_ = l => (l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : l[0] || '');
+  let humeurOffre = null;
+  async function humeurSoir() {
+    const h = new Date().getHours() + new Date().getMinutes() / 60;
+    if (h < 19.5 || h >= 22.4 || S.settings.humeur === false || S.humeurDit === dayKey() || !dlg.started) return;
+    if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return; // seulement l'appareil où tu es
+    const r = await humeurLire(); if (!r || !r.pret || !['fatigue', 'tendu'].includes(r.etat)) return;
+    PROACTIF.annonce(`humeur-${dayKey()}`, async () => {
+      S.humeurDit = dayKey(); save();
+      humeurOffre = { at: Date.now(), etat: r.etat }; dlg.attendReponse = Date.now() + 90000;
+      const d = (r.details || []).slice(0, 3);
+      return r.etat === 'fatigue'
+        ? `Tu as l'air fatigué ce soir${d.length ? ` : ta voix est ${liste_(d)} que d'habitude` : ''}. Tu veux que je mette une ambiance calme, lumière douce et musique tranquille ?`
+        : `Tu as l'air un peu tendu ce soir${d.length ? ` : ta voix est ${liste_(d)} que d'habitude` : ''}. Tu veux que je mette une ambiance calme pour souffler ?`;
+    }, { expire: Date.now() + 40 * 60000 });
+  }
+  setInterval(() => { humeurSoir().catch(() => {}); }, 10 * 60000);
+  async function ambianceCalme() {
+    humeurOffre = null; dlg.attendReponse = 0;
+    const r0 = VOIXMAISON.root();
+    let l = []; try { l = (await (await fetch(`${r0}/maison/appareils`, { cache: 'no-store' })).json()).appareils || []; } catch (e) { /* rien */ }
+    const ids = l.filter(a => a.type === 'lampe' && a.allume && !/\bchambres?\b/.test(N(a.nom))).map(a => a.id);
+    if (ids.length) { try { await fetch(`${r0}/maison/commande`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, allume: true, lum: 25, teinte: 0 }) }); } catch (e) { /* rien */ } }
+    fx.ok();
+    await say(`${ids.length ? 'Lumière douce' : 'La lumière reste comme elle est'}. Je mets FIP, tranquillement. Repose-toi bien.`);
+    return handle('mets FIP');
+  }
+  async function humeurDis() {
+    const r = await humeurLire();
+    if (!r) return say("Je n'arrive pas à joindre l'ordinateur de la maison.");
+    if (S.settings.humeur === false) return say("J'ai arrêté d'écouter ton humeur. Dis « écoute de nouveau mon humeur » pour reprendre.");
+    if (!r.pret) return say(r.base ? `J'apprends encore ta voix habituelle : ${r.base} phrases sur ${r.jours} jour${r.jours > 1 ? 's' : ''} pour l'instant, il m'en faut au moins 40, sur trois jours. Continue de me parler normalement.` : "Pour sentir ton humeur, je dois d'abord reconnaître ta voix. Dis « Atlas, apprends ma voix », puis parle-moi normalement pendant quelques jours.");
+    if (r.etat === 'inconnu') return say(`Tu ne m'as pas encore assez parlé ${new Date().getHours() >= 17 ? 'depuis 17 heures' : "aujourd'hui"} pour que je compare avec ta voix habituelle.`);
+    const d = (r.details || []).slice(0, 3);
+    if (r.etat === 'normal') return say("Ta voix est comme d'habitude. Rien à signaler de ce côté-là.");
+    return say(`Ta voix est ${d.length ? liste_(d) : 'différente'} que d'habitude : tu as l'air ${r.etat === 'fatigue' ? 'fatigué' : 'un peu tendu'}. Ce n'est qu'une impression de ma part, pas un diagnostic.`);
+  }
+
   function route(t, n) {
+    if (humeurOffre && Date.now() - humeurOffre.at < 120000) {
+      if (/^(oui|ouais|ok|d accord|vas y|volontiers|bonne idee|carrement|je veux bien|avec plaisir)\b/.test(n)) return ambianceCalme;
+      if (/^(non|non merci|pas la peine|ca va|laisse|c est bon)\b/.test(n)) return () => { humeurOffre = null; dlg.attendReponse = 0; return say("D'accord. Je suis là si tu as besoin."); };
+    }
+    if (/\bhumeur\b/.test(n) && /\b(oublie|efface|supprime)\b/.test(n)) return async () => { const r0 = VOIXMAISON.root(); try { await fetch(`${r0}/maison/voix/humeur`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ efface: true }) }); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison."); } return say("C'est oublié : je n'ai plus aucune mesure de ta voix. Je recommence à zéro."); };
+    if (/\bhumeur\b/.test(n) && /\b(arrete|coupe|desactive|n ecoute plus|stop)\b/.test(n)) return () => { S.settings.humeur = false; save(); return say("D'accord : je n'écoute plus ton humeur. Je ne garde plus aucune mesure."); };
+    if (/\bhumeur\b/.test(n) && /\b(ecoute de nouveau|reactive|remets|active|reprends)\b/.test(n)) return () => { S.settings.humeur = true; save(); return say("J'écoute de nouveau ton humeur, seulement des mesures de ta voix, jamais tes mots."); };
+    if (/\b(comment je vais|j ai l air (comment|fatigue|stresse|tendu|creve|epuise)|mon humeur|comment est ma voix|est ce que je suis (fatigue|stresse|tendu)|tu me trouves (fatigue|stresse|tendu|comment)|je suis comment ce soir)\b/.test(n)) return humeurDis;
     if (/\b(film|video|bande|resume|montage)s? (des |de (la |ma )?)?(cameras?|surveillance|videosurveillance)\b|\b(la journee|ma journee|aujourd hui|hier) (vue )?(par|des|aux) (les )?cameras\b/.test(n)) return () => filmCameras(n);
     if (/\b(le |notre |mon )?film (du mois|de (ce mois|octobre|novembre|decembre|janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre)|des souvenirs)\b|\bnos souvenirs du mois\b/.test(n)) return () => filmDuMois(n);
     const pr = typeof LIEN !== 'undefined' && LIEN.prenom() ? N(LIEN.prenom()) : '', FILS = new RegExp(`\\b(mon fils|le petit|mon garcon|fiston${pr ? `|${pr}` : ''})\\b`);

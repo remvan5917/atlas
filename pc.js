@@ -304,6 +304,54 @@ const PC = (() => {
     if (typeof SCIFI !== 'undefined') SCIFI.hud('Mails importants', l.slice(0, 8).map(x => [x.de.slice(0, 22), x.resume.slice(0, 70), 'attente']), []);
     return say(`Sur ${r.tous} nouveaux mails, ${l.length} compte${l.length > 1 ? 'nt' : ''}. ${l.slice(0, 5).map((x, i) => `${i ? '' : ''}${x.de} : ${x.resume.replace(/\.$/, '')}`).join('. ')}. Le reste, c'est de la pub et des notifications.${l.length ? ' Dis « lis le premier » pour l\'entendre en entier.' : ''}`);
   }
+  /* ---------- le secrétaire : il rédige ta réponse dans ton style, te la lit et l'affiche ----------
+     Rien n'est rangé sans ton « oui » (et tu peux dire quoi changer) ; il ne range qu'un BROUILLON : c'est toi qui l'envoies depuis Gmail. */
+  const tableauBrouillon = r => showBoard(`<div style="width:min(92vw,760px);text-align:left;font-family:system-ui,sans-serif"><small style="letter-spacing:.3em;color:#7dd3fc">BROUILLON · BOÎTE ${r.compte === 'pro' ? 'PRO' : 'PERSO'} · PAS ENCORE RANGÉ</small>
+    <div style="margin:10px 0 8px;color:#cbd5e1;font-size:15px">À : ${esc(r.a)}${r.sans_reponse ? ' <b style="color:#fca5a5">(adresse sans réponse)</b>' : ''}<br>Objet : ${esc(r.sujet)}</div>
+    <div style="white-space:pre-wrap;background:rgba(255,255,255,.06);padding:16px 18px;border-radius:12px;line-height:1.55;font-size:17px;color:#f1f5f9">${esc(r.corps)}</div></div>`);
+  async function secretaire(qui, consigne, compte) {
+    face.set('think'); await say(pick(['Je rédige la réponse.', 'Je prépare ta réponse.']));
+    const redige = c => appel('/maison/pc', { action: 'brouillon', qui, consigne: c, compte, essai: true }, 200000).catch(() => null);
+    let r = await redige(consigne); face.set('idle');
+    if (!r) return injoignable();
+    if (!r.ok) return say(r.raison === 'mail introuvable' ? `Je ne trouve pas de mail récent de « ${qui} », ni dans ta boîte pro ni dans la perso.` : r.raison === 'pas relié' ? "Ta boîte mail n'est pas reliée." : `Je n'ai pas pu rédiger la réponse : ${r.raison}.`);
+    for (let tour = 0; tour < 4; tour++) {
+      tableauBrouillon(r);
+      if (r.sans_reponse && tour === 0) await say("Attention : ce mail vient d'une adresse qui n'accepte pas les réponses. Il vaudra mieux écrire directement à la bonne personne.");
+      await say(`Voici ta réponse à ${r.a.replace(/<.*>/, '').trim()} : ${r.corps}`);
+      let brut = await ask('Je la range dans tes brouillons ? Dis oui, non, ou ce que je dois changer.', { wait: 15000 });
+      if (!N(brut)) brut = await ask('Oui, non, ou une modification ?', { wait: 12000 });
+      const a = N(brut);
+      if (!a) { hideBoard(); return say('Je ne garde rien. Redemande-moi quand tu veux.'); }
+      if (isYes(a) && a.split(' ').length <= 5) {
+        face.set('think');
+        const ok = await appel('/maison/pc', { action: 'brouillon', qui, msgid: r.msgid, corps: r.corps, compte: r.compte }, 60000).catch(() => null);
+        face.set('idle');
+        if (!ok || !ok.ok) return say("Je n'ai pas réussi à le ranger dans tes brouillons. Le texte reste affiché.");
+        fx.ok();
+        return say(`C'est dans tes brouillons ${r.compte === 'pro' ? 'pro' : 'perso'}, en réponse au bon mail. Relis-le et envoie-le depuis Gmail quand tu veux : moi, je n'envoie jamais rien.`);
+      }
+      if (isNo(a) && a.split(' ').length <= 4) { hideBoard(); return say("D'accord, je ne garde rien."); }
+      // une modification : il réécrit à partir de la consigne et de ta correction
+      face.set('think'); await say(pick(['Je corrige.', "D'accord, je reprends."]));
+      consigne = `${consigne}\nVersion précédente : « ${r.corps.slice(0, 600)} »\nCorrection demandée : ${String(brut).trim()}`;
+      const r2 = await redige(consigne); face.set('idle');
+      if (!r2 || !r2.ok) { hideBoard(); return say("Je n'arrive pas à la réécrire. Redemande-moi dans un instant."); }
+      r = r2;
+    }
+    hideBoard(); return say('On a fait plusieurs essais : je ne garde rien pour l\'instant. Redemande-moi avec ta consigne complète.');
+  }
+  // le point de la semaine pro : le résumé et ce que tu dois faire
+  async function semainePro() {
+    face.set('think'); await say('Je lis ta semaine pro.');
+    let r; try { r = await appel('/maison/pc', { action: 'semaine_pro' }, 240000); } catch (e) { r = null; } finally { face.set('idle'); }
+    if (!r) return injoignable();
+    if (!r.ok) return say(r.raison === 'pas relié' ? "Ta boîte pro n'est pas reliée." : `${r.raison}.`);
+    if (!r.n) return say('Aucun mail dans ta boîte pro cette semaine, hors publicité.');
+    const af = r.a_faire || [];
+    showBoard(`<div style="width:min(92vw,760px);text-align:left;font-family:system-ui,sans-serif"><small style="letter-spacing:.3em;color:#7dd3fc">TA SEMAINE PRO · ${r.n} MAILS</small><p style="font-size:17px;line-height:1.55;color:#f1f5f9">${esc(r.resume)}</p>${af.length ? `<small style="letter-spacing:.3em;color:#fcd34d">À FAIRE</small><ol style="font-size:16px;line-height:1.6;color:#e2e8f0;padding-left:22px">${af.map(x => `<li>${esc(x.quoi)}${x.qui ? ` <span style="color:#94a3b8">— ${esc(x.qui)}</span>` : ''}${x.quand ? ` <b style="color:#fcd34d">${esc(x.quand)}</b>` : ''}</li>`).join('')}</ol>` : ''}</div>`);
+    return say(`${r.resume} ${af.length ? `À faire : ${af.slice(0, 5).map(x => `${x.quoi.replace(/\.$/, '')}${x.quand ? `, ${x.quand}` : ''}`).join(' ; ')}.${af.length > 5 ? ` Et ${af.length - 5} autre${af.length > 6 ? 's' : ''}, à l'écran.` : ''} Dis « réponds au mail de… que… » et je te prépare la réponse.` : 'Rien de particulier à faire.'}`);
+  }
   const RANG = { premier: 0, '1er': 0, un: 0, dernier: 0, deuxieme: 1, second: 1, deux: 1, troisieme: 2, trois: 2 };
 
   /* ---------- ce qu'on lui dit ---------- */
@@ -321,6 +369,14 @@ const PC = (() => {
   function route(t, n) {
     const ordi = /\b(ordi|ordinateur|pc)\b/.test(n);
     if (/\bsalle de (controle|commande|commandement)\b|\bmode (salle de controle|centre de commandement|qg)\b/.test(n)) return () => salle(!/\b(fin|ferme|quitte|sors|arrete|coupe|enleve|eteins)\b/.test(n));
+    // le secrétaire : « réponds au mail d'Euratechnologies que je suis d'accord pour jeudi », « réponds-lui que… » (le dernier mail lu)
+    const t2 = String(t).replace(/[’]/g, "'").replace(/^\s*atlas[\s,]*/i, '');
+    const pr = typeof LIEN !== 'undefined' && LIEN.prenom() ? N(LIEN.prenom()) : '';
+    const rp = t2.match(/^(?:r[ée]ponds?|pr[ée]pare (?:une |la )?r[ée]ponse|r[ée]dige (?:une |la )?r[ée]ponse|[ée]cris (?:une |la )?r[ée]ponse)\s+(?:au\s+(?:dernier\s+)?(?:mail|message|e-?mail|courriel)\s+|à\s+l'(?:e-?mail|email)\s+|à\s+)(?:de\s+|d'\s*|du\s+|des\s+)?(.+?)\s*[,:]?\s+(?:que|pour (?:lui |leur )?dire que|en (?:lui |leur )?disant que|:)\s+(.+)$/i);
+    if (rp && !new RegExp(`\\b(mon fils|le petit|shadow${pr ? `|${pr}` : ''})\\b`).test(N(rp[1]))) return () => secretaire(rp[1].replace(/^(l'|la |le |les )/i, '').trim(), rp[2].trim(), '');
+    const rl = t2.match(/^(?:r[ée]ponds?-(?:lui|leur|y)|r[ée]ponds? à ce (?:mail|message))\s+(?:que|pour (?:lui |leur )?dire que|:)\s+(.+)$/i);
+    if (rl && derniersMails.length) { const d0 = derniersMails[0]; return () => secretaire(String(d0.de || '').replace(/\s*\(boîte pro\)\s*$/, ''), rl[1].trim(), /^pro:/.test(d0.id) ? 'pro' : 'perso'); }
+    if (/\b(resume|resumes|recap|recapitulatif|point)\b.*\b(mails?|e mails?|courriels?|boite)\b.*\b(pro|travail|professionnel|professionnelle|boulot)\b|\b(mails?|boite) pro de la semaine\b|\bma semaine pro\b/.test(n)) return semainePro;
     // Gmail (lecture seule)
     if (/\b(mails?|e mails?|emails?|courriels?|boite mail)\b/.test(n) && /\b(important|importants|importantes|qui compte|trie|tri|urgent|urgents|a faire|ce qui compte)\b/.test(n)) return () => importants(/\b(maintenant|a jour|refais|relance)\b/.test(n));
     if (/\b(mails?|e mails?|emails?|courriels?|gmail|boite mail|boite de reception)\b/.test(n) && !/^(ouvre|lance|affiche)\b/.test(n)) {
