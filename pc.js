@@ -287,7 +287,7 @@ const PC = (() => {
       return say(`Mail de ${m.de}, « ${m.sujet} ». ${m.texte ? m.texte.slice(0, 450) + (m.texte.length > 450 ? '… La suite est dans Gmail.' : '') : '(sans texte)'}`);
     }
     derniersMails = r.mails || [];
-    if (!r.total) return say(o.de ? `Aucun mail${o.quoi === 'nonlus' ? ' non lu' : ''} de ${o.de}.` : 'Aucun nouveau mail depuis hier.');
+    if (!r.total) return say(o.de ? `Aucun mail${o.quoi === 'nonlus' ? ' non lu' : ''} de ${o.de}.` : `Aucun nouveau mail${o.compte === 'pro' ? ' dans ta boîte pro' : o.compte === 'perso' ? ' dans ta boîte perso' : ''} depuis hier.`);
     const l = derniersMails.slice(0, 3).map((m, i) => `${i ? '' : ''}${m.de}, ${quandMail(m.date)} : « ${m.sujet.slice(0, 70)} »`).join('. ');
     return say(`${r.total} ${o.quoi === 'nonlus' ? `mail${r.total > 1 ? 's' : ''} non lu${r.total > 1 ? 's' : ''}` : `mail${r.total > 1 ? 's' : ''}`}${o.de ? ` de ${o.de}` : ' depuis hier'}. ${l}.${r.total > 1 ? ' Dis « lis le premier » ou « lis le deuxième ».' : ' Dis « lis-le » pour l\'entendre.'}`);
   }
@@ -320,7 +320,9 @@ const PC = (() => {
           const m = derniersMails[rang ? RANG[rang[1]] : 0]; return m ? mails({ id: m.id }) : say("Je n'ai pas ce mail-là."); };
       }
       if (de && /\b(lis|lire)\b/.test(n)) return async () => { await mails({ quoi: 'tous', de: de.trim(), n: 1 }); if (derniersMails[0]) return mails({ id: derniersMails[0].id }); };
-      return () => mails({ quoi: /\b(tous|derniers|recus aujourd hui|recents?)\b/.test(n) && !/\bnon lus?\b/.test(n) ? 'tous' : 'nonlus', de: de ? de.trim() : '', n: 5 });
+      // « mes mails pro » / « du travail » : la boîte professionnelle seulement ; « perso » : la boîte personnelle
+      const compte = /\b(pro|professionnels?|professionnelle|du travail|du boulot|boulot|entreprise)\b/.test(n) ? 'pro' : /\b(perso|personnels?|personnelle|prive)\b/.test(n) ? 'perso' : '';
+      return () => mails({ quoi: /\b(tous|derniers|recus aujourd hui|recents?)\b/.test(n) && !/\bnon lus?\b/.test(n) ? 'tous' : 'nonlus', de: de ? de.trim().replace(/\s+(pro|perso|professionnels?)$/i, '') : '', n: 5, compte });
     }
     if (/^(lis le|lis la|lis-le|lis le moi|lis moi le|lis moi la)\b|^(lis le|lis)\s+(premier|deuxieme|troisieme|dernier)$/.test(n) && derniersMails.length) {
       const rang = n.match(/\b(premier|1er|dernier|deuxieme|second|troisieme)\b/);
