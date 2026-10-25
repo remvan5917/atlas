@@ -248,11 +248,12 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
   }
 
   /* ---------- la liste de courses par rayon, et le mode magasin (on coche, ça passe au garde-manger) ---------- */
-  function courses(magasin) {
-    const l = (S.listes || []).filter(x => x.liste === 'courses');
-    if (!l.length) return say('Ta liste de courses est vide. Dis « fais les menus de la semaine », ou « ajoute du lait aux courses ».');
+  function courses(magasin, enseigne) {
+    const tout = (S.listes || []).filter(x => x.liste === 'courses');
+    const l = enseigne && typeof PRIX !== 'undefined' && S.coursesPlan ? tout.filter(x => !PRIX.magasinDe(x.id) || PRIX.magasinDe(x.id) === enseigne) : tout; // le partage entre magasins (« où faire mes courses ? »)
+    if (!l.length) return say(tout.length ? `Rien à prendre chez ${enseigne.charAt(0).toUpperCase() + enseigne.slice(1)} dans ton partage : tout est pour l'autre magasin.` : 'Ta liste de courses est vide. Dis « fais les menus de la semaine », ou « ajoute du lait aux courses ».');
     const par = {}; l.forEach(x => { (par[rayonDe(x.text)] = par[rayonDe(x.text)] || []).push(x); });
-    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,560px)"><small style="letter-spacing:.3em;color:#86efac">LISTE DE COURSES · ${l.length} ARTICLES${magasin ? ' · TOUCHE CE QUE TU PRENDS' : ''}</small>${RAYONS.filter(r => par[r]).map(r => `<div style="margin-top:10px"><b style="color:#fde68a;font-size:14px;letter-spacing:.12em;text-transform:uppercase">${esc(r)}</b>${par[r].map(x => `<label data-cr="${x.id}" style="display:flex;gap:10px;align-items:center;font-size:18px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" style="width:22px;height:22px"> ${esc(x.text)}</label>`).join('')}</div>`).join('')}</div>`);
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,560px)"><small style="letter-spacing:.3em;color:#86efac">LISTE DE COURSES${enseigne ? ` · ${enseigne.toUpperCase()}` : ''} · ${l.length} ARTICLES${magasin ? ' · TOUCHE CE QUE TU PRENDS' : ''}</small>${RAYONS.filter(r => par[r]).map(r => `<div style="margin-top:10px"><b style="color:#fde68a;font-size:14px;letter-spacing:.12em;text-transform:uppercase">${esc(r)}</b>${par[r].map(x => `<label data-cr="${x.id}" style="display:flex;gap:10px;align-items:center;font-size:18px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06)"><input type="checkbox" style="width:22px;height:22px"> ${esc(x.text)}</label>`).join('')}</div>`).join('')}</div>`);
     document.querySelectorAll('#board [data-cr] input').forEach(inp => inp.addEventListener('change', () => { if (inp.checked) { const id = +inp.closest('[data-cr]').dataset.cr; const x = (S.listes || []).find(y => y.id === id); if (x) pris([x.text], true); inp.closest('[data-cr]').style.opacity = '.35'; } }));
     if (magasin) return say(`Bonnes courses ! ${l.length} articles, rangés par rayon. Touche chaque article quand il est dans ton panier, ou dis « j'ai pris les tomates ».`);
     return say(`${l.length} articles : ${RAYONS.filter(r => par[r]).map(r => `${r}, ${liste(par[r].map(x => x.text.replace(/\s*\(.*\)$/, '')))}`).join(' ; ')}.`);
@@ -363,12 +364,19 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
     if (/\b(quels? (sont les )?menus|les menus de la semaine|nos menus|mes menus)\b/.test(n) && !/\b(fais|prepare|genere|cree|refais|nouveaux)\b/.test(n)) return async () => { let c; try { c = await charge(true); } catch (e) { return injoignable(); } const j = (c.menus || []).filter(x => x.date >= auj()); if (!j.length) return menus(); tableauMenus(j, []); return say(`Au menu : ${j.map(x => `${JOURS_SEM[new Date(`${x.date}T12:00:00`).getDay()]}, ${x.plat}`).join(' ; ')}.`); };
     if (/\b(menus? de la semaine|menus? pour la semaine|planning des repas|les repas de la semaine|organise les repas|fais (les|mes|nos) menus|prepare (les|mes|nos) menus)\b/.test(n)) return menus;
     if (/\b(batch cooking|batch|preparation de la semaine|on prepare la semaine|cuisine de la semaine)\b/.test(n) && /\b(lance|on lance|commence|on fait|demarre|c est parti|on y va|batch cooking)\b/.test(n)) return batchCooking;
-    if (/\b(mode magasin|je (pars|vais) faire (les|des) courses|je suis au (supermarche|magasin|marche)|on fait les courses)\b/.test(n)) return () => courses(true);
+    if (/\b(mode magasin|je (pars|vais) faire (les|des) courses|je suis (au|chez) (supermarche|magasin|marche|aldi|leclerc|lidl)|on fait les courses)\b/.test(n)) return () => courses(true, (n.match(/\b(aldi|leclerc|lidl)\b/) || [])[1] || '');
     if (/\b(liste de courses|la liste des courses|mes courses)\b/.test(n) && /\b(par rayon|rayons|lis|montre|affiche|qu est ce qu il y a|quoi)\b/.test(n)) return () => courses(false);
     if (/^(j ai pris|c est pris|j ai trouve|dans le panier)\b/.test(n)) return () => pris(String(t).replace(/^.*?(?:pris|trouvé|trouve|panier)\s*:?\s*/i, '').split(/\s*(?:,|\bet\b)\s*/).map(x => x.replace(/^(les|le|la|l'|l’|des|du|de la)\s+/i, '').trim()).filter(Boolean));
     if (/\b(bilan|point)\b.*\b(cuisine|alimentation|nutrition|repas|ce que je mange)\b/.test(n)) return bilan;
     if (/\b(qu est ce qu on mange|on mange quoi|qu est ce que je mange|je mange quoi|idees? de (repas|plat|diner|dejeuner)|quoi manger|que manger|quoi cuisiner|qu est ce que je (fais|cuisine|prepare) (a manger|ce soir|ce midi|pour le diner)|repas (apres|avant) (l |mon |la )?(entrainement|seance|sport|gym|krav))\b/.test(n)) return () => quoiManger(t, n);
     return null;
   }
-  return { route, apresRecette, _charge: charge };
+  // des produits à ranger d'un coup (un ticket de caisse) : chacun à sa place, avec sa date limite estimée
+  async function ajouteStock(noms) {
+    const now = Date.now() / 1000;
+    const items = (noms || []).map(x => String(x).trim()).filter(Boolean).slice(0, 60).map(nom => { const s_ = sorte(nom); return { nom, lieu: s_ ? s_[1] : 'frigo', perime: s_ && s_[2] < 60 ? Math.round(now + s_[2] * JOUR) : null, ultra: !!ultra(nom) }; });
+    if (items.length) { await appel({ action: 'ajoute', items }); cacheAt = 0; }
+    return items.length;
+  }
+  return { route, apresRecette, ajouteStock, _charge: charge };
 })();
