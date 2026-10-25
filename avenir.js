@@ -238,8 +238,9 @@ const AVENIR = (() => {
       lignes.push(['Argent', dep.length ? `${eu(tot)} de dépenses notées, dont ${eu(ali)} de courses${prevu ? ` (repère : ${eu(prevu / 4.33)} par semaine)` : ''}` : 'aucune dépense notée (photographie tes tickets)']);
     }
     if (cu) { const rp = (cu.repas || []).filter(x => x.at >= debut7); lignes.push(['Repas maison', rp.length ? `${rp.length} cuisiné${rp.length > 1 ? 's' : ''} avec Atlas : ${rp.slice(-4).map(x => x.plat).join(', ')}` : 'aucun repas cuisiné avec Atlas']); }
-    if (mi) lignes.push([`${LIEN.prenom() || 'Ton fils'}`, `${mi.semaine || 0} point${(mi.semaine || 0) > 1 ? 's' : ''} de missions cette semaine, grade ${mi.grade || '—'}${dv ? ` ; ${dv}` : ''}`]);
+    if (mi && mi.grade) lignes.push([`${LIEN.prenom() || 'Ton fils'}`, `${mi.semaine || 0} point${(mi.semaine || 0) > 1 ? 's' : ''} de missions cette semaine, grade ${mi.grade || '—'}${dv ? ` ; ${dv}` : ''}`]);
     if (hu && hu.pret) lignes.push(['Ton humeur', `d'après ta voix : ${hu.etat}`]);
+    if (typeof VIE !== 'undefined') { try { const lt = await VIE.ligneTrading(); if (lt) lignes.push(lt); } catch (e) { /* sans */ } }
     if (pa) { const faits = (pa.items || []).filter(x => x.fait_le && x.fait_le >= dJ(new Date(debut7 * 1000))); if (faits.length) lignes.push(['Papiers', `${faits.length} réglé${faits.length > 1 ? 's' : ''} : ${faits.slice(0, 3).map(x => x.objet).join(', ')}`]); }
     let conseil = '';
     if (AI.ready()) { try { conseil = String(await AI.chat([{ role: 'system', content: "D'après ce bilan de sa semaine, donne UN seul conseil concret, bienveillant et réaliste pour la semaine qui vient (une phrase, moins de 25 mots, en tutoyant, sans émoji)." }, { role: 'user', content: lignes.map(l => `${l[0]} : ${l[1]}`).join('\n') }], { maxTokens: 80, temperature: 0.5 })).replace(/^["«\s]+|["»\s]+$/g, '').trim(); } catch (e) { conseil = ''; } }

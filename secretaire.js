@@ -339,12 +339,13 @@ const SECRETAIRE = (() => {
   }
 
   /* =================== 6. « ON PRÉPARE LA SEMAINE » : tout, puis la Gazette =================== */
-  async function semaine() {
+  async function semaine(o = {}) {
     window.__RITUEL = true;
     try {
-      await say("On prépare ta semaine. D'abord ton planning, ensuite les repas et les courses, et je termine par ta Gazette imprimée.");
-      // 1. le planning (dicté), sans l'imprimer à part
-      try { await AGENDA.planifie({ rituel: true }); } catch (e) { /* on continue */ }
+      if (o.seul) await say("Je prépare ta semaine tout seul, d'après ton agenda : les menus, les courses, et ta Gazette imprimée.");
+      else await say("On prépare ta semaine. D'abord ton planning, ensuite les repas et les courses, et je termine par ta Gazette imprimée.");
+      // 1. le planning (dicté), sans l'imprimer à part ; tout seul (le dimanche soir sans lui) : l'agenda tel qu'il est
+      if (!o.seul) { try { await AGENDA.planifie({ rituel: true }); } catch (e) { /* on continue */ } }
       // 2. les menus : adaptés s'ils existent, sinon faits (menus, courses, drive)
       // les menus faits APRÈS le planning, du lundi au dimanche ; s'il y en a déjà pour cette semaine-là, ils s'adaptent seulement
       let menus = [];
@@ -373,6 +374,8 @@ const SECRETAIRE = (() => {
       let imp = false;
       try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan, garde: typeof VIE !== 'undefined' ? VIE.phraseSemaine(Array.from({ length: 7 }, (v, i) => plusJours(i, du))) : '' }) }); imp = r.ok; } catch (e) { imp = false; }
       const n = afaire.length;
+      S.semaineFaite = (AGENDA._semaine ? dJ(AGENDA._semaine()[0]) : auj()); save();
+      if (o.seul) { S.semaineSansLui = S.semaineFaite; save(); return say(`Ta semaine est prête, et ta Gazette s'imprime sur l'imprimante du bureau. Demain matin, dis-moi « on fait mon planning » pour ajouter tes rendez-vous.`); }
       return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? ` Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : le planning, les repas, les choses à faire, ta semaine écoulée et les courses.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}` : ''} Bonne semaine !`);
     } finally { window.__RITUEL = false; }
   }
@@ -394,6 +397,21 @@ const SECRETAIRE = (() => {
     }
   }, 10 * 60000);
   let weekendDemande = 0;
+  setInterval(() => {
+    const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+    if (d.getDay() !== 0 || h < 21.5 || h > 21.95 || !dlg.started || S.settings.semaineSeule === false) return;
+    if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
+    const lundi = AGENDA._semaine ? dJ(AGENDA._semaine()[0]) : '';
+    if (!lundi || S.semaineFaite === lundi || S.semaineEssai === lundi) return;
+    S.semaineEssai = lundi; save();
+    semaine({ seul: true }).catch(() => {});
+  }, 5 * 60000);
+  // le lundi matin : s'il l'a préparée seul, il propose de dicter le planning
+  setInterval(() => {
+    const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+    if (d.getDay() !== 1 || h < 7.5 || h > 11 || !dlg.started || !S.semaineSansLui || S.semaineSansLuiDit === S.semaineSansLui) return;
+    PROACTIF.annonce(`semaine-seul-${S.semaineSansLui}`, () => { S.semaineSansLuiDit = S.semaineSansLui; save(); return "Hier soir, j'ai préparé ta semaine tout seul : la Gazette est sur l'imprimante. Si tu as des rendez-vous à ajouter, dis « on fait mon planning »."; }, { expire: Date.now() + 3 * 3600000 });
+  }, 10 * 60000);
 
   /* =================== les phrases =================== */
   function route(t, n) {

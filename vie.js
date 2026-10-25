@@ -94,6 +94,26 @@ const VIE = (() => {
     return say(`${constats.slice(0, 3).join(' ')}${imprimer ? " Je l'imprime sur l'imprimante du bureau." : ''} Ce sont des tendances, pas des certitudes.`);
   }
 
+  // le 1er du mois : la forme du mois écoulé, imprimée sans qu'il la demande (s'il y a au moins 7 jours notés)
+  async function imprimeMois() {
+    let f; try { f = await carnet('forme'); } catch (e) { return; }
+    const d = new Date(); const prec = dJ(new Date(d.getFullYear(), d.getMonth() - 1, 1)).slice(0, 7);
+    const n = Object.keys(f.jours || {}).filter(k => k.startsWith(prec)).length;
+    if (n < 7) return;
+    const avant = window.__agentCapture; window.__agentCapture = [];
+    try { await tableau(true); } finally { window.__agentCapture = avant; }
+    PROACTIF.annonce(`forme-${prec}`, `Ta forme du mois de ${MOIS[+prec.slice(5) - 1]} est sur l'imprimante : ton sommeil, ton sport et ton trading, croisés.`, { expire: Date.now() + 8 * 3600000 });
+  }
+  // pour la Gazette : la semaine de trading (le résultat, le plan, la revanche)
+  async function ligneTrading() {
+    const [tr, f] = await Promise.all([lire('/maison/trading'), carnet('forme').catch(() => null)]);
+    const d7 = plusJours(-7), jours = Object.entries((tr && tr.jours) || {}).filter(([k]) => k >= d7);
+    if (!jours.length) return null;
+    const tot = jours.reduce((s_, [, v]) => s_ + +v, 0), deb = ((f && f.items) || []).filter(x => x.type === 'debrief' && x.date >= d7);
+    const plan = deb.filter(x => x.plan && x.plan.respecte).length, rev = deb.filter(x => x.pire && x.pire.apres_une_perte).length;
+    return ['Trading', `${sgn(tot)} sur ${jours.length} jour${jours.length > 1 ? 's' : ''}${deb.length ? ` ; plan tenu ${plan} jour${plan > 1 ? 's' : ''} sur ${deb.length}${rev ? ` ; ${rev} revanche${rev > 1 ? 's' : ''} après une perte` : ''}` : ''}`];
+  }
+
   /* =================== 2. LE DÉBRIEF DE TRADING (après « fin de session ») =================== */
   async function debrief(pnl) {
     if (!AI.ready()) return;
@@ -284,6 +304,7 @@ const VIE = (() => {
     const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
     if (!dlg.started || (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal())) return;
     if (h >= 21 && h < 22.5 && S.formeCloture !== auj()) { S.formeCloture = auj(); save(); cloture().catch(() => {}); }
+    if (d.getDate() === 1 && h >= 9 && h < 12 && S.formeMois !== auj().slice(0, 7) && S.settings.formeAuto !== false) { S.formeMois = auj().slice(0, 7); save(); imprimeMois().catch(() => {}); }
     if (h >= 7.5 && h < 10.5 && S.settings.prof !== false && S.profFait !== auj() && S.profPropose !== auj() && d.getDay() !== 0) {
       PROACTIF.annonce(`prof-${auj()}`, () => { S.profPropose = auj(); save(); profOffre = Date.now(); dlg.attendReponse = Date.now() + 120000; return 'Ta leçon du jour, dix minutes ? Dis oui quand tu es prêt.'; }, { expire: Date.now() + 2 * 3600000 });
     }
@@ -319,5 +340,5 @@ const VIE = (() => {
     if (/\b(arrete|plus de|stop)\b.*\b(lecons?|prof)\b/.test(n)) return () => { S.settings.prof = false; save(); return say("D'accord, plus de leçon le matin. Dis « ma leçon du jour » quand tu veux."); };
     return null;
   }
-  return { route, ecoute, debrief, avec, chargeGarde, phraseSemaine, _tableau: tableau, _cloture: cloture };
+  return { route, ecoute, debrief, avec, chargeGarde, phraseSemaine, ligneTrading, _tableau: tableau, _cloture: cloture, _imprimeMois: imprimeMois };
 })();
