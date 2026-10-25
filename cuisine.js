@@ -198,9 +198,9 @@ const CUISINE = (() => {
   const ajouteCourses = items => { const deja = (S.listes || []).filter(y => y.liste === 'courses').map(y => N(y.text)); const neufs = items.filter(i => i && !deja.includes(N(i))); S.listes = (S.listes || []).concat(neufs.map((x, i) => ({ id: Date.now() + i, liste: 'courses', text: x, at: Date.now() }))); if (neufs.length) save(); return neufs; };
   const dateJ = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const auj = () => dateJ(new Date());
-  async function menus() {
-    if (!AI.ready()) return say('Pour les menus, il me faut mon cerveau en ligne.');
-    face.set('think'); NOYAU.etiquette('CUISINE'); await say('Je prépare les menus de la semaine, avec tes entraînements et ce que tu as déjà.');
+  async function menus(auto) {
+    if (!AI.ready()) { await say('Pour les menus, il me faut mon cerveau en ligne.'); return null; }
+    face.set('think'); NOYAU.etiquette('CUISINE'); await say(auto ? 'Je prépare toute ta semaine : les menus, les courses et le drive. Ça prend une petite minute.' : 'Je prépare les menus de la semaine, avec tes entraînements et ce que tu as déjà.');
     const cx = await contexte();
     let ag = null; try { ag = await (await fetch(`${root()}/maison/agenda?jours=8`, { cache: 'no-store' })).json(); } catch (e) { /* rien */ }
     const dates = Array.from({ length: 7 }, (v, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
@@ -216,9 +216,10 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
     const j = ((r && r.jours) || []).filter(x => x && x.plat).slice(0, 7).map((x, i) => ({ date: dateJ(dates[i]), plat: String(x.plat), note: String(x.note || ''), double: !!x.double, decongeler: (x.decongeler || []).map(String) }));
     const co = ((r && r.courses) || []).filter(x => x && x.article).slice(0, 45).map(x => `${x.article}${x.quantite ? ` (${x.quantite})` : ''}`);
     const batch = ((r && r.batch) || []).filter(x => x && x.texte).slice(0, 12).map(x => ({ texte: String(x.texte), minutes: Math.max(0, Math.min(240, +x.minutes || 0)) }));
-    if (!j.length) return say("Je n'arrive pas à faire les menus pour le moment. Réessaie dans un instant.");
+    if (!j.length) { await say("Je n'arrive pas à faire les menus pour le moment. Réessaie dans un instant."); return null; }
     try { await appel({ action: 'menus', jours: j, batch }); } catch (e) { /* on les a quand même ici */ }
     cacheAt = 0;
+    if (auto) return { j, dates, co, ajoutes: ajouteCourses(co), batch }; // la semaine complète : les courses vont directement sur la liste
     menusOffre = { at: Date.now(), co }; dlg.attendReponse = Date.now() + 150000;
     tableauMenus(j, co);
     return say(`Voici les dîners : ${j.map((x, i) => `${JOURS_SEM[dates[i].getDay()]}, ${min1(x.plat)}`).join(' ; ')}.${batch.length ? ` J'ai aussi préparé le batch cooking du dimanche : dis « on lance le batch cooking » quand tu veux.` : ''}${co.length ? ` Il manque ${co.length} articles : je les ajoute à ta liste de courses, rangée par rayon ?` : ''}`);
@@ -309,6 +310,49 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
     return say(`Ta semaine en cuisine : ${p.join(' ; ')}.`.replace(': Pas de', ': pas de'));
   }
 
+  /* ---------- la semaine complète : les menus, les courses (sans ce qu'il a déjà), le drive d'abord, le panier prêt à valider ---------- */
+  let semaineOffre = null;
+  async function semaine() {
+    semaineOffre = null;
+    const r = await menus(true); if (!r) return;
+    let p = null; if (typeof PRIX !== 'undefined') { try { p = await PRIX.planDrive(); } catch (e) { p = null; } }
+    const nb = (S.listes || []).filter(x => x.liste === 'courses').length;
+    const nDrive = typeof PRIX !== 'undefined' ? PRIX.drive(true) : 0; // l'écran : un lien par article pour le panier drive
+    S.semainePrete = { at: Date.now() }; save();
+    const eu = v => (typeof PRIX !== 'undefined' ? PRIX.euros(v) : `${Math.round(v)} €`);
+    const plats = r.j.slice(0, 7).map((x, i) => `${JOURS_SEM[r.dates[i].getDay()]}, ${min1(x.plat)}`);
+    const prixTxt = p && p.connus ? ` Pour ${p.connus} articles dont je connais le prix au Leclerc, compte environ ${eu(p.totalDrive)}.` : '';
+    const autreTxt = p && p.autre ? ` Pour économiser ${eu(p.autre.eco)}, prends ${liste(p.autre.items.slice(0, 3).map(x => x.text.replace(/\s*\(.*\)$/, '')))}${p.autre.items.length > 3 ? '…' : ''} chez ${p.MAG[p.autre.m]} : je l'ai mis de côté.` : '';
+    fx.ok();
+    return say(`C'est prêt. Les dîners : ${plats.join(' ; ')}. J'ai mis ${r.ajoutes.length} article${r.ajoutes.length > 1 ? 's' : ''} sur ta liste, sans ce que tu as déjà : ${nb} en tout. Au drive Leclerc : ${nDrive} article${nDrive > 1 ? 's' : ''}.${prixTxt}${autreTxt} À l'écran, touche chaque article pour le mettre dans ton panier, puis valide et choisis ton créneau. Dis-moi ensuite « j'ai commandé le drive pour samedi 10 heures » : je te rappellerai le retrait.`);
+  }
+  // « j'ai commandé le drive pour samedi 10 h » : le rappel du retrait (45 minutes avant)
+  function quandDe(n) {
+    const d = new Date(); const jj = JOURS_SEM.findIndex(x => new RegExp(`\\b${x}\\b`).test(n));
+    if (/\bapres demain\b/.test(n)) d.setDate(d.getDate() + 2); else if (/\bdemain\b/.test(n)) d.setDate(d.getDate() + 1); else if (jj >= 0) d.setDate(d.getDate() + (((jj - d.getDay()) % 7) + 7) % 7);
+    const h = n.match(/\b(\d{1,2}) ?(?:h|heures?)(?: ?(\d{1,2}))?\b/); if (!h) return null;
+    d.setHours(+h[1], h[2] ? +h[2] : 0, 0, 0); if (d <= new Date()) d.setDate(d.getDate() + 7);
+    return d;
+  }
+  async function driveCommande(n) {
+    const d = quandDe(n);
+    S.driveCommande = { at: Date.now(), retrait: d ? +d : 0 }; save();
+    if (!d) return say("C'est noté. À quel moment tu le récupères ? Dis par exemple : je récupère le drive samedi à 10 heures.");
+    const fin = +d - 45 * 60000;
+    if (fin > Date.now()) { S.minuteurs = S.minuteurs || []; S.minuteurs.push({ id: Date.now(), nom: `récupérer le drive Leclerc à ${d.getHours()} h${d.getMinutes() ? ` ${String(d.getMinutes()).padStart(2, '0')}` : ''}`, fin, total: (fin - Date.now()) / 1000, type: 'rappel' }); save(); }
+    fx.ok();
+    return say(`Parfait. Retrait ${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })} à ${d.getHours()} heures${d.getMinutes() ? ` ${d.getMinutes()}` : ''} : je te le rappelle trois quarts d'heure avant. Quand tu l'as récupéré, dis « j'ai récupéré le drive » : je range tout au garde-manger.`);
+  }
+  async function driveRecupere() {
+    const l = (S.listes || []).filter(x => x.liste === 'courses' && (!S.coursesPlan || !S.coursesPlan[x.id] || S.coursesPlan[x.id] === 'leclerc'));
+    if (!l.length) return say("Ta liste ne contient plus rien pour le drive. Si tu as des produits à ranger, dis « j'ai acheté… ».");
+    await pris(l.map(x => x.text.replace(/\s*\(.*\)$/, '')), true);
+    S.driveCommande = null; save();
+    const reste = (S.listes || []).filter(x => x.liste === 'courses');
+    fx.ok();
+    return say(`C'est rangé : ${l.length} produits du drive au garde-manger.${reste.length ? ` Il reste ${reste.length} article${reste.length > 1 ? 's' : ''} à prendre ${S.coursesPlan && reste.some(x => S.coursesPlan[x.id] && S.coursesPlan[x.id] !== 'leclerc') ? 'dans l\'autre magasin' : 'ailleurs'}.` : ''} Pense à photographier le ticket, ou la facture du drive, pour que je retienne les prix.`);
+  }
+
   /* ---------- après une recette (le chef le demande) : ce qui a servi sort du garde-manger ---------- */
   async function apresRecette(titre, ingredients) {
     let c; try { c = await charge(true); } catch (e) { return; }
@@ -329,6 +373,9 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
       const c = await charge().catch(() => null);
       if (c && (c.batch || []).length) PROACTIF.annonce(`batch-${dayKey()}`, () => { S.cuisineBatch = dayKey(); save(); return "C'est dimanche après la gym : on prépare les bases de la semaine ? Dis « on lance le batch cooking », c'est une heure à peu près, et ta semaine sera prête."; }, { expire: Date.now() + 3 * 3600000 });
     }
+    if (new Date().getDay() === 5 && h0 >= 18 && h0 < 21 && S.cuisineSemaine !== dayKey() && dlg.started && S.settings.semaineAuto !== false && (typeof CONSTELLATION === 'undefined' || CONSTELLATION.principal())) {
+      PROACTIF.annonce(`semaine-${dayKey()}`, () => { S.cuisineSemaine = dayKey(); save(); semaineOffre = { at: Date.now() }; dlg.attendReponse = Date.now() + 120000; return "C'est vendredi : je prépare la semaine prochaine ? Les menus, les courses, et ton panier drive prêt à valider."; }, { expire: Date.now() + 3 * 3600000 });
+    }
     const h = new Date().getHours(); if (h < 17 || h >= 19 || S.cuisineDit === dayKey() || !dlg.started) return;
     if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
     let c; try { c = await charge(true); } catch (e) { return; }
@@ -345,6 +392,14 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
       if (k >= 0 && idees.l[k] && n.split(' ').length <= 8) return () => choisis(k);
     }
     if (menusOffre && Date.now() - menusOffre.at < 180000 && /^(oui|ouais|ok|d accord|vas y|ajoute|ajoute les|bien sur)\b/.test(n)) return () => { const co = menusOffre.co; menusOffre = null; dlg.attendReponse = 0; const neufs = ajouteCourses(co); fx.ok(); return say(`C'est fait : ${neufs.length} article${neufs.length > 1 ? 's' : ''} sur ta liste de courses, rangée par rayon. Dis « mode magasin » au supermarché.`); };
+    if (semaineOffre && Date.now() - semaineOffre.at < 150000) {
+      if (/^(oui|ouais|ok|d accord|vas y|bien sur|carrement|go|prepare)\b/.test(n)) return semaine;
+      if (/^(non|pas la peine|pas cette semaine|laisse)\b/.test(n)) return () => { semaineOffre = null; dlg.attendReponse = 0; return say("D'accord. Dis « prépare ma semaine » quand tu veux."); };
+    }
+    if (/\b(prepare|organise|fais|planifie)( moi)? (toute |tout |ma |la )?(ma )?semaine\b|\bfais tout pour la semaine\b|\b(menus?|repas) et (les )?courses de la semaine\b|\bla semaine complete\b/.test(n)) return semaine;
+    if (/\b(j ai|on a)\s+(commande|valide|passe commande|reserve)\b.*\bdrive\b|\b(je recupere|je vais chercher|retrait) (le |mon )?drive\b/.test(n)) return () => driveCommande(n);
+    if (/\b(j ai|on a)\s+(recupere|recu|ramene|ete chercher)\s+(le |mon )?drive\b|\bdrive recupere\b/.test(n)) return driveRecupere;
+    if (/\b(arrete|ne|plus)\b.*\b(propose|proposer)\b.*\bsemaine\b/.test(n)) return () => { S.settings.semaineAuto = false; save(); return say("D'accord, je ne te proposerai plus de préparer la semaine le vendredi. Dis « prépare ma semaine » quand tu veux."); };
     if (menuOffre && Date.now() - menuOffre.at < 150000) {
       if (/^(oui|ouais|ok|d accord|vas y|on le lance|lance|c est parti|go)\b/.test(n)) return () => { const m = menuOffre.m; menuOffre = null; dlg.attendReponse = 0; appel({ action: 'repas', plat: m.plat }).catch(() => {}); return handle(`on fait la recette de ${m.plat} pour ${m.double ? 4 : 2}`); };
       if (/\b(autre chose|autre idee|pas envie|non)\b/.test(n)) return () => { menuOffre = null; dlg.attendReponse = 0; return quoiManger('autre chose', 'autre chose'); };

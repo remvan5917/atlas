@@ -125,8 +125,27 @@ const PRIX = (() => {
     return say(`Pour les ${connus.length} articles dont je connais le prix, le moins cher en un seul magasin, c'est ${MAG[best.m]} : environ ${euros(best.t)}${seuls[1] ? `, contre ${euros(seuls[1].t)} chez ${MAG[seuls[1].m]}` : ''}.${d}${inconnus ? ` Pour ${inconnus} article${inconnus > 1 ? 's' : ''}, je n'ai pas encore de prix.` : ''} Au magasin, dis « mode magasin ${MAG[best.m]} »${deux ? `, puis « mode magasin ${MAG[duo.a === best.m ? duo.b : duo.a]} »` : ''}.`);
   }
 
+  /* ---------- le plan « drive d'abord » : tout au drive Leclerc, sauf si un autre magasin fait économiser au moins le seuil ---------- */
+  async function planDrive() {
+    const items = (S.listes || []).filter(x => x.liste === 'courses');
+    let l = []; try { l = await charge(true); } catch (e) { l = []; }
+    const P = items.map(x => ({ x, p: prixDe(x.text, l) }));
+    let autre = null;
+    for (const m of ['aldi', 'lidl']) {
+      const moins = P.filter(o => o.p[m] && o.p.leclerc && o.p[m].p < o.p.leclerc.p);
+      const eco = moins.reduce((s_, o) => s_ + o.p.leclerc.p - o.p[m].p, 0);
+      if (!autre || eco > autre.eco) autre = { m, items: moins.map(o => o.x), eco };
+    }
+    S.coursesPlan = {}; items.forEach(x => { S.coursesPlan[x.id] = 'leclerc'; });
+    const garde = autre && autre.eco >= SEUIL() ? autre : null;
+    if (garde) garde.items.forEach(x => { S.coursesPlan[x.id] = garde.m; });
+    save();
+    const auDrive = P.filter(o => S.coursesPlan[o.x.id] === 'leclerc'), connus = auDrive.filter(o => o.p.leclerc);
+    return { n: items.length, drive: auDrive.length, totalDrive: connus.reduce((s_, o) => s_ + o.p.leclerc.p, 0), connus: connus.length, autre: garde, eco: autre ? autre.eco : 0, MAG };
+  }
+
   /* ---------- le drive Leclerc : un lien de recherche par article (le panier, c'est toi qui le valides) ---------- */
-  function drive() {
+  function drive(silencieux) {
     const tout = (S.listes || []).filter(x => x.liste === 'courses');
     if (!tout.length) return say('Ta liste de courses est vide.');
     const plan = S.coursesPlan || {}, partage = tout.some(x => plan[x.id] === 'leclerc') && tout.some(x => plan[x.id] && plan[x.id] !== 'leclerc');
@@ -135,6 +154,7 @@ const PRIX = (() => {
     const base = S.settings.driveLeclerc || 'https://www.e.leclerc/recherche?q=';
     const lien = t => (base.includes('{q}') ? base.replace('{q}', encodeURIComponent(t)) : `${base}${encodeURIComponent(t)}`);
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(90vw,520px)"><small style="letter-spacing:.3em;color:#7dd3fc">DRIVE LECLERC · ${items.length} ARTICLES · TOUCHE POUR CHERCHER</small>${items.map(x => { const q = x.text.replace(/\s*\(.*\)$/, ''); return `<a href="${esc(lien(q))}" target="_blank" rel="noopener" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);color:#e0f2fe;text-decoration:none;font-size:17px"><span>${esc(x.text)}</span><span style="color:#7dd3fc">chercher ›</span></a>`; }).join('')}<p style="font-size:13px;color:#94a3b8;margin-top:8px">Choisis ton magasin drive sur le site la première fois. Je n'ajoute rien au panier et je ne paie rien : c'est toi qui valides.</p></div>`);
+    if (silencieux) return items.length;
     return say(`Voici les ${items.length} articles${partage ? ' à prendre chez Leclerc' : ''} pour le drive : touche chacun pour le chercher sur le site, ajoute-le au panier, et valide quand c'est bon.${autre ? ` D'après tes prix, ${MAG[autre]} reviendrait un peu moins cher ; le drive te fait gagner du temps.` : ''}`);
   }
 
@@ -153,5 +173,5 @@ const PRIX = (() => {
     if (/\b(deuxieme magasin|second magasin)\b.*\b(si|a partir de|au dessus de)\b.*\d/.test(n)) { const v = +((n.match(/(\d+)/) || [])[1] || 5); return () => { S.settings.seuilDeuxMagasins = v; save(); return say(`D'accord : je te proposerai un deuxième magasin seulement si tu économises au moins ${v} euros.`); }; }
     return null;
   }
-  return { route, magasinDe: id => (S.coursesPlan || {})[id] || '' };
+  return { route, planDrive, drive, euros, magasinDe: id => (S.coursesPlan || {})[id] || '' };
 })();
