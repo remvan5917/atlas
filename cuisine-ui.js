@@ -12,6 +12,8 @@
 'use strict';
 
 const CUISINEUI = (() => {
+  const REP = [['matin', 'Petit-déjeuner', 'Ce matin'], ['midi', 'Déjeuner', 'Ce midi'], ['collation', 'Collation', 'La collation'], ['plat', 'Dîner', 'Ce soir']];
+  let heroCle = 'plat', jourSel = '';
   let el = null, vue = 'accueil', data = null, rec = null, pers = 2, etape = -1, lecture = true, horloge = 0, verrou = null, retour = 'accueil';
   const minuteurs = [];
   const r0 = () => VOIXMAISON.root();
@@ -78,7 +80,7 @@ const CUISINEUI = (() => {
         for (const x of await commons(q)) {
           const ii = (x.imageinfo || [])[0]; if (!ii || !ii.thumburl || !/jpeg|png|webp/.test(ii.mime || '') || ii.width < 800) continue;
           const tit = String(x.title || '').replace(/^File:/, '').replace(/\.[a-z]+$/i, '').toLowerCase().replace(/[_-]/g, ' ');
-          if (/\b(1[5-9]\d\d|book|handbook|page|journal|magazine|catalog|map|diagram|logo|menu card|poster|drawing|illustration|painting|mhnt|bot|herbarium|seeds?|plants?|field|farm|harvest|reservoir|river|lake|creek|hatchery|jar|bottle|package|packaging|label|brand|shop|store|market|restaurant sign)\b/.test(tit)) continue;
+          if (/\b(1[5-9]\d\d|book|handbook|page|journal|magazine|catalog|map|diagram|logo|menu card|poster|drawing|illustration|painting|mhnt|bot|herbarium|seeds?|plants?|field|farm|harvest|reservoir|river|lake|creek|hatchery|jar|bottle|package|packaging|label|brand|shop|store|market|restaurant sign|dairy bar|candy|cereal bar|chocolate bar|ice cream|vending|advert|advertisement)\b/.test(tit)) continue;
           if (!ms.every(w => tit.includes(racine(w)))) continue;
           const vus = mp.filter(w => tit.includes(racine(w))).length;
           // un plat, pas l'ingrédient vivant ou cru : deux mots du plat, ou un mot de cuisine dans le titre
@@ -196,6 +198,7 @@ const CUISINEUI = (() => {
 #cz .fondph{position:absolute;inset:-60px;width:calc(100% + 120px);height:calc(100% + 120px);object-fit:cover;filter:blur(48px) saturate(1.4) brightness(.32);opacity:0;transition:opacity 1.2s;z-index:0;pointer-events:none}
 #cz .fondph.ok{opacity:1}#cz.cuisson>*:not(.fondph){position:relative;z-index:1}
 #cz .vignette{width:0;height:44px;border-radius:14px;object-fit:cover;flex:0 0 auto;opacity:0;transition:opacity .6s,width .4s;margin-left:-10px}#cz .vignette.ok{opacity:1;width:44px;margin-left:0}
+#cz .repas{flex-basis:40%;min-height:128px}#cz .repas b{letter-spacing:.06em;font-size:11px}#cz .repas.passe{opacity:.5}#cz .repas.ici{outline:2px solid #ffb547;outline-offset:-2px}#cz .repas-jour{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
 @media (prefers-reduced-motion:reduce){#cz .hero .ph.ok{animation:none}}
 @media (min-width:900px){#cz .corps{padding:4px 28px 28px}#cz .tuiles{grid-template-columns:repeat(4,minmax(0,1fr))}#cz .jour{flex-basis:18%}#cz .fiche{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}}`;
     document.head.appendChild(s);
@@ -218,9 +221,12 @@ const CUISINEUI = (() => {
   function dessine() {
     if (!el) return;
     el.classList.toggle('cuisson', vue === 'cuisson');
-    el.innerHTML = vue === 'recette' ? vRecette() : vue === 'cuisson' ? vCuisson() : vue === 'fin' ? vFin() : vue === 'charge' ? vCharge() : vAccueil();
+    el.innerHTML = vue === 'jour' ? vJour() : vue === 'recette' ? vRecette() : vue === 'cuisson' ? vCuisson() : vue === 'fin' ? vFin() : vue === 'charge' ? vCharge() : vAccueil();
     branche(); PHOTO.remplis(el);
+    const ici = el.querySelector('.repas.ici'); if (ici && ici.parentElement) ici.parentElement.scrollLeft = Math.max(0, ici.offsetLeft - ici.parentElement.offsetLeft - 24); // la journée : le repas qui vient, en vue
   }
+  const sansReste = t => String(t || '').replace(/^restes?\s+(?:de la |de l['’]|du |des |de |d['’])/i, ''); // la photo d'un reste : celle du plat
+  const estReste = t => /^restes?\b/i.test(String(t || ''));
   const tete = (titre, sous, gauche = 'x') => `<div class="tete"><button class="rond" data-a="${gauche === 'x' ? 'ferme' : 'retour'}" aria-label="${gauche === 'x' ? 'Fermer' : 'Retour'}">${ic(gauche)}</button><div style="flex:1"><small>${esc(sous || '')}</small><h1>${esc(titre)}</h1></div></div>`;
   let chargeTxt = '';
   const vCharge = () => `${tete('Cuisine', 'Atlas cuisine', 'back')}<div class="corps"><div class="charge"><i></i>${esc(chargeTxt || 'Je prépare la recette…')}</div></div>`;
@@ -233,18 +239,23 @@ const CUISINEUI = (() => {
     const vite = st.filter(x => x.perime && x.lieu !== 'congelateur' && x.perime - now < 2 * 86400);
     const courses = (S.listes || []).filter(x => x.liste === 'courses').length;
     const recettes = (d.recettes || []).slice().reverse(), nouv = ((d.nouveautes || {}).liste || []);
-    const [c1, c2] = teinte(soir ? soir.plat : '');
+    // le prochain repas de la journée (le matin, le petit-déjeuner ; à midi, le déjeuner ; l'après-midi, la collation ; puis le dîner)
+    const h = new Date().getHours(); let k0 = h < 10 ? 0 : h < 14 ? 1 : h < 17 ? 2 : 3; while (soir && k0 < 3 && !soir[REP[k0][0]]) k0++;
+    heroCle = REP[k0][0]; const heroPlat = soir ? soir[heroCle] || soir.plat : '';
+    const [c1, c2] = teinte(heroPlat);
     const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const journee = soir && REP.some(([k]) => k !== 'plat' && soir[k]);
     return `${tete('Cuisine', date)}<div class="corps">
-      <div class="hero grand" data-a="${soir ? 'soir' : 'idee'}" style="background:linear-gradient(140deg,${c1},${c2})">${soir ? ph(soir.plat) : ''}
-        <div class="lab">${soir ? 'Ce soir' : 'Ce soir ?'}</div><h2>${esc(soir ? soir.plat : 'On cuisine quoi ?')}</h2>
-        <p>${esc(soir ? (soir.note || 'Touche pour la recette') : 'Trois idées avec ce que tu as, tes entraînements et le potager')}</p>
-        <div class="puces">${soir && soir.double ? '<span class="puce">×2 · le midi de demain</span>' : ''}${soir && (soir.decongeler || []).length ? `<span class="puce">${ic('box', 15)} sortir ${esc(liste(soir.decongeler))}</span>` : ''}<span class="puce">${ic('play', 15)} ${soir ? 'Voir la recette' : 'Des idées'}</span></div>
+      <div class="hero grand" data-a="${soir ? 'soir' : 'idee'}" style="background:linear-gradient(140deg,${c1},${c2})">${soir ? ph(heroPlat) : ''}
+        <div class="lab">${soir ? REP[k0][2] : 'Ce soir ?'}</div><h2>${esc(soir ? heroPlat : 'On cuisine quoi ?')}</h2>
+        <p>${esc(soir ? (heroCle === 'plat' ? soir.note : heroCle === 'collation' ? soir.collation_quand : '') || 'Touche pour la recette' : 'Trois idées avec ce que tu as, tes entraînements et le potager')}</p>
+        <div class="puces">${soir && heroCle === 'plat' && soir.double ? '<span class="puce">×2 · le midi de demain</span>' : ''}${soir && (soir.decongeler || []).length ? `<span class="puce">${ic('box', 15)} ${heroCle === 'plat' ? '' : 'ce soir : '}sortir ${esc(liste(soir.decongeler))}</span>` : ''}<span class="puce">${ic('play', 15)} ${soir ? 'Voir la recette' : 'Des idées'}</span></div>
       </div>
-      <div class="chercher">${ic('search', 20)}<input id="cz-q" placeholder="Envie de… (un plat, un ingrédient)" enterkeyhint="search" autocomplete="off"><button class="btn chaud" data-a="cherche">${ic('spark', 18)}</button></div>
+      ${journee ? `<div class="titre">Ma journée</div><div class="defile">${REP.map(([k, lab], i) => soir[k] ? `<div class="jour repas ${i < k0 ? 'passe' : i === k0 ? 'ici' : ''}" data-date="${soir.date}" data-cle="${k}" style="background:linear-gradient(160deg,${teinte(soir[k])[0]}cc,${teinte(soir[k])[1]})">${ph(sansReste(soir[k]))}<b>${lab}</b><div>${esc(soir[k])}</div></div>` : '').join('')}</div>` : ''}
+      <div class="chercher" style="margin-top:${journee ? 16 : 6}px">${ic('search', 20)}<input id="cz-q" placeholder="Envie de… (un plat, un ingrédient)" enterkeyhint="search" autocomplete="off"><button class="btn chaud" data-a="cherche">${ic('spark', 18)}</button></div>
       <div class="chips">${['Récupération après le sport', 'Prêt en 15 minutes', "Avec ce que j'ai", 'À faire avec mon fils', 'Petit-déjeuner sportif', 'Végétarien protéiné'].map(x => `<button class="chip" data-idee="${esc(x)}">${esc(x)}</button>`).join('')}</div>
       <div class="titre">La semaine <span>${menus.length ? `${menus.length} dîners` : ''}</span></div>
-      ${menus.length ? `<div class="defile">${menus.map(m => { const [a, b] = teinte(m.plat); const j = new Date(`${m.date}T12:00:00`); return `<div class="jour" data-plat="${esc(m.plat)}" style="background:linear-gradient(160deg,${a}cc,${b})">${ph(m.plat)}<b>${m.date === auj() ? "Aujourd'hui" : `${JOURS[j.getDay()]} ${j.getDate()}`}</b><div>${esc(m.plat)}</div></div>`; }).join('')}</div>` : `<button class="btn plein" data-a="semaine">${ic('cal', 20)} Préparer ma semaine : menus, courses, drive</button>`}
+      ${menus.length ? `<div class="defile">${menus.map(m => { const [a, b] = teinte(m.plat); const j = new Date(`${m.date}T12:00:00`); return `<div class="jour" data-jour="${m.date}" style="background:linear-gradient(160deg,${a}cc,${b})">${ph(m.plat)}<b>${m.date === auj() ? "Aujourd'hui" : `${JOURS[j.getDay()]} ${j.getDate()}`}</b><div>${esc(m.plat)}${m.matin ? '<small style="display:block;font:500 12px system-ui;opacity:.8;margin-top:4px">+ matin, midi, collation</small>' : ''}</div></div>`; }).join('')}</div>` : `<button class="btn plein" data-a="semaine">${ic('cal', 20)} Préparer ma semaine : menus, courses, drive</button>`}
       <div class="titre">La maison</div>
       <div class="tuiles">
         <div class="tuile ${vite.length ? 'alerte' : ''}" data-a="frigo"><span class="i">${ic('box')}</span><b>Garde-manger</b><small>${st.length ? (vite.length ? `À finir : ${esc(liste(vite.slice(0, 3).map(x => x.nom)))}` : `${st.length} produits`) : 'Vide pour l’instant'}</small></div>
@@ -257,6 +268,18 @@ const CUISINEUI = (() => {
       <div class="titre">Mes recettes <span>${recettes.length || ''}</span></div>
       ${recettes.length ? `<div class="grille">${recettes.slice(0, 12).map(r => { const [a, b] = teinte(r.titre); return `<div class="carte" data-rec="${esc(r.id)}" style="background:linear-gradient(160deg,${a},${b})">${ph(r)}${r.note ? `<span style="position:absolute;top:10px;right:12px;font:700 13px system-ui;color:#ffd9a0">${'★'.repeat(r.note)}</span>` : ''}<b>${esc(r.titre)}</b><small>${r.minutes ? `${r.minutes} min` : ''}${r.macros && r.macros.proteines ? ` · ${r.macros.proteines} g de protéines` : ''}</small></div>`; }).join('')}</div>` : '<div class="vide">Les recettes que tu gardes apparaîtront ici.</div>'}
     </div>`;
+  }
+
+  /* ---------- une journée du menu : le matin, le midi, la collation, le soir ---------- */
+  function vJour() {
+    const m = ((data && data.menus) || []).find(x => x.date === jourSel);
+    if (!m) { vue = 'accueil'; return vAccueil(); }
+    const j = new Date(`${m.date}T12:00:00`), titre = m.date === auj() ? "Aujourd'hui" : j.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' });
+    const det = k => k === 'plat' ? [m.note, m.double ? '×2 : le reste pour le midi de demain' : '', (m.decongeler || []).length ? `sortir ${liste(m.decongeler)} le matin` : ''].filter(Boolean).join(' · ') : k === 'collation' ? m.collation_quand : '';
+    return `${tete(titre.charAt(0).toUpperCase() + titre.slice(1), 'La journée', 'back')}<div class="corps"><div class="repas-jour">
+      ${REP.map(([k, lab]) => { if (!m[k]) return ''; const [a, b] = teinte(m[k]); return `<div class="hero" data-date="${m.date}" data-cle="${k}" style="min-height:190px;background:linear-gradient(140deg,${a},${b})">${ph(sansReste(m[k]))}<div class="lab">${lab}</div><h2 style="font-size:clamp(22px,4.6vw,30px)">${esc(m[k])}</h2>${det(k) ? `<p>${esc(det(k))}</p>` : ''}<div class="puces"><span class="puce">${ic(estReste(m[k]) ? 'flame' : 'play', 15)} ${estReste(m[k]) ? 'À réchauffer' : 'La recette'}</span></div></div>`; }).join('')}
+      ${m.matin ? '' : '<div class="vide">Ce menu ne contient que le dîner. Dis « fais les menus de la semaine » : je prépare aussi le matin, le midi et la collation.</div>'}
+    </div></div>`;
   }
 
   /* ---------- la recette : générée pour lui ---------- */
@@ -274,10 +297,10 @@ const CUISINEUI = (() => {
     await ouvre('charge'); chargeTxt = `Je prépare « ${idee} »…`; vue = 'charge'; dessine();
     const r = await genere(idee, o);
     if (!r) { vue = 'accueil'; dessine(); return say("Je n'ai pas réussi à écrire cette recette. Réessaie dans un instant."); }
-    montre(r, o.pers);
+    montre(r, o.pers, o.retour);
     return say(`${r.titre}. ${r.resume || ''} ${r.minutes ? `${r.minutes} minutes.` : ''} Dis « on cuisine » quand tu es prêt.`);
   }
-  function montre(r, p) { rec = Object.assign({ portions: 2 }, r); pers = p || rec.portions || 2; etape = -1; retour = 'accueil'; vue = 'recette'; if (!el) ouvre('recette'); else dessine(); }
+  function montre(r, p, ret) { rec = Object.assign({ portions: 2 }, r); pers = p || rec.portions || 2; etape = -1; retour = ret || 'accueil'; vue = 'recette'; if (!el) ouvre('recette'); else dessine(); }
 
   /* ---------- les nouveautés : Atlas renouvelle seul les recettes, chaque semaine ---------- */
   let renouvelleEnCours = false;
@@ -392,6 +415,8 @@ const CUISINEUI = (() => {
     el.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); action(b.dataset.a); }));
     el.querySelectorAll('[data-idee]').forEach(b => b.addEventListener('click', () => cherche(b.dataset.idee)));
     el.querySelectorAll('[data-plat]').forEach(b => b.addEventListener('click', () => cherche(b.dataset.plat)));
+    el.querySelectorAll('[data-jour]').forEach(b => b.addEventListener('click', () => { jourSel = b.dataset.jour; vue = 'jour'; dessine(); }));
+    el.querySelectorAll('[data-cle]').forEach(b => b.addEventListener('click', async () => { const m = (data.menus || []).find(x => x.date === b.dataset.date); const k = b.dataset.cle; if (!m || !m[k]) return; if (estReste(m[k])) return say(`${m[k]} : le reste du dîner de la veille. Réchauffe-le doucement, à la poêle ou au four, et ajoute des crudités ou un fruit.`); cherche(m[k], { pers: k === 'plat' && m.double ? 4 : 2, retour: vue === 'jour' ? 'jour' : 'accueil' }); }));
     el.querySelectorAll('[data-nouv]').forEach(b => b.addEventListener('click', () => { const r = ((data.nouveautes || {}).liste || [])[+b.dataset.nouv]; if (r) montre(r); }));
     el.querySelectorAll('[data-rec]').forEach(b => b.addEventListener('click', () => { const r = (data.recettes || []).find(x => x.id === b.dataset.rec); if (r) montre(r); }));
     el.querySelectorAll('[data-note]').forEach(b => b.addEventListener('click', async () => { note = +b.dataset.note; dessine(); if (rec.id) { try { await db({ action: 'recette_note', id: rec.id, note, faite: true }); } catch (e) { /* rien */ } } }));
@@ -400,9 +425,10 @@ const CUISINEUI = (() => {
   async function action(a) {
     const et = rec && rec.etapes || [];
     if (a === 'ferme') return ferme();
+    if (a === 'retour' && vue === 'recette' && retour === 'jour') { vue = 'jour'; return dessine(); }
     if (a === 'retour') { vue = 'accueil'; dessine(); try { data = await db(); dessine(); } catch (e) { /* rien */ } return; }
     if (a === 'retourfiche') { vue = 'recette'; lache(); return dessine(); }
-    if (a === 'soir') { const m = (data.menus || []).find(x => x.date === auj()); return m ? cherche(m.plat, { pers: m.double ? 4 : 2 }) : null; }
+    if (a === 'soir') { const m = (data.menus || []).find(x => x.date === auj()); const k = m && m[heroCle] ? heroCle : 'plat'; return m ? cherche(m[k], { pers: k === 'plat' && m.double ? 4 : 2 }) : null; }
     if (a === 'idee') { ferme(); return handle("qu'est-ce qu'on mange ce soir"); }
     if (a === 'cherche') { const q = el.querySelector('#cz-q'); return q && q.value.trim() ? cherche(q.value.trim()) : q && q.focus(); }
     if (a === 'semaine') { ferme(); return handle('prépare ma semaine'); }
