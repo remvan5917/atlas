@@ -140,7 +140,7 @@ const ELEVEN = {
     const s = S.settings, key = `${s.elevenVoice}|${s.elevenModel || 'eleven_v4_turbo'}|${t}`;
     if (this.cache.has(key)) return this.cache.get(key);
     const ctl = window.AbortController ? new AbortController() : null;
-    const tm = setTimeout(() => ctl && ctl.abort(), 9000);
+    const tm = setTimeout(() => ctl && ctl.abort(), Math.min(30000, 9000 + 25 * t.length)); // une longue phrase prend plus de temps à fabriquer
     const p = fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(s.elevenVoice)}?output_format=mp3_44100_128`, {
       method: 'POST', signal: ctl ? ctl.signal : undefined,
       headers: { 'Content-Type': 'application/json', 'xi-api-key': s.elevenKey, Accept: 'audio/mpeg' },
@@ -155,7 +155,7 @@ const ELEVEN = {
       this.cache.delete(key); this.erreur = e.message; this.erreurAt = Date.now(); this.erreurStatus = e.status || 0;
       // crédit épuisé ou clé refusée : on n'insiste pas pendant 30 min ; un souci réseau : 2 min ; un texte vide refusé (400) : ce n'est pas une panne
       if (e.status === 400 && /empty|vide|non-empty/i.test(e.message)) return;
-      this.downUntil = Date.now() + ((e.status === 401 || e.status === 402 || e.status === 429 || /quota/i.test(e.message)) ? 30 * 60000 : 120000);
+      this.downUntil = Date.now() + ((e.status === 401 || e.status === 402 || e.status === 429 || /quota/i.test(e.message)) ? 30 * 60000 : e.name === 'AbortError' ? 20000 : 120000); // trop long à venir : on retente vite (sinon la voix change pour toute la conversation)
     });
     this.cache.set(key, p);
     if (this.cache.size > 16) this.cache.delete(this.cache.keys().next().value);
@@ -243,7 +243,22 @@ const voice = {
     this._file = p.catch(() => {});
     return p;
   },
-  _dire(t) {
+  // un long texte (le planning relu, les menus de la semaine) : découpé en phrases ; la suivante se fabrique pendant qu'il dit
+  // celle-ci (il commence plus vite, et ElevenLabs ne dépasse plus son délai : la voix reste la même)
+  async _dire(t) {
+    if (t.length <= 280) return this._direUn(t);
+    const morceaux = [], ph = t.match(/[^.!?;:]+[.!?;:]*\s*/g) || [t];
+    let cur = '';
+    for (const x of ph) { if ((cur + x).length > 240 && cur) { morceaux.push(cur.trim()); cur = ''; } cur += x; }
+    if (cur.trim()) morceaux.push(cur.trim());
+    const gen = this._gen;
+    for (let i = 0; i < morceaux.length; i++) {
+      if (gen !== this._gen || this.endormi) break;
+      if (morceaux[i + 1] && ELEVEN.usable()) ELEVEN.prefetch(morceaux[i + 1]);
+      await this._direUn(morceaux[i]);
+    }
+  },
+  _direUn(t) {
     lastSaid = t;
     const maison = () => (VOIXMAISON.usable() ? this.sayMaison(t).catch(() => this.saySynth(t)) : this.saySynth(t));
     if (ELEVEN.usable()) return this.sayMaison(t, ELEVEN).catch(e => { ELEVEN.erreur = String((e && e.message) || e || 'lecture impossible'); ELEVEN.erreurAt = Date.now(); return maison(); }); // la voix ElevenLabs d'abord
