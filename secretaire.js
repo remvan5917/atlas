@@ -346,10 +346,13 @@ const SECRETAIRE = (() => {
       // 1. le planning (dicté), sans l'imprimer à part
       try { await AGENDA.planifie({ rituel: true }); } catch (e) { /* on continue */ }
       // 2. les menus : adaptés s'ils existent, sinon faits (menus, courses, drive)
+      // les menus faits APRÈS le planning, du lundi au dimanche ; s'il y en a déjà pour cette semaine-là, ils s'adaptent seulement
       let menus = [];
+      const sem0 = AGENDA._semaine ? AGENDA._semaine() : [new Date()], du0 = dJ(sem0[0]);
       try {
-        const a = await CUISINE.adapte();
-        if (a && a.rien) { await CUISINE.semaine(); } else if (a && a.changes && a.changes.length) await say(`Les menus : ${a.changes.slice(0, 3).join(' ; ')}.`);
+        const deja = ((await CUISINE._charge(true)).menus || []).filter(x => x.date >= du0 && x.date <= dJ(sem0[sem0.length - 1]));
+        if (deja.length >= 5) { const a = await CUISINE.adapte(); if (a && a.changes && a.changes.length) await say(`Les menus : ${a.changes.slice(0, 3).join(' ; ')}.`); }
+        else { await say('Maintenant, les repas, faits pour ton planning.'); await CUISINE.semaine({ debut: du0, avantDrive: new Date().getDay() === 0 }); }
         menus = ((await CUISINE._charge(true)).menus || []);
       } catch (e) { /* on continue */ }
       // 3. le reste : la maison, son fils, les papiers, l'argent, les proches
@@ -370,7 +373,7 @@ const SECRETAIRE = (() => {
       let imp = false;
       try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan }) }); imp = r.ok; } catch (e) { imp = false; }
       const n = afaire.length;
-      return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? " Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : le planning, les repas, les choses à faire, ta semaine écoulée et les courses.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}" : ''} Bonne semaine !`);
+      return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? ` Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : le planning, les repas, les choses à faire, ta semaine écoulée et les courses.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}` : ''} Bonne semaine !`);
     } finally { window.__RITUEL = false; }
   }
   function coursesGroupees() {

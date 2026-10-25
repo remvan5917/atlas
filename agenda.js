@@ -192,7 +192,7 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
     if (d.getDay() !== 0 || h < 17.5 || h > 21.5 || !dlg.started || S.settings.planningAuto === false || S.planningSemaine === cleSemaine()) return;
     if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
-    PROACTIF.annonce(`planning-${cleSemaine()}`, () => { planningOffre = { at: Date.now() }; dlg.attendReponse = Date.now() + 150000; return typeof SECRETAIRE !== 'undefined' ? "C'est dimanche soir : on prépare ta semaine ? Ton planning, les repas, les courses, la maison, et je t'imprime ta Gazette." : "C'est dimanche soir : on fait ton planning de la semaine ? Tu me dictes le pro et le perso, je range tout dans ton agenda."; }, { expire: Date.now() + 3 * 3600000 });
+    PROACTIF.annonce(`planning-${cleSemaine()}`, () => { planningOffre = { at: Date.now() }; dlg.attendReponse = Date.now() + 150000; return typeof SECRETAIRE !== 'undefined' ? "C'est dimanche soir : on prépare ta semaine ? D'abord ton planning, puis les repas faits pour ton planning, les courses et le drive pour lundi, et je t'imprime ta Gazette." : "C'est dimanche soir : on fait ton planning de la semaine ? Tu me dictes le pro et le perso, je range tout dans ton agenda."; }, { expire: Date.now() + 3 * 3600000 });
   }, 10 * 60000);
   // avant tout le reste (sinon « planifie ma semaine » partirait vers les menus)
   function routePlanning(t, n) {
