@@ -90,7 +90,8 @@ const TRADING = (() => {
     const a = await ask('Session terminée, notifications rétablies. Ton résultat du jour ?', { wait: 20000 });
     const v = a ? montant(a) : null;
     if (v == null) return say("D'accord. Tu me le diras plus tard : « je suis à plus 300 », par exemple.");
-    return resultat(v, true);
+    await resultat(v, true);
+    if (typeof VIE !== 'undefined' && S.settings.debriefTrading !== false) return VIE.debrief(v); // le miroir : trois questions
   }
 
   // « moins 600 », « plus 250 », « j'ai perdu 1 200 dollars », « zéro »

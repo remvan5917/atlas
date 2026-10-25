@@ -371,7 +371,7 @@ const SECRETAIRE = (() => {
       let bilan = null; if (typeof AVENIR !== 'undefined') { try { bilan = await AVENIR.bilan(); } catch (e) { bilan = null; } }
       // 4. la Gazette
       let imp = false;
-      try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan }) }); imp = r.ok; } catch (e) { imp = false; }
+      try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan, garde: typeof VIE !== 'undefined' ? VIE.phraseSemaine(Array.from({ length: 7 }, (v, i) => plusJours(i, du))) : '' }) }); imp = r.ok; } catch (e) { imp = false; }
       const n = afaire.length;
       return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? ` Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : le planning, les repas, les choses à faire, ta semaine écoulée et les courses.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}` : ''} Bonne semaine !`);
     } finally { window.__RITUEL = false; }
@@ -387,8 +387,10 @@ const SECRETAIRE = (() => {
   setInterval(() => {
     const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
     if (!dlg.started || (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal())) return;
-    if (d.getDay() === 4 && h >= 17.5 && h <= 21 && S.settings.weekendAuto !== false && S.weekendPropose !== dJ(d)) {
-      PROACTIF.annonce(`weekend-${dJ(d)}`, () => { S.weekendPropose = dJ(new Date()); save(); weekendDemande = Date.now(); dlg.attendReponse = Date.now() + 150000; return `Le week-end arrive. Tu es avec ${LIEN.prenom() || 'ton fils'} ? Je te propose des sorties selon la météo ?`; }, { expire: Date.now() + 3 * 3600000 });
+    const sam = dJ(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 2)), dim = dJ(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 3));
+    const avecLui = typeof VIE === 'undefined' ? null : (VIE.avec(sam) === null ? null : VIE.avec(sam) || VIE.avec(dim));
+    if (d.getDay() === 4 && h >= 17.5 && h <= 21 && S.settings.weekendAuto !== false && S.weekendPropose !== dJ(d) && avecLui !== false) {
+      PROACTIF.annonce(`weekend-${dJ(d)}`, () => { S.weekendPropose = dJ(new Date()); save(); weekendDemande = Date.now(); dlg.attendReponse = Date.now() + 150000; return avecLui ? `Ce week-end, ${LIEN.prenom() || 'ton fils'} est avec toi. Je te propose des sorties selon la météo ?` : `Le week-end arrive. Tu es avec ${LIEN.prenom() || 'ton fils'} ? Je te propose des sorties selon la météo ?`; }, { expire: Date.now() + 3 * 3600000 });
     }
   }, 10 * 60000);
   let weekendDemande = 0;
