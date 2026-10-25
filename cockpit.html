@@ -265,6 +265,7 @@ const VUE = ['jumeau', 'cameras', 'marches', 'journal'].includes(new URLSearchPa
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = (reglages.localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 if (!/^https?:\/\//.test(ROOT) || /localhost:11434/.test(ROOT)) ROOT = '';
+if (location.pathname.startsWith('/salle/')) ROOT = location.origin; // la salle de contrôle : servie par l'ordinateur de la maison lui-même
 // la liaison avec l'ordinateur de la maison : si elle tombe (souvent Tailscale coupé sur la tablette), on le dit en grand
 const liaison = { ok: Date.now(), ko: 0, perdue: false };
 function liaisonMaj() {
