@@ -156,7 +156,7 @@ const FUTUR = (() => {
     face.set('think'); NOYAU.etiquette('CHEF');
     let r = null;
     try {
-      const raw = String(await AI.chat([{ role: 'system', content: 'Tu es un chef cuisinier. Donne une recette simple, fiable et classique, en français. Réponds UNIQUEMENT en JSON : {"titre":"…","portions":4,"ingredients":["250 g de farine",…],"etapes":[{"texte":"phrase courte et claire","minutes":0}]} — 5 à 10 étapes ; "minutes" seulement si l\'étape a une durée à surveiller (cuisson, repos), sinon 0.' }, { role: 'user', content: `${plat}, pour ${pers} personnes.` }], { maxTokens: 900, temperature: 0.4 }) || '');
+      const raw = String(await AI.chat([{ role: 'system', content: 'Tu es un chef cuisinier pour une famille sportive qui mange le moins transformé possible : uniquement des ingrédients bruts (légumes, fruits, légumineuses, céréales complètes, œufs, viandes et poissons frais, laitages nature, huile d\'olive, épices), aucun produit industriel (pas de cube de bouillon, pas de sauce toute prête, pas de pâte industrielle : on la fait). Donne une recette simple, fiable, savoureuse, en français. Réponds UNIQUEMENT en JSON : {"titre":"…","portions":4,"ingredients":["250 g de farine",…],"etapes":[{"texte":"phrase courte et claire","minutes":0}]} — 5 à 10 étapes ; "minutes" seulement si l\'étape a une durée à surveiller (cuisson, repos), sinon 0.' }, { role: 'user', content: `${plat}, pour ${pers} personnes.` }], { maxTokens: 900, temperature: 0.4 }) || '');
       r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
     } catch (e) { r = null; }
     face.set('idle');
@@ -173,7 +173,7 @@ const FUTUR = (() => {
     await say(`${r.titre || plat}, pour ${pers}. Il te faut : ${ing.join(', ')}. Dis « on commence » quand tu es prêt.`);
     let i = -1, silence = 0;
     for (;;) {
-      const a = N(await hear({ maxWait: 90000 }) || '');
+      const brut = (await hear({ maxWait: 90000 })) || '', a = N(brut);
       if (!a) { if (++silence > 12) break; continue; }
       silence = 0;
       if (/\b(fin de la recette|on arrete|arrete la recette|j ai fini|c est fini|termine|stop)\b/.test(a)) break;
@@ -181,8 +181,20 @@ const FUTUR = (() => {
       if (/\b(repete|redis|j ai pas compris|pardon|quoi)\b/.test(a) && i >= 0) { await say(et[i].texte); continue; }
       if (/\b(precedent|precedente|retour|avant)\b/.test(a)) i = Math.max(0, i - 1);
       else if (/\b(suivant|suivante|apres|ensuite|on commence|c est parti|go|vas y|c est fait|ok|fait|continue)\b/.test(a)) i++;
-      else { await say('En cuisine : dis « suivant », « répète », « précédent », « les ingrédients » ou « fin de la recette ».'); continue; }
-      if (i >= et.length) { await say('Et voilà, c\'est prêt ! Bon appétit !'); sfx('final'); break; }
+      else {
+        // en pleine recette : un minuteur, une conversion, un calcul (les outils) ; une question de cuisine (le chef répond, puis on reprend)
+        const outil = typeof OUTILS !== 'undefined' && /\b(minuteur|chrono|combien (de|font|fait)|convertis|en grammes|en cuillere|en ml|en litre|fois)\b/.test(a) && OUTILS.route(brut, a);
+        if (outil) { await outil(); continue; }
+        if (a.split(' ').length >= 3 && (/\?/.test(brut) || /\b(combien|comment|par quoi|remplacer|remplace|je peux|on peut|c est normal|pourquoi|quelle (temperature|cuisson|taille)|a quelle|est ce que|ca se|ca va|trop|pas assez|il faut|quoi faire)\b/.test(a))) {
+          face.set('think');
+          let rep = ''; try { rep = String(await AI.chat([{ role: 'system', content: `Tu es un chef qui aide en direct, pendant la recette « ${r.titre || plat} » (ingrédients : ${ing.join(', ')}). L'étape en cours : ${i >= 0 ? et[i].texte : 'pas encore commencé'}. Réponds en une ou deux phrases courtes, à l'oral, concrètes. Ingrédients bruts seulement si tu proposes un remplacement. Pas d'émojis.` }, { role: 'user', content: brut }], { maxTokens: 160, temperature: 0.4 })); } catch (e) { rep = ''; }
+          face.set('idle');
+          await say(rep ? `${rep.replace(/[*#_]/g, '').trim()} Dis « suivant » quand tu veux.` : "Je n'ai pas de réponse sûre. Dis « suivant » pour continuer.");
+          continue;
+        }
+        await say('En cuisine : dis « suivant », « répète », « précédent », « les ingrédients », pose-moi une question, ou « fin de la recette ».'); continue;
+      }
+      if (i >= et.length) { await say('Et voilà, c\'est prêt ! Bon appétit !'); sfx('final'); if (typeof CUISINE !== 'undefined') { try { await CUISINE.apresRecette(r.titre || plat, ing); } catch (e) { /* rien */ } } break; }
       ecran(i);
       const e = et[i];
       await say(`Étape ${i + 1}. ${e.texte}`);

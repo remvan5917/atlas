@@ -367,7 +367,7 @@ const SCENES_TRAVAIL = [['courbe', 'Mode trading', 'mode trading'], ['stop', 'Fi
 /* ---------- le panneau de commandes : un bouton pour chaque chose qu'Atlas sait faire, rangé par thème ----------
    Chaque bouton passe par Atlas, comme si on le lui disait (la phrase est écrite dessous : elle apprend aussi la voix).
    « … » : il demande d'abord un mot (le message, la durée, la ville). Les derniers boutons touchés reviennent en tête. */
-const GROUPES = [['maison', 'ampoule', 'Maison'], ['surete', 'bouclier', 'Sécurité'], ['famille', 'famille', 'Mon fils et Shadow'], ['vivant', 'coeur', "Cochons d'Inde et potager"], ['orga', 'calendrier', 'Organisation'],
+const GROUPES = [['maison', 'ampoule', 'Maison'], ['surete', 'bouclier', 'Sécurité'], ['famille', 'famille', 'Mon fils et Shadow'], ['vivant', 'coeur', "Cochons d'Inde et potager"], ['cuisine', 'ampoule', 'Cuisine'], ['orga', 'calendrier', 'Organisation'],
   ['infos', 'nuage', 'Infos et marchés'], ['son', 'musique', 'Musique et son'], ['trading', 'courbe', 'Trading'], ['bord', 'cube', 'Ordinateur de bord']];
 const jumeauIci = () => { if (typeof JUMEAU === 'undefined' || !$('#plan')) return false; const z = document.querySelector('.z-plan'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (!JUMEAU.actif()) JUMEAU.bascule(true); return true; };
 const COMMANDES = [
@@ -408,6 +408,18 @@ const COMMANDES = [
   ['famille', 'robot', 'Discute avec Shadow', 'discute avec Shadow'],
   ['famille', 'manette', 'Jeu télévisé', 'lance le jeu télévisé'],
   ['famille', 'coeur', 'Ma famille', 'ma famille'],
+  ['cuisine', 'ampoule', "On mange quoi ce soir ?", "qu'est-ce qu'on mange ce soir ?"],
+  ['cuisine', 'courbe', "Repas après l'entraînement", "un repas après l'entraînement"],
+  ['cuisine', 'calendrier', 'Les menus de la semaine', 'quels sont les menus de la semaine ?'],
+  ['cuisine', 'calendrier', 'Refaire les menus', 'fais les menus de la semaine'],
+  ['cuisine', 'liste', 'Mode magasin', 'mode magasin'],
+  ['cuisine', 'liste', 'La liste par rayon', 'lis la liste de courses par rayon'],
+  ['cuisine', 'boite', "Qu'y a-t-il au frigo ?", "qu'est-ce qu'il y a dans le frigo ?"],
+  ['cuisine', 'camera', "Inventaire du frigo", "fais l'inventaire du frigo"],
+  ['cuisine', 'note', "J'ai acheté…", "j'ai acheté", { saisie: 'Quoi ?', ex: 'du poulet, des œufs et des brocolis' }],
+  ['cuisine', 'stop', "Il n'y a plus de…", "il n'y a plus de", { saisie: 'Quoi ?', ex: 'lait' }],
+  ['cuisine', 'horloge', 'Le batch cooking', 'on lance le batch cooking'],
+  ['cuisine', 'trophee', 'Le bilan de la semaine', 'le bilan de la semaine en cuisine'],
   ['vivant', 'coeur', "Comment vont les cochons d'Inde ?", "comment vont les cochons d'Inde ?"],
   ['vivant', 'note', 'Une pesée', '{x}', { saisie: 'Qui, et combien ?', ex: 'Caramel pèse 980 grammes' }],
   ['vivant', 'liste', 'Foin, eau et légumes donnés', "j'ai donné le foin, l'eau et les légumes aux cochons d'Inde"],
