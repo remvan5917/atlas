@@ -142,6 +142,16 @@
   .config { max-width: 520px; margin: 40px auto; }
   .config input { width: 100%; font: inherit; padding: 12px; border-radius: 6px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); margin: 8px 0; }
   .config button { font: inherit; color: var(--texte); background: rgba(95, 211, 255, .1); border: 1px solid var(--ligne); border-radius: 6px; padding: 10px 14px; }
+  /* la salle de contrôle (les 4 écrans de l'ordinateur) : une seule vue par écran, en grand — cockpit.html?vue=jumeau|cameras|marches|journal */
+  html body.vue main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: none; height: auto; } html body.vue .col { display: contents; } html body.vue .carte { grid-area: auto; max-height: none; } body.vue .reserve, body.vue section.carte { display: none; }
+  body.vue-jumeau section.z-plan, body.vue-cameras section.z-cams, body.vue-journal section.z-log, body.vue-marches section.z-marche, body.vue-marches section.z-agenda { display: flex; flex: 1 1 auto; min-height: 0; }
+  html body.vue-marches main { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); }
+  body.vue-cameras .cams { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); } body.vue-cameras .cam { aspect-ratio: auto; } body.vue-cameras .cam .lab, body.vue-cameras .cam .rec, body.vue-cameras .cam .surv, body.vue-cameras .cam .repos { font-size: 13px; } body.vue-cameras .cam .vide { font-size: 14px; }
+  body.vue-marches .marche { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); gap: 12px; } body.vue-marches .prix { display: flex; flex-direction: column; padding: 16px 20px; }
+  body.vue-marches .prix .s { font-size: 15px; } body.vue-marches .prix .p { font-size: clamp(34px, 3.4vw, 58px); margin-top: 8px; } body.vue-marches .prix svg { flex: 1; height: auto; min-height: 60px; margin-top: 12px; }
+  body.vue-marches .rdv { font-size: 19px; grid-template-columns: 70px 1fr; padding: 9px 0; } body.vue-marches .rdv .h { font-size: 17px; } body.vue-marches .jour { font-size: 13px; } body.vue-marches #agenda { overflow-y: auto; }
+  body.vue-journal .log { font-size: 15px; } body.vue-journal .entree .t { font-size: 16px; } body.vue-journal .entree img { max-height: 220px; } body.vue-journal #alertes { overflow-y: auto; }
+  body.vue .carte h2 { font-size: 13px; }
   /* le panneau de commandes : un bouton pour chaque chose qu'Atlas sait faire (en plus de la voix) */
   .puce.cmd { cursor: pointer; background: rgba(255, 181, 71, .08); border-color: var(--ligneA); color: var(--ambre2); font-weight: 600; }
   .puce.cmd svg.ic { width: 15px; height: 15px; } .puce.cmd:active { background: rgba(255, 181, 71, .22); }
@@ -249,6 +259,9 @@ const N = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g
 const propre = t => String(t || '').replace(/[\p{Extended_Pictographic}️‍]/gu, '').replace(/\s+/g, ' ').trim(); // sans émoji
 let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
 const reglages = S.settings || {};
+const DIESE = new URLSearchParams(location.hash.slice(1)); // la salle de contrôle donne l'adresse de la maison après le « # » (elle ne part jamais sur le réseau)
+if (/^https:\/\/[^/]+$/.test(DIESE.get('maison') || '')) { try { localStorage.setItem('cockpit-adresse', DIESE.get('maison')); } catch (e) { /* rien */ } history.replaceState(null, '', location.pathname + location.search); }
+const VUE = ['jumeau', 'cameras', 'marches', 'journal'].includes(new URLSearchParams(location.search).get('vue')) ? new URLSearchParams(location.search).get('vue') : '';
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = (reglages.localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 if (!/^https?:\/\//.test(ROOT) || /localhost:11434/.test(ROOT)) ROOT = '';
@@ -375,6 +388,7 @@ const COMMANDES = [
   ['surete', 'famille', 'Qui est passé ?', "qui est passé aujourd'hui"],
   ['surete', 'camera', 'Montre la façade', 'montre-moi la façade'],
   ['surete', 'alerte', 'La dernière alerte', 'montre la dernière alerte'],
+  ['surete', 'film', 'Le film des caméras', 'le film des caméras'],
   ['surete', 'power', 'Batterie des caméras', 'la batterie des caméras'],
   ['surete', 'verrou', "L'alarme est activée ?", "l'alarme est activée ?"],
   ['surete', 'verrou', "Active l'alarme (total)", "active l'alarme en mode total", { confirme: "Activer l'alarme Verisure en mode total ? (Atlas ne la désactive jamais : ce sera le badge ou l'appli.)" }],
@@ -432,6 +446,9 @@ const COMMANDES = [
   ['trading', 'boite', 'Bilan de la boîte noire', 'bilan de la boîte noire'],
   ['trading', 'cerveau', 'Mon coach de trading', 'mon coach de trading'],
   ['bord', 'cube', 'Le jumeau 3D', 'montre le jumeau', { local: jumeauIci }],
+  ['bord', 'bouclier', 'La ronde de nuit', 'fais une ronde'],
+  ['bord', 'ordi', 'Salle de contrôle', 'salle de contrôle'],
+  ['bord', 'sortie', 'Fin de la salle de contrôle', 'fin de la salle de contrôle'],
   ['bord', 'horloge', 'Rejoue ma journée', 'rejoue ma journée'],
   ['bord', 'journal', 'Journal de bord', 'journal de bord'],
   ['bord', 'radar', 'État des systèmes', 'état des systèmes'],
@@ -708,7 +725,7 @@ let photosAlertes = {}, nbAlertes = 0;
 async function chargeAlertes() {
   let l = []; try { l = (await appel('/maison/alertes?depuis=0')).alertes || []; } catch (e) { return; }
   alertesRecentes = l.filter(a => a.genre === 'ezviz' || a.genre === 'camera'); plan();
-  l = l.filter(a => a.gravite !== 'info').slice(-10).reverse();
+  l = (VUE === 'journal' ? l.slice(-40) : l.filter(a => a.gravite !== 'info').slice(-10)).reverse(); // la salle de contrôle : le journal entier, en direct
   nbAlertes = l.filter(a => a.gravite === 'urgent' && Date.now() - a.at < 12 * 3600000).length;
   $('#al-res').textContent = l.length ? `${l.length} ENTRÉES` : '';
   $('#alertes').innerHTML = l.length ? l.map(a => `<div class="entree ${a.gravite}"><span class="h">[${hh(new Date(a.at))}]</span><span class="g">${GENRES[a.genre] || String(a.genre || '').toUpperCase()}</span>${a.image ? `<img data-al="${a.id}" alt="">` : ''}<span class="t">${esc(propre(a.texte))}</span></div>`).join('') : '<div class="muted">AUCUN ÉVÉNEMENT. PÉRIMÈTRE CALME.</div>';
@@ -809,7 +826,10 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { ve
 function tout() { chargeAppareils(); chargeSentinelle(); chargeCams(); chargeAlertes(); chargeMarche(); chargeDiag(); chargeEnergie(); chargeSysteme(); chargeMeteo(); chargeAgenda(); chargeTrading(); }
 function demarre() {
   if (POSTE === 'travail') $('#marque').innerHTML = 'ATLAS <b>//</b> POSTE DE TRAVAIL';
+  if (VUE) { document.body.classList.add('vue', `vue-${VUE}`); $('#marque').innerHTML = `ATLAS <b>//</b> SALLE DE CONTRÔLE · ${{ jumeau: 'JUMEAU', cameras: 'CAMÉRAS', marches: 'MARCHÉS ET AGENDA', journal: 'JOURNAL' }[VUE]}`; }
   boot(); cartes(); majEtat(); tout(); veille();
+  if (VUE === 'jumeau') setTimeout(() => { if (typeof JUMEAU !== 'undefined' && !JUMEAU.actif()) JUMEAU.bascule(true); }, 300);
+  if (VUE === 'cameras') setTimeout(() => cams.filter(c => c.ezviz).forEach(photo), 4000);
   setInterval(chargeAppareils, 20000); setInterval(chargeSentinelle, 30000); setInterval(chargeAlertes, 30000); setInterval(chargeDiag, 30000);
   setInterval(() => cams.filter(c => !c.ezviz).forEach(photo), 30000); setInterval(chargeCams, 5 * 60000);
   setInterval(chargeMarche, 120000); setInterval(chargeEnergie, 5 * 60000); setInterval(chargeSysteme, 60000); setInterval(chargeMeteo, 30 * 60000); setInterval(chargeAgenda, 5 * 60000); setInterval(chargeTrading, 30000);

@@ -27,6 +27,7 @@ const JUMEAU = (() => {
   let yaw = 0.5, pitch = 0.36, zoom = 1, base = 0.5, phase = 0, vyaw = 0, glisse = null, repriseAuto = 0, anime = 0, dernierT = 0, dernierDessin = 0, naissance = 0;
   let donnees = null, chargeA = 0, curseur = null, lecture = false, precedent = null; // curseur : null = en direct ; sinon un instant (s)
   let meteo = null, meteoA = 0, eclair = 0;
+  let ronde = null, pitch0 = null; // la ronde du soir : { k: un étage (0, 1, 2), 'dehors' ou 'tout', titre, lignes, scelle } — Atlas la mène, étape par étape
   const images = {}, photosAl = {}, etats = new Map(), cartes = [], doigts = new Map();
   let lastPs = []; // les pièces du dernier dessin (pour savoir laquelle on touche)
   try { actif = localStorage.getItem('cockpit-vue') === '3d'; } catch (e) { /* rien */ }
@@ -133,10 +134,18 @@ const JUMEAU = (() => {
   function prepare() {
     cy_ = Math.cos(yaw); sy_ = Math.sin(yaw); cp_ = Math.cos(pitch); sp_ = Math.sin(pitch);
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-    for (const b of BOITE) { const q = brut(...b); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
-    const petit = Hc < 330, haut = petit ? 22 : 44, bas = petit ? 24 : 50, f = Math.min((W * 0.92) / (x1 - x0), (Hc - haut - bas) / (y1 - y0)) * zoom;
+    const vise = ronde && typeof ronde.k === 'number' ? niveauBoite(ronde.k) : BOITE, zr = !ronde ? 1 : ronde.k === 'dehors' ? 0.8 : typeof ronde.k === 'number' ? 0.9 : 0.94;
+    for (const b of vise) { const q = brut(...b); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
+    const petit = Hc < 330, haut = petit ? 22 : 44, bas = petit ? 24 : 50, f = Math.min((W * 0.92) / (x1 - x0), (Hc - haut - bas) / (y1 - y0)) * zoom * zr;
     const ox = W / 2 - f * (x0 + x1) / 2, oy = haut + (Hc - haut - bas) / 2 - f * (y0 + y1) / 2;
     if (!f_ || glisse) { f_ = f; ox_ = ox; oy_ = oy; } else { f_ += (f - f_) * 0.12; ox_ += (ox - ox_) * 0.12; oy_ += (oy - oy_) * 0.12; }
+  }
+  // les coins d'un seul étage (pour que la ronde le cadre en grand) ; le 2e : la mansarde et le toit
+  function niveauBoite(k) {
+    const l = [], y0 = k * H + 0.01, y1 = k === 2 ? TOIT - 0.01 : (k + 1) * H - 0.01;
+    for (const z of [-D / 2, D / 2]) for (const x of [-L / 2, L / 2]) for (const y of [y0, y1]) l.push([x, y, z]);
+    if (k === 2) l.push([0, FAITE, -D / 2], [0, FAITE, D / 2]);
+    return l;
   }
   function proj(x, y, z) { const q = brut(x, y, z); return [ox_ + q[0] * f_, oy_ + q[1] * f_, q[2], q[3] * f_]; }
   const prof = z => clamp(0.6 - z / 12, 0.2, 1); // le côté loin est plus pâle : la profondeur
@@ -184,7 +193,8 @@ const JUMEAU = (() => {
     }
     const monte = k => ease(age * 1.7 - k * 0.38); // chaque niveau monte du sol, l'un après l'autre
     coquille(monte, age, t);
-    for (const p of ps) piece(p, monte(p.k), t, nuit);
+    const etageVise = ronde && typeof ronde.k === 'number' ? ronde.k : null; // la ronde : les autres étages pâlissent
+    for (const p of ps) { if (etageVise != null && p.k !== etageVise) ctx.globalAlpha = 0.25; piece(p, monte(p.k), t, nuit); ctx.globalAlpha = 1; }
     prises(ps, t, nait);
     // le toit : deux pans (l'un sur la rue, l'autre sur la cour), l'arête parallèle à la rue, le velux
     const mt = ease(age * 1.7 - 1.15);
@@ -204,13 +214,15 @@ const JUMEAU = (() => {
       if (mt > 0.9) { const q = proj(...f(0.68, 0.8)); ctx.globalCompositeOperation = 'source-over'; texte('VELUX', q[0], q[1] - 10, `rgba(${CY},.6)`, 8.5); ctx.globalCompositeOperation = 'lighter'; }
     }
     // le scanner : un plan qui monte et descend, et souligne la maison là où il passe
-    if (nait > 0.9) {
+    if (nait > 0.9 && ronde && ronde.k !== 'tout') rondeScan(t);
+    else if (nait > 0.9) {
       const s = (t / 6200) % 1, ys = (s < 0.5 ? s * 2 : 2 - s * 2) * (FAITE - 0.2) + 0.1, lz = D / 2;
       const u = ys > TOIT ? 1 - (ys - TOIT) / (FAITE - TOIT) : 1, xa = -L / 2 * u, xb = ys > TOIT ? (L / 2 - MANS) * u : ys > 2 * H ? L / 2 - MANS * (ys - 2 * H) / H : L / 2;
       poly([[xa, ys, -lz], [xb, ys, -lz], [xb, ys, lz], [xa, ys, lz]], CY, 0.55, 1.2, true, true);
       face([[xa - 1, ys, -lz - 1], [xb + 1, ys, -lz - 1], [xb + 1, ys, lz + 1], [xa - 1, ys, lz + 1]], CY, 0.022);
     }
     if (nait > 0.75) { cameras(ps, T, t, ease((age - 0.75) * 4)); coeur(ps, T, t, ease((age - 0.8) * 4)); shadowOrbe(ps, T, t); habitants(ps, T, t); bandeauGarde = null; bouclier(ps, T, t, ease((age - 0.9) * 4)); }
+    if (ronde && ronde.scelle) sceau(t);
     meteoDessin(C, t, dt);
     motes(t, dt);
     cartesDessin(t);
@@ -616,6 +628,63 @@ const JUMEAU = (() => {
   }
   let bandeauGarde = null;
 
+  /* ---------- la ronde du soir : un étage après l'autre, puis le bouclier se referme sur la maison ---------- */
+  function rondeScan(t) {
+    const k = ronde.k;
+    if (typeof k === 'number') {
+      const y0 = k * H + 0.05, y1 = (k === 2 ? TOIT : (k + 1) * H) - 0.05, s = ((t - ronde.t0) / 1700) % 1, ys = y0 + (y1 - y0) * (s < 0.5 ? s * 2 : 2 - s * 2);
+      const xb = k === 2 ? L / 2 - MANS * 0.5 : L / 2, lz = D / 2 + 0.08;
+      poly([[-L / 2 - 0.08, ys, -lz], [xb + 0.08, ys, -lz], [xb + 0.08, ys, lz], [-L / 2 - 0.08, ys, lz]], CY, 0.85, 1.4, true, true);
+      face([[-L / 2 - 0.3, ys, -lz - 0.3], [xb + 0.3, ys, -lz - 0.3], [xb + 0.3, ys, lz + 0.3], [-L / 2 - 0.3, ys, lz + 0.3]], CY, 0.05);
+      for (const y of [y0, y1]) poly([[-L / 2, y, -D / 2], [xb, y, -D / 2], [xb, y, D / 2], [-L / 2, y, D / 2]], AM, 0.35 + 0.2 * Math.sin(t / 300), 1.2, true, true); // l'étage visé, souligné
+    } else { // dehors : une onde de radar qui court sur le sol, jusqu'au bout de la cour et de la rue
+      for (const off of [0, 0.5]) {
+        const s = (((t - ronde.t0) / 2600) + off) % 1, r = 1 + s * 11, pts = [];
+        for (let i = 0; i < 48; i++) { const a = (i / 48) * 6.283; pts.push([CX + Math.cos(a) * r, 0.03, Math.sin(a) * r * 0.75]); }
+        poly(pts, VE, 0.55 * (1 - s), 1.3, true, true);
+      }
+    }
+  }
+  function sceau(t) {
+    const s = ease((t - ronde.ts) / 2600), cxd = (-L / 2 - 1.3 + L / 2 + COUR + 0.3) / 2, rx = (L + COUR + 1.6) / 2 + 0.6, rz = D / 2 + 1.4, ry = FAITE + 1.0;
+    const pulse = s < 1 ? 1 : 0.75 + 0.25 * Math.sin(t / 700);
+    for (let m = 0; m < 18; m++) { // les méridiens montent du sol et se rejoignent au sommet
+      const a = (m / 18) * 6.283, pts = [];
+      for (let i = 0; i <= 12; i++) { const la = (i / 12) * (Math.PI / 2) * s; pts.push([cxd + Math.cos(a) * rx * Math.cos(la), ry * Math.sin(la), Math.sin(a) * rz * Math.cos(la)]); }
+      poly(pts, VE, 0.32 * pulse, 1.1, false, true);
+    }
+    for (let i = 1; i <= 5; i++) { // les parallèles s'allument quand les méridiens les dépassent
+      const la = (i / 6) * (Math.PI / 2); if (la > s * (Math.PI / 2)) continue;
+      const pts = []; for (let k = 0; k < 44; k++) { const a = (k / 44) * 6.283; pts.push([cxd + Math.cos(a) * rx * Math.cos(la), ry * Math.sin(la), Math.sin(a) * rz * Math.cos(la)]); }
+      poly(pts, VE, 0.2 * pulse, 1, true);
+    }
+    if (s >= 1) { const q = proj(cxd, ry, 0), e = clamp((t - ronde.ts - 2600) / 900, 0, 1); halo(q[0], q[1], 60 * (1 - e) + 18, VE, 0.9 * (1 - e) + 0.25); } // l'éclair de fermeture, puis une lueur au sommet
+  }
+  function hudRonde(t) {
+    if (!ronde) return;
+    const petit = W < 520, fs = petit ? 9.5 : 11, x = 16, y0 = Hc >= 330 ? 50 : 40;
+    const lignes = (ronde.lignes || []).filter((l, i) => t - ronde.t0 > 500 + i * 380);
+    if (ronde.titre && !ronde.scelle) {
+      const w = Math.min(W - 32, petit ? 250 : 330), h = 26 + lignes.length * (fs + 7);
+      ctx.fillStyle = 'rgba(2,6,12,.72)'; ctx.fillRect(x - 6, y0 - 4, w, h); coinsCadre(x - 6, y0 - 4, w, h, AM, 0.6);
+      ctx.textAlign = 'left'; ctx.font = `600 ${fs}px ui-monospace, monospace`; ctx.fillStyle = `rgba(${AM},.95)`; ctx.fillText(String(ronde.titre).toUpperCase(), x + 2, y0 + 12);
+      lignes.forEach(([e, txt], i) => {
+        const col = e === 'alerte' ? RO : e === 'ok' ? VE : CY, yy = y0 + 30 + i * (fs + 7);
+        ctx.font = `600 ${fs}px ui-monospace, monospace`; ctx.fillStyle = `rgba(${col},.95)`; ctx.fillText(e === 'alerte' ? '!' : e === 'ok' ? '✓' : '·', x + 2, yy);
+        ctx.font = `${fs}px ui-monospace, monospace`; ctx.fillStyle = 'rgba(238,243,248,.88)';
+        const plein = String(txt).toUpperCase(); let s_ = plein;
+        while (s_.length > 4 && ctx.measureText(s_).width > w - 34) s_ = s_.slice(0, -2);
+        ctx.fillText(s_ === plein ? s_ : `${s_}…`, x + 18, yy);
+      });
+    }
+    if (ronde.scelle) {
+      const e = clamp((t - ronde.ts - 1800) / 1200, 0, 1); if (e <= 0) return;
+      ctx.textAlign = 'center'; ctx.font = `600 ${petit ? 15 : 24}px ui-monospace, monospace`; ctx.fillStyle = `rgba(${VE},${(0.95 * e).toFixed(2)})`;
+      const y = Hc * (petit ? 0.2 : 0.17); ctx.fillText(ronde.titre || 'MAISON SÉCURISÉE', W / 2, y);
+      ctx.font = `${petit ? 9 : 11}px ui-monospace, monospace`; ctx.fillStyle = `rgba(${VE},${(0.6 * e).toFixed(2)})`; ctx.fillText(ronde.sous || 'TOUS LES SYSTÈMES VEILLENT', W / 2, y + (petit ? 16 : 22));
+    }
+  }
+
   // le cœur d'Atlas : une sphère d'anneaux au-dessus du toit, reliée par des flux aux caméras et aux pièces allumées
   function coeur(ps, T, t, m) {
     if (m <= 0) return;
@@ -744,6 +813,7 @@ const JUMEAU = (() => {
     const lignes = [[`LUMIÈRES ${on}/${tot}`, on ? AM : CY], [watts != null ? `ÉNERGIE ${Math.round(watts)} W` : 'ÉNERGIE —', CY], [`CAMÉRAS ${camsOk}/${cams.length}${vues ? ` · ${vues} DÉTECTION${vues > 1 ? 'S' : ''}` : ''}`, vues ? RO : VE]];
     lignes.forEach(([x, col], i) => { ctx.fillStyle = `rgba(${col},.75)`; ctx.fillText(x, 16, Hc - 16 - (lignes.length - 1 - i) * 13); });
     if (bandeauGarde) { ctx.textAlign = 'center'; ctx.font = '600 10.5px ui-monospace, monospace'; const w = ctx.measureText(bandeauGarde.txt).width + 22, y = Hc < 330 ? 12 : 16; ctx.fillStyle = 'rgba(2,8,6,.75)'; ctx.fillRect(W / 2 - w / 2, y, w, 18); ctx.strokeStyle = `rgba(${bandeauGarde.rgb},.8)`; ctx.lineWidth = 1; ctx.strokeRect(W / 2 - w / 2 + 0.5, y + 0.5, w - 1, 17); ctx.fillStyle = `rgba(${bandeauGarde.rgb},${(0.75 + 0.25 * Math.sin(t / 500)).toFixed(2)})`; ctx.fillText(bandeauGarde.txt, W / 2, y + 13); }
+    hudRonde(t);
     // la naissance
     if (age < 1.05) {
       ctx.textAlign = 'center'; ctx.font = '600 11px ui-monospace, monospace'; ctx.fillStyle = `rgba(${CY},${clamp(1.1 - age, 0, 1).toFixed(2)})`;
@@ -783,6 +853,8 @@ const JUMEAU = (() => {
       if (Date.now() > repriseAuto && Math.abs(vyaw) < 0.0001) { phase += dt / 15000; yaw = base + 0.42 * Math.sin(phase); } // un lent balancement de trois quarts : la maison reste lisible
       else base = yaw - 0.42 * Math.sin(phase);
     }
+    if (ronde) { if (pitch0 == null) pitch0 = pitch; const c = ronde.k === 'dehors' ? 0.3 : typeof ronde.k === 'number' ? 0.56 : 0.42; pitch += (c - pitch) * clamp(dt * 0.004, 0, 1); } // la ronde regarde un peu plus d'en haut, puis la vue revient
+    else if (pitch0 != null) { pitch += (pitch0 - pitch) * clamp(dt * 0.004, 0, 1); if (Math.abs(pitch - pitch0) < 0.002) { pitch = pitch0; pitch0 = null; } }
     if (lecture && curseur != null && donnees) { curseur += dt * 0.6; if (curseur >= donnees.maintenant) { curseur = null; lecture = false; } majCurseur(); } // une heure en 6 secondes
     if (curseur !== precedent) { surgit(precedent, curseur); precedent = curseur; }
     dessine(t, dt);
@@ -914,5 +986,6 @@ const JUMEAU = (() => {
     boite = null; cv = null; ctx = null;
     if (on) maj(); else if (typeof plan === 'function') plan();
   }
-  return { actif: () => actif, maj, bascule: bascule3d, _vue: () => ({ yaw, pitch, base, phase, f: f_ }), rejoue: h => { if (!donnees) return; curseur = donnees.maintenant - (h || 12) * 3600; precedent = curseur; lecture = true; majCurseur(); } };
+  const rondeEtape = e => { ronde = e ? Object.assign({ t0: performance.now() }, e) : null; if (ronde && ronde.scelle) ronde.ts = performance.now(); lance(); };
+  return { actif: () => actif, maj, bascule: bascule3d, ronde: rondeEtape, pret: () => !!(actif && ctx && performance.now() - naissance > 2700), _vue: () => ({ yaw, pitch, base, phase, f: f_ }), rejoue: h => { if (!donnees) return; curseur = donnees.maintenant - (h || 12) * 3600; precedent = curseur; lecture = true; majCurseur(); } };
 })();

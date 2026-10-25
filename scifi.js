@@ -443,6 +443,85 @@ const SCIFI = (() => {
     return say(l.length ? `Je surveille : ${liste(l.map(v => v.sujet))}.` : "Je ne surveille aucune actualité pour l'instant. Dis par exemple : surveille les infos sur la Fed.");
   }
 
+  /* ---------- la ronde du soir : le jumeau visite la maison étage par étage, puis le bouclier se referme ----------
+     Il vérifie les lumières restées allumées, son fils (endormi ?), les caméras et la sentinelle, et le dit à chaque étage.
+     Après « bonne nuit » (visio.js) ou sur demande (« fais une ronde »). Le cockpit s'ouvre le temps de la ronde, puis se referme. */
+  const etageDe = a => { const n = N(a.nom); return /\b(chambre papa|chambre de papa|parents)\b/.test(n) ? 2 : /\b(escalier (premier|1er|du 1er|etage)|toilettes?|wc|salle de bains?|salle d eau|fusee|musique)\b/.test(n) || /\bchambre\b/.test(n) ? 1 : 0; };
+  async function ouvreJumeau() {
+    let avant = {}; try { avant = { cockpit: localStorage.getItem('atlas-cockpit'), vue: localStorage.getItem('cockpit-vue') }; } catch (e) { /* rien */ }
+    let f = document.getElementById('cockpit-cadre'), ouvert = false;
+    if (f && /poste=travail/.test(f.src)) { modeCockpit(false); f = null; }
+    if (!f) { modeCockpit(true, true); ouvert = true; }
+    const w = () => (document.getElementById('cockpit-cadre') || {}).contentWindow;
+    const ev = x => { try { const ww = w(); return ww && ww.eval ? ww.eval(x) : null; } catch (e) { return null; } };
+    for (let i = 0; i < 40 && !ev("typeof JUMEAU !== 'undefined' && !!document.getElementById('plan')"); i++) await wait(250);
+    ev("JUMEAU.actif() || JUMEAU.bascule(true)");
+    for (let i = 0; i < 40 && !ev('JUMEAU.pret()'); i++) await wait(200);
+    const J = ev('JUMEAU');
+    const ferme = () => {
+      try { if (J) J.ronde(null); } catch (e) { /* rien */ }
+      if (!ouvert) return;
+      modeCockpit(false);
+      try { if (avant.cockpit == null) localStorage.removeItem('atlas-cockpit'); else localStorage.setItem('atlas-cockpit', avant.cockpit); if (avant.vue == null) localStorage.removeItem('cockpit-vue'); else localStorage.setItem('cockpit-vue', avant.vue); } catch (e) { /* rien */ }
+    };
+    return { J: J && J.ronde ? J : null, ferme };
+  }
+  async function ronde(o = {}) {
+    const [ap, ez, lsc, pr, se, al, alarme] = await Promise.all([appel('/maison/appareils', null, 15000).catch(() => null), appel('/maison/ezviz', null, 10000).catch(() => null), appel('/maison/cameras', null, 8000).catch(() => null),
+      appel('/atlas/presences', null, 8000).catch(() => null), appel('/maison/sentinelle', null, 8000).catch(() => null), appel('/maison/alertes?depuis=0', null, 8000).catch(() => null), appel('/maison/alarme', null, 8000).catch(() => null)]);
+    if (!ap) return false;
+    const l = ap.appareils || [], p = (typeof LIEN !== 'undefined' && LIEN.prenom()) || 'ton fils';
+    const cams = ((ez && ez.cameras) || []).map(c => ({ nom: c.nom, ok: c.en_ligne !== false })).concat(((lsc && lsc.cameras) || []).map(c => ({ nom: c.nom.charAt(0).toUpperCase() + c.nom.slice(1), ok: true })));
+    const garde = new Set((o.garde || []).map(a => a.id)); // ce que « bonne nuit » laisse allumé 5 minutes (l'escalier, la salle de bain)
+    const on = k => l.filter(a => a.allume && etageDe(a) === k && !/\b(station|trading)\b/.test(N(a.nom)));
+    const pb = []; // les points à vérifier
+    const etapes = [];
+    // le rez-de-chaussée
+    { const x = on(0), lig = [], dit = [];
+      x.forEach(a => { if (garde.has(a.id)) { lig.push(['info', `${a.nom} · 5 minutes`]); } else { lig.push(['alerte', `${a.nom} allumé${/\b(cuisine|lingerie|tele|television|musique)\b/.test(N(a.nom)) ? 'e' : ''}`]); pb.push(a.nom); } });
+      const restes = x.filter(a => !garde.has(a.id)).map(a => a.nom.toLowerCase());
+      if (!x.length) lig.push(['ok', 'tout est éteint']);
+      dit.push(restes.length ? `Rez-de-chaussée : ${liste(restes)} ${restes.length > 1 ? 'sont encore allumés' : 'est encore allumé'}.` : 'Rez-de-chaussée : tout est éteint.');
+      if (x.some(a => garde.has(a.id))) dit.push("L'escalier reste allumé cinq minutes.");
+      etapes.push({ k: 0, titre: 'Ronde · rez-de-chaussée', lignes: lig, dit: dit.join(' ') }); }
+    // le 1er : son fils
+    { const lig = [], dit = [], e = pr && pr.enfant, fus = l.find(a => /\bfusee\b/.test(N(a.nom))), bain = on(1).filter(a => /\b(salle de bains?|salle d eau)\b/.test(N(a.nom)));
+      if (e && e.etat === 'dort') { lig.push(['ok', `${p} dort`]); if (fus && fus.allume) lig.push(['ok', 'la Fusée veille']); dit.push(`Premier étage : ${p} dort${fus && fus.allume ? ', la Fusée veille sur lui' : ''}.`); }
+      else if (e) { const ou = String(e.ou || '').replace(/\s*\([^)]*\)/g, ''); lig.push(['info', `${p} : ${ou}`]); dit.push(/chambre/.test(ou) ? `Premier étage : ${p} est dans sa chambre, il ne dort pas encore.` : `Premier étage : ${p} n'est pas dans sa chambre, il est ${ou.replace(/^(a|à) la maison/, 'à la maison')}.`); }
+      else { lig.push(['info', `${p} n'est pas là ce soir`]); dit.push('Premier étage : personne ce soir.'); }
+      bain.forEach(a => lig.push([garde.has(a.id) ? 'info' : 'alerte', `${a.nom}${garde.has(a.id) ? ' · 5 minutes' : ' allumée'}`]));
+      const autres = on(1).filter(a => !bain.includes(a) && !/\b(fusee|musique)\b/.test(N(a.nom)) && !/\bchambre\b/.test(N(a.nom)) && !garde.has(a.id));
+      autres.forEach(a => { lig.push(['alerte', `${a.nom} allumé`]); pb.push(a.nom); });
+      if (autres.length) dit.push(`${liste(autres.map(a => a.nom.toLowerCase()))} ${autres.length > 1 ? 'sont restés allumés' : 'est resté allumé'}.`);
+      etapes.push({ k: 1, titre: 'Ronde · premier étage', lignes: lig, dit: dit.join(' ') }); }
+    // le 2e : la chambre de papa
+    { const ch = l.find(a => a.type === 'lampe' && etageDe(a) === 2);
+      etapes.push({ k: 2, titre: 'Ronde · ta chambre', lignes: [[ch && ch.allume ? 'info' : 'ok', ch && ch.allume ? 'lumière allumée' : 'dans le noir'], ['ok', 'velux']], dit: ch && ch.allume ? 'Ta chambre : la lumière t\'attend.' : 'Ta chambre est dans le noir.' }); }
+    // dehors : les caméras, ce qu'elles ont vu depuis une heure
+    { const hs = cams.filter(c => !c.ok), vus = ((al && al.alertes) || []).filter(a => (a.genre === 'ezviz' || a.genre === 'camera') && a.at > Date.now() - 3600000 && /quelqu|personne|mouvement|véhicule|human|motion/i.test(a.texte) && !/activée|désactivée|hors ligne|en ligne|offline/i.test(a.texte));
+      const lig = [[hs.length ? 'alerte' : 'ok', `${cams.length - hs.length} caméra${cams.length - hs.length > 1 ? 's' : ''} sur ${cams.length} en ligne`]];
+      hs.forEach(c => { lig.push(['alerte', `${c.nom} hors ligne`]); pb.push(`la caméra ${c.nom}`); });
+      lig.push([vus.length ? 'alerte' : 'ok', vus.length ? `${vus.length} détection${vus.length > 1 ? 's' : ''} depuis une heure` : 'aucune détection depuis une heure']);
+      etapes.push({ k: 'dehors', titre: 'Ronde · le périmètre', lignes: lig, dit: `Dehors : ${hs.length ? `${cams.length - hs.length} caméras sur ${cams.length}, ${liste(hs.map(c => c.nom))} ${hs.length > 1 ? 'sont hors ligne' : 'est hors ligne'}` : `${cams.length} caméras en ligne`}, ${vus.length ? `${vus.length} détection${vus.length > 1 ? 's' : ''} dans la dernière heure` : 'rien depuis une heure'}.` }); }
+    const vs = !!(alarme && alarme.pret && alarme.libelle && !/desarm|désarm|desactiv|désactiv|off|disarm|non arm/i.test(alarme.libelle));
+    const h = new Date().getHours(), nuitGarde = o.coucher || (se && (se.surveillance || se.absent)) || h >= 22 || h < 7;
+    // l'écran : le jumeau (s'il ne s'ouvre pas, la ronde se fait à la voix seulement)
+    const { J, ferme } = await ouvreJumeau();
+    const etape = e => { try { if (J) J.ronde(e); } catch (er) { /* rien */ } };
+    try {
+      sfx('scan'); etape({ k: 'tout', titre: 'Ronde de nuit', lignes: [['info', `${l.filter(a => a.type === 'lampe').length} lumières · ${cams.length} caméras`]] });
+      await say(o.coucher ? 'Bonne nuit. Je fais la ronde.' : 'Ronde de la maison.');
+      for (const e of etapes) { etape(e); const t0 = Date.now(); await say(e.dit); const r = 2600 - (Date.now() - t0); if (r > 0) await wait(r); }
+      sfx('final');
+      etape({ k: 'tout', scelle: true, titre: pb.length ? 'RONDE TERMINÉE' : 'MAISON SÉCURISÉE', sous: `${nuitGarde ? 'SENTINELLE EN GARDE DE NUIT' : 'SENTINELLE EN VEILLE'}${vs ? ' · VERISURE ARMÉE' : ''}${pb.length ? ` · ${pb.length} POINT${pb.length > 1 ? 'S' : ''} À VÉRIFIER` : ''}` });
+      await wait(1600);
+      await say(`${nuitGarde ? 'Sentinelle en garde de nuit' : 'La sentinelle veille'}${vs ? ", et l'alarme est armée" : ''}. ${pb.length ? `Ronde terminée, ${pb.length > 1 ? `${pb.length} points` : 'un point'} à vérifier : ${liste(pb.map(x => x.toLowerCase()))}.` : 'Maison sécurisée.'}${o.coucher ? ' Si quelque chose ne va pas, je te réveille sur ton téléphone.' : ''}`);
+      await wait(3500);
+    } finally { ferme(); }
+    fx.ok();
+    return true;
+  }
+
   /* ---------- le mode cockpit : le tableau de bord en grand, et Atlas en petit dans le coin (il écoute et parle toujours) ---------- */
   function pleinEcran() {
     if (!document.body.classList.contains('cockpit') || document.fullscreenElement) return;
@@ -771,6 +850,7 @@ const SCIFI = (() => {
       if (/\b(mes veilles|qu est ce que tu surveilles|quelles actus tu surveilles|tu surveilles quoi)\b/.test(n)) return () => veille('liste');
       if (aj && aj[1] && !/\b(maison|cameras?|perimetre|alarme|enfant|fils|reseau|ordi)\b/.test(N(aj[1])) && /\b(infos?|actu|actualites?|nouvelles|nouveau|veille|surveille)\b/.test(n)) return () => veille('ajoute', aj[1].replace(/^(?:sur|de)\s+/i, '').trim());
     }
+    if (/\b(fais|lance|commence|demarre) (une |la |ta )?ronde\b|\bronde (de nuit|de securite|du soir|de la maison)\b|^(la )?ronde$/.test(n)) return () => ronde().then(ok => ok || say("L'ordinateur de la maison ne répond pas : pas de ronde ce soir."));
     if (/\b(ferme|quitte|sors du|enleve|cache)\b.*\b(cockpit|tableau de bord)\b|\bfin du (mode )?cockpit\b/.test(n)) return () => { modeCockpit(false); return say('Mode cockpit fermé.'); };
     // le jumeau holographique : la maison en 3D dans le cockpit, et la journée qu'on rejoue
     const jum = /\b(jumeau|maison en (3d|trois d)|hologramme de la maison|maison holographique)\b/.test(n), rejoue = /\b(rejoue|revois|repasse|montre moi) (ma|la) journee\b/.test(n);
@@ -813,5 +893,5 @@ const SCIFI = (() => {
     if (/\b(lance la fusee|lancement de la fusee|decollage|compte a rebours|fais decoller la fusee)\b/.test(n)) return fusee; // avec Shadow s'il est réveillé
     return null;
   }
-  return { route, scan, hud, modeCockpit, rapportNuit, commandement };
+  return { route, scan, hud, modeCockpit, rapportNuit, commandement, ronde };
 })();

@@ -308,8 +308,19 @@ const PC = (() => {
 
   /* ---------- ce qu'on lui dit ---------- */
   const PEU = /\b(un peu|legerement|un poil|un chouia)\b/, BCP = /\b(beaucoup|a fond|fort)\b/;
+  // la salle de contrôle : les 4 écrans de l'ordinateur en plein écran (le jumeau, les caméras, les marchés et l'agenda, le journal)
+  async function salle(on) {
+    const r0 = String(VOIXMAISON.root() || '').replace(/\/+$/, ''); // l'adresse sécurisée ; sinon (sur l'ordinateur lui-même), il la retrouve par Tailscale
+    let r; try { r = await pc(on ? { action: 'salle', adresse: /^https:\/\//.test(r0) ? r0 : '', v: window.ATLAS_VERSION || '' } : { action: 'salle_fin' }); } catch (e) { return injoignable(); }
+    if (!on) { fx.ok(); return say('Salle de contrôle fermée. Ton bureau est revenu.'); }
+    if (!r.ok) return say(r.raison === 'écrans introuvables' ? "Je ne trouve pas les écrans de l'ordinateur." : "La salle de contrôle ne s'ouvre pas.");
+    try { VISIO.sfx('demarrage'); } catch (e) { /* pas de son */ }
+    fx.ok();
+    return say(`Salle de contrôle activée sur ${r.ecrans} écran${r.ecrans > 1 ? 's' : ''} : le jumeau de la maison, les caméras, les marchés avec l'agenda, et le journal en direct. Dis « fin de la salle de contrôle » pour retrouver ton bureau.`);
+  }
   function route(t, n) {
     const ordi = /\b(ordi|ordinateur|pc)\b/.test(n);
+    if (/\bsalle de (controle|commande|commandement)\b|\bmode (salle de controle|centre de commandement|qg)\b/.test(n)) return () => salle(!/\b(fin|ferme|quitte|sors|arrete|coupe|enleve|eteins)\b/.test(n));
     // Gmail (lecture seule)
     if (/\b(mails?|e mails?|emails?|courriels?|boite mail)\b/.test(n) && /\b(important|importants|importantes|qui compte|trie|tri|urgent|urgents|a faire|ce qui compte)\b/.test(n)) return () => importants(/\b(maintenant|a jour|refais|relance)\b/.test(n));
     if (/\b(mails?|e mails?|emails?|courriels?|gmail|boite mail|boite de reception)\b/.test(n) && !/^(ouvre|lance|affiche)\b/.test(n)) {

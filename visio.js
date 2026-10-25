@@ -222,8 +222,12 @@ const VISIO = (() => {
     } catch (e) { /* tant pis */ }
     await Promise.all([pc({ action: 'musique', quoi: 'pause' }).catch(() => {}), pc({ action: 'radio_stop' }).catch(() => {}), appel('/maison/sentinelle', { dodo: true }).catch(() => {})]);
     let cams = 0; try { cams = ((await appel('/maison/ezviz', null, 8000)).cameras || []).length + ((await appel('/maison/cameras', null, 8000)).cameras || []).length; } catch (e) { /* rien */ }
+    let fait = false; // la ronde du soir (scifi.js) : le jumeau visite chaque étage, puis le bouclier se referme
+    if (typeof SCIFI !== 'undefined' && SCIFI.ronde) { try { fait = await SCIFI.ronde({ coucher: true, garde: [...escaliers, ...bain] }); } catch (e) { fait = false; } }
+    if (!fait) {
     fx.ok();
     await say(`Bonne nuit. ${eteindre.length ? 'Tout est éteint en bas' : 'Rien n\'était resté allumé en bas'}${escalier ? `, je te laisse ${[escaliers.length ? "l'escalier" : '', bain.length ? 'la salle de bain' : ''].filter(Boolean).join(' et ')} allumé${escaliers.length && bain.length ? 's' : ''} 5 minutes` : ''}. La sentinelle passe en garde de nuit${cams ? ` avec ${cams} caméras` : ''} : si quelque chose ne va pas, je te réveille sur ton téléphone.`);
+    }
     // l'ordi : verrouillé, écran noir (après avoir parlé)
     try { await pc({ action: 'verrouille' }); await wait(1500); await pc({ action: 'ecran' }); } catch (e) { /* tant pis */ }
     dlg.state = 'standby'; face.set('idle');

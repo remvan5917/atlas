@@ -321,7 +321,37 @@ const DUO = (() => {
   async function depuisMaison(a) {
     const d = a.data || {};
     const qui = (d.qui || []).filter(x => x === 'papa' || x === 'enfant');
-    return accueille(qui, d.resume || '');
+    if (!d.confirmer || !qui.includes('papa')) return accueille(qui, d.resume || '');
+    // papa rentre pendant le mode absent : l'accueil, ce qui s'est passé pendant son absence, puis il confirme que c'est bien lui
+    // (un « oui » ou un « non » tout court lui répond : route() ; sans réponse, la sentinelle décide dans 10 minutes)
+    const t = await accueille(qui, '');
+    const r = await resumeAbsence(d.parti ? d.parti * 1000 : Date.now() - 4 * 3600000);
+    retourOffre = { at: Date.now() }; dlg.attendReponse = Date.now() + 90000;
+    return `${t ? `${t} ` : ''}${r} Ton téléphone est rentré, mais la surveillance reste active tant que tu ne me l'as pas confirmé : c'est bien toi ? Je repasse la maison en mode présent ?`;
+  }
+  let retourOffre = null;
+  async function retourReponse(oui) {
+    retourOffre = null; dlg.attendReponse = 0;
+    if (oui) { await appel('/maison/sentinelle', { absent: false }).catch(() => {}); fx.ok(); return say('Mode présent. La surveillance de jour reprend. Bienvenue à la maison.'); }
+    await appel('/maison/sentinelle', { retour: 'refuse' }).catch(() => {});
+    return say('Compris. La maison reste en mode absent, surveillance complète, et je préviens ton téléphone.');
+  }
+  // pendant son absence : qui est passé devant les caméras, les alertes, les messages de son fils
+  async function resumeAbsence(depuis) {
+    const [al, pa, me] = await Promise.all([appel('/maison/alertes?depuis=0', null, 8000).catch(() => null), appel('/maison/passages?jours=2', null, 8000).catch(() => null), appel('/maison/messages', null, 8000).catch(() => null)]);
+    const parts = [], p = enfant() || 'ton fils';
+    const vus = ((pa && pa.passages) || []).filter(x => x.at * 1000 >= depuis && x.personne);
+    const une = []; vus.forEach(x => { if (!une.length || x.at - une[une.length - 1].at >= 300) une.push(x); }); // un passage = des photos à moins de 5 minutes d'écart
+    const hm = x => { const dt = new Date(x.at * 1000); return `${dt.getHours()} h ${String(dt.getMinutes()).padStart(2, '0')}`; };
+    const livr = une.filter(x => x.a && (x.a.livreur || x.a.transporteur)), autres = une.filter(x => !(x.a && (x.a.livreur || x.a.transporteur)));
+    if (livr.length) parts.push(`${livr.length > 1 ? `${livr.length} livreurs sont passés` : `un livreur${livr[0].a.transporteur ? ` ${livr[0].a.transporteur}` : ''} est passé`}, ${livr.length > 1 ? `le dernier à ${hm(livr[livr.length - 1])}` : `à ${hm(livr[0])}`}`);
+    if (autres.length) parts.push(`${autres.length > 1 ? `${autres.length} passages devant les caméras` : `quelqu'un devant la caméra ${autres[0].camera}`}, ${autres.length > 1 ? `le dernier à ${hm(autres[autres.length - 1])}` : `à ${hm(autres[0])}`}`);
+    const al_ = ((al && al.alertes) || []).filter(x => x.at >= depuis && (x.gravite === 'attention' || x.gravite === 'urgent') && !/^(Ton téléphone|Je t'ai vu partir|Bon retour)/.test(x.texte));
+    if (al_.length) parts.push(`${al_.length} alerte${al_.length > 1 ? 's' : ''}${al_.some(x => x.gravite === 'urgent') ? ', dont une urgente' : ''}`);
+    const ms = ((me && me.recents) || []).filter(x => x.de === 'enfant' && x.at >= depuis);
+    if (ms.length) parts.push(`${ms.length > 1 ? `${ms.length} messages` : 'un message'} de ${p}${ms.length === 1 ? ` : « ${ms[0].texte} »` : ''}`);
+    if (!parts.length) return "Pendant ton absence : rien à signaler, personne devant les caméras.";
+    return `Pendant ton absence : ${parts.length > 1 ? `${parts.slice(0, -1).join(', ')} et ${parts[parts.length - 1]}` : parts[0]}.${al_.length ? ' Dis « rapport de sécurité » pour le détail.' : ''}`;
   }
   // la caméra a reconnu quelqu'un (ARRIVEE) : papa, son fils, ou les deux ensemble
   let vusRecents = [];
@@ -341,6 +371,10 @@ const DUO = (() => {
   }
 
   function route(t, n) {
+    if (retourOffre && Date.now() - retourOffre.at < 120000) {
+      if (/^(oui|ouais|ok|d accord|vas y|bien sur|carrement|c est (bien )?moi|confirme|je confirme|mode presence)\b/.test(n)) return () => retourReponse(true);
+      if (/^(non|surtout pas|ce n est pas moi|c est pas moi|pas moi)\b/.test(n)) return () => retourReponse(false);
+    }
     if (/\b(discute|discutez|parle|parlez|bavarde|cause|fais (un|ton|votre) (sketch|numero|duo|spectacle)|faites (un|votre) (sketch|numero|duo))\b.*\bshadow\b|\b(atlas et shadow|shadow et toi|toi et shadow)\b.*\b(sketch|numero|spectacle|discutez|parlez|chamaillez|faites)\b|\bmode duo\b/.test(n) && !/\b(dis a shadow|message|hologramme|fusee)\b/.test(n)) return () => sketch(t, n);
     if (/\b(accueille|accueillez|souhaite la bienvenue a|dis bonjour a) (nos|mes|les) (invites|amis|visiteurs|hotes)\b|\bnos invites (sont la|arrivent|sont arrives)\b|\bmode accueil\b/.test(n)) return () => invites(true);
     return null;

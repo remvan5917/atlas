@@ -302,7 +302,83 @@ Utilise UNIQUEMENT les faits fournis : reformule les titres sans inventer de dé
     el.remove(); imgs.forEach(u => u && URL.revokeObjectURL(u)); dlg.interrupt = false;
   }
 
+  /* ---------- le film des caméras : la journée vue par les caméras en 30 secondes, façon bande de surveillance ----------
+     Les photos d'alerte (un passage, un livreur, un bruit) et les images que la sentinelle garde du flux toutes les 20 minutes (48 h). */
+  const camNom = c => { const x = String(c || '').toLowerCase(); return /plateau/.test(x) ? 'Plateau' : /facade/.test(N(x)) ? 'Façade' : /cour/.test(x) ? 'Cour' : /toit/.test(x) ? 'Toiture' : c ? c.charAt(0).toUpperCase() + c.slice(1) : 'Caméra'; };
+  function legende(x) {
+    const a = x.a || {}, t = String(x.texte || '');
+    if (a.livreur || a.transporteur) return `un livreur${a.transporteur ? ` ${a.transporteur}` : ''}${a.colis ? ', avec un colis' : ''}`;
+    if (a.vehicule) return `un véhicule${a.vehicule_type ? ` (${a.vehicule_type}${a.vehicule_couleur ? ` ${a.vehicule_couleur}` : ''})` : ''}`;
+    if (/bruit fort/i.test(t)) return 'un bruit fort';
+    const d = t.match(/«[^»]+»[^:]*:\s*(.+)$/); if (d) { const p_ = d[1].replace(/^(je vois|on voit|il y a)\s+/i, '').split(/[.;]/)[0].trim(); if (p_) return p_.length > 64 ? p_.slice(0, 64).replace(/[\s,;:]+\S*$/, '') : p_; }
+    if (/human|personne|quelqu/i.test(t)) return "quelqu'un";
+    if (/détection|mouvement|motion/i.test(t)) return 'un mouvement';
+    return x.alerte ? 'une alerte' : 'tout est calme';
+  }
+  async function filmCameras(n) {
+    const r0 = VOIXMAISON.root(); if (!r0) return say("Il me faut l'ordinateur de la maison pour le film des caméras.");
+    let heures = /\b(semaine|7 jours|sept jours)\b/.test(n) ? 168 : /\b(hier|48 heures|deux jours)\b/.test(n) ? 48 : 24;
+    const charge = async h => (await (await fetch(`${r0}/maison/film?heures=${h}`, { cache: 'no-store' })).json()).images || [];
+    let l = []; try { l = await charge(heures); if (l.length < 4 && heures < 168) { heures = 168; l = await charge(heures); } } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison."); } // une journée trop calme : la semaine
+    if (!l.length) return say("Les caméras n'ont gardé aucune image depuis hier. La sentinelle en garde une toutes les 20 minutes quand elle surveille, le soir et quand tu es absent, et une photo à chaque passage.");
+    // les moments : toutes les alertes avec photo, complétées par des images du flux bien réparties (12 au plus, dans l'ordre)
+    const al = l.filter(x => x.alerte), fl = l.filter(x => !x.alerte), place = Math.max(0, 12 - al.length);
+    const pris = fl.length <= place ? fl : Array.from({ length: place }, (v, i) => fl[Math.round((i * (fl.length - 1)) / Math.max(1, place - 1))]);
+    const choix = [...new Set(al.slice(-12).concat(pris))].sort((a, b) => a.at - b.at);
+    const imgs = await Promise.all(choix.map(async x => { try { const b = await (await fetch(`${r0}/maison/film/image?id=${encodeURIComponent(x.id)}`, { cache: 'no-store' })).blob(); return b.type.startsWith('image') ? URL.createObjectURL(b) : ''; } catch (e) { return ''; } }));
+    const hm = x => { const d = new Date(x.at * 1000); return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`; };
+    const hms = x => new Date(x.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const jourTxt = heures > 48 ? 'les 7 derniers jours' : heures > 24 ? 'les dernières 48 heures' : new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const hmJ = x => `${heures > 24 ? `${new Date(x.at * 1000).toLocaleDateString('fr-FR', { weekday: 'long' })}, ` : ''}${hm(x)}`;
+    const nbAl = choix.filter(x => x.alerte).length;
+    // la narration : Mistral la rend vivante à partir des faits (sinon : l'heure, la caméra, ce qu'elle a vu)
+    let txt = [];
+    try {
+      const rep = await AI.chat([{ role: 'system', content: 'Tu es Atlas, l\'IA de la maison. Tu racontes « le film des caméras » à papa : une bande de surveillance de la journée. Une phrase très courte par image (moins de 12 mots), qui commence par l\'heure, style « 14 h 12, le livreur. » ou « 16 h 40, le plateau, calme. ». Ton de film, un brin pince-sans-rire, tu tutoies, n\'invente rien qui n\'est pas écrit. Réponds en JSON : {"intro": "...", "phrases": ["..."], "fin": "..."} avec exactement une phrase par image.' },
+        { role: 'user', content: choix.map((x, i) => `${i + 1}. ${hmJ(x)} — caméra ${camNom(x.camera)} — ${x.alerte ? legende(x) : 'image de routine, rien de signalé'}`).join('\n') }], { maxTokens: 700, temperature: 0.6, json: true });
+      const j = JSON.parse(String(rep).replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
+      txt = [j.intro, ...(j.phrases || []), j.fin];
+    } catch (e) { txt = []; }
+    if (txt.length < choix.length + 2 || txt.some(x => !x)) txt = [`Le film des caméras${heures > 48 ? ' de la semaine' : heures > 24 ? ' des deux derniers jours' : ''}. ${choix.length} image${choix.length > 1 ? 's' : ''}${nbAl ? `, dont ${nbAl} détection${nbAl > 1 ? 's' : ''}` : ', rien que du calme'}.`, ...choix.map(x => `${hmJ(x)}, ${camNom(x.camera).toLowerCase() === 'plateau' ? 'le plateau' : `la ${camNom(x.camera).toLowerCase()}`} : ${legende(x)}.`), 'Fin de la bande. Rien d\'autre à signaler.'];
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:75;background:#000;overflow:hidden;font-family:ui-monospace,Menlo,monospace;color:#d1fae5';
+    el.innerHTML = `<style>@keyframes fcR{50%{opacity:.15}}@keyframes fcG{0%{opacity:.9;transform:translateX(-3%)}100%{opacity:0;transform:none}}@keyframes fcZ{from{transform:scale(1)}to{transform:scale(1.06)}}
+      .fc-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:saturate(.75) contrast(1.12) brightness(1.02);animation:fcZ 4s linear forwards}
+      .fc-lig{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 3px),radial-gradient(80% 70% at 50% 50%,transparent 55%,rgba(0,0,0,.6))}
+      .fc-coupe{position:absolute;inset:0;background:linear-gradient(90deg,rgba(110,240,184,.35),rgba(255,255,255,.12),rgba(95,211,255,.3));animation:fcG .35s ease-out forwards;pointer-events:none}
+      .fc-h{position:absolute;left:22px;top:18px;font-size:clamp(12px,1.6vw,17px);letter-spacing:.2em;text-shadow:0 0 6px #000}.fc-rec{position:absolute;right:22px;top:18px;font-size:clamp(12px,1.6vw,17px);letter-spacing:.2em;color:#ff6b4a;text-shadow:0 0 6px #000}
+      .fc-rec b{animation:fcR 1s steps(2) infinite;font-weight:400}.fc-bas{position:absolute;left:0;right:0;bottom:0;padding:18px 24px 22px;background:linear-gradient(transparent,rgba(0,0,0,.8));font:500 clamp(15px,2.2vw,22px)/1.4 system-ui,sans-serif;color:#fff}
+      .fc-titre{position:absolute;inset:0;display:grid;place-items:center;text-align:center;transition:opacity .6s}</style>
+      <div class="fc-titre"><div><div style="font-size:13px;letter-spacing:.45em;color:#6ef0b8">ATLAS · ARCHIVES DE SURVEILLANCE</div><div style="font:800 clamp(30px,6vw,68px) system-ui;margin-top:12px;color:#fff">Le film des caméras</div><div style="margin-top:12px;font-size:15px;letter-spacing:.2em;opacity:.75;text-transform:uppercase">${esc(jourTxt)} · ${choix.length} séquence${choix.length > 1 ? 's' : ''}</div></div></div>
+      <div class="fc-lig"></div><div class="fc-h" style="opacity:0"></div><div class="fc-rec" style="opacity:0"><b>●</b> REC <span></span></div><div class="fc-bas" style="opacity:0"></div>`;
+    document.body.appendChild(el);
+    let fini = false; el.onclick = () => { fini = true; dlg.interrupt = true; try { voice.stop(); } catch (e) { /* rien */ } };
+    try { VISIO.sfx('scan'); } catch (e) { /* pas de son */ }
+    await say(txt[0]);
+    el.querySelector('.fc-titre').style.opacity = '0';
+    const h = el.querySelector('.fc-h'), rec = el.querySelector('.fc-rec'), bas = el.querySelector('.fc-bas'), lig = el.querySelector('.fc-lig');
+    for (let i = 0; i < choix.length && !fini; i++) {
+      if (!imgs[i]) continue;
+      const x = choix[i], im = document.createElement('img'); im.className = 'fc-img'; im.src = imgs[i];
+      el.insertBefore(im, lig); const prec = el.querySelectorAll('.fc-img'); if (prec.length > 1) prec[0].remove();
+      const cp = document.createElement('div'); cp.className = 'fc-coupe'; el.appendChild(cp); setTimeout(() => cp.remove(), 400);
+      try { fx.tone([[x.alerte ? 880 : 660, 0.03]]); } catch (e) { /* pas de son */ }
+      h.style.opacity = '1'; h.textContent = `CAM ${String(i + 1).padStart(2, '0')} · ${camNom(x.camera).toUpperCase()}${x.alerte ? ' · DÉTECTION' : ''}`; h.style.color = x.alerte ? '#ffb547' : '#d1fae5';
+      rec.style.opacity = '1'; rec.querySelector('span').textContent = `${heures > 24 ? `${new Date(x.at * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} ` : ''}${hms(x)}`;
+      bas.style.opacity = '1'; bas.textContent = txt[i + 1] || '';
+      const t0 = Date.now(); await say(txt[i + 1] || ''); const reste = 2300 - (Date.now() - t0); if (reste > 0) await wait(reste);
+    }
+    if (!fini) {
+      [h, rec, bas].forEach(e => { e.style.opacity = '0'; }); el.querySelectorAll('.fc-img').forEach(e => e.remove());
+      const fin = el.querySelector('.fc-titre'); fin.innerHTML = '<div><div style="font-size:13px;letter-spacing:.45em;color:#6ef0b8">FIN DE LA BANDE</div><div style="font:800 clamp(26px,5vw,56px) system-ui;margin-top:12px;color:#fff">Périmètre sous surveillance</div></div>'; fin.style.opacity = '1';
+      try { VISIO.sfx('final'); } catch (e) { /* pas de son */ }
+      await say(txt[txt.length - 1]); await wait(1500);
+    }
+    el.remove(); imgs.forEach(u => u && URL.revokeObjectURL(u)); dlg.interrupt = false;
+  }
+
   function route(t, n) {
+    if (/\b(film|video|bande|resume|montage)s? (des |de (la |ma )?)?(cameras?|surveillance|videosurveillance)\b|\b(la journee|ma journee|aujourd hui|hier) (vue )?(par|des|aux) (les )?cameras\b/.test(n)) return () => filmCameras(n);
     if (/\b(le |notre |mon )?film (du mois|de (ce mois|octobre|novembre|decembre|janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre)|des souvenirs)\b|\bnos souvenirs du mois\b/.test(n)) return () => filmDuMois(n);
     const pr = typeof LIEN !== 'undefined' && LIEN.prenom() ? N(LIEN.prenom()) : '', FILS = new RegExp(`\\b(mon fils|le petit|mon garcon|fiston${pr ? `|${pr}` : ''})\\b`);
     if (FILS.test(n) && /\b(previens|dis|alerte|appelle|reveille|avertis) moi (quand|des que|lorsqu)\b/.test(n) && /\b(reveill?e|leve|debout|reveil)\b/.test(n)) return veilleReveil;
