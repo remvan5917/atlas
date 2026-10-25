@@ -376,7 +376,7 @@ const SECRETAIRE = (() => {
       const n = afaire.length;
       S.semaineFaite = (AGENDA._semaine ? dJ(AGENDA._semaine()[0]) : auj()); save();
       if (o.seul) { S.semaineSansLui = S.semaineFaite; save(); return say(`Ta semaine est prête, et ta Gazette s'imprime sur l'imprimante du bureau. Demain matin, dis-moi « on fait mon planning » pour ajouter tes rendez-vous.`); }
-      return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? ` Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : le planning, les repas, les choses à faire, ta semaine écoulée et les courses.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}` : ''} Bonne semaine !`);
+      return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? ` Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : une page pour le planning, une pour le menu, une pour les courses, et une pour les choses à ne pas oublier.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}` : ''} Bonne semaine !`);
     } finally { window.__RITUEL = false; }
   }
   function coursesGroupees() {
