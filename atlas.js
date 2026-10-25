@@ -814,6 +814,8 @@ async function handleBrut(text) {
   if (ordi) return ordi();
   const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
   if (bourse) return bourse();
+  const rayon = typeof VEILLE !== 'undefined' && VEILLE.route(t, n); // le rayon X de la maison, la veille intérieure (micros et caméras des appareils)
+  if (rayon) return rayon();
   const surete = SECURITE.route(t, n); // l'alarme (lire, activer — jamais désactiver) et les caméras
   if (surete) return surete();
   const maison = MAISON.route(t, n); // la maison (prises, lampes, scènes), le messager et ce que Shadow a appris
