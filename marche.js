@@ -185,10 +185,10 @@ const MARCHE = (() => {
     const now = Date.now();
     (e.annonces || []).filter(suivies).filter(a => a.impact === 'High').forEach(a => {
       const t = +new Date(a.date), avant = t - now;
-      if (avant > 0 && avant <= 6 * 60000) PROACTIF.annonce(`eco-${a.pays}-${a.titre}-${a.date}`, () => `Dans ${Math.max(1, Math.round((t - Date.now()) / 60000))} minutes, ${dire1(a, false)}.`, { urgent: true, expire: t });
+      if (avant > 0 && avant <= 6 * 60000) PROACTIF.annonce(`eco-${a.pays}-${a.titre}-${a.date}`, () => `Dans ${Math.max(1, Math.round((t - Date.now()) / 60000))} minutes, ${dire1(a, false)}.`, { urgent: true, expire: t, lumiere: 'marche' });
     });
     const ny = wallStreet();
-    if (ny.dans != null && ny.dans <= 5 && ny.dans > 0) PROACTIF.annonce(`ny-${dayKey()}`, () => { const w = wallStreet(); return w.ouvert ? '' : `Ouverture de Wall Street dans ${w.dans || 1} minute${(w.dans || 1) > 1 ? 's' : ''}.`; }, { urgent: true, expire: now + 6 * 60000 });
+    if (ny.dans != null && ny.dans <= 5 && ny.dans > 0) PROACTIF.annonce(`ny-${dayKey()}`, () => { const w = wallStreet(); return w.ouvert ? '' : `Ouverture de Wall Street dans ${w.dans || 1} minute${(w.dans || 1) > 1 ? 's' : ''}.`; }, { urgent: true, lumiere: 'marche', expire: now + 6 * 60000 });
   }
   setInterval(veille, 45000);
 

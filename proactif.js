@@ -15,10 +15,18 @@ const PROACTIF = (() => {
   let dits = {};
   try { dits = JSON.parse(localStorage.getItem('atlas-dits') || '{}') || {}; } catch (e) { dits = {}; }
   const garde = () => { const lim = Date.now() - 3 * 86400000; Object.keys(dits).forEach(k => { if (dits[k] < lim) delete dits[k]; }); try { localStorage.setItem('atlas-dits', JSON.stringify(dits)); } catch (e) { /* rien */ } };
-  function annonce(cle, texte, { urgent = false, expire = Date.now() + 30 * 60000, enchaine = false } = {}) {
+  function annonce(cle, texte, { urgent = false, expire = Date.now() + 30 * 60000, enchaine = false, lumiere = '' } = {}) {
     if (dits[cle] || file.some(x => x.cle === cle)) return false;
-    file.push({ cle, texte, urgent, expire, enchaine, depuis: Date.now() });
+    file.push({ cle, texte, urgent, expire, enchaine, lumiere, depuis: Date.now() });
     return true;
+  }
+  // les lumières qui parlent : pendant qu'il le dit, une lampe de la pièce bouge au rythme de sa voix, dans la teinte du message
+  // (« message » : blanc froid bleuté, un message de son fils ; « marche » : blanc chaud ambré ; « alerte » : des éclairs) — puis elle revient comme avant
+  async function avecLumiere(motif, t, fn) {
+    const r0 = VOIXMAISON.root(), on = !!(r0 && motif && t && S.settings.lumieresParlent !== false && !window.__BANC);
+    const post = corps => fetch(`${r0}/maison/lumiere-parle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps), cache: 'no-store' }).catch(() => {});
+    if (on) post({ motif, role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '', duree: Math.min(45, 3 + String(t).length / 13) });
+    try { return await fn(); } finally { if (on) post({ stop: true }); }
   }
   const nuit = () => { const d = new Date(), h = d.getHours() + d.getMinutes() / 60; return h >= 22.5 || h < 7; };
   const quelquun = () => Date.now() - Math.max(ARRIVEE.dernier(), dlg.lastActive || 0, CONV.dernier()) < 20 * 60000;
@@ -39,7 +47,7 @@ const PROACTIF = (() => {
       if (t && !voice.endormi) {
         if (!x.enchaine) fx.tone([[660, 0.06], [990, 0.09]]); // un petit signal : c'est lui qui prend la parole
         CONV.note('Atlas', t); face.flash('happy', 1000);
-        await say(t);
+        await avecLumiere(x.lumiere, t, () => say(t));
         dlg.state = 'talk'; dlg.silence = 0; dlg.lastActive = Date.now(); // on peut lui répondre sans redire son nom
       }
     } catch (e) { console.warn('annonce', e); } finally { parle = false; dlg.busy = false; dlg.repondu = Date.now(); }
@@ -117,5 +125,5 @@ const PROACTIF = (() => {
   }
   setInterval(ordinateur, 15 * 60000); setTimeout(ordinateur, 120000);
 
-  return { annonce, reconnu, auDemarrage, briefMatin, _file: file, _tic: tic };
+  return { annonce, avecLumiere, reconnu, auDemarrage, briefMatin, _file: file, _tic: tic };
 })();

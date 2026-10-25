@@ -105,7 +105,8 @@ const DUO = (() => {
     sfx('scan');
     if (/^enfant/.test(de)) {
       const t = String(m.texte || '').trim();
-      await say(`Message de ${enfant() || 'ton fils'} : « ${t} ».`);
+      const phrase = `Message de ${enfant() || 'ton fils'} : « ${t} ».`;
+      await PROACTIF.avecLumiere('message', phrase, () => say(phrase));
       if (id) appel('/maison/messages', { lu: id }).catch(() => {}); // (déjà dit : il ne reviendra pas)
     } else if (m.texte) await say(String(m.texte));
   }
@@ -336,6 +337,74 @@ const DUO = (() => {
     await appel('/maison/sentinelle', { retour: 'refuse' }).catch(() => {});
     return say('Compris. La maison reste en mode absent, surveillance complète, et je préviens ton téléphone.');
   }
+  /* ---------- l'appel holographique en direct : papa (ce téléphone) ↔ son fils (l'écran de Shadow) ----------
+     Ça sonne sur Shadow ; le petit touche l'écran pour décrocher ; papa apparaît chez lui en hologramme bleu, et lui ici en vidéo.
+     La vidéo passe directement d'un appareil à l'autre (WebRTC, par Tailscale ou le Wi-Fi) ; l'ordinateur de la maison ne fait que les présenter. */
+  let enAppel = false;
+  async function appelHolo() {
+    const r0 = VOIXMAISON.root(), p = enfant() || 'ton fils';
+    if (!r0) return say("Il me faut l'ordinateur de la maison pour appeler Shadow.");
+    if (enAppel) return say('Un appel est déjà en cours.');
+    if (!window.RTCPeerConnection || !navigator.mediaDevices) return say("Cet appareil ne sait pas faire d'appel vidéo.");
+    let local; try { local = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    catch (e) { return say("Je n'arrive pas à ouvrir la caméra et le micro de cet appareil."); }
+    enAppel = true;
+    const id = `h${Date.now().toString(36)}`;
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:70;background:radial-gradient(70% 60% at 50% 40%,#05213a,#000 80%);color:#e0f2fe;font-family:ui-monospace,Menlo,monospace;overflow:hidden';
+    el.innerHTML = `<style>@keyframes apS{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.18);opacity:.35}}@keyframes apB{from{background-position:0 0}to{background-position:0 40px}}</style>
+      <video data-d playsinline autoplay style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s"></video>
+      <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(125,211,252,.06) 0 2px,transparent 2px 6px);animation:apB 2s linear infinite"></div>
+      <div data-anneau style="position:absolute;left:50%;top:38%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid #38bdf8;box-shadow:0 0 40px #38bdf8;animation:apS 1.6s ease-in-out infinite"></div>
+      <div data-e style="position:absolute;left:0;right:0;top:calc(38% + 100px);text-align:center;font-size:13px;letter-spacing:.32em">◢ APPEL HOLOGRAPHIQUE · ${esc(String(p).toUpperCase())}<br><span style="opacity:.7">ÇA SONNE SUR SHADOW…</span></div>
+      <video data-m playsinline autoplay muted style="position:absolute;right:14px;top:14px;width:28vw;max-width:170px;border-radius:10px;border:1px solid rgba(56,189,248,.6);transform:scaleX(-1)"></video>
+      <button data-x style="position:absolute;left:50%;bottom:max(26px,env(safe-area-inset-bottom));transform:translateX(-50%);width:74px;height:74px;border-radius:50%;border:0;background:#ef4444;color:#fff;font:600 13px system-ui;box-shadow:0 0 24px rgba(239,68,68,.6)">Raccrocher</button>`;
+    document.body.appendChild(el);
+    el.querySelector('[data-m]').srcObject = local;
+    const dist = el.querySelector('[data-d]'), etat = el.querySelector('[data-e]');
+    const dit = (a, b) => { etat.innerHTML = `◢ ${esc(a)}${b ? `<br><span style="opacity:.7">${esc(b)}</span>` : ''}`; };
+    let fini = false, pc = null, sonnerie = null, quoi = '';
+    const raccroche = new Promise(res => { el.querySelector('[data-x]').onclick = () => { quoi = quoi || 'papa'; fini = true; res(); }; });
+    const post = (type, data) => fetch(`${r0}/maison/appel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pour: 'enfant', id, type, data: data || null }), cache: 'no-store' }).catch(() => {});
+    // un seul lecteur de la boîte aux lettres : il range tout ce qui arrive ; chaque étape y prend ce qu'elle attend
+    const recus = [];
+    (async () => { while (!fini) { try { recus.push(...((await (await fetch(`${r0}/maison/appel?pour=papa&id=${id}&attente=20`, { cache: 'no-store' })).json()).messages || [])); } catch (e) { await wait(1500); } } })();
+    const attend = (types, ms) => new Promise(res => { const t0 = Date.now(); const tic = () => { const i = recus.findIndex(x => types.includes(x.type)); if (i >= 0) return res(recus.splice(i, 1)[0]); if (fini || Date.now() - t0 > ms) return res(null); setTimeout(tic, 250); }; tic(); });
+    const recolte = c => new Promise(res => { if (c.iceGatheringState === 'complete') return res(); const t = setTimeout(res, 3000); c.addEventListener('icegatheringstatechange', () => { if (c.iceGatheringState === 'complete') { clearTimeout(t); res(); } }); });
+    try {
+      OREILLES.stop(); dlg.busy = true;
+      try { sfx('scan'); } catch (e) { /* pas de son */ }
+      await post('sonne');
+      sonnerie = setInterval(() => { try { fx.tone([[880, 0.12], [1175, 0.18]]); } catch (e) { /* pas de son */ } }, 2400);
+      const m = await Promise.race([attend(['pret', 'refus', 'occupe'], 45000), raccroche.then(() => null)]);
+      clearInterval(sonnerie); sonnerie = null;
+      if (!m || m.type !== 'pret') { quoi = fini ? 'papa' : m && m.type === 'occupe' ? 'occupe' : m && m.type === 'refus' ? ((m.data || {}).raison === 'eteint' ? 'eteint' : 'refus') : 'absent'; return; }
+      dit('CONNEXION…', 'LIAISON HOLOGRAPHIQUE AVEC SHADOW');
+      pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      local.getTracks().forEach(t => pc.addTrack(t, local));
+      pc.ontrack = e => { if (dist.srcObject !== e.streams[0]) { dist.srcObject = e.streams[0]; dist.play().catch(() => {}); } };
+      await pc.setLocalDescription(await pc.createOffer()); await recolte(pc);
+      await post('offre', { sdp: pc.localDescription.sdp });
+      const rep = await Promise.race([attend(['reponse', 'fin'], 20000), raccroche.then(() => null)]);
+      if (!rep || rep.type !== 'reponse') { quoi = fini ? 'papa' : 'echec'; return; }
+      dist.style.transform = (rep.data || {}).rot ? `rotate(${Number(rep.data.rot) || 0}deg)` : '';
+      await pc.setRemoteDescription({ type: 'answer', sdp: String((rep.data || {}).sdp || '') });
+      // en ligne : jusqu'à ce que l'un des deux raccroche, que la liaison tombe, ou 20 minutes
+      const coupe = new Promise(res => { let t = 0; pc.onconnectionstatechange = () => { const s_ = pc.connectionState; if (s_ === 'connected') { clearTimeout(t); el.querySelector('[data-anneau]').style.display = 'none'; dist.style.opacity = '1'; dit('EN LIGNE AVEC SHADOW', ''); setTimeout(() => { if (!fini) etat.style.opacity = '0'; }, 2500); } if (s_ === 'failed') res('echec'); if (s_ === 'disconnected') { clearTimeout(t); t = setTimeout(() => res('coupe'), 8000); } }; });
+      const fin = await Promise.race([raccroche.then(() => 'papa'), attend(['fin'], 20 * 60000).then(x => (x ? 'enfant' : 'duree')), coupe, new Promise(res => setTimeout(() => res(pc.connectionState === 'connected' ? null : 'echec'), 15000)).then(x => x || new Promise(() => {}))]);
+      quoi = quoi || fin;
+    } finally {
+      fini = true; if (sonnerie) clearInterval(sonnerie);
+      if (quoi !== 'enfant') post('fin');
+      try { if (pc) pc.close(); } catch (e) { /* rien */ }
+      local.getTracks().forEach(t => t.stop());
+      el.style.transition = 'opacity .6s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 700);
+      dlg.busy = false; enAppel = false;
+      try { await OREILLES.reopen(); } catch (e) { /* rien */ }
+    }
+    const P = p.charAt(0).toUpperCase() + p.slice(1);
+    return say({ absent: `${P} n'a pas décroché, ou Shadow est en veille. Je réessaie quand tu veux.`, refus: `${P} n'a pas pu répondre.`, eteint: "Shadow n'est pas allumé en ce moment : il ne peut pas sonner.", occupe: 'Shadow est déjà en communication.', echec: "La liaison holographique n'a pas pu s'établir. Vérifie que la tablette de Shadow est sur le Wi-Fi ou sur Tailscale, et réessaie.", coupe: 'La liaison est tombée.', enfant: `${P} a raccroché. Fin de la transmission.`, duree: 'Vingt minutes : je coupe la transmission.', papa: 'Fin de la transmission.' }[quoi] || 'Fin de la transmission.');
+  }
   // pendant son absence : qui est passé devant les caméras, les alertes, les messages de son fils
   async function resumeAbsence(depuis) {
     const [al, pa, me] = await Promise.all([appel('/maison/alertes?depuis=0', null, 8000).catch(() => null), appel('/maison/passages?jours=2', null, 8000).catch(() => null), appel('/maison/messages', null, 8000).catch(() => null)]);
@@ -371,6 +440,9 @@ const DUO = (() => {
   }
 
   function route(t, n) {
+    const pr = enfant() ? N(enfant()) : '';
+    if (/\b(appel|appelle|appeler|visio|video|hologramme|holographique)\b/.test(n) && new RegExp(`\\b(mon fils|le petit|shadow${pr ? `|${pr}` : ''})\\b`).test(n) && /\b(appel|appelle|appeler|visio|appel video)\b/.test(n) && !/\b(message|enregistre)\b/.test(n)) return appelHolo;
+    if (/\bappel holographique\b/.test(n)) return appelHolo;
     if (retourOffre && Date.now() - retourOffre.at < 120000) {
       if (/^(oui|ouais|ok|d accord|vas y|bien sur|carrement|c est (bien )?moi|confirme|je confirme|mode presence)\b/.test(n)) return () => retourReponse(true);
       if (/^(non|surtout pas|ce n est pas moi|c est pas moi|pas moi)\b/.test(n)) return () => retourReponse(false);

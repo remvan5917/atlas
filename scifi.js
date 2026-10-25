@@ -850,6 +850,16 @@ const SCIFI = (() => {
       if (/\b(mes veilles|qu est ce que tu surveilles|quelles actus tu surveilles|tu surveilles quoi)\b/.test(n)) return () => veille('liste');
       if (aj && aj[1] && !/\b(maison|cameras?|perimetre|alarme|enfant|fils|reseau|ordi)\b/.test(N(aj[1])) && /\b(infos?|actu|actualites?|nouvelles|nouveau|veille|surveille)\b/.test(n)) return () => veille('ajoute', aj[1].replace(/^(?:sur|de)\s+/i, '').trim());
     }
+    // les lumières qui parlent (proactif.js) : la démonstration, et le réglage
+    if (/\blumieres? qui parlen?t\b/.test(n) && /\b(coupe|desactive|arrete|enleve|plus de|eteins)\b/.test(n)) return () => { S.settings.lumieresParlent = false; save(); return say("D'accord : je t'annonce les choses sans faire bouger les lampes."); };
+    if (/\blumieres? qui parlen?t\b/.test(n) && /\b(active|remets|reactive|rallume)\b/.test(n)) return () => { S.settings.lumieresParlent = true; save(); return say('Les lumières qui parlent sont de retour.'); };
+    if (/\blumieres? qui parlen?t\b/.test(n)) return async () => {
+      if (S.settings.lumieresParlent === false) { S.settings.lumieresParlent = true; save(); }
+      const L = (m, t) => PROACTIF.avecLumiere(m, t, () => say(t));
+      await L('message', "Voici les lumières qui parlent. Quand ton fils t'envoie un message, la lampe parle avec moi, en blanc froid, un peu bleuté.");
+      await wait(900); await L('marche', 'Pour une annonce des marchés, elle passe en blanc chaud, presque ambré.');
+      await wait(900); await L('alerte', "Et pour une alerte : des éclairs. Après, la lampe revient toujours exactement comme avant. Dis « coupe les lumières qui parlent » si tu n'en veux plus.");
+    };
     if (/\b(fais|lance|commence|demarre) (une |la |ta )?ronde\b|\bronde (de nuit|de securite|du soir|de la maison)\b|^(la )?ronde$/.test(n)) return () => ronde().then(ok => ok || say("L'ordinateur de la maison ne répond pas : pas de ronde ce soir."));
     if (/\b(ferme|quitte|sors du|enleve|cache)\b.*\b(cockpit|tableau de bord)\b|\bfin du (mode )?cockpit\b/.test(n)) return () => { modeCockpit(false); return say('Mode cockpit fermé.'); };
     // le jumeau holographique : la maison en 3D dans le cockpit, et la journée qu'on rejoue
