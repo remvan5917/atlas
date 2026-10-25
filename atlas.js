@@ -318,6 +318,7 @@ Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'es
 Programmes : « qu'est-ce que tu as programmé ? », « annule les programmes ».
 Protocoles : « crée le protocole <nom> : … », « protocole <nom> » (le lance), « mes protocoles », « supprime le protocole <nom> ».
 Ordinateur de bord : « radio atlas » (l'émission du matin), « montre le jumeau » (la maison en 3D dans le cockpit), « rejoue ma journée », « fais une ronde » (la ronde de nuit dans le jumeau), « salle de contrôle » (les 4 écrans de l'ordinateur), « fin de la salle de contrôle », « le film des caméras » (la journée vue par les caméras), « où est mon fils ? », « qui est à la maison ? », « préviens-moi quand mon fils se réveille », « le film du mois », « le bilan scolaire de mon fils » (ses exercices d'école avec Shadow), « mon coach de trading » (des constats sur ses trades), « radio atlas longue », « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
+Le vivant : « mes cochons d'Inde s'appellent … et … », « Caramel pèse 980 grammes », « j'ai donné le foin / changé l'eau / nettoyé la cage », « comment vont les cochons d'Inde ? », « j'ai planté des tomates dans le carré 2 » (la serre a 4 carrés, et il y a le grand carré de la cour), « j'ai semé des radis dans le grand carré », « j'ai récolté les radis », « j'ai fait la dernière récolte du carré 2 », « j'ai mis du compost dans le carré 2 », « qu'est-ce que je plante dans le carré 2 ? », « remets le potager à neuf », « j'ai arrosé la serre », « qu'est-ce qui pousse dans le potager ? », « quoi semer ce mois-ci ? », « quand planter les tomates ? », « qu'est-ce qu'elle a ma tomate ? » (il regarde la feuille).
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
 Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».
@@ -731,6 +732,8 @@ async function handleBrut(text) {
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const ag = typeof AGENT !== 'undefined' && AGENT.route(t, n); // « qu'est-ce que tu as programmé ? », « annule les programmes »
   if (ag) return ag();
+  const vivant = typeof VIVANT !== 'undefined' && VIVANT.route(t, n); // les cochons d'Inde et le potager
+  if (vivant) return vivant();
   const bord = typeof BORD !== 'undefined' && BORD.route(t, n); // le journal de bord, le flux de pensée
   if (bord) return bord();
   const foyer = typeof FOYER !== 'undefined' && FOYER.route(t, n); // ses proches, ses affaires rangées, ce qu'il a prêté

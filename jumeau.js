@@ -193,6 +193,7 @@ const JUMEAU = (() => {
     }
     const monte = k => ease(age * 1.7 - k * 0.38); // chaque niveau monte du sol, l'un après l'autre
     coquille(monte, age, t);
+    potager3d(t, ease(age * 1.7 - 0.9));
     const etageVise = ronde && typeof ronde.k === 'number' ? ronde.k : null; // la ronde : les autres étages pâlissent
     for (const p of ps) { if (etageVise != null && p.k !== etageVise) ctx.globalAlpha = 0.25; piece(p, monte(p.k), t, nuit); ctx.globalAlpha = 1; }
     prises(ps, t, nait);
@@ -330,6 +331,46 @@ const JUMEAU = (() => {
       ctx.globalCompositeOperation = 'source-over';
       const qc = proj((x0 + x1) / 2, 0.05, 0), qp = proj((x0 + x1) / 2, H + 0.05, 0), qr = proj(-L / 2 - 1.6, 0.05, 0);
       texte('COUR', qc[0], qc[1] + 4, `rgba(${VE},.7)`, 10); texte('PLATEAU', qp[0], qp[1] - 4, `rgba(${CY},.7)`, 10); texte('LA RUE', qr[0], qr[1] + 4, `rgba(${CY},.6)`, 10);
+      ctx.globalCompositeOperation = 'lighter';
+    }
+  }
+  // le potager dans la cour : la serre (4 carrés) et le grand carré dehors ; chaque carré dit ce qui y pousse, ou son état (le carnet du vivant)
+  let vivant = null, vivantA = 0;
+  async function chargeVivant() { if (Date.now() - vivantA < 5 * 60000) return; vivantA = Date.now(); try { vivant = await appel('/maison/vivant'); } catch (e) { /* rien */ } }
+  const SX0 = L / 2 + 0.25, SX1 = L / 2 + COUR - 0.25, SZ0 = -D / 2 + 0.1, SZ1 = 1.0, SH = 2.0; // la serre (schéma : à placer exactement selon le plan de papa)
+  const CARRES = [['carre 1', SX0 + 0.2, (SX0 + SX1) / 2 - 0.1, SZ0 + 0.2, (SZ0 + SZ1) / 2 - 0.1], ['carre 2', (SX0 + SX1) / 2 + 0.1, SX1 - 0.2, SZ0 + 0.2, (SZ0 + SZ1) / 2 - 0.1],
+    ['carre 3', SX0 + 0.2, (SX0 + SX1) / 2 - 0.1, (SZ0 + SZ1) / 2 + 0.1, SZ1 - 0.2], ['carre 4', (SX0 + SX1) / 2 + 0.1, SX1 - 0.2, (SZ0 + SZ1) / 2 + 0.1, SZ1 - 0.2],
+    ['grand carre', L / 2 + 0.5, L / 2 + COUR - 0.5, SZ1 + 0.35, D / 2 - 0.15]];
+  function etatCarre(lieu) {
+    const P = (vivant && vivant.potager) || {}, cs = (P.cultures || []).filter(c => c.lieu === lieu || (lieu !== 'grand carre' && c.lieu === 'serre' && lieu === 'carre 1'));
+    const act = cs.filter(c => !c.fin); if (act.length) return { e: 'cultive', txt: [...new Set(act.map(c => c.plante))].slice(0, 2).join(', ').toUpperCase() };
+    const fin = Math.max(0, ...cs.filter(c => c.fin).map(c => c.fin)), tr = (P.travaux || []).filter(x => x.lieu === lieu && x.at >= fin - 3600).map(x => x.quoi);
+    if (tr.includes('compost')) return { e: 'pret', txt: 'PRÊT À PLANTER' };
+    if (fin) return { e: 'neuf', txt: tr.length ? 'EN PRÉPARATION' : 'À REMETTRE À NEUF' };
+    return { e: 'vide', txt: 'VIDE' };
+  }
+  function potager3d(t, m) {
+    if (m <= 0) return;
+    // la serre : du verre (des arêtes claires, un toit à deux pans)
+    const bx = cube(SX0, SX1, 0, SH, SZ0, SZ1);
+    poly(bx.bas, CY, 0.25 * m, 1); poly(bx.haut, CY, 0.3 * m, 1, true, true);
+    for (let i = 0; i < 4; i++) trait(bx.bas[i], bx.haut[i], CY, 0.35 * m, 1, true);
+    const xm = (SX0 + SX1) / 2; trait([xm, SH + 0.45, SZ0], [xm, SH + 0.45, SZ1], CY, 0.4 * m, 1.1, true);
+    [SZ0, SZ1].forEach(z => { trait([SX0, SH, z], [xm, SH + 0.45, z], CY, 0.3 * m); trait([SX1, SH, z], [xm, SH + 0.45, z], CY, 0.3 * m); });
+    face([[SX0, 0.02, SZ0], [SX1, 0.02, SZ0], [SX1, 0.02, SZ1], [SX0, 0.02, SZ1]], CY, 0.03 * m);
+    const COL = { cultive: VE, pret: AM, neuf: '200,140,90', vide: CY };
+    ctx.globalCompositeOperation = 'source-over';
+    const qs = proj(xm, SH + 0.7, (SZ0 + SZ1) / 2); texte('SERRE', qs[0], qs[1], `rgba(${CY},.75)`, 9.5, '', 0, 1.6);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const [lieu, x0, x1, z0, z1] of CARRES) {
+      const e = etatCarre(lieu), col = COL[e.e], h = lieu === 'grand carre' ? 0.4 : 0.3, c = cube(x0, x1, 0, h, z0, z1);
+      poly(c.haut, col, (e.e === 'vide' ? 0.3 : 0.7) * m, 1.2, true, e.e !== 'vide');
+      for (let i = 0; i < 4; i++) trait(c.bas[i], c.haut[i], col, 0.35 * m);
+      face(c.haut, col, (e.e === 'cultive' ? 0.18 : e.e === 'pret' ? 0.12 : 0.05) * m);
+      if (e.e === 'cultive') for (let k = 0; k < 6; k++) { const px = x0 + ((x1 - x0) * ((k % 3) + 0.5)) / 3, pz = z0 + ((z1 - z0) * (Math.floor(k / 3) + 0.5)) / 2, hh = h + 0.25 + 0.06 * Math.sin(t / 900 + k); trait([px, h, pz], [px, hh, pz], VE, 0.6 * m, 1.2); const q = proj(px, hh, pz); halo(q[0], q[1], q[3] * 0.18, VE, 0.5 * m); } // les plants
+      ctx.globalCompositeOperation = 'source-over';
+      const q = proj((x0 + x1) / 2, h + 0.55, (z0 + z1) / 2);
+      texte(lieu === 'grand carre' ? 'GRAND CARRÉ' : `CARRÉ ${lieu.split(' ')[1]}`, q[0], q[1], `rgba(${col},.9)`, 8.5, e.txt, 0, 1.4);
       ctx.globalCompositeOperation = 'lighter';
     }
   }
@@ -977,7 +1018,7 @@ const JUMEAU = (() => {
   function maj() {
     const el = document.getElementById('plan'); if (!el) return;
     if (!boite || !boite.isConnected) monte(el);
-    charge(false); chargeMeteo(); chargeOu(); chargeEnfant(); chargeAlarme(); lance();
+    charge(false); chargeMeteo(); chargeOu(); chargeEnfant(); chargeAlarme(); chargeVivant(); lance();
   }
   function bascule3d(on) {
     actif = on; try { localStorage.setItem('cockpit-vue', on ? '3d' : '2d'); } catch (e) { /* rien */ }
@@ -987,5 +1028,5 @@ const JUMEAU = (() => {
     if (on) maj(); else if (typeof plan === 'function') plan();
   }
   const rondeEtape = e => { ronde = e ? Object.assign({ t0: performance.now() }, e) : null; if (ronde && ronde.scelle) ronde.ts = performance.now(); lance(); };
-  return { actif: () => actif, maj, bascule: bascule3d, ronde: rondeEtape, pret: () => !!(actif && ctx && performance.now() - naissance > 2700), _vue: () => ({ yaw, pitch, base, phase, f: f_ }), rejoue: h => { if (!donnees) return; curseur = donnees.maintenant - (h || 12) * 3600; precedent = curseur; lecture = true; majCurseur(); } };
+  return { actif: () => actif, maj, bascule: bascule3d, ronde: rondeEtape, _vivant: d => { vivant = d; vivantA = Date.now(); }, pret: () => !!(actif && ctx && performance.now() - naissance > 2700), _vue: () => ({ yaw, pitch, base, phase, f: f_ }), rejoue: h => { if (!donnees) return; curseur = donnees.maintenant - (h || 12) * 3600; precedent = curseur; lecture = true; majCurseur(); } };
 })();

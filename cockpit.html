@@ -367,7 +367,7 @@ const SCENES_TRAVAIL = [['courbe', 'Mode trading', 'mode trading'], ['stop', 'Fi
 /* ---------- le panneau de commandes : un bouton pour chaque chose qu'Atlas sait faire, rangé par thème ----------
    Chaque bouton passe par Atlas, comme si on le lui disait (la phrase est écrite dessous : elle apprend aussi la voix).
    « … » : il demande d'abord un mot (le message, la durée, la ville). Les derniers boutons touchés reviennent en tête. */
-const GROUPES = [['maison', 'ampoule', 'Maison'], ['surete', 'bouclier', 'Sécurité'], ['famille', 'famille', 'Mon fils et Shadow'], ['orga', 'calendrier', 'Organisation'],
+const GROUPES = [['maison', 'ampoule', 'Maison'], ['surete', 'bouclier', 'Sécurité'], ['famille', 'famille', 'Mon fils et Shadow'], ['vivant', 'coeur', "Cochons d'Inde et potager"], ['orga', 'calendrier', 'Organisation'],
   ['infos', 'nuage', 'Infos et marchés'], ['son', 'musique', 'Musique et son'], ['trading', 'courbe', 'Trading'], ['bord', 'cube', 'Ordinateur de bord']];
 const jumeauIci = () => { if (typeof JUMEAU === 'undefined' || !$('#plan')) return false; const z = document.querySelector('.z-plan'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (!JUMEAU.actif()) JUMEAU.bascule(true); return true; };
 const COMMANDES = [
@@ -408,6 +408,19 @@ const COMMANDES = [
   ['famille', 'robot', 'Discute avec Shadow', 'discute avec Shadow'],
   ['famille', 'manette', 'Jeu télévisé', 'lance le jeu télévisé'],
   ['famille', 'coeur', 'Ma famille', 'ma famille'],
+  ['vivant', 'coeur', "Comment vont les cochons d'Inde ?", "comment vont les cochons d'Inde ?"],
+  ['vivant', 'note', 'Une pesée', '{x}', { saisie: 'Qui, et combien ?', ex: 'Caramel pèse 980 grammes' }],
+  ['vivant', 'liste', 'Foin, eau et légumes donnés', "j'ai donné le foin, l'eau et les légumes aux cochons d'Inde"],
+  ['vivant', 'boite', 'Cage nettoyée', "j'ai nettoyé la cage des cochons d'Inde"],
+  ['vivant', 'ampoule', 'Le potager', "qu'est-ce qui pousse dans le potager ?"],
+  ['vivant', 'calendrier', 'Quoi semer ce mois-ci ?', 'quoi semer ce mois-ci ?'],
+  ['vivant', 'note', "J'ai planté…", "j'ai planté", { saisie: 'Quoi, et dans quel carré ?', ex: 'des tomates dans le carré 2' }],
+  ['vivant', 'trophee', "J'ai récolté…", "j'ai récolté", { saisie: 'Quoi ?', ex: 'les radis' }],
+  ['vivant', 'sortie', 'Dernière récolte d’un carré', "j'ai fait la dernière récolte", { saisie: 'De quel carré ?', ex: 'du carré 2' }],
+  ['vivant', 'reglages', 'Remettre le potager à neuf', 'remets le potager à neuf'],
+  ['vivant', 'loupe', 'Quoi planter dans un carré ?', "qu'est-ce que je plante dans le", { saisie: 'Quel carré ?', ex: 'carré 3' }],
+  ['vivant', 'nuage', "J'ai arrosé", "j'ai arrosé le potager"],
+  ['vivant', 'oeil', 'Le docteur des plantes', "qu'est-ce qu'elle a ma plante ?"],
   ['orga', 'calendrier', "Mon agenda d'aujourd'hui", "mon agenda d'aujourd'hui"],
   ['orga', 'calendrier', 'Mon agenda de demain', "qu'est-ce que j'ai demain"],
   ['orga', 'radar', 'Fais-moi le point', 'fais-moi le point'],
@@ -727,7 +740,7 @@ async function photo(c) {
 }
 
 /* ---------- le journal des alertes ---------- */
-const GENRES = { reseau: 'RÉSEAU', tailscale: 'TAILSCALE', camera: 'CAMÉRA', ezviz: 'CAMÉRA', agenda: 'AGENDA', presence: 'PRÉSENCE', marche: 'MARCHÉS', lien: 'LIEN', accueil: 'ACCUEIL', defense: 'DÉFENSE', ordinateur: 'SYSTÈME', fantome: 'FANTÔME', hologramme: 'HOLOGRAMME', reveil: 'RÉVEIL', veille: 'VEILLE', 'boite-noire': 'TRADING' };
+const GENRES = { reseau: 'RÉSEAU', tailscale: 'TAILSCALE', camera: 'CAMÉRA', ezviz: 'CAMÉRA', agenda: 'AGENDA', presence: 'PRÉSENCE', marche: 'MARCHÉS', lien: 'LIEN', accueil: 'ACCUEIL', defense: 'DÉFENSE', ordinateur: 'SYSTÈME', fantome: 'FANTÔME', hologramme: 'HOLOGRAMME', reveil: 'RÉVEIL', veille: 'VEILLE', 'boite-noire': 'TRADING', jardin: 'JARDIN' };
 let photosAlertes = {}, nbAlertes = 0;
 async function chargeAlertes() {
   let l = []; try { l = (await appel('/maison/alertes?depuis=0')).alertes || []; } catch (e) { return; }
