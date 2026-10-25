@@ -228,6 +228,8 @@ const VISIO = (() => {
     fx.ok();
     await say(`Bonne nuit. ${eteindre.length ? 'Tout est éteint en bas' : 'Rien n\'était resté allumé en bas'}${escalier ? `, je te laisse ${[escaliers.length ? "l'escalier" : '', bain.length ? 'la salle de bain' : ''].filter(Boolean).join(' et ')} allumé${escaliers.length && bain.length ? 's' : ''} 5 minutes` : ''}. La sentinelle passe en garde de nuit${cams ? ` avec ${cams} caméras` : ''} : si quelque chose ne va pas, je te réveille sur ton téléphone.`);
     }
+    // le rayon X du coucher : toutes les caméras et tous les appareils une dernière fois (veille.js), 20 secondes
+    if (typeof VEILLE !== 'undefined' && VEILLE.rayonCoucher) { try { await VEILLE.rayonCoucher(); } catch (e) { /* tant pis */ } }
     // l'ordi : verrouillé, écran noir (après avoir parlé)
     try { await pc({ action: 'verrouille' }); await wait(1500); await pc({ action: 'ecran' }); } catch (e) { /* tant pis */ }
     dlg.state = 'standby'; face.set('idle');

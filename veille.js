@@ -216,12 +216,15 @@ const VEILLE = (() => {
       dessine();
     }
   }
-  async function rayonX() {
+  let auFermer = null;
+  async function rayonX(o = {}) {
     if (!root()) return say("L'ordinateur de la maison ne répond pas : pas de rayon X sans lui.");
-    rayonOuvert = true; rayonFin = Date.now() + 90000; cadre();
-    try { await appel('/maison/interieur', { rayon: true, duree: 90 }); } catch (e) { /* rien */ }
+    const duree = o.duree || 90;
+    rayonOuvert = true; rayonFin = Date.now() + duree * 1000; cadre();
+    const fini = new Promise(res => { auFermer = res; });
+    try { await appel('/maison/interieur', { rayon: true, duree }); } catch (e) { /* rien */ }
     battement();
-    say('Rayon X sur toute la maison.');
+    if (!o.coucher) say('Rayon X sur toute la maison.');
     camerasMaison();
     const tic = async () => {
       if (!rayonOuvert) return;
@@ -234,13 +237,19 @@ const VEILLE = (() => {
       let e; try { e = await appel('/maison/interieur'); } catch (er) { return; }
       const n = (e.appareils || []).length, recents = (e.evenements || []).filter(x => Date.now() - x.at < 3600e3);
       const fortes = (e.appareils || []).filter(a => typeof a.db === 'number' && typeof a.base === 'number' && a.db > a.base + 15);
+      if (o.coucher) {  // au coucher : une seule phrase, puis l'écran se ferme et l'ordinateur se verrouille
+        await say(`Dernier coup d'œil : ${camsMaison.length} caméra${camsMaison.length > 1 ? 's' : ''} et ${n} appareil${n > 1 ? 's' : ''} veillent. ${recents.length ? `${recents.length} événement${recents.length > 1 ? 's' : ''} à l'intérieur dans la dernière heure, je les garde pour le rapport de nuit.` : "Rien d'anormal. La maison est sous surveillance."}`);
+        return;
+      }
       say(`${n ? `${n} appareil${n > 1 ? 's' : ''} écoute${n > 1 ? 'nt' : ''} et regarde${n > 1 ? 'nt' : ''} l'intérieur` : "Aucun appareil d'Atlas ne répond à l'intérieur"}, ${camsMaison.length} caméra${camsMaison.length > 1 ? 's' : ''} de la maison. `
         + (fortes.length ? `Ça fait du bruit en ce moment près de : ${fortes.map(a => a.nom).join(', ')}. ` : '')
         + (recents.length ? `${recents.length} événement${recents.length > 1 ? 's' : ''} à l'intérieur dans la dernière heure.` : "Rien d'anormal à l'intérieur dans la dernière heure."));
-    }, 7000);
+    }, o.coucher ? 6000 : 7000);
+    return fini;
   }
   function fermeRayon() {
     rayonOuvert = false;
+    if (auFermer) { auFermer(); auFermer = null; }
     const o = document.getElementById('rayonx'); if (o) o.remove();
     appel('/maison/interieur', { rayon: true, duree: 10 }).catch(() => {});  // la fin, sans attendre les 90 secondes
   }
@@ -254,5 +263,7 @@ const VEILLE = (() => {
   }
 
   setTimeout(boucle, 6000);
-  return { route, rayonX, fermeRayon, _etat: () => etat };
+  // « je vais me coucher » (visio.js) : un dernier coup d'œil de 20 secondes sur toute la maison, puis l'écran se ferme
+  const rayonCoucher = () => (root() ? rayonX({ duree: 20, coucher: true }) : Promise.resolve());
+  return { route, rayonX, rayonCoucher, fermeRayon, _etat: () => etat };
 })();
