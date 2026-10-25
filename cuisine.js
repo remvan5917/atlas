@@ -207,21 +207,57 @@ const CUISINE = (() => {
   const ajouteCourses = items => { const deja = (S.listes || []).filter(y => y.liste === 'courses').map(y => N(y.text)); const neufs = items.filter(i => i && !deja.includes(N(i))); S.listes = (S.listes || []).concat(neufs.map((x, i) => ({ id: Date.now() + i, liste: 'courses', text: x, at: Date.now() }))); if (neufs.length) save(); return neufs; };
   const dateJ = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const auj = () => dateJ(new Date());
+  // l'agenda de chaque jour, pour les menus : les heures, le pro (marqué), le sport (marqué), les journées entières
+  function semaineAgenda(dates, ag) {
+    const evs = ((ag && ag.evenements) || []).filter(e => !/\bpas de\b/.test(N(e.titre)) && !/\b(MYM|MNQ|MGC|M6E|MCL|MES|Open US|Fenetre active|CPI|PPI|NFP|FOMC)\b/i.test(e.titre));
+    const net = t => String(t).replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}]/gu, '').trim();
+    return dates.map(d => { const ev = evs.filter(e => e.journee ? e.debut <= d.getTime() / 1000 + 43200 && e.fin > d.getTime() / 1000 + 43200 : dateJ(new Date(e.debut * 1000)) === dateJ(d)); return `${JOURS_SEM[d.getDay()]} ${d.getDate()} : ${ev.map(e => `${e.journee ? 'toute la journée' : `${hh(e.debut)}-${hh(e.fin)}`} ${net(e.titre)}${SPORT.test(N(e.titre)) ? ' [sport]' : ''}`).join(', ') || 'rien de prévu (repos)'}`; });
+  }
+  // le planning a changé (le dimanche, à la voix) : les menus déjà faits s'adaptent aux jours chargés, sans tout refaire
+  async function adapte() {
+    if (!AI.ready()) return null;
+    let c; try { c = await charge(true); } catch (e) { return null; }
+    const j = (c.menus || []).filter(x => x.date >= auj());
+    if (!j.length) return { rien: true };
+    let ag = null; try { ag = await (await fetch(`${root()}/maison/agenda?jours=9&frais=1`, { cache: 'no-store' })).json(); } catch (e) { return null; }
+    const dates = j.map(x => new Date(`${x.date}T12:00:00`));
+    const sem = semaineAgenda(dates.map(d => { const z = new Date(d); z.setHours(0, 0, 0, 0); return z; }), ag);
+    face.set('think');
+    let r = null;
+    try {
+      const raw = String(await AI.chat([{ role: 'system', content: `Tu es le coach nutrition et le chef d'un père sportif qui mange le moins transformé possible. ${REGLES}
+Voici ses menus de la semaine (4 repas par jour) et son agenda. Change SEULEMENT les repas qui ne collent pas à son agenda : un soir chargé ou une fin tardive (après 19 h 30) → un dîner prêt en 15 minutes ou avec les bases du batch cooking ; un repas pro, un salon, un déplacement au moment d'un repas → « Repas pro » ou « À emporter : … » transportable ; une journée entière dehors → petit-déjeuner copieux et déjeuner à emporter ; un entraînement → la collation placée avant ou après, et un dîner de récupération ; une soirée dehors → « Dîner dehors » ou léger. Garde tout le reste à l'identique, et garde les restes cohérents (un dîner « double » fait le déjeuner du lendemain). Puis les ingrédients en PLUS à acheter pour les repas changés (seulement s'il en faut).
+Réponds UNIQUEMENT en JSON : {"jours": [{"date": "AAAA-MM-JJ", "matin": "…", "midi": "…", "collation": "…", "collation_quand": "…", "plat": "…", "note": "…", "double": false, "decongeler": []}], "changes": ["phrase courte : quel jour, quel repas, pourquoi"], "courses": [{"article": "…", "quantite": "…"}]}` }, { role: 'user', content: `Menus : ${JSON.stringify(j.map(x => ({ date: x.date, matin: x.matin, midi: x.midi, collation: x.collation, collation_quand: x.collation_quand, plat: x.plat, note: x.note, double: x.double, decongeler: x.decongeler })))}\nAgenda : ${sem.join(' ; ')}.` }], { maxTokens: 4500, temperature: 0.3, json: true }));
+      r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+    } catch (e) { r = null; } finally { face.set('idle'); }
+    if (!r || !(r.jours || []).length) return null;
+    const parDate = {}; (r.jours || []).forEach(x => { if (x && x.date) parDate[x.date] = x; });
+    const nj = j.map(x => { const y = parDate[x.date]; return y && y.plat ? { date: x.date, matin: String(y.matin || x.matin || ''), midi: String(y.midi || x.midi || ''), collation: String(y.collation || x.collation || ''), collation_quand: String(y.collation_quand || x.collation_quand || ''), plat: String(y.plat), note: String(y.note || ''), double: !!y.double, decongeler: (y.decongeler || []).map(String) } : x; });
+    const changes = (r.changes || []).map(String).filter(Boolean).slice(0, 8);
+    if (!changes.length) return { changes: [], j: nj };
+    try { await appel({ action: 'menus', jours: nj, batch: c.batch || [] }); } catch (e) { return null; }
+    cacheAt = 0; prepareImages(nj);
+    const co = ((r.courses || []).filter(x => x && x.article).slice(0, 20).map(x => `${x.article}${x.quantite ? ` (${x.quantite})` : ''}`));
+    const ajoutes = co.length ? ajouteCourses(co) : [];
+    if (imprimeAuto()) imprimeMenu(nj, (S.listes || []).filter(x => x.liste === 'courses'), c.batch).catch(() => {});
+    return { changes, ajoutes, j: nj };
+  }
+
   async function menus(auto) {
     if (!AI.ready()) { await say('Pour les menus, il me faut mon cerveau en ligne.'); return null; }
     face.set('think'); NOYAU.etiquette('CUISINE'); await say(auto ? 'Je prépare toute ta semaine : les menus, les courses et le drive. Ça prend une petite minute.' : 'Je prépare les menus de la semaine, avec tes entraînements et ce que tu as déjà.');
     const cx = await contexte();
     let ag = null; try { ag = await (await fetch(`${root()}/maison/agenda?jours=8`, { cache: 'no-store' })).json(); } catch (e) { /* rien */ }
     const dates = Array.from({ length: 7 }, (v, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
-    const sem = dates.map(d => { const ev = ((ag && ag.evenements) || []).filter(e => !e.journee && SPORT.test(N(e.titre)) && !/\bpas de\b/.test(N(e.titre)) && dateJ(new Date(e.debut * 1000)) === dateJ(d)); return `${JOURS_SEM[d.getDay()]} ${d.getDate()} : ${ev.map(e => `${hh(e.debut)} ${String(e.titre).replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}]/gu, '').trim()}`).join(', ') || 'repos'}`; });
+    const sem = semaineAgenda(dates, ag);
     const congel = cx.st.filter(x => x.lieu === 'congelateur').map(x => x.nom);
     const consigne = `Tu es le coach nutrition et le chef d'un père sportif (gymnastique, krav maga ; son fils fait aussi de la gym) qui veut l'alimentation la moins transformée possible. ${REGLES}
 Prépare les 4 REPAS de chacun des 7 jours donnés, dans l'ordre : le petit-déjeuner ("matin"), le déjeuner ("midi"), la collation ("collation", avec "collation_quand" : le moment) et le dîner ("plat").
 Le petit-déjeuner : brut et rassasiant (flocons d'avoine, œufs, fromage blanc ou skyr nature, fruits frais, oléagineux, pain complet au levain), 3 ou 4 idées qui tournent sur la semaine, plus copieux les jours d'entraînement. Le déjeuner : simple, prêt en 15 minutes ou avec les bases du batch cooking (céréales, légumineuses, légumes rôtis), facile à emporter ; quand le dîner de la veille est cuisiné double, le déjeuner du lendemain, c'est ce reste ("Reste de …"). La collation : placée selon l'entraînement (environ 1 h avant : facile à digérer, des glucides ; juste après : protéines et glucides pour la récupération ; jour de repos : un fruit et des oléagineux), "collation_quand" en quelques mots (ex. « 17 h, avant le krav maga »).
-Les dîners : variés sur la semaine (poisson deux fois, légumineuses deux fois, œufs, viande blanche, un plat végétarien), légumes de saison du nord de la France, et d'abord ce qu'il a déjà (surtout ce qui va se perdre et le congélateur). En semaine, des plats prêts en 30 minutes ; le week-end, plus généreux. Adapte chaque jour à ses entraînements (après : récupération, protéines et glucides ; la veille d'un gros effort : glucides complexes ; repos : plus léger). Quand c'est malin, cuisine double pour le midi du lendemain ("double": true). "decongeler" : ce qu'il doit sortir du congélateur le matin même. Puis la liste de courses de ce qui MANQUE (pas ce qu'il a), avec une quantité simple et le rayon. Puis le batch cooking du dimanche : 5 à 9 étapes pour préparer en avance les bases de la semaine (céréales, légumineuses, légumes rôtis, sauces maison), avec la durée de chaque étape ; les étapes qui tournent seules (cuisson) laissent faire la suivante en même temps.
+Les dîners : variés sur la semaine (poisson deux fois, légumineuses deux fois, œufs, viande blanche, un plat végétarien), légumes de saison du nord de la France, et d'abord ce qu'il a déjà (surtout ce qui va se perdre et le congélateur). En semaine, des plats prêts en 30 minutes ; le week-end, plus généreux. Adapte chaque jour à son AGENDA : un soir chargé ou une fin tardive (après 19 h 30), un dîner prêt en 15 minutes ou avec les bases du batch cooking ; un repas ou un déjeuner pro, un salon, un déplacement au moment d'un repas : pas ce repas-là à la maison (mets « Repas pro » ou « À emporter : … » de transportable) ; une journée entière dehors : petit-déjeuner copieux et déjeuner à emporter ; un anniversaire ou une soirée chez des amis : dîner léger ou « Dîner dehors » ; et à ses entraînements (après : récupération, protéines et glucides ; la veille d'un gros effort : glucides complexes ; repos : plus léger). Quand c'est malin, cuisine double pour le midi du lendemain ("double": true). "decongeler" : ce qu'il doit sortir du congélateur le matin même. Puis la liste de courses de ce qui MANQUE (pas ce qu'il a), avec une quantité simple et le rayon. Puis le batch cooking du dimanche : 5 à 9 étapes pour préparer en avance les bases de la semaine (céréales, légumineuses, légumes rôtis, sauces maison), avec la durée de chaque étape ; les étapes qui tournent seules (cuisson) laissent faire la suivante en même temps.
 Chaque repas : un nom court (moins de 8 mots). Les courses couvrent les 4 repas de la semaine.
 Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collation": "…", "collation_quand": "…", "plat": "le dîner", "note": "moins de 10 mots, sur le dîner", "double": false, "decongeler": []}], "courses": [{"article": "…", "quantite": "…", "rayon": "fruits et légumes|boucherie et poisson|crèmerie et œufs|épicerie|boulangerie|surgelés"}], "batch": [{"texte": "phrase courte", "minutes": 0}]}`;
-    const donnees = `Les 7 jours et ses entraînements : ${sem.join(' ; ')}.\nGarde-manger : ${cx.st.map(x => x.nom).join(', ') || 'rien de noté'}.\nCongélateur : ${congel.join(', ') || 'rien'}.\nÀ finir vite : ${cx.vite.join(', ') || 'rien'}.\nPrêt au potager : ${cx.potager.join(', ') || 'rien'}.\nDerniers repas : ${cx.repas.join(', ') || 'inconnus'}.${cx.enfant ? '\nSon fils est là en ce moment.' : ''}`;
+    const donnees = `Les 7 jours, son agenda (pro et perso) et ses entraînements : ${sem.join(' ; ')}.\nGarde-manger : ${cx.st.map(x => x.nom).join(', ') || 'rien de noté'}.\nCongélateur : ${congel.join(', ') || 'rien'}.\nÀ finir vite : ${cx.vite.join(', ') || 'rien'}.\nPrêt au potager : ${cx.potager.join(', ') || 'rien'}.\nDerniers repas : ${cx.repas.join(', ') || 'inconnus'}.${cx.enfant ? '\nSon fils est là en ce moment.' : ''}`;
     let r = null;
     try { const raw = String(await AI.chat([{ role: 'system', content: consigne }, { role: 'user', content: donnees }], { maxTokens: 4500, temperature: 0.6, json: true })); r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); } catch (e) { r = null; }
     face.set('idle'); NOYAU.etiquette(null);
@@ -464,5 +500,5 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     if (items.length) { await appel({ action: 'ajoute', items }); cacheAt = 0; }
     return items.length;
   }
-  return { route, apresRecette, ajouteStock, semaine, _charge: charge, _contexte: contexte };
+  return { route, apresRecette, ajouteStock, semaine, adapte, menus, _charge: charge, _contexte: contexte };
 })();
