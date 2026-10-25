@@ -318,6 +318,7 @@ Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'es
 Programmes : « qu'est-ce que tu as programmé ? », « annule les programmes ».
 Protocoles : « crée le protocole <nom> : … », « protocole <nom> » (le lance), « mes protocoles », « supprime le protocole <nom> ».
 Ordinateur de bord : « radio atlas » (l'émission du matin), « montre le jumeau » (la maison en 3D dans le cockpit), « rejoue ma journée », « fais une ronde » (la ronde de nuit dans le jumeau), « salle de contrôle » (les 4 écrans de l'ordinateur), « fin de la salle de contrôle », « le film des caméras » (la journée vue par les caméras), « où est mon fils ? », « qui est à la maison ? », « préviens-moi quand mon fils se réveille », « le film du mois », « le bilan scolaire de mon fils » (ses exercices d'école avec Shadow), « mon coach de trading » (des constats sur ses trades), « radio atlas longue », « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
+L'appli Cuisine : « ouvre la cuisine » (l'accueil, la semaine, mes recettes, les nouveautés que j'écris seul chaque semaine), « une recette de saumon pour 2 » (la fiche : portions, macros, ce qui manque), puis « on cuisine » (une étape à la fois, à l'écran ; en cuisson « suivant », « répète », « minuteur » sans dire Atlas), « renouvelle les recettes ».
 La semaine complète : « prépare ma semaine » (les 7 dîners, les courses sans ce qu'il a déjà, tout au drive Leclerc sauf si un autre magasin fait économiser plus de 5 €, le panier prêt à valider), « j'ai commandé le drive pour samedi 10 heures » (le rappel du retrait), « j'ai récupéré le drive » (tout au garde-manger) ; chaque vendredi soir il propose de préparer la semaine.
 Les prix (Aldi, Leclerc, Lidl) : « scanne mon ticket » (photo du ticket de caisse : il retient les prix), « le lait est à 0,95 € chez Lidl », « où faire mes courses ? » (la liste comparée, un 2e magasin seulement si l'économie dépasse 5 €), « mode magasin Lidl », « prépare le drive » (liens de recherche sur le drive Leclerc ; il ne commande et ne paie jamais).
 La cuisine (alimentation brute, pour sportifs) : « j'ai acheté du poulet et des brocolis », « j'ai mis le saumon au congélateur », « il n'y a plus de lait », « le poulet est à consommer avant jeudi », « qu'est-ce qu'il y a dans le frigo ? », « fais l'inventaire du frigo » (la caméra), « qu'est-ce qu'on mange ce soir ? », « un repas après l'entraînement », « fais les menus de la semaine », « change le menu de jeudi », « mode magasin » (la liste de courses par rayon), « j'ai pris les tomates », « on lance le batch cooking », « le bilan de la semaine en cuisine », « on fait la recette de … pour 2 » (pas à pas, avec questions et minuteurs).
@@ -741,6 +742,8 @@ async function handleBrut(text) {
   if (prix) return prix();
   const cuisine = typeof CUISINE !== 'undefined' && CUISINE.route(t, n); // la cuisine : le garde-manger, les repas, les menus, les courses
   if (cuisine) return cuisine();
+  const appliCuisine = typeof CUISINEUI !== 'undefined' && CUISINEUI.route(t, n); // l'appli Cuisine : la fiche recette, la cuisson à l'écran
+  if (appliCuisine) return appliCuisine();
   const bord = typeof BORD !== 'undefined' && BORD.route(t, n); // le journal de bord, le flux de pensée
   if (bord) return bord();
   const foyer = typeof FOYER !== 'undefined' && FOYER.route(t, n); // ses proches, ses affaires rangées, ce qu'il a prêté
@@ -1081,7 +1084,7 @@ async function vie() {
       // « … lumière de la cuisine » : le début s'est perdu (on lui a parlé pendant qu'il parlait) ; il demande « j'allume ou j'éteins ? »
       const frag = !appele && !suite && !seul && !dlg.discret && !!MAISON.fragment(r, n);
       // les ordres évidents de la maison (« mode cockpit », « fin du film », « pause » au cinéma) : pas besoin de dire son nom
-      const direct = !appele && n.split(' ').length <= 5 && ORDRE_DIRECT.test(n);
+      const direct = !appele && n.split(' ').length <= 5 && (ORDRE_DIRECT.test(n) || (typeof CUISINEUI !== 'undefined' && CUISINEUI.direct(n))); // en cuisson : « suivant », « répète »… sans dire son nom
       // parler naturellement : un ordre clair pour la maison, sans dire son nom, même à plusieurs (« allume la cuisine »,
       // « mets FIP », « baisse le son ») — une phrase courte qui COMMENCE par l'ordre et parle d'un objet de la maison ;
       // seulement une voix de la maison (pas un invité inconnu quand il y a du monde) ; les questions, elles, demandent son nom

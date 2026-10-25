@@ -188,6 +188,7 @@ const CUISINE = (() => {
       if (neufs.length) { S.listes = (S.listes || []).concat(neufs.map((t, i) => ({ id: Date.now() + i, liste: 'courses', text: t, at: Date.now() }))); save(); await say(`Il te manque ${liste(neufs)} : je l'ajoute aux courses.`); }
     }
     try { await appel({ action: 'repas', plat: x.plat }); } catch (e) { /* tant pis */ }
+    if (typeof CUISINEUI !== 'undefined') return CUISINEUI.cherche(x.plat, { pers }); // l'appli : la fiche, puis la cuisson
     return handle(`on fait la recette de ${x.plat} pour ${pers}`); // le chef, étape par étape
   }
 
@@ -374,7 +375,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
       if (c && (c.batch || []).length) PROACTIF.annonce(`batch-${dayKey()}`, () => { S.cuisineBatch = dayKey(); save(); return "C'est dimanche après la gym : on prépare les bases de la semaine ? Dis « on lance le batch cooking », c'est une heure à peu près, et ta semaine sera prête."; }, { expire: Date.now() + 3 * 3600000 });
     }
     if (new Date().getDay() === 5 && h0 >= 18 && h0 < 21 && S.cuisineSemaine !== dayKey() && dlg.started && S.settings.semaineAuto !== false && (typeof CONSTELLATION === 'undefined' || CONSTELLATION.principal())) {
-      PROACTIF.annonce(`semaine-${dayKey()}`, () => { S.cuisineSemaine = dayKey(); save(); semaineOffre = { at: Date.now() }; dlg.attendReponse = Date.now() + 120000; return "C'est vendredi : je prépare la semaine prochaine ? Les menus, les courses, et ton panier drive prêt à valider."; }, { expire: Date.now() + 3 * 3600000 });
+      PROACTIF.annonce(`semaine-${dayKey()}`, async () => { S.cuisineSemaine = dayKey(); save(); await say("C'est vendredi : je prépare ta semaine prochaine, comme chaque semaine."); await semaine(); return ''; }, { expire: Date.now() + 3 * 3600000 }); // tout seul : il le dit, et la prépare
     }
     const h = new Date().getHours(); if (h < 17 || h >= 19 || S.cuisineDit === dayKey() || !dlg.started) return;
     if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
@@ -401,7 +402,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
     if (/\b(j ai|on a)\s+(recupere|recu|ramene|ete chercher)\s+(le |mon )?drive\b|\bdrive recupere\b/.test(n)) return driveRecupere;
     if (/\b(arrete|ne|plus)\b.*\b(propose|proposer)\b.*\bsemaine\b/.test(n)) return () => { S.settings.semaineAuto = false; save(); return say("D'accord, je ne te proposerai plus de préparer la semaine le vendredi. Dis « prépare ma semaine » quand tu veux."); };
     if (menuOffre && Date.now() - menuOffre.at < 150000) {
-      if (/^(oui|ouais|ok|d accord|vas y|on le lance|lance|c est parti|go)\b/.test(n)) return () => { const m = menuOffre.m; menuOffre = null; dlg.attendReponse = 0; appel({ action: 'repas', plat: m.plat }).catch(() => {}); return handle(`on fait la recette de ${m.plat} pour ${m.double ? 4 : 2}`); };
+      if (/^(oui|ouais|ok|d accord|vas y|on le lance|lance|c est parti|go)\b/.test(n)) return () => { const m = menuOffre.m; menuOffre = null; dlg.attendReponse = 0; appel({ action: 'repas', plat: m.plat }).catch(() => {}); if (typeof CUISINEUI !== 'undefined') return CUISINEUI.cherche(m.plat, { pers: m.double ? 4 : 2 }); return handle(`on fait la recette de ${m.plat} pour ${m.double ? 4 : 2}`); };
       if (/\b(autre chose|autre idee|pas envie|non)\b/.test(n)) return () => { menuOffre = null; dlg.attendReponse = 0; return quoiManger('autre chose', 'autre chose'); };
     }
     if (inventaireOffre && Date.now() - inventaireOffre.at < 120000) {
@@ -433,5 +434,5 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"plat": "…", "note": "moins de 10 mo
     if (items.length) { await appel({ action: 'ajoute', items }); cacheAt = 0; }
     return items.length;
   }
-  return { route, apresRecette, ajouteStock, _charge: charge };
+  return { route, apresRecette, ajouteStock, semaine, _charge: charge, _contexte: contexte };
 })();
