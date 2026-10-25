@@ -241,7 +241,7 @@ const OUTILS = (() => {
   const L = () => (P().listes = P().listes || []);
   function nomListe(t) {
     const x = N(t || '').replace(/^(la |ma |les |mes )/, '').replace(/^liste (de |des |d )?/, '').trim();
-    if (!x || /^(course|courses|commissions|supermarche|marche)$/.test(x)) return 'courses';
+    if (!x || /^(course|courses|cours|commissions|supermarche|marche|drive)$/.test(x)) return 'courses'; // « cours » : la transcription oublie souvent le « e »
     if (/^(a faire|choses a faire|taches|tache|todo|to do|trucs a faire)$/.test(x)) return 'à faire';
     if (/^(idee|idees)$/.test(x)) return 'idées';
     return x;
@@ -281,7 +281,7 @@ const OUTILS = (() => {
   }
   async function vide(n) {
     const m = n.match(/\bliste (?:de |des |d )?([a-z ]+?)$/) || n.match(/\b(courses|a faire|idees)\b/);
-    const liste = m ? nomListe(m[1]) : 'courses', items = L().filter(x => x.liste === liste);
+    const liste = /\b(courses?|cours|commissions)\b/.test(n) ? 'courses' : m ? nomListe(m[1]) : 'courses', items = L().filter(x => x.liste === liste); // « la liste de cours, s'il te plaît » : les courses
     if (!items.length) return say('Elle est déjà vide.');
     if (!(await askYesNo(`Je vide la liste ${deListe(liste)}, ${items.length} élément${items.length > 1 ? 's' : ''} ?`))) return say('Je la garde.');
     items.forEach(x => tomb('listes', x));
@@ -441,7 +441,7 @@ const OUTILS = (() => {
     pomo: /\bpomodoro\b/,
     ajoute: /\b(ajoute|rajoute|mets|inscris)\b.*\b(a|aux|dans|sur) (la |ma |mes )?(liste|courses|commissions)\b|\b(ajoute|rajoute)\b.*\b(a|aux|dans) (la |ma )?liste\b/,
     enleve: /\b(enleve|retire|supprime|barre)\b.*\b(de|des|du) (la |ma )?(liste|courses)\b/,
-    vide: /\b(vide|efface)\b.*\b(liste|courses)\b/,
+    vide: /\b(vide|vider|videz|vides|efface|effacer|supprime|supprimer|remets a zero|remet a zero|reinitialise)\b.*\b(liste|courses|cours)\b|\b(enleve|retire|efface|supprime) tout\b.*\b(liste|courses|cours)\b|\bliste de (courses|cours) (a vider|vide)\b/,
     lis: /\b(lis|lire|dis moi|qu est ce qu il y a (sur|dans)|quoi sur|rappelle moi)\b.*\b(liste|courses)\b|\bma liste\b|\bquelles listes\b/,
     meteo: /\b(meteo|quel temps|va t il pleuvoir|il va pleuvoir|il pleut|pleuvoir|temperature dehors|fait il chaud|fait il froid|il fait combien dehors)\b/,
     pc: /\b(etat|statut|sante|comment va|temperature|charge)\b.*\b(pc|ordi|ordinateur|serveur|machine|processeur|carte graphique|gpu|cpu)\b|\b(etat des systemes|diagnostic)\b/,
