@@ -388,7 +388,7 @@ EXEMPLES (suis-les) :
 « L'alarme est mise ? » → réponds avec l'état réel de l'alarme ; s'il est inconnu, dis-le. Pour la santé, le droit ou l'argent, donne des repères généraux et conseille un professionnel pour une décision.
 Infos vraies du moment : nous sommes le ${now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, il est ${now.getHours()} h ${deux2(now.getMinutes())}.${up.length ? ` Agenda de la famille : ${up.join(', ')}.` : ''}
 ${VRAI.texte() ? `ÉTAT RÉEL DE LA MAISON, à l'instant (la seule vérité sur la maison ; « il » = papa) :\n${VRAI.texte()}\n` : "L'état réel de la maison n'est pas disponible en ce moment : ne dis rien sur ce qui s'y passe, propose « rapport de sécurité ».\n"}${notes ? `Ses notes :\n${notes}\n` : ''}${typeof FOYER !== 'undefined' && FOYER.contexte() ? `${FOYER.contexte()}\n` : ''}${dlg.ordrePrecedent && Date.now() - dlg.ordrePrecedent.at < 120000 ? `Le dernier ordre qu'il t'a donné (il y a ${Math.round((Date.now() - dlg.ordrePrecedent.at) / 1000)} s) : « ${dlg.ordrePrecedent.t} ». S'il enchaîne avec une suite courte (« et la cuisine ? », « pareil pour le salon », « encore », « plus fort »), refais cet ordre adapté avec [[commande:…]].\n` : ''}${MEMOIRE.contexte(text) ? `${MEMOIRE.contexte(text)}\n` : ''}${MARCHE.contexte() ? `${MARCHE.contexte()}\n` : ''}${MAISON.contexte() ? `${MAISON.contexte()}\n` : ''}La journée de son fils avec Shadow (si on te la demande) : ${LIEN.journee()}
-${CONV.contexte()}`;
+${CONV.contexte()}${typeof COEQ !== 'undefined' && COEQ.texte() ? `\n${COEQ.texte()} (Sers-t'en seulement si c'est utile à sa question ; pour voir l'écran en détail, il peut dire « regarde mon écran ».)` : ''}`;
 }
 // à l'oral, les indications de jeu (*sourit*, (pause), [musique]) ne se lisent pas ; le reste des parenthèses, si
 const JEU_ORAL = /\b(rit|rire|sourit|sourire|clin|soupir\w*|pause|chuchot\w*|murmur\w*|voix|ton calme|bruit\w*|musique|bip|grésill\w*|hoche|lève|regarde|ton ironique|ironique|pince-sans-rire|sarcastique|en riant|en souriant|tousse|silence)\b/i;
@@ -405,6 +405,7 @@ async function repondre(text) {
   if (window.__ordreDuCerveau) { c.pop(); return say("Ça, je ne sais pas encore le faire."); }
   if (dlg.ordrePrecedent) dlg.dernierOrdre = dlg.ordrePrecedent; // une conversation n'est pas un ordre : la suite (« et la cuisine ? ») vise toujours le dernier vrai ordre // une commande traduite par le cerveau que personne ne comprend : pas de boucle
   await VRAI.frais();
+  if (typeof COEQ !== 'undefined') await COEQ.frais(); // ce qu'il fait sur l'ordinateur
   const msgs = [{ role: 'system', content: systeme(text) }].concat(c.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 3000) })));
   if (AI.lastConfident === false && Date.now() - (AI.lastHeardAt || 0) < 15000) msgs[0].content += "\nATTENTION : la transcription de sa dernière phrase est PEU SÛRE (le micro a mal entendu). Si elle n'a pas un sens clair, réponds seulement [[pardon]].";
   const ailleurs = typeof CONSTELLATION !== 'undefined' ? await CONSTELLATION.contexte() : ''; // une seule mémoire : ce qui s'est dit sur les autres appareils
@@ -807,6 +808,8 @@ async function handleBrut(text) {
   if (visio) return visio();
   const proto = SCIFI.route(t, n); // les protocoles : scan de sécurité, départ, retour, état des systèmes, présences, la fusée
   if (proto) return proto();
+  const coeq = typeof COEQ !== 'undefined' && COEQ.route(t, n); // le coéquipier : son écran, ce qu'il fait sur l'ordi
+  if (coeq) return coeq();
   const ordi = PC.route(t, n); // l'ordinateur : le son, la musique, l'écran, les fenêtres, les applis, Gmail (une liste fermée d'actions)
   if (ordi) return ordi();
   const bourse = MARCHE.route(t, n); // les marchés : cours, annonces, graphique
