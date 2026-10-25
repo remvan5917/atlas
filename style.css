@@ -129,3 +129,6 @@ body.cockpit #papa-hud::after, body.cockpit .hud-coin, body.cockpit .hud-panneau
 body.cockpit #noyau { left: auto; top: auto; right: 12px; bottom: 12px; transform: none; width: 150px; height: 150px; pointer-events: auto;
   border-radius: 50%; background: radial-gradient(circle, rgba(7, 8, 10, .85) 55%, transparent 72%); }
 body.cockpit #hud-etat { left: auto; right: 12px; top: auto; bottom: 166px; transform: none; font-size: 9px; letter-spacing: .3em; }
+/* le téléphone : Atlas plus petit dans le coin, pour ne pas cacher les cartes ; caché quand le panneau de commandes est ouvert */
+@media (max-width: 699px) { body.cockpit #noyau { width: 88px; height: 88px; right: 8px; bottom: 8px; } body.cockpit #hud-etat { right: 8px; bottom: 100px; font-size: 8px; } }
+body.cockpit.panneau-ouvert #noyau, body.cockpit.panneau-ouvert #hud-etat { opacity: 0; pointer-events: none; }

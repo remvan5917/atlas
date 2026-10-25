@@ -317,7 +317,7 @@ Temps et organisation : « minuteur pâtes 9 minutes », « réveille-moi à 6 h
 Proches et affaires : « Marie est ma sœur », « l'anniversaire de Marie, c'est le 12 mars », « qui est Marie ? », « ma famille », « j'ai rangé <objet> dans <endroit> », « où est <objet> ? », « j'ai prêté <objet> à <personne> », « qu'est-ce que j'ai prêté ? », « <personne> m'a rendu <objet> ».
 Programmes : « qu'est-ce que tu as programmé ? », « annule les programmes ».
 Protocoles : « crée le protocole <nom> : … », « protocole <nom> » (le lance), « mes protocoles », « supprime le protocole <nom> ».
-Ordinateur de bord : « radio atlas » (l'émission du matin), « montre le jumeau » (la maison en 3D dans le cockpit), « rejoue ma journée », « où est mon fils ? », « qui est à la maison ? », « préviens-moi quand mon fils se réveille », « le film du mois », « le bilan de mon fils » (ses exercices d'école avec Shadow), « mon coach de trading » (des constats sur ses trades), « radio atlas longue », « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
+Ordinateur de bord : « radio atlas » (l'émission du matin), « montre le jumeau » (la maison en 3D dans le cockpit), « rejoue ma journée », « où est mon fils ? », « qui est à la maison ? », « préviens-moi quand mon fils se réveille », « le film du mois », « le bilan scolaire de mon fils » (ses exercices d'école avec Shadow), « mon coach de trading » (des constats sur ses trades), « radio atlas longue », « ma facture », « cerveau économique », « cerveau maximum », « journal de bord », « le journal de bord d'hier », « cache ton analyse », « montre ton analyse ».
 Infos : « la météo », « la météo à Paris demain », « les actus », « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or ».
 Musique et son : « mets France Inter », « mets FIP », « arrête la radio », « baisse le son », « monte le son », « pause », « reprends ».
 Trading : « mode trading », « mes résultats de la semaine », « bilan de la boîte noire », « fin de session ».
@@ -711,7 +711,7 @@ async function handleBrut(text) {
   if (/\b(active|desactive|coupe|enleve|remets|allume|eteins) (l )?anti ?echo\b/.test(n)) { const on = /\b(active|remets|allume)\b/.test(n); S.settings.micAEC = on; save(); await say(on ? "Anti-écho activé. Je relance mes oreilles." : "Anti-écho coupé : plus de larsen sur la sono. Je relance mes oreilles."); setTimeout(() => location.reload(), 600); return; }
   if (/^(ouvre|affiche|montre|ouvrir) (les |tes |mes )?(reglages|parametres)$|^(reglages|parametres)$/.test(n)) { ouvreReglages(); return say('Réglages ouverts.'); }
   if (R.stop.test(n) && !voice.occupe() && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci()) return PC.radioCoupe(); // « stop » : la radio d'ici s'arrête
-  if (R.stop.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; }
+  if (R.stop.test(n) && !/\b(la radio|france ?info|france inter|fip|les infos)\b/.test(n)) { voice.stop(); hideBoard(); dlg.state = 'standby'; face.set('idle'); return; } // « arrête la radio » : la radio de l'ordinateur (pc.js)
   if (/^(quelle heure (est il|il est|est ce)|il est quelle heure|c est quelle heure|t as l heure|tu as l heure|l heure)$/.test(n)) { const d = new Date(); return say(`Il est ${d.getHours()} h ${d.getMinutes() ? deux2(d.getMinutes()) : ''}.`.replace(' h .', ' heures.')); }
   if (/^(on est quel jour|quel jour (sommes nous|on est|est on|nous sommes)|c est quel jour|quelle est la date|on est le combien|quelle date (on est|sommes nous))$/.test(n)) return say(`Nous sommes ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`);
   // « mets l'écran en veille » : c'est l'écran (pc.js), pas lui
@@ -722,7 +722,7 @@ async function handleBrut(text) {
   if (nt && R.noter.test(n)) return noter(nt[1]);
   if (R.effacer.test(n)) return effacerNotes();
   if (R.lire.test(n)) return lireNotes();
-  if (R.journee.test(n)) return say(LIEN.journee());
+  if (R.journee.test(n) && !/\b(ecole|scolaire|exercices|progres|devoirs)\b/.test(n)) return say(LIEN.journee()); // « le bilan scolaire de mon fils » : c'est l'école (bord.js)
   if (R.convOn.test(n)) { S.settings.conversation = true; dlg.discret = false; save(); return say("Je participe à vos conversations. Je n'interviens que si j'ai quelque chose d'utile à dire, et je reste discret le reste du temps. Dis « reste discret » si tu veux que je me taise."); }
   if (R.convOff.test(n)) { S.settings.conversation = false; save(); return say("Je reste discret : je ne réponds plus que quand on m'appelle par mon nom."); }
   if (R.apprendVoix.test(n)) return apprendreVoix(t);

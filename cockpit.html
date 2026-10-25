@@ -142,6 +142,53 @@
   .config { max-width: 520px; margin: 40px auto; }
   .config input { width: 100%; font: inherit; padding: 12px; border-radius: 6px; border: 1px solid var(--ligne); background: var(--carte); color: var(--texte); margin: 8px 0; }
   .config button { font: inherit; color: var(--texte); background: rgba(95, 211, 255, .1); border: 1px solid var(--ligne); border-radius: 6px; padding: 10px 14px; }
+  /* le panneau de commandes : un bouton pour chaque chose qu'Atlas sait faire (en plus de la voix) */
+  .puce.cmd { cursor: pointer; background: rgba(255, 181, 71, .08); border-color: var(--ligneA); color: var(--ambre2); font-weight: 600; }
+  .puce.cmd svg.ic { width: 15px; height: 15px; } .puce.cmd:active { background: rgba(255, 181, 71, .22); }
+  .scene.tout { border-color: var(--ligneA); color: var(--ambre); background: linear-gradient(180deg, rgba(255, 181, 71, .1), rgba(255, 181, 71, .02)); }
+  button.vue { font: 600 9.5px ui-monospace, monospace; letter-spacing: .18em; color: var(--ambre); background: rgba(255, 181, 71, .07); border: 1px solid var(--ligneA); border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+  #pc { position: fixed; inset: 0; z-index: 30; display: flex; justify-content: center; align-items: stretch; padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    background: rgba(2, 4, 8, .82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  #pc.ouvert { opacity: 1; pointer-events: auto; }
+  #pc .boite { position: relative; width: 100%; max-width: 1180px; display: grid; grid-template-columns: 190px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 12px 16px;
+    background: var(--carte); border: 1px solid var(--ligne); border-radius: 8px; padding: 16px 18px; box-shadow: 0 0 60px rgba(95, 211, 255, .08); transform: translateY(8px); transition: transform .2s; }
+  #pc.ouvert .boite { transform: none; }
+  #pc .boite::before, #pc .boite::after { content: ''; position: absolute; width: 14px; height: 14px; border-color: var(--ambre); border-style: solid; pointer-events: none; }
+  #pc .boite::before { left: -1px; top: -1px; border-width: 2px 0 0 2px; border-top-left-radius: 8px; } #pc .boite::after { right: -1px; bottom: -1px; border-width: 0 2px 2px 0; border-bottom-right-radius: 8px; }
+  #pc .tete { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; }
+  #pc .titre { font: 600 11px ui-monospace, monospace; letter-spacing: .34em; color: var(--cyan); white-space: nowrap; } #pc .titre b { color: var(--ambre); font-weight: 600; }
+  #pc .cherche { flex: 1; min-width: 0; position: relative; }
+  #pc .cherche input { width: 100%; font: 14px ui-monospace, monospace; letter-spacing: .04em; color: var(--texte); background: rgba(95, 211, 255, .04); border: 1px solid var(--ligne); border-radius: 6px; padding: 10px 12px 10px 36px; outline: none; }
+  #pc .cherche input:focus { border-color: var(--cyan); } #pc .cherche svg.ic { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--doux); }
+  #pc .ferme { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--ligne); background: none; color: var(--doux); cursor: pointer; }
+  #pc .ferme:active { color: var(--cyan); border-color: var(--cyan); }
+  #pc nav { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; min-height: 0; scrollbar-width: none; }
+  #pc nav button { display: flex; align-items: center; gap: 10px; text-align: left; font: 600 10.5px ui-monospace, monospace; letter-spacing: .16em; color: var(--doux); text-transform: uppercase; background: none; border: 1px solid transparent; border-radius: 5px; padding: 9px 10px; cursor: pointer; white-space: nowrap; }
+  #pc nav button svg.ic { width: 17px; height: 17px; flex: 0 0 auto; } #pc nav button i { font-style: normal; margin-left: auto; color: rgba(190, 215, 235, .35); font-weight: 400; }
+  #pc nav button.on { color: var(--ambre2); border-color: var(--ligneA); background: rgba(255, 181, 71, .07); } #pc nav button.on svg.ic { color: var(--ambre); }
+  #pc .liste { overflow-y: auto; min-height: 0; padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(95, 211, 255, .35) transparent; overscroll-behavior: contain; }
+  #pc .groupe { font: 600 10px ui-monospace, monospace; letter-spacing: .32em; color: var(--cyan); margin: 4px 0 8px; display: flex; align-items: center; gap: 10px; }
+  #pc .groupe::after { content: ''; flex: 1; height: 1px; background: var(--ligne); } #pc .groupe:not(:first-child) { margin-top: 18px; }
+  #pc .tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; }
+  #pc .cmd-b { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; text-align: left; min-height: 62px; padding: 9px 11px; border-radius: 5px;
+    border: 1px solid var(--ligne); background: linear-gradient(180deg, rgba(95, 211, 255, .06), rgba(95, 211, 255, .015)); color: var(--cyan); cursor: pointer; font: inherit; transition: background .15s, transform .1s, border-color .15s; }
+  #pc .cmd-b svg.ic { grid-row: 1 / 3; width: 21px; height: 21px; }
+  #pc .cmd-b b { font-weight: 500; font-size: 13.5px; line-height: 1.2; color: var(--texte); }
+  #pc .cmd-b small { font: 10px/1.3 ui-monospace, monospace; letter-spacing: .02em; color: var(--doux); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pc .cmd-b.saisie::after { content: '…'; position: absolute; right: 8px; top: 4px; color: var(--ambre); font-weight: 700; } #pc .cmd-b.saisie b { padding-right: 12px; }
+  #pc .cmd-b.sensible { border-color: rgba(255, 181, 71, .35); }
+  #pc .cmd-b:active { transform: scale(.97); background: rgba(95, 211, 255, .18); }
+  #pc .cmd-b.fait { background: rgba(110, 240, 184, .18); border-color: var(--ok); } #pc .cmd-b.fait svg.ic { color: var(--ok); }
+  #pc .rien { font: 11px ui-monospace, monospace; letter-spacing: .12em; color: var(--doux); padding: 20px 0; }
+  #pc .aide { font: 10px ui-monospace, monospace; letter-spacing: .12em; color: rgba(190, 215, 235, .4); margin-top: 16px; line-height: 1.6; }
+  #pc .feuille { position: absolute; left: 50%; bottom: 18px; transform: translate(-50%, 20px); width: min(560px, calc(100% - 28px)); padding: 16px; border-radius: 8px; background: #071019; border: 1px solid var(--ambre);
+    box-shadow: 0 0 40px rgba(255, 181, 71, .18); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 2; }
+  #pc .feuille.vu { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  #pc .feuille label { display: block; font: 600 10.5px ui-monospace, monospace; letter-spacing: .24em; color: var(--ambre2); margin-bottom: 9px; text-transform: uppercase; }
+  #pc .feuille .ligne { display: flex; gap: 8px; } #pc .feuille input { flex: 1; min-width: 0; font: 15px system-ui, sans-serif; color: var(--texte); background: rgba(255, 255, 255, .04); border: 1px solid var(--ligneA); border-radius: 6px; padding: 11px 12px; outline: none; }
+  #pc .feuille button { font: 600 11px ui-monospace, monospace; letter-spacing: .16em; border-radius: 6px; padding: 0 14px; cursor: pointer; }
+  #pc .feuille .ok { color: #1a1204; background: var(--ambre); border: 1px solid var(--ambre); } #pc .feuille .non { color: var(--doux); background: none; border: 1px solid var(--ligne); }
+  #pc .feuille .ex { font: 10.5px ui-monospace, monospace; color: var(--doux); margin-top: 8px; letter-spacing: .04em; }
   /* une tablette en paysage un peu étroite : les colonnes des côtés se resserrent */
   @media (orientation: landscape) and (max-width: 1150px) {
     main { grid-template-columns: minmax(205px, 245px) minmax(0, 1fr) minmax(225px, 285px); }
@@ -159,9 +206,17 @@
   @media (max-width: 699px), (orientation: landscape) and (max-width: 860px) {
     body { height: auto; }
     header { grid-template-columns: 1fr; grid-template-areas: 'titre' 'etat' 'bandeau'; } .etat { justify-content: flex-start; }
-    main, body:not(.travail) main { grid-template-columns: 1fr; grid-template-rows: none; grid-template-areas: none; height: auto; }
+    main, body:not(.travail) main { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; height: auto; }
     .col, body:not(.travail) .col { display: flex; } .z-scenes, .z-agenda, .z-marche, .z-plan, .z-lum, .z-cams, .z-log { grid-area: auto; }
-    .carte.grand, .carte.lum { flex: 0 0 auto; max-height: none; } #plan { min-height: 300px; } .defile { overflow: visible; } .reserve { height: 140px; }
+    .carte.grand, .carte.lum { flex: 0 0 auto; max-height: none; } #plan { min-height: 430px; } #plan:not(:has(#jumeau)) { min-height: 0; } #plan:not(:has(#jumeau)) svg { height: auto; } .defile { overflow: visible; } .reserve { height: 96px; }
+    .col { min-width: 0; } .carte h2 { flex-wrap: wrap; row-gap: 6px; } .carte h2 span { text-align: right; }
+    .scenes { grid-template-columns: repeat(3, minmax(0, 1fr)); } .sess { grid-template-columns: repeat(2, minmax(0, 1fr)); } #noire { overflow-x: auto; }
+    body { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+    .heure { font-size: 40px; } .date { font-size: 11px; letter-spacing: .14em; } .horloge { flex-wrap: wrap; gap: 4px 10px; }
+    #pc { padding: 0; } #pc .boite { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); border-radius: 0; border: 0; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); }
+    #pc .boite::before, #pc .boite::after { display: none; } #pc .titre { display: none; }
+    #pc nav { flex-direction: row; overflow-x: auto; overflow-y: hidden; margin: 0 -12px; padding: 0 12px 2px; } #pc nav button { padding: 8px 10px; border-color: var(--ligne); } #pc nav button i { display: none; }
+    #pc .tuiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; } #pc .cmd-b { min-height: 64px; padding: 9px; column-gap: 8px; } #pc .cmd-b b { font-size: 13px; }
   }
 </style>
 </head>
@@ -249,6 +304,32 @@ const IC = {
   stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
   calendrier: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   trophee: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 6h3v2a3 3 0 0 1-3 3M7 6H4v2a3 3 0 0 0 3 3"/>',
+  grille: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+  loupe: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/>',
+  croix: '<path d="M6 6l12 12M18 6L6 18"/>',
+  ampoule: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  cube: '<path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/>',
+  radio: '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8l10-5"/><circle cx="15.5" cy="14" r="2.5"/><path d="M6.5 12.5h4M6.5 15.5h4"/>',
+  horloge: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  liste: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+  note: '<path d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8.5 12.5h7M8.5 16.5h5"/>',
+  cloche: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  famille: '<circle cx="8.5" cy="7" r="3"/><circle cx="17" cy="9.5" r="2.3"/><path d="M3 20v-1.5A5.5 5.5 0 0 1 14 18.5V20"/><path d="M14.5 15.2A4.2 4.2 0 0 1 21 18.6V20"/>',
+  bulle: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  nuage: '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.8 3.8 0 0 1 17.5 18z"/>',
+  journal: '<path d="M4 4h12v16H6a2 2 0 0 1-2-2z"/><path d="M16 8h4v10a2 2 0 0 1-2 2h-2"/><path d="M7.5 8.5h5M7.5 12h5M7.5 15.5h3"/>',
+  volume: '<path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+  moins: '<path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z"/><path d="M16 12h5"/>',
+  pause: '<rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/>',
+  lecture: '<path d="M7 4.5v15l12-7.5z"/>',
+  micro: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+  ordi: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8.5 20h7M12 16v4"/>',
+  verrou: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  cerveau: '<path d="M9 4.5A3 3 0 0 0 6 7.5a3 3 0 0 0-1.5 5.3A3.2 3.2 0 0 0 7.5 18a2.6 2.6 0 0 0 4.5 1.5V5.8A2.6 2.6 0 0 0 9 4.5z"/><path d="M15 4.5a3 3 0 0 1 3 3 3 3 0 0 1 1.5 5.3 3.2 3.2 0 0 1-3 5.2 2.6 2.6 0 0 1-4.5 1.5"/>',
+  camera: '<path d="M3 7.5h3.5L8.5 5h7l2 2.5H21V19H3z"/><circle cx="12" cy="13" r="3.5"/>',
+  fusee: '<path d="M12 2.5c3 2.5 4.5 6 4.5 10L14 16h-4l-2.5-3.5c0-4 1.5-7.5 4.5-10z"/><circle cx="12" cy="9" r="1.6"/><path d="M10 16l-1 4.5 3-2 3 2-1-4.5M7.5 12.5L5 15l.5 3 2.5-2M16.5 12.5L19 15l-.5 3-2.5-2"/>',
+  coeur: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+  sortie: '<path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/>',
 };
 const POSTE = new URLSearchParams(location.search).get('poste') === 'travail' ? 'travail' : 'maison'; // l'ordinateur : le poste de travail
 // un toucher dans le cockpit : il est ici (Atlas le suit d'un appareil à l'autre)
@@ -269,6 +350,161 @@ const SCENES = [['lune', 'Bonne nuit', 'je vais me coucher'], ['soleil', 'Révei
   ['bouclier', 'Scan sécurité', 'scan de sécurité'], ['radar', 'Rapport de nuit', 'rapport de nuit'], ['manette', 'Jeu télévisé', 'lance le jeu télévisé'], ['robot', 'Duo Shadow', 'discute avec Shadow']];
 const SCENES_TRAVAIL = [['courbe', 'Mode trading', 'mode trading'], ['stop', 'Fin de session', 'fin de session'], ['oeil', 'Œil de faucon', 'regarde mon graphique'], ['boite', 'Boîte noire', 'bilan de la boîte noire'],
   ['trophee', 'Résultats semaine', 'mes résultats de la semaine'], ['calendrier', 'Annonces du jour', 'annonces du jour'], ['mail', 'Mails importants', 'mes mails importants']];
+/* ---------- le panneau de commandes : un bouton pour chaque chose qu'Atlas sait faire, rangé par thème ----------
+   Chaque bouton passe par Atlas, comme si on le lui disait (la phrase est écrite dessous : elle apprend aussi la voix).
+   « … » : il demande d'abord un mot (le message, la durée, la ville). Les derniers boutons touchés reviennent en tête. */
+const GROUPES = [['maison', 'ampoule', 'Maison'], ['surete', 'bouclier', 'Sécurité'], ['famille', 'famille', 'Mon fils et Shadow'], ['orga', 'calendrier', 'Organisation'],
+  ['infos', 'nuage', 'Infos et marchés'], ['son', 'musique', 'Musique et son'], ['trading', 'courbe', 'Trading'], ['bord', 'cube', 'Ordinateur de bord']];
+const jumeauIci = () => { if (typeof JUMEAU === 'undefined' || !$('#plan')) return false; const z = document.querySelector('.z-plan'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (!JUMEAU.actif()) JUMEAU.bascule(true); return true; };
+const COMMANDES = [
+  ['maison', 'ampoule', "Qu'est-ce qui est allumé ?", "qu'est-ce qui est allumé"],
+  ['maison', 'soleil', 'Allume tout', 'allume tout'],
+  ['maison', 'power', 'Éteins tout', 'éteins tout', { confirme: 'Éteindre toutes les lumières et les prises de la maison ?' }],
+  ['maison', 'lune', 'Bonne nuit', 'je vais me coucher'],
+  ['maison', 'soleil', 'Je me réveille', 'je viens de me réveiller'],
+  ['maison', 'film', 'Mode cinéma', 'mode cinéma'],
+  ['maison', 'stop', 'Fin du film', 'fin du film'],
+  ['maison', 'musique', 'Mode soirée', 'mode soirée'],
+  ['maison', 'fusee', 'Lance la fusée', 'lance la fusée'],
+  ['surete', 'porte', 'Je pars', 'je pars'],
+  ['surete', 'maison', 'Je suis rentré', 'je suis rentré'],
+  ['surete', 'bouclier', 'Scan de sécurité', 'scan de sécurité'],
+  ['surete', 'journal', 'Rapport de sécurité', 'rapport de sécurité'],
+  ['surete', 'radar', 'Rapport de nuit', 'rapport de nuit'],
+  ['surete', 'oeil', "Il s'est passé quoi ?", "il s'est passé quoi"],
+  ['surete', 'famille', 'Qui est passé ?', "qui est passé aujourd'hui"],
+  ['surete', 'camera', 'Montre la façade', 'montre-moi la façade'],
+  ['surete', 'alerte', 'La dernière alerte', 'montre la dernière alerte'],
+  ['surete', 'power', 'Batterie des caméras', 'la batterie des caméras'],
+  ['surete', 'verrou', "L'alarme est activée ?", "l'alarme est activée ?"],
+  ['surete', 'verrou', "Active l'alarme (total)", "active l'alarme en mode total", { confirme: "Activer l'alarme Verisure en mode total ? (Atlas ne la désactive jamais : ce sera le badge ou l'appli.)" }],
+  ['famille', 'radar', 'Où est mon fils ?', 'où est mon fils ?'],
+  ['famille', 'famille', 'Qui est à la maison ?', 'qui est à la maison ?'],
+  ['famille', 'bulle', 'Message à mon fils', 'dis à mon fils que', { saisie: 'Le message pour ton fils', ex: 'le dîner est prêt' }],
+  ['famille', 'bulle', 'Demander à mon fils', 'demande à mon fils de', { saisie: 'Ce que tu lui demandes', ex: 'ranger sa chambre' }],
+  ['famille', 'trophee', 'Une médaille', 'donne une médaille à mon fils pour', { saisie: 'La médaille, pour quoi ?', ex: 'avoir rangé sa chambre' }],
+  ['famille', 'cloche', 'Préviens-moi à son réveil', 'préviens-moi quand mon fils se réveille'],
+  ['famille', 'robot', 'Sa journée avec Shadow', "comment s'est passée la journée de mon fils"],
+  ['famille', 'cerveau', 'Ce que Shadow a appris', "qu'est-ce que Shadow a appris aujourd'hui ?"],
+  ['famille', 'note', 'Bilan scolaire', 'le bilan scolaire de mon fils'],
+  ['famille', 'film', 'Le film du mois', 'le film du mois'],
+  ['famille', 'robot', 'Discute avec Shadow', 'discute avec Shadow'],
+  ['famille', 'manette', 'Jeu télévisé', 'lance le jeu télévisé'],
+  ['famille', 'coeur', 'Ma famille', 'ma famille'],
+  ['orga', 'calendrier', "Mon agenda d'aujourd'hui", "mon agenda d'aujourd'hui"],
+  ['orga', 'calendrier', 'Mon agenda de demain', "qu'est-ce que j'ai demain"],
+  ['orga', 'radar', 'Fais-moi le point', 'fais-moi le point'],
+  ['orga', 'mail', 'Mes mails importants', 'mes mails importants'],
+  ['orga', 'mail', 'Mes mails pro', 'mes mails pro'],
+  ['orga', 'horloge', 'Minuteur', 'minuteur', { saisie: 'Le minuteur', ex: 'pâtes 9 minutes' }],
+  ['orga', 'cloche', 'Réveil', 'réveille-moi à', { saisie: 'Réveil à quelle heure ?', ex: '6 h 30' }],
+  ['orga', 'cloche', 'Rappel', 'rappelle-moi de', { saisie: 'De quoi, et quand ?', ex: 'sortir le linge dans 20 minutes' }],
+  ['orga', 'liste', 'Ajouter aux courses', 'ajoute {x} à la liste de courses', { saisie: 'Quoi ajouter aux courses ?', ex: 'du lait' }],
+  ['orga', 'liste', 'La liste de courses', 'lis la liste de courses'],
+  ['orga', 'note', 'Prendre une note', 'note que', { saisie: 'La note', ex: 'appeler le garage lundi' }],
+  ['orga', 'note', 'Lis mes notes', 'lis mes notes'],
+  ['orga', 'loupe', 'Où ai-je rangé…', 'où est', { saisie: 'Quel objet ?', ex: 'le passeport' }],
+  ['orga', 'boite', "Ce que j'ai prêté", "qu'est-ce que j'ai prêté ?"],
+  ['orga', 'horloge', 'Mes programmes', "qu'est-ce que tu as programmé ?"],
+  ['orga', 'liste', 'Mes protocoles', 'mes protocoles'],
+  ['infos', 'radio', 'Radio Atlas', 'radio atlas'],
+  ['infos', 'radio', 'Radio Atlas longue', 'radio atlas longue'],
+  ['infos', 'nuage', 'La météo', 'la météo'],
+  ['infos', 'nuage', 'La météo demain', 'la météo demain'],
+  ['infos', 'nuage', 'La météo ailleurs', 'la météo à', { saisie: 'Quelle ville ?', ex: 'Paris demain' }],
+  ['infos', 'journal', 'Les actus', 'les actus'],
+  ['infos', 'courbe', "Le cours de l'or", "le cours de l'or"],
+  ['infos', 'courbe', 'Le point des marchés', 'le point des marchés'],
+  ['infos', 'calendrier', 'Les annonces du jour', 'les annonces du jour'],
+  ['infos', 'courbe', "Graphique de l'or", "affiche le graphique de l'or"],
+  ['infos', 'loupe', 'Chercher sur Internet', 'cherche sur internet', { saisie: 'Que chercher ?', ex: 'les horaires de la déchetterie' }],
+  ['son', 'radio', 'France Inter', 'mets France Inter'],
+  ['son', 'radio', 'FIP', 'mets FIP'],
+  ['son', 'stop', 'Arrête la radio', 'arrête la radio'],
+  ['son', 'volume', 'Monte le son', 'monte le son'],
+  ['son', 'moins', 'Baisse le son', 'baisse le son'],
+  ['son', 'pause', 'Pause', 'pause'],
+  ['son', 'lecture', 'Reprends', 'reprends'],
+  ['trading', 'courbe', 'Mode trading', 'mode trading'],
+  ['trading', 'stop', 'Fin de session', 'fin de session'],
+  ['trading', 'oeil', 'Regarde mon graphique', 'regarde mon graphique'],
+  ['trading', 'trophee', 'Résultats de la semaine', 'mes résultats de la semaine'],
+  ['trading', 'boite', 'Bilan de la boîte noire', 'bilan de la boîte noire'],
+  ['trading', 'cerveau', 'Mon coach de trading', 'mon coach de trading'],
+  ['bord', 'cube', 'Le jumeau 3D', 'montre le jumeau', { local: jumeauIci }],
+  ['bord', 'horloge', 'Rejoue ma journée', 'rejoue ma journée'],
+  ['bord', 'journal', 'Journal de bord', 'journal de bord'],
+  ['bord', 'radar', 'État des systèmes', 'état des systèmes'],
+  ['bord', 'ordi', 'État du PC', 'état du PC'],
+  ['bord', 'verrou', "Verrouille l'ordi", "verrouille l'ordi"],
+  ['bord', 'micro', 'Qui parle ?', 'qui parle ?'],
+  ['bord', 'micro', 'Apprends ma voix', 'apprends ma voix'],
+  ['bord', 'micro', 'La voix de mon fils', 'apprends la voix de mon fils'],
+  ['bord', 'cerveau', 'Cerveau économique', 'cerveau économique'],
+  ['bord', 'cerveau', 'Cerveau maximum', 'cerveau maximum'],
+  ['bord', 'volume', 'Test du larsen', 'test du larsen'],
+  ['bord', 'reglages', 'Réglages', 'ouvre les réglages', { local: () => { if (!REGLAGES) return false; REGLAGES(); return true; } }],
+  ['bord', 'sortie', 'Quitter le cockpit', 'ferme le cockpit'],
+];
+let pcGroupe = 'tout', pcRecents = [];
+try { pcRecents = JSON.parse(localStorage.getItem('cockpit-recents') || '[]'); } catch (e) { pcRecents = []; }
+const phraseDe = c => c[3].replace(' {x}', ' …');
+function panneau() {
+  let el = $('#pc');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'pc'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Toutes les commandes');
+    el.innerHTML = `<div class="boite">
+      <div class="tete"><div class="titre">ATLAS <b>//</b> COMMANDES</div><div class="cherche">${ic('loupe')}<input id="pc-q" type="search" placeholder="Chercher une commande…" autocomplete="off" enterkeyhint="search"></div><button class="ferme" id="pc-x" aria-label="Fermer">${ic('croix')}</button></div>
+      <nav id="pc-nav"></nav><div class="liste" id="pc-l"></div>
+      <div class="feuille" id="pc-f"><label id="pc-fl"></label><div class="ligne"><input id="pc-fi" autocomplete="off" enterkeyhint="send"><button class="ok" id="pc-fo">ENVOYER</button><button class="non" id="pc-fn" aria-label="Annuler">${ic('croix')}</button></div><div class="ex" id="pc-fe"></div></div></div>`;
+    document.body.appendChild(el);
+    el.addEventListener('click', e => { if (e.target === el) fermePanneau(); });
+    $('#pc-x').onclick = fermePanneau;
+    $('#pc-q').addEventListener('input', dessinePanneau);
+    $('#pc-fn').onclick = () => $('#pc-f').classList.remove('vu');
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && el.classList.contains('ouvert')) { if ($('#pc-f').classList.contains('vu')) $('#pc-f').classList.remove('vu'); else fermePanneau(); } });
+  }
+  $('#pc-q').value = ''; $('#pc-f').classList.remove('vu');
+  dessinePanneau();
+  requestAnimationFrame(() => el.classList.add('ouvert')); atlasCache(true);
+}
+// Atlas (son visage, dans le coin) se retire le temps du panneau, puis revient
+function atlasCache(on) { try { if (window.parent !== window) window.parent.document.body.classList.toggle('panneau-ouvert', on); } catch (e) { /* rien */ } }
+function fermePanneau() { const el = $('#pc'); if (el) { el.classList.remove('ouvert'); $('#pc-f').classList.remove('vu'); } atlasCache(false); }
+function dessinePanneau() {
+  const q = N($('#pc-q').value), tri = c => !q || N(`${c[2]} ${c[3]} ${(GROUPES.find(g => g[0] === c[0]) || [])[2]}`).includes(q);
+  const vis = COMMANDES.filter(tri);
+  $('#pc-nav').innerHTML = [['tout', 'grille', 'Tout']].concat(GROUPES).map(([k, i, t]) => `<button data-g="${k}" class="${pcGroupe === k ? 'on' : ''}">${ic(i)}${esc(t)}<i>${k === 'tout' ? vis.length : vis.filter(c => c[0] === k).length}</i></button>`).join('');
+  $('#pc-nav').querySelectorAll('button').forEach(b => b.onclick = () => { pcGroupe = b.dataset.g; dessinePanneau(); $('#pc-l').scrollTop = 0; });
+  const on = $('#pc-nav .on'); if (on && on.scrollIntoView) on.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  const tuile = c => { const o = c[4] || {}; return `<button class="cmd-b ${o.saisie ? 'saisie' : ''} ${o.confirme ? 'sensible' : ''}" data-c="${COMMANDES.indexOf(c)}">${ic(c[1])}<b>${esc(c[2])}</b><small>« ${esc(phraseDe(c))}${o.saisie ? ' …' : ''} »</small></button>`; };
+  const blocs = [];
+  if (!q && pcGroupe === 'tout') { const r = pcRecents.map(k => COMMANDES.find(c => c[3] === k)).filter(Boolean).slice(0, 6); if (r.length) blocs.push(['RÉCENTS', r]); }
+  GROUPES.filter(g => q || pcGroupe === 'tout' || pcGroupe === g[0]).forEach(([k, , t]) => { const l = vis.filter(c => c[0] === k); if (l.length) blocs.push([t.toUpperCase(), l]); });
+  $('#pc-l').innerHTML = blocs.length ? blocs.map(([t, l]) => `<div class="groupe">${esc(t)}</div><div class="tuiles">${l.map(tuile).join('')}</div>`).join('') + '<div class="aide">CHAQUE BOUTON FAIT COMME SI TU LE DISAIS À ATLAS. LA PHRASE EST ÉCRITE DESSOUS : TU PEUX AUSSI LA DIRE.</div>'
+    : `<div class="rien">AUCUNE COMMANDE POUR « ${esc($('#pc-q').value)} ». ESSAIE UN AUTRE MOT, OU DIS-LE SIMPLEMENT À ATLAS.</div>`;
+  $('#pc-l').querySelectorAll('.cmd-b').forEach(b => b.onclick = () => lanceCommande(COMMANDES[+b.dataset.c], b));
+}
+function lanceCommande(c, b) {
+  const o = c[4] || {};
+  if (o.saisie) {
+    const f = $('#pc-f'), inp = $('#pc-fi');
+    $('#pc-fl').textContent = o.saisie; inp.value = ''; inp.placeholder = o.ex ? `par exemple : ${o.ex}` : '';
+    $('#pc-fe').textContent = `Atlas entendra : « ${c[3].includes('{x}') ? c[3].replace('{x}', '…') : `${c[3]} …`} »`;
+    f.classList.add('vu'); setTimeout(() => inp.focus(), 60);
+    const envoie = () => { const v = inp.value.trim(); if (!v) return inp.focus(); f.classList.remove('vu'); execute(c, b, c[3].includes('{x}') ? c[3].replace('{x}', v) : `${c[3]} ${v}`); };
+    $('#pc-fo').onclick = envoie; inp.onkeydown = e => { if (e.key === 'Enter') envoie(); };
+    return;
+  }
+  if (o.confirme && !confirm(o.confirme)) return;
+  execute(c, b, c[3]);
+}
+function execute(c, b, phrase) {
+  pcRecents = [c[3]].concat(pcRecents.filter(k => k !== c[3])).slice(0, 6);
+  try { localStorage.setItem('cockpit-recents', JSON.stringify(pcRecents)); } catch (e) { /* rien */ }
+  if (b) { b.classList.add('fait'); setTimeout(() => b.classList.remove('fait'), 1200); }
+  setTimeout(() => { fermePanneau(); if (!(c[4] && c[4].local && c[4].local())) dis(phrase); }, 350);
+}
 let sc = [];
 function cartes() {
   if (POSTE === 'travail') return cartesTravail();
@@ -288,7 +524,7 @@ function cartes() {
       <div class="reserve"></div>
     </div>`;
   sc = [['power', 'Tout éteindre', null, toutEteindre], [absent ? 'maison' : 'porte', absent ? 'Je suis rentré' : 'Je pars', null, basculeAbsent]]
-    .concat(ATLAS ? SCENES : []).concat([['alerte', 'Danger', null, danger, 'danger']]);
+    .concat(ATLAS ? SCENES : []).concat([['alerte', 'Danger', null, danger, 'danger']]).concat(ATLAS ? [['grille', 'Toutes les commandes', null, panneau, 'tout']] : []);
   $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}">${ic(i)}<span>${esc(t)}</span></button>`).join('');
   document.querySelectorAll('.scene').forEach(b => b.onclick = () => { const x = sc[+b.dataset.k]; if (x[3]) x[3](b); else dis(x[2], b); });
   $('#vue3d').onclick = () => { if (typeof JUMEAU !== 'undefined') JUMEAU.bascule(!JUMEAU.actif()); };
@@ -311,7 +547,7 @@ function cartesTravail() {
       <section class="carte grand"><h2><div><i>07</i>JOURNAL</div><span id="al-res"></span></h2><div class="defile log" id="alertes"></div></section>
       <div class="reserve"></div>
     </div>`;
-  sc = (ATLAS ? SCENES_TRAVAIL : []).concat([['power', 'Tout éteindre', null, toutEteindre], ['alerte', 'Danger', null, danger, 'danger']]);
+  sc = (ATLAS ? SCENES_TRAVAIL : []).concat([['power', 'Tout éteindre', null, toutEteindre], ['alerte', 'Danger', null, danger, 'danger']]).concat(ATLAS ? [['grille', 'Toutes les commandes', null, panneau, 'tout']] : []);
   $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}">${ic(i)}<span>${esc(t)}</span></button>`).join('');
   document.querySelectorAll('.scene').forEach(b => b.onclick = () => { const x = sc[+b.dataset.k]; if (x[3]) x[3](b); else dis(x[2], b); });
 }
@@ -345,7 +581,15 @@ function plan() {
   const lampes = appareils.filter(a => a.type === 'lampe');
   const etage = a => /\b(chambres?|salle de bains?|premier etage|etage|bureau|grenier)\b/.test(N(a.nom));
   const niveaux = [['ÉTAGE', lampes.filter(etage)], ['REZ-DE-CHAUSSÉE', lampes.filter(a => !etage(a))]];
-  const W = 1000, M = 120, Hn = 150, gap = 26, top = 70, Ht = top + niveaux.length * (Hn + gap) + 80, R = Ht / 2 - 6;
+  // un téléphone : les pièces d'un étage sur deux colonnes (sinon, sur un écran étroit, les noms deviennent illisibles)
+  const etroit = el.clientWidth > 0 && el.clientWidth < 560;
+  const W = etroit ? 480 : 1000, M = etroit ? 54 : 120, gap = 26, top = 70, Hp = etroit ? 82 : 150;
+  const colsDe = l => etroit ? Math.min(2, Math.max(1, l.length)) : Math.max(1, l.length);
+  const hs = niveaux.map(([, l]) => { const r = Math.ceil(Math.max(1, l.length) / colsDe(l)); return r * Hp + (r - 1) * 10; });
+  const ys = hs.map((h, k) => top + hs.slice(0, k).reduce((a, b) => a + b + gap, 0));
+  const Ht = ys[ys.length - 1] + hs[hs.length - 1] + 80, R = Ht / 2 - 6;
+  const milieu = ys.length > 1 ? ys[1] - gap / 2 : top + hs[0] / 2; // entre les deux étages
+  const lignes = t => { if (!etroit) return [t]; const m = t.split(' '), l = ['']; m.forEach(x => { const k = l.length - 1; if (l[k] && (l[k] + ' ' + x).length > 11) l.push(x); else l[k] = l[k] ? `${l[k]} ${x}` : x; }); return l.slice(0, 3); };
   let svg = `<svg viewBox="0 0 ${W} ${Ht}" xmlns="http://www.w3.org/2000/svg">
     <defs><pattern id="grille" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="rgba(95,211,255,.06)"/></pattern>
     <linearGradient id="balaye" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(95,211,255,0)"/><stop offset="1" stop-color="rgba(95,211,255,.22)"/></linearGradient></defs>
@@ -355,34 +599,40 @@ function plan() {
     <path d="M${M - 10} ${top - 6} L${W / 2} 14 L${W - M + 10} ${top - 6}" fill="none" stroke="rgba(95,211,255,.4)" stroke-width="1.5"/>`;
   const boites = {};
   niveaux.forEach(([nom, l], k) => {
-    const y = top + k * (Hn + gap), n = Math.max(1, l.length), w = (W - 2 * M - (n - 1) * 10) / n;
-    svg += `<text x="${M - 8}" y="${y - 7}" font-size="11" fill="rgba(95,211,255,.55)" letter-spacing="4">${nom}</text>`;
+    const y0 = ys[k], c = colsDe(l), w = (W - 2 * M - (c - 1) * 10) / c;
+    svg += `<text x="${M - 8}" y="${y0 - 7}" font-size="${etroit ? 12 : 11}" fill="rgba(95,211,255,.55)" letter-spacing="4">${nom}</text>`;
     l.forEach((a, i) => {
-      const x = M + i * (w + 10), on = a.allume, lum = on ? (a.lum != null ? a.lum : 100) / 100 : 0, hs = a.allume == null;
+      const x = M + (i % c) * (w + 10), y = y0 + Math.floor(i / c) * (Hp + 10), Hn = Hp, on = a.allume, lum = on ? (a.lum != null ? a.lum : 100) / 100 : 0, hs_ = a.allume == null;
       boites[N(a.nom)] = { x: x + w / 2, y };
+      const ln = lignes(a.nom.toUpperCase()), fs = etroit ? 14 : w < 130 || a.nom.length > 18 ? 12 : 15, y1 = y + Hn / 2 - 4 - (ln.length - 1) * fs / 2;
       svg += `<g class="piece" data-id="${esc(a.id)}">
-        <rect x="${x}" y="${y}" width="${w}" height="${Hn}" rx="4" fill="${on ? `rgba(255,181,71,${(0.1 + lum * 0.3).toFixed(2)})` : 'rgba(95,211,255,.025)'}" stroke="${hs ? 'rgba(255,107,74,.55)' : on ? '#ffb547' : 'rgba(95,211,255,.28)'}" stroke-width="${on ? 2 : 1}" ${hs ? 'stroke-dasharray="6 5"' : ''}/>
+        <rect x="${x}" y="${y}" width="${w}" height="${Hn}" rx="4" fill="${on ? `rgba(255,181,71,${(0.1 + lum * 0.3).toFixed(2)})` : 'rgba(95,211,255,.025)'}" stroke="${hs_ ? 'rgba(255,107,74,.55)' : on ? '#ffb547' : 'rgba(95,211,255,.28)'}" stroke-width="${on ? 2 : 1}" ${hs_ ? 'stroke-dasharray="6 5"' : ''}/>
         ${on ? `<rect x="${x + 6}" y="${y + Hn - 10}" width="${((w - 12) * lum).toFixed(1)}" height="3" fill="#ffb547"/>` : ''}
-        <text x="${x + w / 2}" y="${y + Hn / 2 - 4}" text-anchor="middle" font-size="${w < 130 || a.nom.length > 18 ? 12 : 15}" fill="${on ? '#fff4e0' : 'rgba(238,243,248,.6)'}">${esc(a.nom.toUpperCase())}</text>
-        <text x="${x + w / 2}" y="${y + Hn / 2 + 16}" text-anchor="middle" font-size="11" letter-spacing="2" fill="${hs ? '#ff6b4a' : on ? '#ffd9a0' : 'rgba(190,215,235,.45)'}">${hs ? 'SANS COURANT' : on ? (a.lum != null ? `${a.lum} %` : 'ACTIVE') : 'VEILLE'}</text></g>`;
+        ${ln.map((t, j) => `<text x="${x + w / 2}" y="${(y1 + j * fs * 1.15).toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="${on ? '#fff4e0' : 'rgba(238,243,248,.6)'}">${esc(t)}</text>`).join('')}
+        <text x="${x + w / 2}" y="${(y1 + (ln.length - 1) * fs * 1.15 + (etroit ? 18 : 20)).toFixed(1)}" text-anchor="middle" font-size="${etroit ? 11 : 11}" letter-spacing="2" fill="${hs_ ? '#ff6b4a' : on ? '#ffd9a0' : 'rgba(190,215,235,.45)'}">${hs_ ? 'SANS COURANT' : on ? (a.lum != null ? `${a.lum} %` : 'ACTIVE') : 'VEILLE'}</text></g>`;
     });
   });
   // les caméras autour : la toiture en haut (le velux de papa), la cour et le plateau derrière (à droite), la façade côté rue (à gauche)
-  const yBas = top + niveaux.length * (Hn + gap) + 30;
+  const yBas = Ht - 50, bord = etroit ? 27 : 58;
   const papa = Object.entries(boites).find(([k]) => /papa/.test(k));
-  const place = c => /toit/.test(N(c.nom)) ? [papa ? papa[1].x : W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - 58, top + Hn / 2] : /plateau/.test(N(c.nom)) ? [W - 58, top + Hn + gap + Hn / 2] : /facade|rue|portail/.test(N(c.nom)) ? [58, top + Hn + gap / 2] : [W / 2, yBas]; // la Façade : côté rue, à gauche (la chambre du petit et la cuisine)
+  const place = c => /toit/.test(N(c.nom)) ? [papa ? papa[1].x : W / 2, 22] : /cour|jardin/.test(N(c.nom)) ? [W - bord, ys[0] + hs[0] / 2] : /plateau/.test(N(c.nom)) ? [W - bord, (ys[1] || ys[0]) + (hs[1] || hs[0]) / 2] : /facade|rue|portail/.test(N(c.nom)) ? [bord, milieu] : [W / 2, yBas]; // la Façade : côté rue, à gauche (la chambre du petit et la cuisine)
+  const fc = etroit ? 10 : null;
   cams.forEach(c => {
     const [x, y] = place(c), recent = vuRecemment(c), col = !c.en_ligne ? '#ff6b4a' : recent ? '#ffb547' : arme(c) ? '#6ef0b8' : 'rgba(190,215,235,.45)';
     svg += `${recent ? `<circle class="onde" cx="${x}" cy="${y}" r="7" fill="none" stroke="${col}" stroke-width="2"/>` : ''}
       <circle cx="${x}" cy="${y}" r="6" fill="${col}"/><circle cx="${x}" cy="${y}" r="11" fill="none" stroke="${col}" stroke-opacity=".4"/>
-      <text x="${x}" y="${y + (y > top ? 24 : -14)}" text-anchor="middle" font-size="${x < 120 || x > W - 120 ? 10 : 11}" fill="${col}" letter-spacing="2">${esc(c.nom.toUpperCase())}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 38 : -26)}" text-anchor="middle" font-size="10" fill="${col}" letter-spacing="2">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
+      <text x="${x}" y="${y + (y > top ? 24 : -14)}" text-anchor="middle" font-size="${fc || (x < 120 || x > W - 120 ? 10 : 11)}" fill="${col}" letter-spacing="${etroit ? 1 : 2}">${esc(c.nom.toUpperCase())}</text>${!c.en_ligne || recent ? `<text x="${x}" y="${y + (y > top ? 38 : -26)}" text-anchor="middle" font-size="${fc || 10}" fill="${col}" letter-spacing="${etroit ? 1 : 2}">${!c.en_ligne ? 'HORS LIGNE' : 'MOUVEMENT'}</text>` : ''}`;
   });
-  svg += `<text x="16" y="${top + Hn + gap / 2}" text-anchor="middle" font-size="10" fill="rgba(95,211,255,.3)" letter-spacing="4" transform="rotate(-90 16 ${top + Hn + gap / 2})">LA RUE · FAÇADE</text>
-    <text x="${W - 16}" y="${top + Hn + gap / 2}" text-anchor="middle" font-size="10" fill="rgba(95,211,255,.3)" letter-spacing="4" transform="rotate(90 ${W - 16} ${top + Hn + gap / 2})">ARRIÈRE · COUR</text></svg>`;
+  if (!etroit) svg += `<text x="16" y="${milieu}" text-anchor="middle" font-size="10" fill="rgba(95,211,255,.3)" letter-spacing="4" transform="rotate(-90 16 ${milieu})">LA RUE · FAÇADE</text>
+    <text x="${W - 16}" y="${milieu}" text-anchor="middle" font-size="10" fill="rgba(95,211,255,.3)" letter-spacing="4" transform="rotate(90 ${W - 16} ${milieu})">ARRIÈRE · COUR</text>`;
+  svg += '</svg>';
   if (el._svg === svg) return; el._svg = svg; // rien n'a changé : on ne redessine pas (le radar continue de tourner)
   el.innerHTML = svg;
   el.querySelectorAll('.piece').forEach(g => g.addEventListener('click', () => bascule(g.dataset.id)));
 }
+
+// le téléphone qu'on tourne : le plan se redessine pour la nouvelle largeur
+let planL = 0; window.addEventListener('resize', () => { const el = $('#plan'); if (!el || Math.abs(el.clientWidth - planL) < 40) return; planL = el.clientWidth; el._svg = ''; plan(); });
 
 /* ---------- les lumières et les prises ---------- */
 let appareils = [];
@@ -516,8 +766,10 @@ function majEtat() {
     + `<span class="puce"><span class="led ${nbAlertes ? 'al' : 'ok'}"></span>PÉRIMÈTRE <b>${nbAlertes ? `${nbAlertes} ALERTE${nbAlertes > 1 ? 'S' : ''}` : 'CALME'}</b></span>`
     + `<span class="puce"><span class="led ${shOk ? 'ok' : ''}"></span>SHADOW <b>${shOk ? (sh[1].enfantVu ? 'AVEC LUI' : 'EN LIGNE') : 'EN VEILLE'}</b></span>`
     + `<span class="puce"><span class="led ${pb == null ? '' : pb ? 'al' : 'ok'}"></span>SYSTÈMES <b>${pb == null ? '…' : pb ? 'À VÉRIFIER' : 'NOMINAUX'}</b></span>`
+    + (ATLAS ? '<button class="puce cmd" id="btn-c" title="Toutes les commandes">' + ic('grille') + 'COMMANDES</button>' : '')
     + (REGLAGES ? '<button class="puce reglages" id="btn-r" title="Réglages" aria-label="Réglages">' + ic('reglages') + '</button>' : '');
   const br = $('#btn-r'); if (br) br.onclick = () => { try { REGLAGES(); } catch (e) { /* rien */ } };
+  const bc = $('#btn-c'); if (bc) bc.onclick = panneau;
 }
 // la ligne d'état qui défile : une information à la fois
 let bandeauL = [], bandeauI = 0;

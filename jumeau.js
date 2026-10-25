@@ -828,7 +828,7 @@ const JUMEAU = (() => {
   }
 
   /* ---------- l'interface ---------- */
-  const CSS = `#jumeau { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  const CSS = `#jumeau { position: relative; flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
     #jumeau .j-scene { position: relative; flex: 1; min-height: 0; }
     #jumeau.plein { position: fixed; inset: 0; z-index: 40; padding: 10px 14px 12px; background: #02050b; }
     #jumeau canvas.j3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; border-radius: 4px; }
@@ -843,7 +843,8 @@ const JUMEAU = (() => {
     .j-rail input::-moz-range-track { height: 2px; background: rgba(95,211,255,.18); }
     #j-lab { font: 600 11px ui-monospace, monospace; letter-spacing: .14em; color: var(--ambre2); min-width: 128px; text-align: right; }
     #j-fil { font: 10.5px ui-monospace, monospace; letter-spacing: .06em; color: var(--doux); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 14px; }
-    button.vue { font: 600 9.5px ui-monospace, monospace; letter-spacing: .18em; color: var(--ambre); background: rgba(255,181,71,.07); border: 1px solid var(--ligneA); border-radius: 4px; padding: 4px 8px; cursor: pointer; }`;
+    button.vue { font: 600 9.5px ui-monospace, monospace; letter-spacing: .18em; color: var(--ambre); background: rgba(255,181,71,.07); border: 1px solid var(--ligneA); border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+    @media (max-width: 699px) { .j-barre { grid-template-columns: auto minmax(0, 1fr) auto auto; } .j-rail { order: -1; grid-column: 1 / -1; } #j-lab { min-width: 0; text-align: left; } }`;
   function monte(el) {
     if (!document.getElementById('j-css')) { const st = document.createElement('style'); st.id = 'j-css'; st.textContent = CSS; document.head.appendChild(st); }
     el.innerHTML = `<div id="jumeau"><div class="j-scene"><canvas class="j3d"></canvas></div>
@@ -855,7 +856,7 @@ const JUMEAU = (() => {
     naissance = performance.now(); etats.clear(); cartes.length = 0;
     // la taille vient du cadre (pas du canevas lui-même : sinon, sur un écran très fin, il grandissait sans fin)
     const scene = boite.querySelector('.j-scene');
-    const taille = () => { dpr = Math.min(2, window.devicePixelRatio || 1); W = scene.clientWidth; Hc = scene.clientHeight; f_ = 0; cv.width = Math.round(W * dpr); cv.height = Math.round(Hc * dpr); piste(); };
+    const taille = () => { if (!cv || !scene.isConnected) return; dpr = Math.min(2, window.devicePixelRatio || 1); W = scene.clientWidth; Hc = scene.clientHeight; f_ = 0; cv.width = Math.round(W * dpr); cv.height = Math.round(Hc * dpr); piste(); };
     new ResizeObserver(taille).observe(scene); taille();
     // un doigt : tourner (avec de l'élan) ; deux doigts ou la molette : zoomer ; toucher une pièce (en direct) : l'allumer ou l'éteindre ; double toucher : la vue de départ
     let dernierTap = 0;
