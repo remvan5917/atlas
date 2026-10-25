@@ -246,7 +246,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"date": "AAAA-MM-JJ", "matin": "…", 
 
   async function menus(auto, o = {}) {
     if (!AI.ready()) { await say('Pour les menus, il me faut mon cerveau en ligne.'); return null; }
-    face.set('think'); NOYAU.etiquette('CUISINE'); await say(auto ? 'Je prépare toute ta semaine : les menus, les courses et le drive. Ça prend une petite minute.' : 'Je prépare les menus de la semaine, avec tes entraînements et ce que tu as déjà.');
+    face.set('think'); NOYAU.etiquette('CUISINE'); await say(o.brouillon ? 'Je compose tes menus. Ça prend une petite minute.' : auto ? 'Je prépare toute ta semaine : les menus, les courses et le drive. Ça prend une petite minute.' : 'Je prépare les menus de la semaine, avec tes entraînements et ce que tu as déjà.');
     const cx = await contexte();
     try { if (typeof VIE !== 'undefined') await VIE.chargeGarde(); } catch (e) { /* sans */ }
     let ag = null; try { ag = await (await fetch(`${root()}/maison/agenda?jours=8`, { cache: 'no-store' })).json(); } catch (e) { /* rien */ }
@@ -256,12 +256,12 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"date": "AAAA-MM-JJ", "matin": "…", 
     const sem = semaineAgenda(dates, ag);
     const congel = cx.st.filter(x => x.lieu === 'congelateur').map(x => x.nom);
     const consigne = `Tu es le coach nutrition et le chef d'un père sportif (gymnastique, krav maga ; son fils fait aussi de la gym) qui veut l'alimentation la moins transformée possible. ${REGLES}
-${o.avantDrive ? "IMPORTANT : le drive n'est récupéré que le premier jour, en fin de journée. Le petit-déjeuner, le déjeuner et la collation du premier jour se font avec ce qu'il a déjà (garde-manger, congélateur) ; son dîner peut utiliser les courses. " : ''}Prépare les 4 REPAS de chacun des 7 jours donnés, dans l'ordre : le petit-déjeuner ("matin"), le déjeuner ("midi"), la collation ("collation", avec "collation_quand" : le moment) et le dîner ("plat").
+${o.mode === 'stock' ? "MODE « AVEC CE QU'IL A » : compose d'abord TOUS les repas possibles avec ce qu'il a déjà (garde-manger, congélateur, potager, et ce qu'il vient de dire avoir) ; n'ajoute aux courses que le strict nécessaire (le frais qui manque). " : o.mode === 'equilibre' ? "MODE « ÉQUILIBRÉ » : compose librement la semaine la plus équilibrée et la plus variée possible (en finissant quand même ce qui va se perdre). " : ''}${o.avantDrive ? "IMPORTANT : le drive n'est récupéré que le premier jour, en fin de journée. Le petit-déjeuner, le déjeuner et la collation du premier jour se font avec ce qu'il a déjà (garde-manger, congélateur) ; son dîner peut utiliser les courses. " : ''}Prépare les 4 REPAS de chacun des 7 jours donnés, dans l'ordre : le petit-déjeuner ("matin"), le déjeuner ("midi"), la collation ("collation", avec "collation_quand" : le moment) et le dîner ("plat").
 Le petit-déjeuner : brut et rassasiant (flocons d'avoine, œufs, fromage blanc ou skyr nature, fruits frais, oléagineux, pain complet au levain), 3 ou 4 idées qui tournent sur la semaine, plus copieux les jours d'entraînement. Le déjeuner : simple, prêt en 15 minutes (pas de préparation à l'avance : il ne fait pas de batch cooking), facile à emporter ; quand le dîner de la veille est cuisiné double, le déjeuner du lendemain, c'est ce reste ("Reste de …"). La collation : placée selon l'entraînement (environ 1 h avant : facile à digérer, des glucides ; juste après : protéines et glucides pour la récupération ; jour de repos : un fruit et des oléagineux), "collation_quand" en quelques mots (ex. « 17 h, avant le krav maga »).
 Les dîners : variés sur la semaine (poisson deux fois, légumineuses deux fois, œufs, viande blanche, un plat végétarien), légumes de saison du nord de la France, et d'abord ce qu'il a déjà (surtout ce qui va se perdre et le congélateur). En semaine, des plats prêts en 30 minutes ; le week-end, plus généreux. Adapte chaque jour à son AGENDA : un soir chargé ou une fin tardive (après 19 h 30), un dîner prêt en 15 minutes ; un repas ou un déjeuner pro, un salon, un déplacement au moment d'un repas : pas ce repas-là à la maison (mets « Repas pro » ou « À emporter : … » de transportable) ; une journée entière dehors : petit-déjeuner copieux et déjeuner à emporter ; un anniversaire ou une soirée chez des amis : dîner léger ou « Dîner dehors » ; et à ses entraînements (après : récupération, protéines et glucides ; la veille d'un gros effort : glucides complexes ; repos : plus léger). Quand c'est malin, cuisine double pour le midi du lendemain ("double": true). "decongeler" : ce qu'il doit sortir du congélateur le matin même. Puis la liste de courses de ce qui MANQUE (pas ce qu'il a), avec une quantité simple et le rayon.
 Chaque repas : un nom court (moins de 8 mots). Les jours marqués [avec son fils] : des repas pour lui et son fils de 7 ans (des portions d'enfant, simples et gourmandes) ; les jours [seul] : pour lui seul. Les courses couvrent les 4 repas de la semaine, avec les bonnes quantités.
 Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collation": "…", "collation_quand": "…", "plat": "le dîner", "note": "moins de 10 mots, sur le dîner", "double": false, "decongeler": []}], "courses": [{"article": "…", "quantite": "…", "rayon": "fruits et légumes|boucherie et poisson|crèmerie et œufs|épicerie|boulangerie|surgelés"}]}`;
-    const donnees = `Les 7 jours, son agenda (pro et perso) et ses entraînements : ${sem.join(' ; ')}.\nGarde-manger : ${cx.st.map(x => x.nom).join(', ') || 'rien de noté'}.\nCongélateur : ${congel.join(', ') || 'rien'}.\nÀ finir vite : ${cx.vite.join(', ') || 'rien'}.\nPrêt au potager : ${cx.potager.join(', ') || 'rien'}.\nDerniers repas : ${cx.repas.join(', ') || 'inconnus'}.${cx.enfant ? '\nSon fils est là en ce moment.' : ''}`;
+    const donnees = `Les 7 jours, son agenda (pro et perso) et ses entraînements : ${sem.join(' ; ')}.\nGarde-manger : ${cx.st.map(x => x.nom).join(', ') || 'rien de noté'}.\nCongélateur : ${congel.join(', ') || 'rien'}.\nÀ finir vite : ${cx.vite.join(', ') || 'rien'}.\nPrêt au potager : ${cx.potager.join(', ') || 'rien'}.\nDerniers repas : ${cx.repas.join(', ') || 'inconnus'}.${cx.enfant ? '\nSon fils est là en ce moment.' : ''}${o.dispo ? `\nCe qu'il dit avoir en ce moment : ${o.dispo}.` : ''}`;
     let r = null;
     try { const raw = String(await AI.chat([{ role: 'system', content: consigne }, { role: 'user', content: donnees }], { maxTokens: 4500, temperature: 0.6, json: true })); r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); } catch (e) { r = null; }
     face.set('idle'); NOYAU.etiquette(null);
@@ -269,6 +269,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     const co = ((r && r.courses) || []).filter(x => x && x.article).slice(0, 70).map(x => `${x.article}${x.quantite ? ` (${x.quantite})` : ''}`);
     const batch = []; // pas de batch cooking (il n'en fait pas)
     if (!j.length) { await say("Je n'arrive pas à faire les menus pour le moment. Réessaie dans un instant."); return null; }
+    if (o.brouillon) return { j, dates, co };
     try { await appel({ action: 'menus', jours: j, batch }); } catch (e) { /* on les a quand même ici */ }
     cacheAt = 0;
     prepareImages(j); // les images des plats : l'ordinateur les fabrique pendant ce temps
@@ -287,9 +288,9 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
   }
   const imprimeAuto = () => S.settings.imprimeMenus !== false && !window.__RITUEL; // pendant « on prépare la semaine » : tout part dans la Gazette
   const prepareImages = j => { try { if (typeof CUISINEUI !== 'undefined' && CUISINEUI.prepare) CUISINEUI.prepare(j.flatMap(x => [x.plat, x.matin, x.midi, x.collation])); } catch (e) { /* rien */ } };
-  function tableauMenus(j, co) {
+  function tableauMenus(j, co, valider) {
     const l_ = (ic, t, x) => x ? `<div style="display:flex;gap:8px;font-size:15px;line-height:1.35;padding:2px 0"><span style="flex:0 0 74px;color:#94a3b8;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding-top:2px">${ic}</span><span>${t}</span></div>` : '';
-    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,700px)"><small style="letter-spacing:.3em;color:#fcd34d">LA SEMAINE · MATIN, MIDI, COLLATION, SOIR · ALIMENTATION BRUTE</small>${j.map(x => { const d = new Date(`${x.date}T12:00:00`); return `<div style="margin:10px 0;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05)"><b style="color:#fde68a;font-size:16px">${JOURS_SEM[d.getDay()]} ${d.getDate()}</b>${l_('Matin', esc(x.matin), x.matin)}${l_('Midi', esc(x.midi), x.midi)}${l_('Collation', `${esc(x.collation)}${x.collation_quand ? ` <span style="color:#94a3b8">· ${esc(x.collation_quand)}</span>` : ''}`, x.collation)}${l_('Soir', `<b>${esc(x.plat)}</b>${x.note ? ` <span style="color:#94a3b8">— ${esc(x.note)}</span>` : ''}${x.double ? ' <span style="color:#86efac">· ×2 pour le midi</span>' : ''}${(x.decongeler || []).length ? ` <span style="color:#7dd3fc">· sortir ${esc(liste(x.decongeler))} le matin</span>` : ''}`, x.plat)}</div>`; }).join('')}${co && co.length ? `<small style="letter-spacing:.3em;color:#86efac">À ACHETER</small><p style="font-size:14px;color:#cbd5e1">${esc(co.join(' · '))}</p>` : ''}</div>`);
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,700px)"><small style="letter-spacing:.3em;color:#fcd34d">LA SEMAINE · MATIN, MIDI, COLLATION, SOIR · ALIMENTATION BRUTE</small>${j.map(x => { const d = new Date(`${x.date}T12:00:00`); return `<div style="margin:10px 0;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05)"><b style="color:#fde68a;font-size:16px">${JOURS_SEM[d.getDay()]} ${d.getDate()}</b>${l_('Matin', esc(x.matin), x.matin)}${l_('Midi', esc(x.midi), x.midi)}${l_('Collation', `${esc(x.collation)}${x.collation_quand ? ` <span style="color:#94a3b8">· ${esc(x.collation_quand)}</span>` : ''}`, x.collation)}${l_('Soir', `<b>${esc(x.plat)}</b>${x.note ? ` <span style="color:#94a3b8">— ${esc(x.note)}</span>` : ''}${x.double ? ' <span style="color:#86efac">· ×2 pour le midi</span>' : ''}${(x.decongeler || []).length ? ` <span style="color:#7dd3fc">· sortir ${esc(liste(x.decongeler))} le matin</span>` : ''}`, x.plat)}</div>`; }).join('')}${co && co.length ? `<small style="letter-spacing:.3em;color:#86efac">À ACHETER</small><p style="font-size:14px;color:#cbd5e1">${esc(co.join(' · '))}</p>` : ''}${valider ? boutonOk() : ''}</div>`);
   }
   async function menuDuJour(n) {
     let c; try { c = await charge(true); } catch (e) { return null; }
@@ -393,6 +394,82 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     const autreTxt = p && p.autre ? ` Pour économiser ${eu(p.autre.eco)}, prends ${liste(p.autre.items.slice(0, 3).map(x => x.text.replace(/\s*\(.*\)$/, '')))}${p.autre.items.length > 3 ? '…' : ''} chez ${p.MAG[p.autre.m]} : je l'ai mis de côté.` : '';
     fx.ok();
     return say(`C'est prêt : les quatre repas de chaque jour, le matin, le midi, la collation et le soir, sont dans l'appli Cuisine. Les dîners : ${plats.join(' ; ')}. J'ai mis ${r.ajoutes.length} article${r.ajoutes.length > 1 ? 's' : ''} sur ta liste, sans ce que tu as déjà : ${nb} en tout. Au drive Leclerc : ${nDrive} article${nDrive > 1 ? 's' : ''}.${prixTxt}${autreTxt} ${imp ? " J'imprime le menu et la liste de courses sur l'imprimante du bureau." : ''} À l'écran, touche chaque article pour le mettre dans ton panier, puis valide et choisis ton créneau${o.avantDrive ? ' de lundi' : ''}. Dis-moi ensuite « j'ai commandé le drive pour ${o.avantDrive ? 'lundi 18 heures' : 'samedi 10 heures'} » : je te rappellerai le retrait.`);
+  }
+  // le dimanche soir : quel genre de menus (équilibrés, ou avec ce qu'il a), montrés à l'écran, lus, « c'est bon » ; une correction (« change mardi soir ») ;
+  // puis la liste de courses, toujours, rangée par rayon (sans ce qu'il a déjà)
+  async function choixMode() {
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,620px)"><small style="letter-spacing:.3em;color:#fcd34d">LES REPAS DE LA SEMAINE · DEUX CHOIX</small><div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">${[['equilibre', '⚖️', 'Équilibrés', 'Je compose la semaine la plus équilibrée et variée'], ['stock', '🧺', 'Avec ce que j’ai', 'Je pars de ton frigo, du congélateur et des placards']].map(([k, ic, t, d]) => `<button type="button" data-mode="${k}" style="flex:1 1 240px;min-width:0;box-sizing:border-box;text-align:left;padding:18px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(255,255,255,.06);color:#e2e8f0;cursor:pointer"><div style="font-size:30px">${ic}</div><b style="font-size:20px">${t}</b><div style="font-size:14px;color:#94a3b8;margin-top:4px">${d}</div></button>`).join('')}</div></div>`);
+    let res = null; const clic = new Promise(r => { res = r; });
+    setTimeout(() => document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => { try { voice.reprise = null; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); } catch (e) { /* rien */ } res(b.dataset.mode); }; }), 60);
+    const a = await Promise.race([clic, ask("Pour les repas, deux choix : des menus équilibrés que je compose, ou des menus avec ce que tu as déjà. Lequel ?", { wait: 20000 })]);
+    if (a === 'stock' || a === 'equilibre') return a;
+    return /\b(ce que j ai|ce qu on a|ce que tu as|frigo|placards?|stock|deja|restes?|avec ce|deuxieme|second)\b/.test(N(a)) ? 'stock' : 'equilibre';
+  }
+  async function dispoDit(mode) {
+    if (mode !== 'stock') return '';
+    let c = null; try { c = await charge(true); } catch (e) { c = null; }
+    const st = (c && c.stock) || [];
+    if (st.length >= 6) { await say(`Je pars de ton garde-manger : ${st.length} produits notés.`); return ''; }
+    return String(await ask("Dis-moi le principal de ce que tu as : le frigo, le congélateur, les placards.", { wait: 30000 }) || '').slice(0, 600);
+  }
+  async function corrigeMenus(j, texte, mode) {
+    face.set('think');
+    try {
+      const raw = String(await AI.chat([{ role: 'system', content: `Tu es le chef d'un père sportif qui mange le moins transformé possible. ${REGLES} Voici ses menus de la semaine (4 repas par jour) et ce qu'il veut changer. Change UNIQUEMENT ce qu'il demande (un jour, un repas, un ingrédient, plus de poisson…), garde tout le reste à l'identique.${mode === 'stock' ? " Il veut cuisiner surtout avec ce qu'il a." : ''} Réponds UNIQUEMENT en JSON : {"jours": [{"date": "AAAA-MM-JJ", "matin": "…", "midi": "…", "collation": "…", "collation_quand": "…", "plat": "…", "note": "…", "double": false, "decongeler": []}]}` }, { role: 'user', content: `Menus : ${JSON.stringify(j.map(x => ({ date: x.date, jour: JOURS_SEM[new Date(`${x.date}T12:00:00`).getDay()], matin: x.matin, midi: x.midi, collation: x.collation, collation_quand: x.collation_quand, plat: x.plat, note: x.note, double: x.double, decongeler: x.decongeler })))}\nCe qu'il veut changer : ${texte}` }], { maxTokens: 3000, temperature: 0.4, json: true }));
+      const r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); const par = {}; (r.jours || []).forEach(x => { if (x && x.date) par[x.date] = x; });
+      return j.map(x => { const y = par[x.date]; return y && y.plat ? { date: x.date, matin: String(y.matin || ''), midi: String(y.midi || ''), collation: String(y.collation || ''), collation_quand: String(y.collation_quand || ''), plat: String(y.plat), note: String(y.note || ''), double: !!y.double, decongeler: (y.decongeler || []).map(String) } : x; });
+    } catch (e) { return null; } finally { face.set('idle'); }
+  }
+  async function listeCourses(j) {
+    let c = null; try { c = await charge(true); } catch (e) { c = null; }
+    const st = ((c && c.stock) || []).map(x => x.nom);
+    face.set('think');
+    try {
+      const raw = String(await AI.chat([{ role: 'system', content: `Voici les menus de la semaine d'un père (4 repas par jour ; les jours marqués avec son fils, pour deux). Fais la liste de courses complète pour les cuisiner, avec les bonnes quantités, sans ce qu'il a déjà. Réponds UNIQUEMENT en JSON : {"courses": [{"article": "…", "quantite": "…"}]}` }, { role: 'user', content: `Menus : ${JSON.stringify(j.map(x => ({ date: x.date, matin: x.matin, midi: x.midi, collation: x.collation, plat: x.plat })))}\nIl a déjà : ${st.join(', ') || 'rien de noté'}.` }], { maxTokens: 2000, temperature: 0.2, json: true }));
+      const r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+      return (r.courses || []).filter(x => x && x.article).slice(0, 70).map(x => `${x.article}${x.quantite ? ` (${x.quantite})` : ''}`);
+    } catch (e) { return []; } finally { face.set('idle'); }
+  }
+  function tableauCourses() {
+    const l = (S.listes || []).filter(x => x.liste === 'courses'), g = {};
+    l.forEach(x => { const r = rayonDe(x.text); (g[r] = g[r] || []).push(x.text); });
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,700px)"><small style="letter-spacing:.3em;color:#86efac">LA LISTE DE COURSES · ${l.length} ARTICLE${l.length > 1 ? 'S' : ''} · PAR RAYON</small><div style="columns:2 260px;column-gap:18px;margin-top:10px">${RAYONS.filter(r => g[r]).map(r => `<div style="break-inside:avoid;margin:8px 0 12px"><b style="color:#fde68a;font-size:14px;letter-spacing:.08em;text-transform:uppercase">${esc(r)}</b>${g[r].map(t => `<div style="font-size:15px;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.12)">☐ ${esc(t)}</div>`).join('')}</div>`).join('')}</div></div>`);
+    return l.length;
+  }
+  async function semaineValidee(o = {}) {
+    if (!AI.ready()) { await say('Pour les menus, il me faut mon cerveau en ligne.'); return null; }
+    const d0 = o.debut ? new Date(`${o.debut}T12:00:00`) : new Date(), du = dateJ(d0), au = (() => { const d = new Date(d0); d.setDate(d.getDate() + 6); return dateJ(d); })();
+    let c = null; try { c = await charge(true); } catch (e) { c = null; }
+    let j = ((c && c.menus) || []).filter(x => x.date >= du && x.date <= au), co = [], mode = '', dispo = '', silences = 0, change = false;
+    if (j.length < 5) { j = null; mode = await choixMode(); dispo = await dispoDit(mode); }
+    for (let tour = 0; tour < 7; tour++) {
+      if (!j) { const r = await menus(true, Object.assign({}, o, { mode, dispo, brouillon: true })); if (!r) return null; j = r.j; co = r.co; change = false; }
+      tableauMenus(j, [], true);
+      const lu = silences ? "C'est bon ? Dis « c'est bon », ou ce que tu veux changer."
+        : `${tour ? "Voilà. " : "Tes menus sont à l'écran : matin, midi, collation et soir. "}Les dîners : ${j.map(x => `${JOURS_SEM[new Date(`${x.date}T12:00:00`).getDay()]}, ${min1(x.plat)}`).join(' ; ')}. Dis « c'est bon » si ça te va, ou ce que tu veux changer, par exemple « change mardi soir ».`;
+      const a = await valideVisuel(lu, { wait: 20000 });
+      if (a === 'ok') break;
+      if (!a || a === 'non') { if (!a && ++silences < 2) continue; if (!a) { await say("Pas de réponse : je garde ces menus."); break; } }
+      silences = 0;
+      const n = N(a);
+      if (a === 'non' || /\b(refais|recommence|autres menus|d autres|tout changer|change tout|pas du tout)\b/.test(n) || /\b(equilibr|ce que j ai|frigo|placards?)\b/.test(n)) {
+        if (/\b(ce que j ai|frigo|placards?)\b/.test(n)) { mode = 'stock'; dispo = dispo || await dispoDit(mode); } else if (/\bequilibr/.test(n)) mode = 'equilibre';
+        j = null; continue;
+      }
+      const nj = await corrigeMenus(j, a, mode);
+      if (nj) { j = nj; change = true; } else await say("Je n'ai pas compris le changement. Redis-le autrement.");
+    }
+    if (!j) return null;
+    // c'est validé : enregistré, les images, et la liste de courses (toujours)
+    try { await appel({ action: 'menus', jours: j, batch: [] }); } catch (e) { /* on les a quand même ici */ }
+    cacheAt = 0; prepareImages(j);
+    if (change || !co.length) co = await listeCourses(j);
+    const ajoutes = ajouteCourses(co);
+    try { if (typeof PRIX !== 'undefined') await PRIX.planDrive(); } catch (e) { /* sans */ }
+    S.semainePrete = { at: Date.now() }; save(); fx.ok();
+    const nb = tableauCourses();
+    await say(`C'est validé. La liste de courses est faite : ${nb} article${nb > 1 ? 's' : ''}${ajoutes.length && ajoutes.length < nb ? `, dont ${ajoutes.length} pour ces menus` : ''}, rangés par rayon.`);
+    return { j, co, ajoutes };
   }
   // « j'ai commandé le drive pour samedi 10 h » : le rappel du retrait (45 minutes avant)
   function quandDe(n) {
@@ -504,5 +581,5 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     if (items.length) { await appel({ action: 'ajoute', items }); cacheAt = 0; }
     return items.length;
   }
-  return { route, apresRecette, ajouteStock, semaine, adapte, menus, rayonDe, _charge: charge, _contexte: contexte };
+  return { route, apresRecette, ajouteStock, semaine, adapte, semaineValidee, menus, rayonDe, _charge: charge, _contexte: contexte };
 })();

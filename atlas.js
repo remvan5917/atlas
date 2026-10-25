@@ -277,6 +277,19 @@ async function askYesNo(text) {
   for (let i = 0; i < 2; i++) { const a = await ask(i ? `Oui ou non ? ${text}` : text); if (isYes(a)) return true; if (isNo(a)) return false; }
   return false;
 }
+// valider ce qu'il montre (le planning, les menus) : il lit, et « c'est bon » — dit pendant qu'il parle, ou touché à l'écran — le fait taire
+// renvoie 'ok', 'non', la correction dite, ou '' (rien entendu)
+const CORRIGE_RE = /\b(mais|sauf|change|changer|remplace|decale|decaler|enleve|retire|ajoute|rajoute|plutot|deplace|corrige|refais|recommence|pas le|pas la|pas de|pas a|au lieu)\b/;
+const estOk = t => { const n = N(t || ''); return !!n && !CORRIGE_RE.test(n) && (isYes(t) || /\b(niquel|nickel|impeccable|parfait|ca me va|ca va|valide|tout est bon|c est tout bon|c est good|top)\b/.test(n)); };
+const boutonOk = (txt = "✔ C'est bon") => `<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)"><button type="button" id="ok-board" style="width:100%;padding:18px;border:0;border-radius:16px;background:#16a34a;color:#fff;font:800 20px system-ui;cursor:pointer">${txt}</button><div style="text-align:center;color:#94a3b8;font-size:13px;margin-top:6px">ou dis « c'est bon » quand tu veux, même pendant qu'il parle</div></div>`;
+async function valideVisuel(texte, { wait: w = 20000 } = {}) {
+  let ok = null; const bouton = new Promise(r => { ok = r; });
+  setTimeout(() => { const b = document.getElementById('ok-board'); if (b) b.onclick = () => { try { voice.reprise = null; dlg.interrupt = true; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); } catch (e) { /* rien */ } try { fx.tone([[988, 0.06], [1319, 0.1]]); } catch (e) { /* rien */ } ok('ok'); }; }, 60);
+  const a = await Promise.race([bouton, ask(texte, { wait: w })]);
+  if (a === 'ok' || estOk(a)) { voice.reprise = null; if (voice.occupe()) voice.stop(); return 'ok'; }
+  if (isNo(a) && N(a).split(' ').length <= 3) return 'non';
+  return a || '';
+}
 function wake() { if (dlg.state === 'sleep' || dlg.state === 'standby') { dlg.state = 'talk'; dlg.silence = 0; } }
 
 /* ---------- la caméra (pour la vision détaillée) ---------- */

@@ -100,7 +100,7 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,620px)"><small style="letter-spacing:.3em;color:#a5b4fc">${esc(titre)} · ${l.length} RENDEZ-VOUS · <span style="color:#93c5fd">PRO</span> / <span style="color:#86efac">PERSO</span> · <span style="color:#fcd34d">MARCHÉ</span></small>${jours.map(j => {
       const d = new Date(`${j}T12:00:00`), rdv = l.filter(x => x.date === j), eco = ecoDe(j);
       const blocs = MOMENTS.map(([k, lab]) => { const r = rdv.filter(x => momentDe(x) === k).sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), e = eco.filter(x => momentEco(x) === k); return r.length || e.length ? `<div style="margin-top:3px;color:#a5b4fc;font-size:12px;letter-spacing:.18em;text-transform:uppercase">${lab}</div>${e.map(ligneEco).join('')}${r.map(ligneRdv).join('')}` : ''; }).join('');
-      return `<div style="margin-top:12px"><b style="color:#fde68a;font-size:16px;text-transform:capitalize">${esc(libJour(d))}</b>${blocs}</div>`; }).join('')}</div>`);
+      return `<div style="margin-top:12px"><b style="color:#fde68a;font-size:16px;text-transform:capitalize">${esc(libJour(d))}</b>${blocs}</div>`; }).join('')}${boutonOk()}</div>`);
   }
   const hDit = h => { const [a, b] = h.split(':').map(Number); return a === 12 && !b ? 'midi' : `${a} heure${a > 1 ? 's' : ''}${b ? ` ${b}` : ''}`; };
   // à voix haute : jour par jour, et dans chaque jour, le matin, le midi, l'après-midi, le soir
@@ -113,18 +113,35 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
       if (m) { const h = Math.min(23, +m[1] + (/\b(de l apres midi|du soir)\b/.test(a) && +m[1] < 12 ? 12 : 0)); x.debut = `${String(h).padStart(2, '0')}:${String(+(m[2] || 0)).padStart(2, '0')}`; } else x.journee = true;
     }
   }
-  // ce qu'il dicte est déjà décidé : Atlas l'écrit tout de suite, sans redemander (les heures manquantes seulement)
-  async function valideEtEcris(l, existants, titre) {
-    if (!l.length) { await say("Je n'ai trouvé aucun rendez-vous à noter."); return { statut: 'rien', l }; }
-    await heures(l);
-    montre(l, existants, titre);
-    const conf = l.map(x => [x, chevauche(x, existants)]).filter(([, c]) => c);
-    let r; try { r = await post({ evenements: l.map(enEvt) }); } catch (e) { hideBoard(); await say("Je n'arrive pas à joindre l'ordinateur de la maison : rien n'est noté. Redis-le-moi dans un instant."); return { statut: 'erreur', l }; }
+  async function ecrire(l, existants, titre, avant = '') {
+    let r; try { r = await post({ evenements: l.map(enEvt) }); } catch (e) { await say("Je n'arrive pas à joindre l'ordinateur de la maison : rien n'est noté. Redis-le-moi dans un instant."); return { statut: 'erreur', l }; }
     S.planningSemaine = cleSemaine(); save(); fx.ok();
-    await say(`${r.google ? `C'est dans ton Google Agenda : ${r.n} rendez-vous` : `C'est noté : ${r.n} rendez-vous`}, et je te préviendrai avant chacun.${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''}${r.google === false ? " Google Agenda n'a pas répondu : je réessaierai." : ''}`);
-    hideBoard();
+    const ok = document.getElementById('ok-board'); if (ok) { ok.textContent = '✔ Écrit dans ton agenda'; ok.disabled = true; ok.style.background = '#15803d'; }
+    await say(`${avant ? `${avant} ` : ''}${r.google ? `C'est dans ton Google Agenda : ${r.n} rendez-vous` : `C'est noté : ${r.n} rendez-vous`}, et je te préviendrai avant chacun.${r.google === false ? " Google Agenda n'a pas répondu : je réessaierai." : ''}`);
+    if (!rituel) hideBoard();
     if (titre === 'TON PLANNING' && !rituel) await apres();
     return { statut: 'ecrit', l };
+  }
+  // le planning à l'écran, lu à voix haute ; « c'est bon » (dit ou touché) : il se tait et l'écrit ; une correction : il la fait et remontre
+  async function valideEtEcris(l, existants, titre) {
+    let silences = 0;
+    for (let tour = 0; tour < 6; tour++) {
+      if (!l.length) { await say("Je n'ai trouvé aucun rendez-vous à noter."); return { statut: 'rien', l }; }
+      await heures(l);
+      montre(l, existants, titre);
+      const conf = l.map(x => [x, chevauche(x, existants)]).filter(([, c]) => c);
+      const lu = silences ? "C'est bon ? Dis « c'est bon », ou ce qu'il faut changer."
+        : `${tour ? "Voilà, c'est corrigé. " : ''}${l.length > 1 ? `${l.length} rendez-vous. ` : ''}${resume(l)}.${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} Dis « c'est bon » dès que c'est niquel, ou ce qu'il faut changer.`;
+      const a = await valideVisuel(lu, { wait: 20000 });
+      if (a === 'ok') return ecrire(l, existants, titre);
+      if (a === 'non') { hideBoard(); await say("D'accord, je ne note rien."); return { statut: 'annule', l }; }
+      if (!a) { if (++silences < 2) continue; return ecrire(l, existants, titre, "Pas de réponse : c'est ce que tu m'as dicté, je l'écris."); }
+      silences = 0;
+      const avant = l;
+      try { face.set('think'); l = await analyse(a, semaineCible(), existants, l); } catch (e) { l = avant; await say("Je n'ai pas compris la correction. Redis-la autrement."); } finally { face.set('idle'); }
+      l.forEach(x => { if (!x.debut && !x.journee) { const y = avant.find(z => N(z.titre) === N(x.titre) && z.date === x.date && z.debut); if (y) { x.debut = y.debut; x.fin = x.fin || y.fin; } } }); // une heure déjà donnée ne se reperd pas
+    }
+    return ecrire(l, existants, titre);
   }
   // après le planning de la semaine : la feuille imprimée, et les menus qui s'adaptent aux jours chargés
   async function imprimePlanning() {
