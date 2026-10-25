@@ -100,7 +100,7 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,620px)"><small style="letter-spacing:.3em;color:#a5b4fc">${esc(titre)} · ${l.length} RENDEZ-VOUS · <span style="color:#93c5fd">PRO</span> / <span style="color:#86efac">PERSO</span> · <span style="color:#fcd34d">MARCHÉ</span></small>${jours.map(j => {
       const d = new Date(`${j}T12:00:00`), rdv = l.filter(x => x.date === j), eco = ecoDe(j);
       const blocs = MOMENTS.map(([k, lab]) => { const r = rdv.filter(x => momentDe(x) === k).sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), e = eco.filter(x => momentEco(x) === k); return r.length || e.length ? `<div style="margin-top:3px;color:#a5b4fc;font-size:12px;letter-spacing:.18em;text-transform:uppercase">${lab}</div>${e.map(ligneEco).join('')}${r.map(ligneRdv).join('')}` : ''; }).join('');
-      return `<div style="margin-top:12px"><b style="color:#fde68a;font-size:16px;text-transform:capitalize">${esc(libJour(d))}</b>${blocs}</div>`; }).join('')}<div style="display:flex;gap:12px;margin-top:16px;position:sticky;bottom:0;padding-top:8px;background:linear-gradient(transparent,rgba(5,10,20,.92) 30%)"><button id="pl-oui" style="flex:2;padding:18px;border:0;border-radius:16px;background:#16a34a;color:#fff;font:800 20px system-ui;cursor:pointer">✔ Oui, c'est bon</button><button id="pl-corr" style="flex:1;padding:18px;border:0;border-radius:16px;background:rgba(255,255,255,.12);color:#e2e8f0;font:700 18px system-ui;cursor:pointer">✏ Corriger</button></div></div>`);
+      return `<div style="margin-top:12px"><b style="color:#fde68a;font-size:16px;text-transform:capitalize">${esc(libJour(d))}</b>${blocs}</div>`; }).join('')}</div>`);
   }
   const hDit = h => { const [a, b] = h.split(':').map(Number); return a === 12 && !b ? 'midi' : `${a} heure${a > 1 ? 's' : ''}${b ? ` ${b}` : ''}`; };
   // à voix haute : jour par jour, et dans chaque jour, le matin, le midi, l'après-midi, le soir
@@ -113,36 +113,18 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
       if (m) { const h = Math.min(23, +m[1] + (/\b(de l apres midi|du soir)\b/.test(a) && +m[1] < 12 ? 12 : 0)); x.debut = `${String(h).padStart(2, '0')}:${String(+(m[2] || 0)).padStart(2, '0')}`; } else x.journee = true;
     }
   }
+  // ce qu'il dicte est déjà décidé : Atlas l'écrit tout de suite, sans redemander (les heures manquantes seulement)
   async function valideEtEcris(l, existants, titre) {
-    let silences = 0;
-    for (let tour = 0; tour < 6; tour++) {
-      if (!l.length) return say("Je n'ai trouvé aucun rendez-vous à noter.");
-      await heures(l);
-      montre(l, existants, titre);
-      const conf = l.map(x => [x, chevauche(x, existants)]).filter(([, c]) => c);
-      // valider pendant qu'il lit : le bouton « Oui » (il se tait et écrit tout de suite) ; « Corriger » : il se tait et écoute
-      let clic = null; const bouton = new Promise(res => { clic = res; });
-      setTimeout(() => {
-        const bo = document.getElementById('pl-oui'), bc = document.getElementById('pl-corr');
-        if (bo) bo.onclick = () => { try { dlg.interrupt = true; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); setTimeout(() => OREILLES.cancel(), 1500); } catch (e) { /* rien */ } fx.tone([[988, 0.06], [1319, 0.1]]); clic('oui'); };
-        if (bc) bc.onclick = () => { try { dlg.interrupt = true; voice.stop(); } catch (e) { /* rien */ } fx.tone([[880, 0.06]]); };
-      }, 60);
-      const a = await Promise.race([bouton, ask(`${l.length > 1 ? `J'ai ${l.length} rendez-vous. ${resume(l)}.` : `${resume(l)}.`}${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} ${l.length > 1 ? 'Je les mets' : 'Je le mets'} dans ton agenda ? Dis oui, ou dis-moi ce qu'il faut changer.`, { wait: 25000 })]);
-      if (isYes(a) && N(a).split(' ').length <= 6) {
-        let r; try { r = await post({ evenements: l.map(enEvt) }); } catch (e) { return say("Je n'arrive pas à joindre l'ordinateur de la maison : rien n'est noté. Réessaie dans un instant."); }
-        S.planningSemaine = cleSemaine(); save(); fx.ok(); hideBoard();
-        if (r.google) await say(`C'est dans ton Google Agenda : ${r.n} rendez-vous. Je te préviendrai avant chacun, et la veille au soir.`);
-        else if (r.google === false) await say(`J'ai noté les ${r.n} rendez-vous chez moi, et je te préviendrai avant chacun ; mais Google Agenda n'a pas répondu. Je réessaierai.`);
-        else await say(`C'est noté : ${r.n} rendez-vous, et je te préviendrai avant chacun, et la veille au soir. Pour qu'ils arrivent aussi dans ton Google Agenda sur ton téléphone, il faut relier l'écriture une seule fois, sur l'ordinateur.`);
-        if (titre === 'TON PLANNING' && !rituel) return apres();
-        return;
-      }
-      if (!a) { if (++silences < 2) continue; hideBoard(); return say("Je n'ai pas eu de réponse : je ne note rien pour l'instant. Redis « on fait mon planning » quand tu veux."); }
-      if (isNo(a) && N(a).split(' ').length <= 3) { hideBoard(); return say("D'accord, je ne note rien."); }
-      const avant = l;
-      try { face.set('think'); l = await analyse(a, semaineCible(), existants, l); } catch (e) { return say("Je n'ai pas compris la correction. Redis-la autrement."); } finally { face.set('idle'); }
-      l.forEach(x => { if (!x.debut && !x.journee) { const y = avant.find(z => N(z.titre) === N(x.titre) && z.date === x.date && z.debut); if (y) { x.debut = y.debut; x.fin = x.fin || y.fin; } } }); // une heure déjà donnée ne se reperd pas
-    }
+    if (!l.length) { await say("Je n'ai trouvé aucun rendez-vous à noter."); return { statut: 'rien', l }; }
+    await heures(l);
+    montre(l, existants, titre);
+    const conf = l.map(x => [x, chevauche(x, existants)]).filter(([, c]) => c);
+    let r; try { r = await post({ evenements: l.map(enEvt) }); } catch (e) { hideBoard(); await say("Je n'arrive pas à joindre l'ordinateur de la maison : rien n'est noté. Redis-le-moi dans un instant."); return { statut: 'erreur', l }; }
+    S.planningSemaine = cleSemaine(); save(); fx.ok();
+    await say(`${r.google ? `C'est dans ton Google Agenda : ${r.n} rendez-vous` : `C'est noté : ${r.n} rendez-vous`}, et je te préviendrai avant chacun.${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''}${r.google === false ? " Google Agenda n'a pas répondu : je réessaierai." : ''}`);
+    hideBoard();
+    if (titre === 'TON PLANNING' && !rituel) await apres();
+    return { statut: 'ecrit', l };
   }
   // après le planning de la semaine : la feuille imprimée, et les menus qui s'adaptent aux jours chargés
   async function imprimePlanning() {
@@ -183,10 +165,10 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
       dicte.push(a); const z = document.getElementById('pl-dicte'); if (z) z.innerHTML = dicte.map(x => `<div>• ${esc(x)}</div>`).join('');
       try { fx.tone([[988, 0.06]]); } catch (e) { /* rien */ }
     }
-    if (!dicte.length) { hideBoard(); return say("Je n'ai rien entendu. On le fera quand tu veux : dis « on fait mon planning »."); }
+    if (!dicte.length) { hideBoard(); await say(rituel ? "Je n'ai rien entendu de ton planning." : "Je n'ai rien entendu. On le fera quand tu veux : dis « on fait mon planning »."); return { statut: 'rien', l: [] }; }
     face.set('think'); await say('Je range tout.');
     let l; try { l = await analyse(dicte.join('. '), jours, ex); } catch (e) { l = null; } finally { face.set('idle'); }
-    if (!l) return say("Je n'ai pas réussi à ranger ton planning. Redis-le-moi dans un instant.");
+    if (!l) { await say("Je n'ai pas réussi à ranger ton planning. Redis-le-moi dans un instant."); return { statut: 'rien', l: [] }; }
     return valideEtEcris(l, ex, 'TON PLANNING');
   }
   // un seul rendez-vous : « ajoute à mon agenda dentiste jeudi à 15 h »

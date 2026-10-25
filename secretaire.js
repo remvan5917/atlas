@@ -345,7 +345,11 @@ const SECRETAIRE = (() => {
       if (o.seul) await say("Je prépare ta semaine tout seul, d'après ton agenda : les menus, les courses, et ta Gazette imprimée.");
       else await say("On prépare ta semaine. D'abord ton planning, ensuite les repas et les courses, et je termine par ta Gazette imprimée.");
       // 1. le planning (dicté), sans l'imprimer à part ; tout seul (le dimanche soir sans lui) : l'agenda tel qu'il est
-      if (!o.seul) { try { await AGENDA.planifie({ rituel: true }); } catch (e) { /* on continue */ } }
+      if (!o.seul) {
+        let r = null; try { r = await AGENDA.planifie({ rituel: true }); } catch (e) { r = null; }
+        // rien entendu : on recommence (une fois) avant d'imprimer quoi que ce soit
+        if (r && r.statut === 'rien' && await askYesNo("On recommence ton planning ? Parle bien près de moi.")) { try { r = await AGENDA.planifie({ rituel: true }); } catch (e) { r = null; } }
+      }
       // 2. les menus : adaptés s'ils existent, sinon faits (menus, courses, drive)
       // les menus faits APRÈS le planning, du lundi au dimanche ; s'il y en a déjà pour cette semaine-là, ils s'adaptent seulement
       let menus = [];
