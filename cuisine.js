@@ -231,11 +231,22 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     if (!j.length) { await say("Je n'arrive pas à faire les menus pour le moment. Réessaie dans un instant."); return null; }
     try { await appel({ action: 'menus', jours: j, batch }); } catch (e) { /* on les a quand même ici */ }
     cacheAt = 0;
+    prepareImages(j); // les images des plats : l'ordinateur les fabrique pendant ce temps
     if (auto) return { j, dates, co, ajoutes: ajouteCourses(co), batch }; // la semaine complète : les courses vont directement sur la liste
     menusOffre = { at: Date.now(), co }; dlg.attendReponse = Date.now() + 150000;
     tableauMenus(j, co);
-    return say(`Ta semaine est prête, matin, midi, collation et soir : tout est à l'écran, et dans l'appli Cuisine. Les dîners : ${j.map((x, i) => `${JOURS_SEM[dates[i].getDay()]}, ${min1(x.plat)}`).join(' ; ')}.${j[0].matin ? ` Demain matin, par exemple : ${min1((j[1] || j[0]).matin)}.` : ''}${batch.length ? ` J'ai aussi préparé le batch cooking du dimanche : dis « on lance le batch cooking » quand tu veux.` : ''}${co.length ? ` Il manque ${co.length} articles : je les ajoute à ta liste de courses, rangée par rayon ?` : ''}`);
+    const imp = imprimeAuto() && await imprimeMenu(j, co, batch);
+    return say(`Ta semaine est prête, matin, midi, collation et soir : tout est à l'écran, et dans l'appli Cuisine. Les dîners : ${j.map((x, i) => `${JOURS_SEM[dates[i].getDay()]}, ${min1(x.plat)}`).join(' ; ')}.${j[0].matin ? ` Demain matin, par exemple : ${min1((j[1] || j[0]).matin)}.` : ''}${batch.length ? ` J'ai aussi préparé le batch cooking du dimanche : dis « on lance le batch cooking » quand tu veux.` : ''}${imp ? " Je l'imprime sur l'imprimante du bureau dès que les images des plats sont prêtes." : ''}${co.length ? ` Il manque ${co.length} articles : je les ajoute à ta liste de courses, rangée par rayon ?` : ''}`);
   }
+  /* ---------- le menu imprimé tout seul (la DeskJet du bureau, par l'ordinateur) : la semaine en page 1, les courses par rayon en page 2 ---------- */
+  async function imprimeMenu(j, co, batch, o = {}) {
+    if (!root() || !j || !j.length) return false;
+    const groupes = {}; (co || []).forEach(x => { const t = typeof x === 'string' ? x : x.text, id = typeof x === 'object' ? x.id : null, r = rayonDe(t); const m = id && typeof PRIX !== 'undefined' ? PRIX.magasinDe(id) : ''; (groupes[r] = groupes[r] || []).push({ t, m: m ? m.charAt(0).toUpperCase() + m.slice(1) : '' }); });
+    const courses = RAYONS.filter(r => groupes[r]).map(r => ({ rayon: r, items: groupes[r] }));
+    try { const r = await fetch(`${root()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jours: j, courses, batch: batch || [], magasin: o.magasin || '' }) }); return r.ok; } catch (e) { return false; }
+  }
+  const imprimeAuto = () => S.settings.imprimeMenus !== false;
+  const prepareImages = j => { try { if (typeof CUISINEUI !== 'undefined' && CUISINEUI.prepare) CUISINEUI.prepare(j.flatMap(x => [x.plat, x.matin, x.midi, x.collation])); } catch (e) { /* rien */ } };
   function tableauMenus(j, co) {
     const l_ = (ic, t, x) => x ? `<div style="display:flex;gap:8px;font-size:15px;line-height:1.35;padding:2px 0"><span style="flex:0 0 74px;color:#94a3b8;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding-top:2px">${ic}</span><span>${t}</span></div>` : '';
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(92vw,700px)"><small style="letter-spacing:.3em;color:#fcd34d">LA SEMAINE · MATIN, MIDI, COLLATION, SOIR · ALIMENTATION BRUTE</small>${j.map(x => { const d = new Date(`${x.date}T12:00:00`); return `<div style="margin:10px 0;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05)"><b style="color:#fde68a;font-size:16px">${JOURS_SEM[d.getDay()]} ${d.getDate()}</b>${l_('Matin', esc(x.matin), x.matin)}${l_('Midi', esc(x.midi), x.midi)}${l_('Collation', `${esc(x.collation)}${x.collation_quand ? ` <span style="color:#94a3b8">· ${esc(x.collation_quand)}</span>` : ''}`, x.collation)}${l_('Soir', `<b>${esc(x.plat)}</b>${x.note ? ` <span style="color:#94a3b8">— ${esc(x.note)}</span>` : ''}${x.double ? ' <span style="color:#86efac">· ×2 pour le midi</span>' : ''}${(x.decongeler || []).length ? ` <span style="color:#7dd3fc">· sortir ${esc(liste(x.decongeler))} le matin</span>` : ''}`, x.plat)}</div>`; }).join('')}${co && co.length ? `<small style="letter-spacing:.3em;color:#86efac">À ACHETER</small><p style="font-size:14px;color:#cbd5e1">${esc(co.join(' · '))}</p>` : ''}</div>`);
@@ -335,12 +346,13 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     const nb = (S.listes || []).filter(x => x.liste === 'courses').length;
     const nDrive = typeof PRIX !== 'undefined' ? PRIX.drive(true) : 0; // l'écran : un lien par article pour le panier drive
     S.semainePrete = { at: Date.now() }; save();
+    const imp = imprimeAuto() && await imprimeMenu(r.j, (S.listes || []).filter(x => x.liste === 'courses'), r.batch, { magasin: p && p.autre ? `drive Leclerc + ${p.MAG[p.autre.m]}` : 'drive Leclerc' });
     const eu = v => (typeof PRIX !== 'undefined' ? PRIX.euros(v) : `${Math.round(v)} €`);
     const plats = r.j.slice(0, 7).map((x, i) => `${JOURS_SEM[r.dates[i].getDay()]}, ${min1(x.plat)}`);
     const prixTxt = p && p.connus ? ` Pour ${p.connus} articles dont je connais le prix au Leclerc, compte environ ${eu(p.totalDrive)}.` : '';
     const autreTxt = p && p.autre ? ` Pour économiser ${eu(p.autre.eco)}, prends ${liste(p.autre.items.slice(0, 3).map(x => x.text.replace(/\s*\(.*\)$/, '')))}${p.autre.items.length > 3 ? '…' : ''} chez ${p.MAG[p.autre.m]} : je l'ai mis de côté.` : '';
     fx.ok();
-    return say(`C'est prêt : les quatre repas de chaque jour, le matin, le midi, la collation et le soir, sont dans l'appli Cuisine. Les dîners : ${plats.join(' ; ')}. J'ai mis ${r.ajoutes.length} article${r.ajoutes.length > 1 ? 's' : ''} sur ta liste, sans ce que tu as déjà : ${nb} en tout. Au drive Leclerc : ${nDrive} article${nDrive > 1 ? 's' : ''}.${prixTxt}${autreTxt} À l'écran, touche chaque article pour le mettre dans ton panier, puis valide et choisis ton créneau. Dis-moi ensuite « j'ai commandé le drive pour samedi 10 heures » : je te rappellerai le retrait.`);
+    return say(`C'est prêt : les quatre repas de chaque jour, le matin, le midi, la collation et le soir, sont dans l'appli Cuisine. Les dîners : ${plats.join(' ; ')}. J'ai mis ${r.ajoutes.length} article${r.ajoutes.length > 1 ? 's' : ''} sur ta liste, sans ce que tu as déjà : ${nb} en tout. Au drive Leclerc : ${nDrive} article${nDrive > 1 ? 's' : ''}.${prixTxt}${autreTxt} ${imp ? " J'imprime le menu et la liste sur l'imprimante du bureau dès que les images des plats sont prêtes." : ''} À l'écran, touche chaque article pour le mettre dans ton panier, puis valide et choisis ton créneau. Dis-moi ensuite « j'ai commandé le drive pour samedi 10 heures » : je te rappellerai le retrait.`);
   }
   // « j'ai commandé le drive pour samedi 10 h » : le rappel du retrait (45 minutes avant)
   function quandDe(n) {
@@ -412,6 +424,9 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
       if (/^(oui|ouais|ok|d accord|vas y|bien sur|carrement|go|prepare)\b/.test(n)) return semaine;
       if (/^(non|pas la peine|pas cette semaine|laisse)\b/.test(n)) return () => { semaineOffre = null; dlg.attendReponse = 0; return say("D'accord. Dis « prépare ma semaine » quand tu veux."); };
     }
+    if (/\b(arrete|n imprime plus|ne plus imprimer)\b.*\b(imprim\w*)\b.*\bmenus?\b|\bn imprime plus (le|les) menus?\b/.test(n)) return () => { S.settings.imprimeMenus = false; save(); return say("D'accord, je n'imprime plus les menus tout seul. Dis « imprime le menu » quand tu en veux un."); };
+    if (/\bimprime (toujours |automatiquement )?(les|le) menus? (automatiquement|tout seul|chaque semaine)\b/.test(n)) return () => { S.settings.imprimeMenus = true; save(); return say("C'est noté : à chaque nouveau menu de la semaine, je l'imprime tout seul, avec la liste de courses."); };
+    if (/\b(imprime|imprimer|impression)\b.*\b(menus?|semaine|liste de courses|courses)\b/.test(n)) return async () => { let c; try { c = await charge(true); } catch (e) { return injoignable(); } const j = (c.menus || []).filter(x => x.date >= auj()); if (!j.length) return say("Je n'ai pas de menu en cours. Dis « fais les menus de la semaine » : je l'imprimerai."); prepareImages(j); const ok = await imprimeMenu(j, (S.listes || []).filter(x => x.liste === 'courses'), c.batch); return say(ok ? "C'est parti : l'ordinateur imprime le menu et la liste de courses sur l'imprimante du bureau, dans une minute ou deux." : "Je n'arrive pas à joindre l'ordinateur pour imprimer."); };
     if (/\b(prepare|organise|fais|planifie)( moi)? (toute |tout |ma |la )?(ma )?semaine\b|\bfais tout pour la semaine\b|\b(menus?|repas) et (les )?courses de la semaine\b|\bla semaine complete\b/.test(n)) return semaine;
     if (/\b(j ai|on a)\s+(commande|valide|passe commande|reserve)\b.*\bdrive\b|\b(je recupere|je vais chercher|retrait) (le |mon )?drive\b/.test(n)) return () => driveCommande(n);
     if (/\b(j ai|on a)\s+(recupere|recu|ramene|ete chercher)\s+(le |mon )?drive\b|\bdrive recupere\b/.test(n)) return driveRecupere;

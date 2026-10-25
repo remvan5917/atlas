@@ -182,7 +182,9 @@ const CUISINEUI = (() => {
         tout = false;
       });
     }
-    return { remplis, connu };
+    // préparer d'avance les images d'une liste de plats (les menus de la semaine, pour l'appli et pour la feuille imprimée)
+    const prepare = titres => [...new Set((titres || []).filter(Boolean).map(t => String(t).replace(/^restes?\s+(?:de la |de l['’]|du |des |de |d['’])/i, '')))].forEach(t => veut(t, '', () => {}));
+    return { remplis, connu, prepare };
   })();
   // une photo plein cadre (avec son voile pour que le texte reste lisible) ; le dégradé dessous tant qu'elle n'est pas là
   const ph = (r, credit) => { const t = typeof r === 'string' ? r : r && r.titre; if (!t) return ''; const q = typeof r === 'object' && r.photo ? r.photo : ''; return `<img class="ph" alt="" decoding="async" referrerpolicy="no-referrer" data-ph="${esc(t)}" data-q="${esc(q)}"><i class="voile"></i>${credit ? '<span class="credit" hidden></span>' : ''}`; };
@@ -531,5 +533,5 @@ const CUISINEUI = (() => {
     }
     return null;
   }
-  return { route, direct, ouvre, ferme, cherche, montre, renouvelle, actif: () => !!el };
+  return { route, direct, ouvre, ferme, cherche, montre, renouvelle, prepare: PHOTO.prepare, actif: () => !!el };
 })();
