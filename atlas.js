@@ -446,7 +446,7 @@ async function repondre(text) {
   const a = cmd[1].toLowerCase(), arg = (cmd[2] || '').trim();
   if (a === 'pardon') { if (!spoken) await say(pick(["Pardon ? Je n'ai pas bien entendu.", 'Tu peux répéter ? Je n\'ai pas bien saisi.', "Pardon, je n'ai pas compris."])); dlg.state = 'talk'; dlg.silence = 0; return; }
   if (a === 'commande' && arg) { window.__ordreDuCerveau = true; try { return await handle(arg); } finally { window.__ordreDuCerveau = false; } }
-  if (a === 'regarder') return voir(text);
+  if (a === 'regarder') { if (R.voir.test(N(text))) return voir(text); return; } // le cerveau ne regarde pas de lui-même
   if (a === 'web') return internet(text, arg);
   if (a === 'rappel') return rappelPour(arg, spoken);
   if (a === 'note' && arg) return noter(arg);
@@ -611,7 +611,8 @@ const R = {
   effacerEcran: /^(efface|efface l ecran|cache l ecran|ferme l ecran|ferme)$/,
   web: /\b(cherche|recherche|regarde|trouve|va voir|verifie)\b.*\b(internet|le web|en ligne|google)\b|\bsur (internet|le web)\b|^(cherche|recherche|trouve moi)\b(?!.*\b(mes|ma|mon) (cles|cle|telephone|lunettes|portefeuille|papiers)\b)|\b(qui a gagne|le score (de|du)|les resultats (de|du|des) (match|psg|om|ligue|elections?|loto))\b/,
   actus: /\b(actualites?|actus|les infos|les nouvelles|quoi de neuf (dans le monde|en france|aujourd hui)|les titres du jour|le journal)\b/,
-  voir: /\b(qu est ce que tu vois|tu vois quoi|que vois tu|regarde|regardes|tu me vois|qui est la|decris ce que tu vois|combien de doigts|qu est ce que je tiens|je tiens quoi|c est quoi ca|qu est ce que c est que ca)\b/,
+  // seulement quand on lui demande vraiment de regarder (avant : un simple « regarde » ou « c'est quoi ça » dans la conversation lui faisait décrire la webcam)
+  voir: /\b(qu est ce que tu vois|tu vois quoi|que vois tu|tu me vois|decris ce que tu vois|dis moi ce que tu vois|combien de doigts|qu est ce que je tiens|je tiens quoi|qu est ce que je te montre|regarde (moi|ce que je (tiens|te montre))|regarde ce que j ai (dans|a) la main)\b/,
 };
 // une phrase → l'ordre qu'un module sait faire (sans le cerveau)
 function routeUn(t, n) {
@@ -810,7 +811,7 @@ async function handleBrut(text) {
   if (R.rappel.test(n) && (await rappelLocal(t))) return;
   const outil = !R.web.test(n) && OUTILS.route(t, n); // le couteau suisse
   if (outil) return outil();
-  if (R.voir.test(n) && !R.web.test(n)) return voir(t);
+  if (R.voir.test(n) && !R.web.test(n) && n.split(' ').length <= 14) return voir(t);
   if (R.actus.test(n) && !R.web.test(n)) {
     const sujet = (n.match(/\b(?:sur|de|du|concernant|a propos de)\s+(?:l |la |le |les )?(.+)$/) || [])[1] || '';
     return internet(t, sujet.replace(/\b(aujourd hui|du jour|en ce moment|s il te plait)\b/g, '').trim(), true);
