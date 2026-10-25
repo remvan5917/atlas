@@ -37,7 +37,7 @@ const PROACTIF = (() => {
     // Atlas le suit : les annonces non urgentes ne sont dites que sur l'appareil où il est (les urgentes, partout)
     const ici = typeof CONSTELLATION === 'undefined' || CONSTELLATION.principal();
     if (!ici) for (let i = file.length - 1; i >= 0; i--) if (!file[i].urgent) { dits[file[i].cle] = Date.now(); file.splice(i, 1); }
-    const x = file.find(y => (y.urgent || (!nuit() && quelquun())) && (S.settings.proactif !== false || /^(eco|ny|alerte)-/.test(y.cle)));
+    const x = file.find(y => (y.urgent || (!nuit() && quelquun())) && (y.urgent || typeof AVENIR === 'undefined' || !AVENIR.concentre()) && (S.settings.proactif !== false || /^(eco|ny|alerte)-/.test(y.cle))); // en concentration : seulement l'urgent
     if (!x || Date.now() - (voice.endedAt || 0) < (x.enchaine ? 700 : 6000)) return;
     file.splice(file.indexOf(x), 1);
     dits[x.cle] = Date.now(); garde();

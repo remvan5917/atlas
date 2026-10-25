@@ -215,5 +215,5 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     if (/\b(mon agenda|mes rendez vous|mes rdv|mon planning|mon programme|mon emploi du temps|mon prochain (rendez vous|rdv)|qu est ce que j ai (de prevu )?(aujourd hui|demain|cette semaine|ce matin|cet apres midi|ce soir)|j ai quoi (de prevu )?(aujourd hui|demain|cette semaine)|j ai (un|des) (rendez vous|rdv)|c est quand mon (rendez vous|rdv))\b/.test(n)) return () => dire(n);
     return null;
   }
-  return { route, routePlanning, planifie, aujourdhui, prochain, un, hm, propre, _analyse: analyse, _semaine: semaineCible };
+  return { route, routePlanning, planifie, _lire: lire, aujourdhui, prochain, un, hm, propre, _analyse: analyse, _semaine: semaineCible };
 })();

@@ -68,14 +68,14 @@ const SECRETAIRE = (() => {
     const img = await reduit(f);
     showBoard('<div style="font-family:system-ui;text-align:center;color:#e2e8f0;font-size:18px">Je lis le papier…</div>'); face.set('think');
     const q = `Ceci est un papier administratif français (courrier, facture, avis, attestation, contrat, relevé, amende, école, santé). Aujourd'hui : ${auj()}. Lis-le et réponds UNIQUEMENT en JSON :
-{"type": "facture|avis d'imposition|courrier URSSAF|attestation|contrat|relevé|amende|courrier école|santé|garantie|devis|autre", "categorie": "impots|urssaf|assurance|energie|eau|telecom|banque|sante|ecole|logement|voiture|maison|travail|autre", "emetteur": "qui l'envoie", "objet": "en 3 à 6 mots", "montant": 0, "echeance": "AAAA-MM-JJ (date limite de paiement, de réponse ou de déclaration) ou vide", "date_doc": "AAAA-MM-JJ ou vide", "reference": "numéro de contrat, de client ou fiscal, ou vide", "a_faire": "payer|declarer|repondre|signer|envoyer|garder|rien", "deja_paye": false, "garantie_jusqua": "AAAA-MM-JJ ou vide (si c'est la facture d'un appareil, sa garantie : en général 2 ans après l'achat)", "appareil": "l'appareil acheté s'il y en a un, ou vide", "facture_emise": false, "pro": false, "resume": "une phrase claire pour lui dire ce que c'est et ce qu'il doit faire"}
+{"type": "facture|avis d'imposition|courrier URSSAF|attestation|contrat|relevé|amende|courrier école|santé|garantie|devis|autre", "categorie": "impots|urssaf|assurance|energie|eau|telecom|banque|sante|ecole|logement|voiture|maison|travail|autre", "emetteur": "qui l'envoie", "objet": "en 3 à 6 mots", "montant": 0, "echeance": "AAAA-MM-JJ (date limite de paiement, de réponse ou de déclaration) ou vide", "date_doc": "AAAA-MM-JJ ou vide", "reference": "numéro de contrat, de client ou fiscal, ou vide", "a_faire": "payer|declarer|repondre|signer|envoyer|garder|rien", "deja_paye": false, "garantie_jusqua": "AAAA-MM-JJ ou vide (si c'est la facture d'un appareil, sa garantie : en général 2 ans après l'achat)", "appareil": "l'appareil acheté s'il y en a un, ou vide", "facture_emise": false, "pro": false, "expire_le": "AAAA-MM-JJ ou vide (la date de fin de validité d'une pièce d'identité, d'un permis, d'une carte, d'une assurance)", "resume": "une phrase claire pour lui dire ce que c'est et ce qu'il doit faire"}
 "facture_emise" : true seulement si c'est une facture faite PAR lui (sa micro-entreprise) à un client. "pro" : true si c'est pour sa société ou sa micro-entreprise. Pas d'invention : vide si tu ne lis pas.`;
     const txt = await voir(img, q); face.set('idle');
     if (!txt) { hideBoard(); return say("Je n'ai pas de vision disponible pour lire le papier. Active la vision détaillée dans mes réglages."); }
     let p; try { p = json(txt); } catch (e) { p = null; }
     if (!p || !p.objet) { hideBoard(); return say("Je n'arrive pas à lire ce papier. Reprends la photo bien à plat, avec plus de lumière."); }
     p.montant = Math.max(0, +p.montant || 0);
-    ['echeance', 'date_doc', 'garantie_jusqua'].forEach(k => { if (!/^\d{4}-\d{2}-\d{2}$/.test(p[k] || '')) p[k] = ''; });
+    ['echeance', 'date_doc', 'garantie_jusqua', 'expire_le'].forEach(k => { if (!/^\d{4}-\d{2}-\d{2}$/.test(p[k] || '')) p[k] = ''; });
     papierOffre = { at: Date.now(), p, img }; dlg.attendReponse = Date.now() + 150000;
     showBoard(carte(`PAPIER · ${String(p.type || '').toUpperCase()}${p.pro ? ' · PRO' : ''}`, '#a5b4fc', `<div style="display:flex;gap:14px;margin-top:10px;align-items:flex-start"><img src="${img}" style="width:120px;max-height:170px;object-fit:cover;border-radius:8px"><div style="font-size:17px;line-height:1.45"><b>${esc(p.emetteur || '')}</b> — ${esc(p.objet)}${p.montant ? `<div style="color:#fde68a;font-size:20px;margin-top:4px">${eu(p.montant)}</div>` : ''}${p.echeance ? `<div style="color:#fca5a5">À faire avant le ${esc(dateDit(p.echeance))}</div>` : ''}${p.garantie_jusqua ? `<div style="color:#86efac">Garantie jusqu'au ${esc(dateDit(p.garantie_jusqua))}</div>` : ''}<div style="color:#cbd5e1;font-size:15px;margin-top:6px">${esc(p.resume || '')}</div></div></div>`));
     const agir = p.echeance && /^(payer|declarer|repondre|signer|envoyer)$/.test(p.a_faire) && !p.deja_paye;
@@ -93,6 +93,7 @@ const SECRETAIRE = (() => {
       const verbe = { payer: 'À payer', declarer: 'À déclarer', repondre: 'Répondre', signer: 'À signer', envoyer: 'À envoyer' }[p.a_faire];
       try { await agenda([journee(p.echeance, `${verbe} : ${p.objet}${p.emetteur ? ` (${p.emetteur})` : ''}${p.montant ? ` — ${eu(p.montant)}` : ''}`, { pro: p.pro, rappel: 3 * 1440 })]); dits.push(`la date limite est dans ton agenda, le ${dateDit(p.echeance)}`); } catch (e) { /* tant pis */ }
     }
+    if (p.expire_le) dits.push(`je te préviendrai deux mois avant son expiration, le ${dateDit(p.expire_le)}`);
     if (p.garantie_jusqua) { try { await carnet('entretien', { action: 'ajoute', item: { nom: p.appareil || p.objet, categorie: 'garantie', garantie_jusqua: p.garantie_jusqua, papier: id } }); dits.push(`la garantie court jusqu'au ${dateDit(p.garantie_jusqua)}`); } catch (e) { /* tant pis */ } }
     if (p.facture_emise && p.montant) { try { await carnet('budget', { action: 'ajoute', item: { type: 'ca', date: p.date_doc || auj(), montant: p.montant, libelle: `Facture ${p.reference || ''} ${p.emetteur || ''}`.trim(), source: 'papier' } }); dits.push(`j'ajoute ${eu(p.montant)} à ton chiffre d'affaires`); } catch (e) { /* tant pis */ } }
     fx.ok(); hideBoard();
@@ -363,11 +364,13 @@ const SECRETAIRE = (() => {
       (bu.actions || []).filter(a => (!a.jusqua || du <= a.jusqua) && (debJ <= fin ? a.jour >= debJ && a.jour <= fin : a.jour >= debJ || a.jour <= fin)).forEach(a => { const d = new Date(`${du}T12:00:00`); while (d.getDate() !== Math.min(a.jour, 28 + 3) && dJ(d) <= au) d.setDate(d.getDate() + 1); afaire.push({ t: a.texte.charAt(0).toUpperCase() + a.texte.slice(1), d: dJ(d) <= au ? dJ(d) : '', g: 'argent' }); });
       const d0 = new Date(`${du}T12:00:00`), d1 = new Date(`${au}T12:00:00`);
       (S.proches || []).filter(p => p.anniv).forEach(p => { const [m, j] = p.anniv.split('-').map(Number); let d = new Date(d0.getFullYear(), m - 1, j, 12); if (d < d0) d = new Date(d0.getFullYear() + 1, m - 1, j, 12); if (d <= new Date(d1.getTime() + 7 * 86400000)) afaire.push({ t: `Anniversaire de ${p.nom}${(p.idees || []).length ? ` — idée : ${p.idees[p.idees.length - 1]}` : ''}`, d: dJ(d) <= au ? dJ(d) : '', g: 'proches' }); });
+      if (typeof AVENIR !== 'undefined') { (await AVENIR.devoirsAfaire()).filter(x => x.d >= du && x.d <= au).forEach(x => afaire.push(x)); (await AVENIR.expirantsAfaire(au)).forEach(x => afaire.push(x)); }
+      let bilan = null; if (typeof AVENIR !== 'undefined') { try { bilan = await AVENIR.bilan(); } catch (e) { bilan = null; } }
       // 4. la Gazette
       let imp = false;
-      try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees() }) }); imp = r.ok; } catch (e) { imp = false; }
+      try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan }) }); imp = r.ok; } catch (e) { imp = false; }
       const n = afaire.length;
-      return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? " Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : le planning, les repas, les choses à faire, et les courses." : ''} Bonne semaine !`);
+      return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? " Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : le planning, les repas, les choses à faire, ta semaine écoulée et les courses.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}" : ''} Bonne semaine !`);
     } finally { window.__RITUEL = false; }
   }
   function coursesGroupees() {
@@ -430,5 +433,5 @@ const SECRETAIRE = (() => {
     if (/\b(idees? de sortie|on fait quoi ce week end|une sortie|sortir)\b.*\b(week end|samedi|dimanche|avec mon fils|avec le petit)\b|\bqu est ce qu on fait ce week end\b/.test(n)) return weekend;
     return null;
   }
-  return { route, semaine, ajouteDepense, _carnet: carnet };
+  return { route, semaine, ajouteDepense, _carnet: carnet, _date: dateDe };
 })();
