@@ -309,27 +309,27 @@ const PC = (() => {
   const tableauBrouillon = r => showBoard(`<div style="width:min(92vw,760px);text-align:left;font-family:system-ui,sans-serif"><small style="letter-spacing:.3em;color:#7dd3fc">BROUILLON · BOÎTE ${r.compte === 'pro' ? 'PRO' : 'PERSO'} · PAS ENCORE RANGÉ</small>
     <div style="margin:10px 0 8px;color:#cbd5e1;font-size:15px">À : ${esc(r.a)}${r.sans_reponse ? ' <b style="color:#fca5a5">(adresse sans réponse)</b>' : ''}<br>Objet : ${esc(r.sujet)}</div>
     <div style="white-space:pre-wrap;background:rgba(255,255,255,.06);padding:16px 18px;border-radius:12px;line-height:1.55;font-size:17px;color:#f1f5f9">${esc(r.corps)}</div></div>`);
-  async function secretaire(qui, consigne, compte) {
-    face.set('think'); await say(pick(['Je rédige la réponse.', 'Je prépare ta réponse.']));
-    const redige = c => appel('/maison/pc', { action: 'brouillon', qui, consigne: c, compte, essai: true }, 200000).catch(() => null);
+  async function secretaire(qui, consigne, compte, o = {}) {
+    face.set('think'); if (o.annonce !== false) await say(pick(['Je rédige la réponse.', 'Je prépare ta réponse.']));
+    const redige = c => appel('/maison/pc', { action: 'brouillon', qui, consigne: c, compte, essai: true, sujet_nouveau: o.sujet_nouveau || '' }, 200000).catch(() => null);
     let r = await redige(consigne); face.set('idle');
     if (!r) return injoignable();
     if (!r.ok) return say(r.raison === 'mail introuvable' ? `Je ne trouve pas de mail récent de « ${qui} », ni dans ta boîte pro ni dans la perso.` : r.raison === 'pas relié' ? "Ta boîte mail n'est pas reliée." : `Je n'ai pas pu rédiger la réponse : ${r.raison}.`);
     for (let tour = 0; tour < 4; tour++) {
       tableauBrouillon(r);
       if (r.sans_reponse && tour === 0) await say("Attention : ce mail vient d'une adresse qui n'accepte pas les réponses. Il vaudra mieux écrire directement à la bonne personne.");
-      await say(`Voici ta réponse à ${r.a.replace(/<.*>/, '').trim()} : ${r.corps}`);
+      await say(`Voici ${r.nouveau ? 'ton mail' : 'ta réponse'} à ${r.a.replace(/<.*>/, '').trim()} : ${r.corps}`);
       let brut = await ask('Je la range dans tes brouillons ? Dis oui, non, ou ce que je dois changer.', { wait: 15000 });
       if (!N(brut)) brut = await ask('Oui, non, ou une modification ?', { wait: 12000 });
       const a = N(brut);
       if (!a) { hideBoard(); return say('Je ne garde rien. Redemande-moi quand tu veux.'); }
       if (isYes(a) && a.split(' ').length <= 5) {
         face.set('think');
-        const ok = await appel('/maison/pc', { action: 'brouillon', qui, msgid: r.msgid, corps: r.corps, compte: r.compte }, 60000).catch(() => null);
+        const ok = await appel('/maison/pc', { action: 'brouillon', qui, msgid: r.msgid, corps: r.corps, compte: r.compte, sujet_nouveau: o.sujet_nouveau || '' }, 60000).catch(() => null);
         face.set('idle');
         if (!ok || !ok.ok) return say("Je n'ai pas réussi à le ranger dans tes brouillons. Le texte reste affiché.");
         fx.ok();
-        return say(`C'est dans tes brouillons ${r.compte === 'pro' ? 'pro' : 'perso'}, en réponse au bon mail. Relis-le et envoie-le depuis Gmail quand tu veux : moi, je n'envoie jamais rien.`);
+        return say(`C'est dans tes brouillons ${r.compte === 'pro' ? 'pro' : 'perso'}, ${r.nouveau ? `avec l'objet « ${r.sujet} »` : 'en réponse au bon mail'}. Relis-le et envoie-le depuis Gmail quand tu veux : moi, je n'envoie jamais rien.`);
       }
       if (isNo(a) && a.split(' ').length <= 4) { hideBoard(); return say("D'accord, je ne garde rien."); }
       // une modification : il réécrit à partir de la consigne et de ta correction
@@ -340,6 +340,22 @@ const PC = (() => {
       r = r2;
     }
     hideBoard(); return say('On a fait plusieurs essais : je ne garde rien pour l\'instant. Redemande-moi avec ta consigne complète.');
+  }
+  // le majordome d'agenda : trois créneaux libres (le relais évite tout ce qui est dans tes agendas, le trading, la gym), puis le mail de proposition (le secrétaire)
+  const sansEmoji = x => String(x || '').replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}️‍]/gu, '').replace(/\s*\(pro\)\s*$/, '').replace(/\s+/g, ' ').trim();
+  const listeFr = l => (l.length > 1 ? `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}` : l[0] || '');
+  const dureeTxt = m => ({ 30: '30 minutes', 45: '45 minutes', 60: 'une heure', 90: 'une heure et demie', 120: 'deux heures' }[m] || (m < 60 ? `${m} minutes` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`));
+  async function majordome(qui, quand, duree, sujet) {
+    face.set('think');
+    let r; try { r = await appel(`/maison/creneaux?quand=${encodeURIComponent(quand)}&duree=${duree}&qui=${encodeURIComponent(qui)}`, null, 15000); } catch (e) { r = null; } finally { face.set('idle'); }
+    if (!r) return injoignable();
+    const c = r.creneaux || [], d = dureeTxt(r.duree || duree);
+    if (!c.length) return say(`Je ne trouve aucun créneau libre ${/^une /.test(d) ? `d'${d}` : `de ${d}`} ${quand || 'dans les prochains jours'}${(r.pris || []).length ? ` : c'est pris par ${listeFr(r.pris.map(sansEmoji))}` : ''}. Dis par exemple « la semaine prochaine ».`);
+    const textes = c.map(x => x.texte), com = (r.communs || [])[0];
+    if (typeof SCIFI !== 'undefined') SCIFI.hud(`Créneaux avec ${qui}`, textes.map(x => [x.split(' à ')[0], `à ${x.split(' à ')[1] || ''}`, 'ok']), []);
+    await say(`Dans tes agendas, je vois ${c.length > 1 ? `${c.length} créneaux libres` : 'un créneau libre'} ${/^une /.test(d) ? `d'${d}` : `de ${d}`}, en dehors de tes séances de trading : ${listeFr(textes)}.${com ? ` Au passage, tu vois déjà ${qui} ${com.texte}, à la ${sansEmoji(com.titre).replace(/\s*\(.*\)\s*$/, '')}.` : ''} Je prépare le mail.`);
+    const consigne = `Propose-lui un rendez-vous ${/^une /.test(d) ? `d'${d}` : `de ${d}`}${sujet ? ` pour parler de ${sujet}` : ''}. Donne-lui ces créneaux au choix : ${textes.join(' ; ')}. Demande-lui lequel lui convient, ou de proposer autre chose si aucun ne va.`;
+    return secretaire(qui, consigne, '', { sujet_nouveau: `Proposition de rendez-vous${sujet ? ` : ${sujet}` : ''}`, annonce: false });
   }
   // le point de la semaine pro : le résumé et ce que tu dois faire
   async function semainePro() {
@@ -374,6 +390,18 @@ const PC = (() => {
     const pr = typeof LIEN !== 'undefined' && LIEN.prenom() ? N(LIEN.prenom()) : '';
     const rp = t2.match(/^(?:r[ée]ponds?|pr[ée]pare (?:une |la )?r[ée]ponse|r[ée]dige (?:une |la )?r[ée]ponse|[ée]cris (?:une |la )?r[ée]ponse)\s+(?:au\s+(?:dernier\s+)?(?:mail|message|e-?mail|courriel)\s+|à\s+l'(?:e-?mail|email)\s+|à\s+)(?:de\s+|d'\s*|du\s+|des\s+)?(.+?)\s*[,:]?\s+(?:que|pour (?:lui |leur )?dire que|en (?:lui |leur )?disant que|:)\s+(.+)$/i);
     if (rp && !new RegExp(`\\b(mon fils|le petit|shadow${pr ? `|${pr}` : ''})\\b`).test(N(rp[1]))) return () => secretaire(rp[1].replace(/^(l'|la |le |les )/i, '').trim(), rp[2].trim(), '');
+    // le majordome : « trouve un créneau avec Tristan la semaine prochaine », « cale-moi un rendez-vous d'une demi-heure avec Paul jeudi pour le devis »
+    const mj = t2.match(/\b(?:trouve|cherche|propose|organise|cale|planifie|fixe)(?:[- ]moi)?\s+(?:un |une |le |la )?(?:cr[ée]neau|rendez-vous|rdv|r[ée]union|moment|date|visio|call)\b(.*)$/i);
+    if (mj && /\bavec\b/i.test(mj[1])) {
+      const reste = mj[1], FIN = String.raw`(?=\s+(?:la semaine|semaine|cette semaine|demain|apr[èe]s-demain|lundi|mardi|mercredi|jeudi|vendredi|pour|sur|concernant|à propos|d'une|d'un|de \d+|en visio)\b|[,.?!]|$)`;
+      const qui = (reste.match(new RegExp(String.raw`\bavec\s+(.+?)` + FIN, 'i')) || [])[1];
+      const quand = (reste.match(/\b(la semaine prochaine|semaine prochaine|cette semaine|apr[èe]s-demain|demain|lundi|mardi|mercredi|jeudi|vendredi)\b/i) || [])[1] || '';
+      const nr = N(reste); let duree = 60;
+      if (/\bdemi heure\b/.test(nr)) duree = 30; else if (/\bheure et demie\b/.test(nr)) duree = 90; else if (/\bdeux heures\b/.test(nr)) duree = 120;
+      else { const mm = nr.match(/\b(\d{2,3}) ?(?:min|minutes)\b/), hh = nr.match(/\b(\d) ?h(?:eures?)?\b/); if (mm) duree = +mm[1]; else if (hh) duree = 60 * +hh[1]; }
+      const sujet = (reste.match(new RegExp(String.raw`\b(?:pour (?:parler d[eu']\s*)?|sur |concernant |à propos d[eu']\s*)(?!la semaine|cette semaine|demain)(.+?)` + FIN.replace('|pour|sur|concernant|à propos', ''), 'i')) || [])[1] || '';
+      if (qui) return () => majordome(qui.replace(/^(l'|la |le |les |monsieur |madame )/i, '').trim(), quand, duree, sujet.trim());
+    }
     const rl = t2.match(/^(?:r[ée]ponds?-(?:lui|leur|y)|r[ée]ponds? à ce (?:mail|message))\s+(?:que|pour (?:lui |leur )?dire que|:)\s+(.+)$/i);
     if (rl && derniersMails.length) { const d0 = derniersMails[0]; return () => secretaire(String(d0.de || '').replace(/\s*\(boîte pro\)\s*$/, ''), rl[1].trim(), /^pro:/.test(d0.id) ? 'pro' : 'perso'); }
     if (/\b(resume|resumes|recap|recapitulatif|point)\b.*\b(mails?|e mails?|courriels?|boite)\b.*\b(pro|travail|professionnel|professionnelle|boulot)\b|\b(mails?|boite) pro de la semaine\b|\bma semaine pro\b/.test(n)) return semainePro;
