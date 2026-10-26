@@ -87,11 +87,58 @@ const TRADING = (() => {
     try { await appel('/maison/trading', { session: false }); } catch (er) { /* tant pis */ }
     pc({ action: 'nepasderanger', oui: false }).catch(() => {});
     if (lampes.length) { appel('/maison/commande', { ids: lampes, allume: true, lum: 70, source: 'routine' }, 20000).catch(() => {}); lampes = []; } // la teinte revient à celle de l'heure
+    // TopstepX relié : il connaît déjà les trades et le résultat ; il montre la séance face à tes règles
+    let e0 = null; try { e0 = await appel('/maison/trading'); } catch (er) { e0 = null; }
+    if (e0 && e0.topstepx && e0.topstepx.relie && (e0.trades || []).some(x => x.auto && x.fin && new Date(x.fin * 1000).toDateString() === new Date().toDateString())) {
+      const r = await bilanSeance(e0);
+      if (typeof VIE !== 'undefined' && S.settings.debriefTrading !== false && r) return VIE.debrief(r.total);
+      return;
+    }
     const a = await ask('Session terminée, notifications rétablies. Ton résultat du jour ?', { wait: 20000 });
     const v = a ? montant(a) : null;
     if (v == null) return say("D'accord. Tu me le diras plus tard : « je suis à plus 300 », par exemple.");
     await resultat(v, true);
     if (typeof VIE !== 'undefined' && S.settings.debriefTrading !== false) return VIE.debrief(v); // le miroir : trois questions
+  }
+
+  /* ---------- le journal automatique (TopstepX) : la séance face à tes règles — un miroir, jamais un conseil ---------- */
+  const hm2 = ts => { const d = new Date(ts * 1000); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  function controle(x, e, n) {
+    const r = e.regles || {}, pb = [];
+    if (!x.stop_ticks) pb.push('sans stop');
+    if (x.stop_elargi) pb.push(`stop éloigné (${x.stop_ticks} → ${x.stop_ticks_fin} ticks)`);
+    if (x.risque && x.pnl != null && x.pnl < -x.risque * 1.15) pb.push('perte plus grande que le stop');
+    if (r.risque_max && x.risque && x.risque > r.risque_max * 1.05) pb.push(`risque ${Math.round(x.risque)} $ (> ${r.risque_max} $)`);
+    if (r.max_trades && n > r.max_trades) pb.push(`trade n° ${n} (max ${r.max_trades})`);
+    if ((e.annonces_jour || e.annonces || []).some(a => Math.abs(a.at - x.at) <= 120)) pb.push('pendant une annonce');
+    if (e.plat_a && x.fin && x.fin > e.plat_a) pb.push('après l’heure limite Topstep');
+    return pb;
+  }
+  async function bilanSeance(e) {
+    if (!e) { try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); } }
+    if (!e.topstepx || !e.topstepx.relie) { await say("TopstepX n'est pas encore relié. Sur l'ordinateur, lance « topstepx-connecter.sh » et colle ta clé API : ensuite je note tes trades tout seul."); return null; }
+    const auj = new Date().toDateString();
+    const l = (e.trades || []).filter(x => x.auto && new Date(x.at * 1000).toDateString() === auj).sort((a, b) => a.at - b.at);
+    if (!l.length) { await say(e.topstepx.erreur ? `TopstepX ne répond pas : ${e.topstepx.erreur}.` : "Aucun trade aujourd'hui sur TopstepX."); return null; }
+    const fermes = l.filter(x => x.fin), tot = fermes.reduce((s_, x) => s_ + (x.pnl || 0), 0);
+    const lignes = l.map((x, i) => ({ x, pb: controle(x, e, i + 1) }));
+    const ok = lignes.filter(y => !y.pb.length).length;
+    const lim = e.limites && e.limites.jour, depasse = lim && tot < -lim;
+    const ligne = ({ x, pb }) => `<tr style="border-bottom:1px solid rgba(255,255,255,.08)"><td>${hm2(x.at)}</td><td><b>${esc(x.instr)}</b> ${x.sens === 'long' ? '▲' : '▼'}${x.lots > 1 ? ` ×${x.lots}` : ''}</td><td>${x.prix}</td><td>${x.stop_ticks ? `${x.stop_ticks} t` : '—'}</td><td>${x.fin ? x.sortie : 'ouvert'}</td><td style="color:${(x.pnl || 0) >= 0 ? '#86efac' : '#fca5a5'};text-align:right">${x.fin ? `${x.pnl > 0 ? '+' : ''}${Math.round(x.pnl)} $` : ''}</td><td style="font-size:13px;color:${pb.length ? '#fcd34d' : '#86efac'}">${pb.length ? `⚠ ${esc(pb.join(' · '))}` : '✓ dans ton plan'}</td></tr>`;
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,860px)"><small style="letter-spacing:.3em;color:#a5b4fc">LA SÉANCE · TOPSTEPX · ${l.length} TRADE${l.length > 1 ? 'S' : ''} · ${tot > 0 ? '+' : ''}${Math.round(tot)} $</small><table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:15px;line-height:1.9"><tr style="color:#94a3b8;font-size:12px;text-align:left"><th>HEURE</th><th>CONTRAT</th><th>ENTRÉE</th><th>STOP</th><th>SORTIE</th><th style="text-align:right">RÉSULTAT</th><th>TES RÈGLES</th></tr>${lignes.map(ligne).join('')}</table><p style="color:#94a3b8;font-size:13px;margin-top:10px">Un miroir de ta séance, jamais un conseil. Tes règles : ${e.regles && Object.keys(e.regles).length ? esc([e.regles.max_trades ? `${e.regles.max_trades} trades max` : '', e.regles.risque_max ? `${e.regles.risque_max} $ de risque max par trade` : ''].filter(Boolean).join(', ')) : 'dis-les-moi (« ma règle : 3 trades maximum, 100 dollars de risque par trade »)'} · stop toujours posé, jamais éloigné.</p></div>`);
+    const mal = lignes.filter(y => y.pb.length);
+    const dits = [`Ta séance : ${l.length} trade${l.length > 1 ? 's' : ''}, ${signe(tot)}.`, mal.length ? `${ok} sur ${l.length} dans ton plan.` : 'Tous dans ton plan.'];
+    mal.slice(0, 2).forEach(({ x, pb }) => dits.push(`À ${hm2(x.at)}, ${x.instr} : ${pb.join(', ')}.`));
+    if (depasse) dits.push(`Ta limite du jour de ${dollars(lim)} est dépassée.`);
+    await say(dits.join(' '));
+    return { total: tot, l };
+  }
+  async function regles(t, n) {
+    const mt = +((n.match(/\b(\d{1,2}) trades?\b/) || [])[1] || 0);
+    const rm = +((String(t).replace(/(\d)[\s .](?=\d{3}\b)/g, '$1').match(/(\d+)\s*(?:\$|dollars?)\s*(?:de )?(?:risque|par trade|maximum par trade)/i) || String(t).match(/risque (?:maximum |max )?(?:de )?(\d+)/i) || [])[1] || 0);
+    if (!mt && !rm) { let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); } const r = e.regles || {}; return say(r.max_trades || r.risque_max ? `Tes règles : ${[r.max_trades ? `${r.max_trades} trades maximum par jour` : '', r.risque_max ? `${dollars(r.risque_max)} de risque maximum par trade` : ''].filter(Boolean).join(', ')}, un stop toujours posé et jamais éloigné.` : "Dis-moi tes règles, par exemple : « ma règle : 3 trades maximum par jour, 100 dollars de risque par trade »."); }
+    try { await appel('/maison/trading', { regles: Object.assign(mt ? { max_trades: mt } : {}, rm ? { risque_max: rm } : {}) }); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok(); return say(`C'est noté${mt ? ` : ${mt} trades maximum par jour` : ''}${rm ? `${mt ? ',' : ' :'} ${dollars(rm)} de risque maximum par trade` : ''}. Je le vérifierai à chaque bilan de séance.`);
   }
 
   // « moins 600 », « plus 250 », « j'ai perdu 1 200 dollars », « zéro »
@@ -198,6 +245,9 @@ const TRADING = (() => {
     if (/\b(mode trading|session de trading|copilote de trading|je (commence|lance|demarre|attaque) (ma |la )?(session|journee de trading)|je vais trader|on va trader)\b/.test(n)) return () => debut(n);
     if (/\b(mes resultats|mon bilan (de trading|de la semaine)|resultats? (de la |cette )?semaine|combien j ai (gagne|perdu) cette semaine|mes performances)\b/.test(n) && !/\b(foot|match|ecole)\b/.test(n)) return bilan;
     if (/\b(ma limite|mes limites|limite (du jour|journaliere|de perte)|ma perte max(imale)?)\b/.test(n)) return () => limites(t, n);
+    if (/\b(bilan|resume|recap)\b.*\b(seance|session du jour|mes trades du jour|trades d aujourd hui|journee de trading)\b|\bmes trades (du jour|d aujourd hui)\b/.test(n)) return () => bilanSeance();
+    if (/\b(ma|mes) regles? (de trading|de trade)?\b|\bregle de trading\b/.test(n) && !/\b(jeu|ecole)\b/.test(n)) return () => regles(t, n);
+    if (/\b(relie|connecte|branche)\b.*\btopstep\s?x?\b/.test(n)) return () => say("Sur l'ordinateur, lance le script « topstepx-connecter.sh », dans le dossier de la maison : colle ton nom d'utilisateur TopstepX et ta clé API. Ensuite, je note tes trades tout seul, sans jamais passer d'ordre.");
     if (/\b(bilan|stats|statistiques)\b.*\b(boite noire|mes trades|de trading)\b|\bboite noire\b.*\bbilan\b/.test(n)) return bilanNoire;
     if (/\b(efface|supprime|annule|enleve|retire)\b.*\b(resultat|gain|perte|pnl)\b/.test(n)) return async () => { try { await appel('/maison/trading', { efface: 'jour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Résultat du jour effacé. Tu me rediras ton vrai résultat en fin de session."); };
     if (/\b(entree|je rentre|je prends|j entre|ouvert|ouverture)\b.*\b(long|short|achat|vente)\b|\b(long|short)\b.*\b(m6e|mnq|mes|mgc|mym|mcl|sil|euro|nasdaq)\b.*\b(a|stop)\b/.test(n) && /\d/.test(t)) return () => entree(t, n);
@@ -210,5 +260,5 @@ const TRADING = (() => {
     if (trade && /\b(j ai (perdu|gagne|pris|encaisse)|je perds|je gagne|stop (touche|pris)|j ai ete stoppe)\b/.test(n) && /\d/.test(t)) return () => sortie(t, n, montant(t)); // un trade ouvert dans la boîte noire : il le clôture
     return null;
   }
-  return { route, actif: () => actif, bilanNoire, _montant: montant, _prixApres: prixApres };
+  return { route, actif: () => actif, bilanNoire, bilanSeance, _controle: controle, _montant: montant, _prixApres: prixApres };
 })();
