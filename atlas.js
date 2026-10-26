@@ -812,6 +812,8 @@ async function handleBrut(text) {
   if (proto) return proto();
   const coeq = typeof COEQ !== 'undefined' && COEQ.route(t, n); // le coéquipier : son écran, ce qu'il fait sur l'ordi
   if (coeq) return coeq();
+  const bur = typeof BUREAU !== 'undefined' && BUREAU.route(t, n); // le bureau : tout son travail préparé, à valider
+  if (bur) return bur();
   const cpt = typeof COMPTA !== 'undefined' && COMPTA.route(t, n); // la compta : la micro-entreprise, La Rue du financement
   if (cpt) return cpt();
   const ordi = PC.route(t, n); // l'ordinateur : le son, la musique, l'écran, les fenêtres, les applis, Gmail (une liste fermée d'actions)
