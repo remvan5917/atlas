@@ -970,6 +970,7 @@ const ARRIVEE = (() => {
   }
   // renvoie la phrase d'accueil s'il faut accueillir cette personne (sinon '')
   function connu(nom) {
+    if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'telephone') return ''; // pas d'accueil « de retour à la base » sur son propre téléphone
     if (!nom || /^invité/.test(nom) || nom === 'Atlas' || S.settings.arrivee === false) { if (nom) vu[nom] = Date.now(); return ''; }
     const avant = vu[nom] || 0; vu[nom] = Date.now();
     if (!dlg.started || Date.now() - (dlg.depuis || 0) < 60000) return ''; // ceux qui étaient déjà là au démarrage
@@ -993,6 +994,7 @@ const ARRIVEE = (() => {
     if (inconnuDepuis && Date.now() - inconnuDepuis > 5000 && Date.now() - (dlg.depuis || 0) > 60000 && faces.some(f => f.name)) { inconnuDepuis = 0; const t = CONV.accueillirInvite(); if (t && typeof DUO !== 'undefined') PROACTIF.annonce(`invites-${Date.now()}`, () => DUO.invites(false), { urgent: true, expire: Date.now() + 60000 }); else if (t) dire(t); }
   }
   async function yeux() {
+    if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'telephone') return; // la caméra de son téléphone ne cherche pas qui est là
     if (S.settings.camera === false || typeof VISION === 'undefined' || !VISION.supported || VISION.isOn()) return;
     if (!LIEN.visages().length && S.settings.arrivee === false) return;
     try { await VISION.start($('#cam'), { objects: false }); } catch (e) { console.warn('yeux', e); }
@@ -1106,6 +1108,7 @@ async function vie() {
       if (pc && pc.nom && pc.role === 'papa' && dlg.pitch != null && dlg.pitch >= 7.6) pc = null; // une voix aiguë (plus de 195 Hz) n'est pas celle de papa : le modèle s'est trompé
       dlg.qui = pc && pc.nom ? pc.nom : CONV.nomPour(print);
       dlg.enfant = pc && pc.nom ? pc.role === 'enfant' : estEnfant(dlg.qui);
+      if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'telephone') { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; } // son téléphone, dans sa main : c'est lui (son micro trompait la reconnaissance)
       dlg.quiAt = Date.now(); dlg.quiPC = !!(pc && pc.nom);
       // le jumeau 3D : le petit est ici (sa voix, entendue par cet Atlas) — au plus une fois par minute
       if (dlg.enfant && Date.now() - (dlg.enfantSignale || 0) > 60000) { dlg.enfantSignale = Date.now(); const r0 = VOIXMAISON.root(); if (r0 && !window.__BANC) fetch(`${r0}/atlas/enfant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '', piece: S.settings.piece || '' }) }).catch(() => {}); }
