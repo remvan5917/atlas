@@ -18,7 +18,7 @@ const VEILLE = (() => {
   const nomAppareil = () => (S.settings.nomAppareil || '').trim() || (/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur');
   const actif = () => S.settings.veilleInterieure !== false && !(typeof voice !== 'undefined' && voice.endormi);
   let etat = { arme: false, rayon: false }, aStream = null, aCtx = null, proc = null, vStream = null, vid = null, petit = null, pctx = null;
-  let fond = null, fort = 0, dbNow = null, prec = null, plum = null, bouge = 0, camDepuis = 0, dernier = {}, dernierBattement = 0, derniereImage = 0, mouv = 0;
+  let dbMax = -120, fond = null, fort = 0, dbNow = null, prec = null, plum = null, bouge = 0, camDepuis = 0, dernier = {}, dernierBattement = 0, derniereImage = 0, mouv = 0;
 
   async function appel(chemin, corps, ms = 15000) {
     const r0 = root(); if (!r0) throw new Error('pas de maison');
@@ -54,7 +54,7 @@ const VEILLE = (() => {
     src.connect(proc); proc.connect(muet); muet.connect(aCtx.destination);
     proc.onaudioprocess = ev => {
       const x = ev.inputBuffer.getChannelData(0); let s = 0; for (let i = 0; i < x.length; i++) s += x[i] * x[i];
-      const db = 20 * Math.log10(Math.max(1e-6, Math.sqrt(s / x.length))); dbNow = db;
+      const db = 20 * Math.log10(Math.max(1e-6, Math.sqrt(s / x.length))); dbNow = db; dbMax = Math.max(dbMax, db);
       const parle = typeof voice !== 'undefined' && (voice.speaking || Date.now() - (voice.endedAt || 0) < 1500);  // sa propre voix ne compte pas
       if (fond === null) fond = db;
       else if (!parle && db < fond + 10) fond = fond * 0.995 + db * 0.005;  // le fond de la pièce, appris doucement
@@ -124,7 +124,8 @@ const VEILLE = (() => {
   function battement() {
     dernierBattement = Date.now();
     const img = etat.rayon ? photo(320) : null;
-    appel('/maison/interieur', { appareil: nomAppareil(), piece: S.settings.pieceAppareil || '', micro: !!aStream, camera: !!vStream, db: dbNow, base: fond, mouvement: mouv, image: img })
+    const dbmax = dbMax > -119 ? dbMax : null; dbMax = -120;  // le plus fort depuis le dernier battement (pour le sommeil)
+    appel('/maison/interieur', { appareil: nomAppareil(), piece: S.settings.pieceAppareil || '', micro: !!aStream, camera: !!vStream, db: dbNow, dbmax, base: fond, mouvement: mouv, image: img })
       .then(e => { if (e && typeof e.arme === 'boolean') etat = e; }).catch(() => {});
   }
 

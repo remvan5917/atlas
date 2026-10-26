@@ -405,7 +405,7 @@ const SECRETAIRE = (() => {
   let weekendDemande = 0;
   setInterval(() => {
     const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
-    if (d.getDay() !== 0 || h < 21.5 || h > 21.95 || !dlg.started || S.settings.semaineSeule === false) return;
+    if (d.getDay() !== 0 || h < 21.5 || h > 21.95 || !dlg.started || S.settings.semaineSeule === false || (window.enVoyage && window.enVoyage())) return; // en voyage : pas de semaine préparée
     if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
     const lundi = AGENDA._semaine ? dJ(AGENDA._semaine()[0]) : '';
     if (!lundi || S.semaineFaite === lundi || S.semaineEssai === lundi) return;

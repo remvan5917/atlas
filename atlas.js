@@ -769,6 +769,8 @@ async function handleBrut(text) {
   if (R.presente.test(n) && !/\b(invites|amis|collegues|clients|tout le monde|a tous|la compagnie)\b/.test(n)) return presentation(); // « présente-toi à mes invités » : le spectacle (visio.js)
   const plan = typeof AGENDA !== 'undefined' && AGENDA.routePlanning(t, n); // le planning de la semaine à la voix, « ajoute à mon agenda… » (avant les menus et les programmes)
   if (plan) return plan();
+  const gard = typeof GARDIEN !== 'undefined' && GARDIEN.route(t, n); // les colis, le voyage, le sommeil, les fuites, l'ange gardien
+  if (gard) return gard();
   const vie = typeof VIE !== 'undefined' && VIE.route(t, n); // la forme, le miroir de trading, la garde, la santé, le prof du matin
   if (vie) return vie();
   const aven = typeof AVENIR !== 'undefined' && AVENIR.route(t, n); // les économies et la simulation, les lettres, les devoirs, la concentration, les papiers qui expirent
