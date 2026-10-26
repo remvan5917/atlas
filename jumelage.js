@@ -43,6 +43,7 @@ const JUMELAGE = (() => {
       const a = await Promise.race([bouton, ask(`${qui.charAt(0).toUpperCase() + qui.slice(1)} demande tes clés, pour marcher comme ici. Je les lui donne ?`, { wait: 30000 })]);
       const ok = a === 'oui' || (a !== 'non' && isYes(a));
       try { await api({ action: ok ? 'autorise' : 'refuse', cible: x.id }); } catch (e) { /* rien */ }
+      if (!ok) setTimeout(() => dejaDit.delete(x.id), 2 * 60000); // un « non » par erreur : il redemandera dans deux minutes
       hideBoard();
       await say(ok ? `C'est fait : ${qui} reçoit tes clés dans quelques secondes.` : "D'accord, je ne lui donne rien.");
     }
