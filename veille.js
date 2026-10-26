@@ -58,7 +58,7 @@ const VEILLE = (() => {
       const parle = typeof voice !== 'undefined' && (voice.speaking || Date.now() - (voice.endedAt || 0) < 1500);  // sa propre voix ne compte pas
       if (fond === null) fond = db;
       else if (!parle && db < fond + 10) fond = fond * 0.995 + db * 0.005;  // le fond de la pièce, appris doucement
-      if (!parle && etat.arme && db > Math.max(fond + 22, -42)) { if (++fort === 2) evenement('bruit', db); } else fort = 0;
+      if (!parle && etat.arme && db > Math.max(fond + 25, -38)) { if (++fort === 2) evenement('bruit', db); } else fort = 0;  // le frigo, le chauffage : sous ce seuil
       regardeSiBesoin();  // la caméra est regardée depuis ici aussi : pas de minuteur qui dort en arrière-plan
     };
   }
