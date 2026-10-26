@@ -425,7 +425,7 @@ const DUO = (() => {
   // la caméra a reconnu quelqu'un (ARRIVEE) : papa, son fils, ou les deux ensemble
   let vusRecents = [];
   function visage(nom) {
-    if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'telephone') return false;
+    if (typeof CONSTELLATION !== 'undefined' && ['telephone', 'ordinateur'].includes(CONSTELLATION.role)) return false;
     const pareil = (x, y) => N(x).replace(/y/g, 'i') === N(y).replace(/y/g, 'i'); // « Rémi » (sa voix, son visage) = « Rémy »
     const p = enfant(), estEnfant = p && pareil(nom, p), estPapa = S.nom ? pareil(nom, S.nom) : false;
     const qui = estEnfant ? 'enfant' : estPapa ? 'papa' : '';
