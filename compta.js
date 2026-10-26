@@ -72,6 +72,72 @@ ${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENT
     const l = r.lrf_demandes;
     return say(l.length ? `Pour La Rue du financement : ${l.slice(0, 3).map(x => `${x.tiers}, ${x.resume}${x.echeance ? `, avant le ${new Date(`${x.echeance}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}` : ''}`).join(' ; ')}.` : "Le cabinet ne t'a rien demandé de nouveau.");
   }
+  /* ---------- le dossier du comptable (La Rue du financement) : préparé seul, il ne reste qu'à vérifier et envoyer ---------- */
+  async function dossierApi(corps) {
+    const r = await fetch(`${root()}/maison/compta/dossier`, corps ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) } : { cache: 'no-store' });
+    return r.json();
+  }
+  const prenomPapa = () => String(S.nom || 'Rémy').split(' ')[0];
+  function aFaire(d) {
+    const l = [];
+    (d.banque || []).forEach(b => l.push({ t: `La banque : ${b.toLowerCase().replace(/^transmettre/, 'transmettre')}`, aide: `Télécharge les relevés en PDF depuis ta banque, puis mets-les dans le dossier ${d.dossier} : je les joindrai à la réponse.` }));
+    (d.ventes || []).forEach((v, i) => {
+      const manque = v.factures.filter(n => !v.jointes[n]);
+      if (v.ecart > 0.5) l.push({ t: `${v.client} : ${v.n_factures} facture${v.n_factures > 1 ? 's' : ''} (${eu(v.facture)}) pour ${v.n_reglements} règlement${v.n_reglements > 1 ? 's' : ''} (${eu(v.regle)}) : ${eu(v.ecart)} reçus sans facture.`, vente: i, rep: v.reponse });
+      else if (v.ecart < -0.5) l.push({ t: `${v.client} : ${eu(-v.ecart)} facturés et pas encore payés (${v.factures.map(n => `F${n}`).join(', ')}). Une relance du client à prévoir.`, vente: i, rep: v.reponse });
+      if (manque.length) l.push({ t: `${v.client} : je n'ai pas trouvé ${manque.map(n => `F${n}`).join(', ')} dans tes mails. Télécharge-les dans Tiime et mets-les dans le dossier.` });
+    });
+    return l;
+  }
+  async function dossierEcran(d) {
+    const ok = d.achats.filter(a => a.fichiers.length), jointes = d.ventes.reduce((s_, v) => s_ + Object.keys(v.jointes).length, 0);
+    const lAch = d.achats.map(a => `<div style="display:flex;gap:8px;font-size:14px;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)"><span style="flex:0 0 86px;color:#94a3b8">${esc(a.date.split('-').reverse().join('/'))}</span><span style="flex:1">${esc(a.fournisseur)}</span><span style="flex:0 0 70px;text-align:right">${eu(Math.abs(a.montant))}</span><span style="flex:0 0 150px;color:${a.fichiers.length ? (a.sur ? '#86efac' : '#fcd34d') : '#fca5a5'}">${a.fichiers.length ? (a.sur ? '✓ facture jointe' : '≈ jointe, à vérifier') : '✗ introuvable'}</span></div>`).join('');
+    const todo = aFaire(d).map(x => `<div style="margin:8px 0;padding:10px 12px;border-radius:12px;background:rgba(253,230,138,.07)"><div style="font-size:15px">${esc(x.t)}</div>${x.aide ? `<div style="font-size:13px;color:#94a3b8;margin-top:3px">${esc(x.aide)}</div>` : ''}${x.vente != null ? `<div style="font-size:13px;color:#86efac;margin-top:3px">${x.rep ? `Ta réponse : ${esc(x.rep)}` : ''}</div><button type="button" data-dos="repond" data-id="${esc(d.id)}" data-vente="${x.vente}" style="margin-top:6px;padding:7px 12px;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#e2e8f0;font:600 13px system-ui;cursor:pointer">🎙 ${x.rep ? 'Changer ma réponse' : 'Je réponds'}</button>` : ''}</div>`).join('');
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,780px)"><small style="letter-spacing:.3em;color:#fcd34d">LE DOSSIER DU COMPTABLE · LA RUE DU FINANCEMENT</small>
+<div style="font-size:15px;color:#cbd5e1;margin-top:6px">« ${esc(d.sujet)} », de ${esc(String(d.de).replace(/<.*$/, '').trim())}, reçu le ${esc(d.recu.split('-').reverse().join('/'))}</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${[[`${ok.length}/${d.achats.length}`, "factures d'achats retrouvées"], [String(jointes), 'factures de vente jointes'], ['✓', 'tableau complété (commentaires)']].map(([v, t]) => `<div style="flex:1 1 150px;padding:10px 12px;border-radius:12px;background:rgba(134,239,172,.08)"><div style="font:700 22px system-ui;color:#86efac">${v}</div><small style="color:#94a3b8">${t}</small></div>`).join('')}</div>
+<div style="margin-top:14px"><small style="letter-spacing:.25em;color:#a5b4fc">CE QU'IL TE RESTE (LUI SEUL NE PEUT PAS)</small>${todo || '<div style="color:#64748b">Rien : tout est prêt.</div>'}</div>
+<details style="margin-top:12px"><summary style="cursor:pointer;color:#a5b4fc;letter-spacing:.2em;font-size:12px">LES ${d.achats.length} DÉPENSES DU TABLEAU</summary>${lAch}</details>
+<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)"><button type="button" data-dos="brouillon" data-id="${esc(d.id)}" style="width:100%;padding:16px;border:0;border-radius:16px;background:${d.brouillon ? '#15803d' : '#2563eb'};color:#fff;font:800 18px system-ui;cursor:pointer">${d.brouillon ? '✔ Brouillon prêt dans Gmail — refaire' : '✉ Préparer la réponse (brouillon dans Gmail)'}</button><div style="text-align:center;color:#94a3b8;font-size:12px;margin-top:6px">Atlas n'envoie rien : tu relis le brouillon dans ta boîte pro, et c'est toi qui cliques sur « Envoyer ». Dossier : ${esc(d.dossier)}</div></div></div>`);
+  }
+  function corpsReponse(d) {
+    const ok = d.achats.filter(a => a.fichiers.length), non = d.achats.filter(a => !a.fichiers.length);
+    const jointes = d.ventes.flatMap(v => Object.keys(v.jointes).map(n => `F${n}`));
+    const lignes = [`Bonjour ${String(d.de).replace(/<.*$/, '').replace(/\b(C3J|Cabinet|Deshorgue)\b/gi, '').trim().split(' ')[0] || ''},`, '', `Veuillez trouver ci-joint les éléments demandés pour le point dossier du ${d.recu.split('-').reverse().join('/')} :`,
+      `- le tableau complété (colonne Commentaires) ;`, `- ${ok.length} factures d'achats sur ${d.achats.length}${non.length ? ` ; pour les ${non.length} autres, la nature de la charge est indiquée dans le tableau` : ''} ;`];
+    if (jointes.length) lignes.push(`- les factures de vente ${jointes.join(', ')}.`);
+    d.ventes.filter(v => v.reponse).forEach(v => lignes.push('', `${v.client} : ${v.reponse}`));
+    if ((d.banque || []).length) lignes.push('', 'Les relevés bancaires suivront dans un prochain envoi.');
+    lignes.push('', 'Bien cordialement,', prenomPapa());
+    return lignes.join('\n');
+  }
+  async function dossier() {
+    let r; try { r = await dossierApi(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const d = (r.dossiers || []).slice(-1)[0];
+    if (!d) return say(r.en_cours ? "Je prépare le dossier du comptable : une minute." : "Le cabinet ne t'a envoyé aucun tableau à compléter ces deux derniers mois.");
+    await dossierEcran(d);
+    const ok = d.achats.filter(a => a.fichiers.length).length, todo = aFaire(d);
+    return say(`J'ai préparé la réponse au cabinet : ${ok} factures d'achats sur ${d.achats.length} retrouvées dans tes mails, les factures de vente jointes, et le tableau complété. ${todo.length ? `Il te reste ${todo.length} point${todo.length > 1 ? 's' : ''}, à l'écran : ${todo.slice(0, 2).map(x => x.t.split(':')[0].trim()).join(', ')}.` : ''} Touche « préparer la réponse » : le brouillon sera dans ta boîte pro, tu n'auras qu'à le relire et l'envoyer.`);
+  }
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest && ev.target.closest('[data-dos]'); if (!b) return;
+    let r; try { r = await dossierApi(); } catch (e) { return; }
+    const d = (r.dossiers || []).find(x => x.id === b.dataset.id); if (!d) return;
+    if (b.dataset.dos === 'repond') {
+      const v = d.ventes[+b.dataset.vente];
+      const a = await ask(`Pour ${v.client}, qu'est-ce que je réponds au cabinet ?`, { wait: 30000 });
+      if (!a) return say("D'accord, plus tard.");
+      try { await dossierApi({ action: 'repond', id: d.id, vente: +b.dataset.vente, texte: a.charAt(0).toUpperCase() + a.slice(1) }); } catch (e) { return say("Je n'ai pas réussi à le noter."); }
+      fx.ok(); await say("C'est noté dans le tableau."); r = await dossierApi(); return dossierEcran(r.dossiers.find(x => x.id === d.id));
+    }
+    if (b.dataset.dos === 'brouillon') {
+      b.disabled = true; b.textContent = '…';
+      let x; try { x = await dossierApi({ action: 'brouillon', id: d.id, corps: corpsReponse(d) }); } catch (e) { x = null; }
+      if (!x || !x.ok) { b.disabled = false; return say(`Je n'ai pas pu préparer le brouillon${x && x.raison ? ` : ${x.raison}` : ''}.`); }
+      fx.ok(); r = await dossierApi(); await dossierEcran(r.dossiers.find(y => y.id === d.id));
+      return say(`Le brouillon est prêt dans ta boîte pro, avec ${x.pieces} pièces jointes. Relis-le dans Gmail, onglet Brouillons, et envoie-le quand c'est bon.`);
+    }
+  });
   async function relance() { try { await api({ action: 'scan', jours: 7 }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Je relis tes mails des sept derniers jours. Dis « point compta » dans quelques minutes."); }
 
   // le matin : du nouveau à valider → une phrase, une fois par jour, sur l'ordinateur
@@ -88,9 +154,10 @@ ${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENT
   function route(t, n) {
     if (/\b(point compta|fais (ma|la) compta|ma compta|la compta|on fait la compta|ou en est (ma|la) compta)\b/.test(n)) return point;
     if (/\blivre (des|de) recettes?\b/.test(n)) return () => livre(n);
+    if (/\b(dossier (du|pour le|de la) (comptable|cabinet)|dossier de laurence|point dossier|demande du (comptable|cabinet)|ce que (le comptable|laurence|le cabinet) (demande|attend))\b/.test(n)) return dossier;
     if (/\b(le|mon|du) (comptable|cabinet)\b.*\b(demande|veut|attend)\b|\bqu est ce que (le comptable|le cabinet|laurence) (m a demande|veut|attend)\b/.test(n)) return demandes;
     if (/\b(relis|relit|reverifie|scanne)\b.*\b(mails?|factures)\b.*\bcompta\b|\brelance la compta\b/.test(n)) return relance;
     return null;
   }
-  return { route, point };
+  return { route, point, dossier };
 })();
