@@ -752,6 +752,8 @@ async function handleBrut(text) {
   // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
+  const tournage = typeof DEMO !== 'undefined' && DEMO.route(t, n); // le mode tournage : « mode tournage », « séquence de démarrage », « et demain ? », « coupez »
+  if (tournage) return tournage();
   if (/\b(test|teste|tester|essai) (du |le |de |un )?(larsen|larcene|larsene)\b/.test(n)) return testLarsen();
   if (/\b(active|desactive|coupe|enleve|remets|allume|eteins) (l )?anti ?echo\b/.test(n)) { const on = /\b(active|remets|allume)\b/.test(n); S.settings.micAEC = on; save(); await say(on ? "Anti-écho activé. Je relance mes oreilles." : "Anti-écho coupé : plus de larsen sur la sono. Je relance mes oreilles."); setTimeout(() => location.reload(), 600); return; }
   if (/^(ouvre|affiche|montre|ouvrir) (les |tes |mes )?(reglages|parametres)$|^(reglages|parametres)$/.test(n)) { ouvreReglages(); return say('Réglages ouverts.'); }
