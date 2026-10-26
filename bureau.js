@@ -6,6 +6,7 @@
    Atlas n'envoie jamais rien : il relit le brouillon dans Gmail et l'envoie lui-même. */
 const BUREAU = (() => {
   const root = () => VOIXMAISON.root();
+  let dernier = { a_valider: [] };
   async function api(corps) {
     const r = await fetch(`${root()}/maison/bureau`, corps ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) } : { cache: 'no-store' });
     return r.json();
@@ -17,11 +18,12 @@ const BUREAU = (() => {
   function carte(x, i) {
     const urg = x.urgence === 'haute';
     const ech = x.echeance ? ` · <b style="color:#fca5a5">avant le ${esc(x.echeance.split('-').reverse().join('/'))}</b>` : '';
-    const btns = avecTexte(x) ? b_('✓ Brouillon dans Gmail', 'valide', x.id, 'rgba(22,163,74,.6)') + b_('✏ Modifier', 'modifie', x.id) : b_('✓ À mes tâches', 'valide', x.id, 'rgba(22,163,74,.6)');
+    const btns = avecTexte(x) ? b_(`✓ Brouillon (boîte ${x.entite === 'lrf' ? 'pro' : 'perso'})`, 'valide', x.id, 'rgba(22,163,74,.6)') + b_('✏ Modifier', 'modifie', x.id) : b_('✓ À mes tâches', 'valide', x.id, 'rgba(22,163,74,.6)');
     return `<div style="margin:9px 0;padding:11px 13px;border-radius:13px;background:${urg ? 'rgba(248,113,113,.09)' : 'rgba(255,255,255,.05)'};border-left:3px solid ${urg ? '#f87171' : '#475569'}">
-<div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><small style="padding:2px 8px;border-radius:999px;background:rgba(165,180,252,.15);color:#c7d2fe">${esc(TYPE[x.type] || x.type)}</small><small style="color:#94a3b8">${esc(ENT[x.entite] || '')}</small><b style="flex:1;font-size:15px">${esc(x.de)}</b>${urg ? '<small style="color:#fca5a5">URGENT</small>' : ''}</div>
+<div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><small style="padding:2px 8px;border-radius:999px;background:rgba(165,180,252,.15);color:#c7d2fe">${esc(TYPE[x.type] || x.type)}</small><small style="color:#94a3b8">${esc(ENT[x.entite] || '')} · ${x.entite === 'lrf' ? '📁 boîte pro' : '📁 boîte perso'}</small><b style="flex:1;font-size:15px">${esc(x.de)}</b>${urg ? '<small style="color:#fca5a5">URGENT</small>' : ''}</div>
 <div style="font-size:15px;margin-top:4px">${esc(x.resume)}${ech}</div>
 ${x.a_faire ? `<div style="font-size:13px;color:#fde68a;margin-top:2px">→ ${esc(x.a_faire)}</div>` : ''}
+${x.note ? `<div style="font-size:13px;color:#fca5a5">⚠ ${esc(x.note)}</div>` : ''}
 ${x.document ? `<div style="font-size:13px;color:#94a3b8">Pièce demandée : ${esc(x.document)} — ajoute-la au brouillon dans Gmail.</div>` : ''}
 ${x.type === 'relancer' && !x.adresse ? `<div style="display:flex;gap:6px;margin-top:6px"><input type="email" id="adr-${esc(x.id)}" placeholder="l'adresse mail du client" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#e2e8f0;font:14px system-ui">${b_('Rédiger la relance', 'adresse', x.id, 'rgba(37,99,235,.7)')}</div>` : ''}
 ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''} style="margin-top:6px"><summary style="cursor:pointer;color:#a5b4fc;font-size:13px">La réponse que j'ai rédigée${x.adresse ? ` (à ${esc(x.adresse)})` : ''}</summary><div style="white-space:pre-wrap;font-size:14px;color:#e2e8f0;background:rgba(0,0,0,.25);padding:9px 11px;border-radius:9px;margin-top:5px">${esc(x.brouillon_texte)}</div></details>` : ''}
@@ -31,17 +33,20 @@ ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''} style="margin-top:6px"><summar
     try { const r = await (await fetch(`${root()}/maison/compta/dossier`, { cache: 'no-store' })).json(); return (r.dossiers || []).filter(d => !d.brouillon).slice(-1)[0] || null; } catch (e) { return null; }
   }
   async function ecran(r) {
+    dernier = r;
     const dos = await dossierCabinet(), l = r.a_valider || [], urg = l.filter(x => x.urgence === 'haute').length;
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,800px)"><small style="letter-spacing:.3em;color:#fcd34d">MON BUREAU · ${l.length} À VALIDER${urg ? ` · ${urg} URGENT${urg > 1 ? 'S' : ''}` : ''}${r.en_cours ? ' · JE LIS TES MAILS…' : ''}</small>
 <div style="font-size:13px;color:#94a3b8;margin-top:4px">J'ai lu tes mails et préparé ce qu'il faut. Tu vérifies, tu valides : je range en brouillon dans Gmail (tu envoies toi-même) ou dans tes tâches.${r.faits_semaine ? ` Cette semaine : ${r.faits_semaine} chose${r.faits_semaine > 1 ? 's' : ''} validée${r.faits_semaine > 1 ? 's' : ''}.` : ''}</div>
 ${dos ? `<div style="margin:10px 0;padding:11px 13px;border-radius:13px;background:rgba(253,230,138,.08);border-left:3px solid #fcd34d"><b>Le cabinet comptable attend ta réponse</b><div style="font-size:14px;color:#cbd5e1">« ${esc(dos.sujet)} » : ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures déjà retrouvées, le tableau complété.</div>${b_('Ouvrir le dossier', 'dossier', dos.id, 'rgba(253,230,138,.25)')}</div>` : ''}
-${l.map(carte).join('') || '<div style="color:#64748b;margin-top:10px">Rien à faire : ton bureau est à jour.</div>'}</div>`);
+${l.map(carte).join('') || '<div style="color:#64748b;margin-top:10px">Rien à faire : ton bureau est à jour.</div>'}
+${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="cursor:pointer;color:#a5b4fc;letter-spacing:.2em;font-size:12px">CE QUE J'AI FAIT</summary>${r.journal.map(j => `<div style="font-size:13px;padding:3px 0;color:#cbd5e1"><span style="color:#64748b">${new Date(j.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span> · ${esc(j.t)}</div>`).join('')}</details>` : ''}</div>`);
   }
   document.addEventListener('click', async ev => {
     const b = ev.target.closest && ev.target.closest('[data-bur]'); if (!b) return;
     const act = b.dataset.bur, id = b.dataset.id;
     if (act === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
     let corps = { action: act, id };
+    const x0 = (dernier.a_valider || []).find(y => y.id === id);
     if (act === 'adresse') { const el = document.getElementById(`adr-${id}`); corps.adresse = el ? el.value.trim() : ''; if (!corps.adresse) return say("Tape d'abord l'adresse mail du client."); patiente('Je rédige la relance…', corps.adresse); }
     if (act === 'modifie') {
       const a = await ask("Qu'est-ce que je change dans la réponse ?", { wait: 30000 });
@@ -51,7 +56,7 @@ ${l.map(carte).join('') || '<div style="color:#64748b;margin-top:10px">Rien à f
     let r; try { r = await api(corps); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (r.ok === false) { await ecran(await api()); return say(`Je n'ai pas pu : ${r.raison || 'erreur'}.`); }
     fx.ok(); await ecran(r);
-    if (act === 'valide') return say(r.fait === 'brouillon' ? "C'est dans tes brouillons Gmail : relis et envoie quand c'est bon." : "C'est dans tes tâches, avec la date.");
+    if (act === 'valide') { return say(r.fait === 'brouillon' ? `C'est dans les brouillons de ta boîte ${x0 && x0.entite !== 'lrf' ? 'perso' : 'pro'} : relis et envoie quand c'est bon.` : "C'est dans tes tâches, avec la date."); }
     if (act === 'modifie') return say("Voilà la nouvelle version, à l'écran.");
     if (act === 'adresse') return say("La relance est rédigée, à l'écran : valide-la pour la ranger en brouillon.");
   });
@@ -73,7 +78,14 @@ ${l.map(carte).join('') || '<div style="color:#64748b;margin-top:10px">Rien à f
     const urg = l.filter(x => x.urgence === 'haute').length;
     PROACTIF.annonce(`bureau-${j}`, `Ton bureau : ${l.length} chose${l.length > 1 ? 's' : ''} préparée${l.length > 1 ? 's' : ''}${urg ? `, dont ${urg} urgente${urg > 1 ? 's' : ''}` : ''}. Dis « mon bureau ».`, { expire: Date.now() + 3 * 3600000 });
   }, 10 * 60000);
+  async function journal() {
+    let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const j = (r.journal || []).filter(x => Date.now() / 1000 - x.at < 86400);
+    await ecran(r);
+    return say(j.length ? `Depuis hier : ${j.slice(0, 4).map(x => x.t).join(' ; ')}${j.length > 4 ? ', et le reste à l’écran' : ''}.` : "Je n'ai rien fait de nouveau depuis hier : ton bureau est à jour.");
+  }
   function route(t, n) {
+    if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails|aujourd hui|pour moi)\b|\bjournal du bureau\b/.test(n)) return journal;
     if (/\b(mon bureau|le bureau|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return bureau;
     if (/\b(relis|regarde|verifie)\b.*\b(mes )?mails\b.*\b(maintenant|tout de suite)\b/.test(n)) return async () => { try { await api({ action: 'tour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Je relis tes mails. Dis « mon bureau » dans quelques minutes."); };
     return null;
