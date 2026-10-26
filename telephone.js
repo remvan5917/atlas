@@ -46,7 +46,7 @@ const TELEPHONE = (() => {
     let st; try { st = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!st.pret) return say(st.cle ? "Les appels ne sont pas encore reliés à un numéro de téléphone. Dis « comment relier les appels » : je t'explique, c'est une fois pour toutes." : "Il faut d'abord la voix d'Atlas : règle ElevenLabs dans mes réglages, sur l'ordinateur. Ensuite, dis « comment relier les appels ».");
     const n = await trouveNumero(qui); if (!n) return say("D'accord, sans numéro je ne peux pas appeler.");
-    const ok = await askYesNo(`J'appelle ${n.nom || qui}, au ${lisible(n.numero)}, avec ma voix, en me présentant comme ton assistant, pour : ${mission}. J'appelle ?`);
+    const ok = await askYesNo(`J'appelle ${n.nom || qui}, au ${lisible(n.numero)}, avec ma voix, en me présentant comme ton robot personnel, pour : ${mission}. J'appelle ?`);
     if (!ok) return say("D'accord, je n'appelle pas.");
     patiente(`J'appelle ${n.nom || qui}…`, mission.slice(0, 90));
     const r = await api({ action: 'appelle', a: n.numero, qui: n.nom || qui, mission, contexte: await disponibilites() });
@@ -73,7 +73,7 @@ const TELEPHONE = (() => {
   async function relier() {
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,700px);font-size:15px;line-height:1.55"><small style="letter-spacing:.3em;color:#fcd34d">RELIER LES APPELS D'ATLAS · UNE FOIS POUR TOUTES</small>
 <ol style="margin-top:10px;padding-left:20px"><li>Crée un compte sur <b>twilio.com</b>.</li><li>Achète un <b>numéro français</b> (Phone Numbers → Buy a number → France ; Twilio te demandera une pièce d'identité et une adresse, c'est la loi française). Environ 1 € par mois, et quelques centimes par minute d'appel.</li><li>Dans la page d'accueil de Twilio, note ton <b>Account SID</b> (commence par AC) et ton <b>Auth Token</b>.</li><li>Sur l'ordinateur, lance <code>~/.local/share/shadow/maison/appels-connecter.sh</code> et colle-les avec ton numéro.</li></ol>
-<p style="color:#94a3b8">Ensuite : « appelle … pour … » — la voix d'Atlas appelle, se présente comme ton assistant IA, et je te fais le compte rendu. Le même numéro envoie aussi tes SMS automatiques.</p></div>`);
+<p style="color:#94a3b8">Ensuite : « appelle … pour … » — la voix d'Atlas appelle, se présente comme ton robot personnel (une IA), et je te fais le compte rendu. Le même numéro envoie aussi tes SMS automatiques.</p></div>`);
     return say("Les étapes sont à l'écran : un compte Twilio, un numéro français, puis un petit script sur l'ordinateur. Après, j'appelle pour toi, avec ma voix.");
   }
   async function mesAppels() {
