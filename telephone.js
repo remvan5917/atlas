@@ -91,6 +91,12 @@ const TELEPHONE = (() => {
     if (estIphone()) { location.href = `sms:${n.numero}&body=${encodeURIComponent(texte)}`; return say('Messages est ouvert, tout est prêt : touche Envoyer.'); }
     return say(`Ton SMS pour ${n.nom || qui} est prêt, mais un ordinateur ne peut pas l'envoyer depuis ton numéro. Demande-le-moi sur ton iPhone, ou dis « envoie-lui un WhatsApp ».`);
   }
+  async function groupe(nom, texte) {
+    if (!texte) { texte = String(await ask(`Qu'est-ce que j'écris dans le groupe ${nom} ?`, { wait: 30000 }) || '').trim(); if (!texte || /^(rien|laisse tomber|annule|non)\b/i.test(texte)) return say("D'accord, je n'envoie rien."); }
+    const url = `https://wa.me/?text=${encodeURIComponent(texte)}`; // WhatsApp ne permet pas d'ouvrir un groupe directement : il s'ouvre avec le message, tu choisis le groupe
+    try { window.open(url, '_blank'); } catch (e) { location.href = url; }
+    return say(`WhatsApp est ouvert avec ton message : choisis le groupe ${nom}, puis touche Envoyer.`);
+  }
   async function relier() {
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,700px);font-size:15px;line-height:1.55"><small style="letter-spacing:.3em;color:#fcd34d">RELIER LES APPELS D'ATLAS · UNE FOIS POUR TOUTES</small>
 <ol style="margin-top:10px;padding-left:20px"><li>Crée un compte sur <b>twilio.com</b>.</li><li>Achète un <b>numéro français</b> (Phone Numbers → Buy a number → France ; Twilio te demandera une pièce d'identité et une adresse, c'est la loi française). Environ 1 € par mois, et quelques centimes par minute d'appel.</li><li>Dans la page d'accueil de Twilio, note ton <b>Account SID</b> (commence par AC) et ton <b>Auth Token</b>.</li><li>Sur l'ordinateur, lance <code>~/.local/share/shadow/maison/appels-connecter.sh</code> et colle-les avec ton numéro.</li></ol>
@@ -117,8 +123,11 @@ const TELEPHONE = (() => {
     if (m) return () => whatsapp(m[1].trim(), m[2].trim());
     m = String(t).match(/(?:^|[\s,])(?:envoie|écris|ecris)(?:-lui| lui)? un (?:sms|texto|message|petit message) (?:à|a|au|aux) (.+?)\s*(?::|pour (?:lui )?dire(?: que)?|que|en disant)\s*(.+)$/i);
     if (m) return () => sms(m[1].trim(), m[2].trim());
+    // un groupe WhatsApp (« envoie un message dans le groupe Famille : … ») : WhatsApp s'ouvre avec le texte, il choisit le groupe
+    m = String(t).match(/(?:^|[\s,])(?:envoie|écris|ecris|envoyer|écrire|mets|poste)(?:-lui| lui)?(?: un (?:message|petit message|whats ?app)(?: whats ?app)?)? (?:dans|sur|au|à|a) (?:le |mon )?groupe(?: whats ?app)? (.+?)(?:\s*(?::|pour (?:leur )?dire(?: que)?|que|en disant)\s*(.+))?[.!?]*$/i);
+    if (m) return () => groupe(m[1].replace(/^(whats ?app)\s+/i, '').trim(), (m[2] || '').trim());
     // sans le texte : « envoie un SMS à Rémi », « envoie un message WhatsApp à Paul » → il demande quoi écrire
-    m = String(t).match(/(?:^|[\s,])(?:envoie|écris|ecris|envoyer|écrire)(?:-lui| lui)? un (?:message |petit message )?(whats ?app|sms|texto|message)(?: whats ?app)? (?:à|a|au|aux) ([^,:.!?]+?)\s*[.!?]*$/i);
+    m = String(t).match(/(?:^|[\s,])(?:(?:envoie|écris|ecris|envoyer|écrire)(?:-lui| lui)? )?un (?:message |petit message )?(whats ?app|sms|texto|message)(?: whats ?app)? (?:à|a|au|aux|pour) ([^,:.!?]+?)\s*[.!?]*$/i);
     if (m) {
       const qui = m[2].replace(/^(le|la|les|l['’])\s+/i, '').trim(), wa = /whats/i.test(m[0]);
       return async () => {
