@@ -3,7 +3,7 @@
    l'ordinateur demande « ton téléphone demande tes clés, je les lui donne ? » ; après ton oui, il les reçoit tout seul.
    Rien n'est donné sans ce oui. Seule l'adresse de la maison se tape une fois sur chaque appareil. */
 const JUMELAGE = (() => {
-  const CLES = ['mistralKey', 'key', 'elevenKey'];
+  const CLES = ['mistralKey', 'key', 'elevenKey', 'elevenVoice']; // (la voix d'Atlas voyage avec les clés : la même partout)
   const NOMS = { telephone: 'ton téléphone', tablette: 'ta tablette', ordinateur: "l'ordinateur" };
   let ident = ''; try { ident = localStorage.getItem('atlas-jumelage-id') || ''; if (!ident) { ident = Math.random().toString(36).slice(2, 12); localStorage.setItem('atlas-jumelage-id', ident); } } catch (e) { ident = 'x' + Date.now(); }
   const role = () => (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role) || '';
@@ -11,7 +11,7 @@ const JUMELAGE = (() => {
     const r = await fetch(`${VOIXMAISON.root()}/maison/jumelage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ id: ident, role: role() }, corps)) });
     return r.json();
   }
-  const manque = () => (!S.settings.key && !S.settings.mistralKey) || !S.settings.elevenKey;
+  const manque = () => (!S.settings.key && !S.settings.mistralKey) || !S.settings.elevenKey || !S.settings.elevenVoice;
   let attente = null;
   async function tour() {
     if (!VOIXMAISON.root() || window.__BANC) return;
@@ -21,7 +21,7 @@ const JUMELAGE = (() => {
       let r; try { r = await api({ action: 'demande' }); } catch (e) { return; }
       if (r.confiance && r.cles) {
         let n = 0; CLES.forEach(k => { if (!s[k] && r.cles[k]) { s[k] = r.cles[k]; n++; } });
-        if (n) { save(); if (attente) { clearInterval(attente); attente = null; hideBoard(); } fx.ok(); say("J'ai reçu tes clés depuis la maison : je suis au complet."); }
+        if (n) { save(); if (attente) { clearInterval(attente); attente = null; hideBoard(); } fx.ok(); say(r.cles.elevenVoice && n === 1 ? "J'ai retrouvé ma voix." : "J'ai reçu tes clés depuis la maison : je suis au complet."); }
       } else if (!attente) {
         showBoard(`<div style="text-align:center;font-family:system-ui;min-width:min(86vw,440px);padding:12px 4px"><div style="font-size:40px">🔑</div><b style="font-size:20px;color:#fde68a">J'ai demandé tes clés à l'ordinateur</b><div style="color:#cbd5e1;font-size:15px;margin-top:8px">Sur l'ordinateur, Atlas va te demander « je les lui donne ? » : dis oui (ou touche le bouton).</div></div>`);
         attente = setInterval(tour, 10000); setTimeout(() => { if (attente) { clearInterval(attente); attente = null; } }, 15 * 60000);

@@ -146,6 +146,11 @@ const SYNC = (() => {
     });
     const recent = (b.updatedAt || 0) > (a.updatedAt || 0) ? b : a;
     out.partage = Object.assign({}, a.partage || {}, recent.partage || {});
+    // un réglage vide sur un appareil n'efface jamais un réglage rempli ailleurs (la voix d'Atlas, par exemple)
+    const vide = v => v === undefined || v === null || v === '';
+    out.partage.reglages = Object.assign({}, (a.partage || {}).reglages || {}, (b.partage || {}).reglages || {});
+    for (const [k, v] of Object.entries(((recent.partage || {}).reglages) || {})) if (!vide(v)) out.partage.reglages[k] = v;
+    for (const src of [a, b]) for (const [k, v] of Object.entries(((src.partage || {}).reglages) || {})) if (vide(out.partage.reglages[k]) && !vide(v)) out.partage.reglages[k] = v;
     out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
     return out;
   }
