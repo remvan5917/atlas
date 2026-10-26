@@ -812,6 +812,8 @@ async function handleBrut(text) {
   if (proto) return proto();
   const coeq = typeof COEQ !== 'undefined' && COEQ.route(t, n); // le coéquipier : son écran, ce qu'il fait sur l'ordi
   if (coeq) return coeq();
+  const tel = typeof TELEPHONE !== 'undefined' && TELEPHONE.route(t, n); // le téléphone : appeler à sa place, WhatsApp, SMS (après son oui)
+  if (tel) return tel();
   const bur = typeof BUREAU !== 'undefined' && BUREAU.route(t, n); // le bureau : tout son travail préparé, à valider
   if (bur) return bur();
   const cpt = typeof COMPTA !== 'undefined' && COMPTA.route(t, n); // la compta : la micro-entreprise, La Rue du financement
