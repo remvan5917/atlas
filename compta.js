@@ -1,6 +1,6 @@
 /* ---------- la compta en pilote automatique ----------
    L'ordinateur de la maison lit chaque matin les mails financiers des deux boîtes et les classe, avec le cerveau de la maison
-   (rien ne sort d'ici) : la boîte perso → la micro-entreprise ; la boîte pro → La Rue du financement (SAS, TVA, cabinet comptable, Tiime).
+   (rien ne sort d'ici) : la boîte perso → le perso et la micro-entreprise ; la boîte pro → La Rue du financement (SAS, TVA, cabinet comptable, Tiime). Jamais mélangées.
    - « point compta » : l'écran, avec un bouton par pièce (au livre des recettes, déposée dans Tiime, à mes tâches, ignorer, changer d'activité) ;
    - « mon livre des recettes », « imprime mon livre des recettes » ; « qu'est-ce que le comptable m'a demandé ? » ;
    - le matin, s'il y a du nouveau : une phrase, une fois par jour, sur l'ordinateur.
@@ -21,7 +21,8 @@ const COMPTA = (() => {
   const btn = (txt, act, id, extra = '', fond = 'rgba(255,255,255,.08)') => `<button type="button" data-cpt="${act}" data-id="${esc(id)}" ${extra} style="padding:7px 11px;margin:3px 4px 0 0;border:0;border-radius:10px;background:${fond};color:#e2e8f0;font:600 13px system-ui;cursor:pointer">${txt}</button>`;
   function carte(x) {
     const val = x.entite === 'micro' ? BOUTON.micro : BOUTON[x.type] || '✓ Vu';
-    const autres = ['micro', 'lrf', 'perso'].filter(k => k !== x.entite).map(k => btn(`→ ${NOM[k]}`, 'entite', x.id, `data-ent="${k}"`)).join('');
+    // les deux boîtes séparées : la boîte pro, c'est La Rue du financement ; la boîte perso, le perso et la micro-entreprise
+    const autres = (x.compte === 'pro' ? [] : ['micro', 'perso'].filter(k => k !== x.entite)).map(k => btn(`→ ${NOM[k]}`, 'entite', x.id, `data-ent="${k}"`)).join('');
     return `<div style="margin:8px 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05)"><div style="display:flex;gap:10px;align-items:baseline"><b style="flex:1;font-size:15px">${esc(x.tiers || '—')}</b>${x.montant != null ? `<b style="font-size:15px;color:#fde68a">${x.devise && x.devise !== 'EUR' ? `${x.montant} ${esc(x.devise)}` : eu(x.montant)}</b>` : ''}</div><div style="font-size:13px;color:#cbd5e1;margin-top:2px">${esc(x.date)} · ${esc(x.resume || '')}${x.tva ? ` · TVA ${eu(x.tva)}` : ''}${x.echeance ? ` · <b style="color:#fca5a5">avant le ${esc(x.echeance)}</b>` : ''}${(x.pj || []).length ? ` · 📎 ${esc(x.pj.join(', ').slice(0, 60))}` : ''}</div><div>${btn(val, 'valide', x.id, '', 'rgba(22,163,74,.55)')}${btn('✗ Ignorer', 'ignore', x.id)}${autres}</div></div>`;
   }
   async function ecran(r) {
@@ -33,7 +34,7 @@ const COMPTA = (() => {
 ${sec('MICRO-ENTREPRISE · À METTRE AU LIVRE DES RECETTES', r.a_valider_micro, 'Rien de nouveau.')}
 ${sec('LA RUE DU FINANCEMENT · CE QUE LE CABINET DEMANDE, LES ÉCHÉANCES', r.lrf_demandes, 'Aucune demande en attente.')}
 ${sec('LA RUE DU FINANCEMENT · FACTURES ET REÇUS À DÉPOSER DANS TIIME', r.lrf_achats, 'Rien à déposer.')}
-${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENTS REÇUS (POUR INFO — SI C’EST TA MICRO, TOUCHE « → MICRO »)', r.lrf_ventes, '') : ''}
+${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENTS REÇUS (POUR INFO)', r.lrf_ventes, '') : ''}
 <p style="color:#64748b;font-size:12px;margin-top:12px">Lu à la maison par le cerveau local : il peut se tromper de montant ou d'activité, d'où les boutons. Jamais de conseil fiscal : ton cabinet valide.</p></div>`);
   }
   // un clic sur un bouton de l'écran
