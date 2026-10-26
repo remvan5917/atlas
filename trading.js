@@ -116,16 +116,16 @@ const TRADING = (() => {
   }
   async function bilanSeance(e) {
     if (!e) { try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); } }
-    if (!e.topstepx || !e.topstepx.relie) { await say("TopstepX n'est pas encore relié. Sur l'ordinateur, lance « topstepx-connecter.sh » et colle ta clé API : ensuite je note tes trades tout seul."); return null; }
+    if ((!e.topstepx || !e.topstepx.relie) && !e.ftmo) { await say("TopstepX n'est pas encore relié. Sur l'ordinateur, lance « topstepx-connecter.sh » et colle ta clé API : ensuite je note tes trades tout seul."); return null; }
     const auj = new Date().toDateString();
     const l = (e.trades || []).filter(x => x.auto && new Date(x.at * 1000).toDateString() === auj).sort((a, b) => a.at - b.at);
-    if (!l.length) { await say(e.topstepx.erreur ? `TopstepX ne répond pas : ${e.topstepx.erreur}.` : "Aucun trade aujourd'hui sur TopstepX."); return null; }
+    if (!l.length) { await say(e.topstepx && e.topstepx.erreur ? `TopstepX ne répond pas : ${e.topstepx.erreur}.` : "Aucun trade aujourd'hui, ni sur TopstepX ni sur FTMO."); return null; }
     const fermes = l.filter(x => x.fin), tot = fermes.reduce((s_, x) => s_ + (x.pnl || 0), 0);
     const lignes = l.map((x, i) => ({ x, pb: controle(x, e, i + 1) }));
     const ok = lignes.filter(y => !y.pb.length).length;
     const lim = e.limites && e.limites.jour, depasse = lim && tot < -lim;
-    const ligne = ({ x, pb }) => `<tr style="border-bottom:1px solid rgba(255,255,255,.08)"><td>${hm2(x.at)}</td><td><b>${esc(x.instr)}</b> ${x.sens === 'long' ? '▲' : '▼'}${x.lots > 1 ? ` ×${x.lots}` : ''}</td><td>${x.prix}</td><td>${x.stop_ticks ? `${x.stop_ticks} t` : '—'}</td><td>${x.fin ? x.sortie : 'ouvert'}</td><td style="color:${(x.pnl || 0) >= 0 ? '#86efac' : '#fca5a5'};text-align:right">${x.fin ? `${x.pnl > 0 ? '+' : ''}${Math.round(x.pnl)} $` : ''}</td><td style="font-size:13px;color:${pb.length ? '#fcd34d' : '#86efac'}">${pb.length ? `⚠ ${esc(pb.join(' · '))}` : '✓ dans ton plan'}</td></tr>`;
-    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,860px)"><small style="letter-spacing:.3em;color:#a5b4fc">LA SÉANCE · TOPSTEPX · ${l.length} TRADE${l.length > 1 ? 'S' : ''} · ${tot > 0 ? '+' : ''}${Math.round(tot)} $</small><table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:15px;line-height:1.9"><tr style="color:#94a3b8;font-size:12px;text-align:left"><th>HEURE</th><th>CONTRAT</th><th>ENTRÉE</th><th>STOP</th><th>SORTIE</th><th style="text-align:right">RÉSULTAT</th><th>TES RÈGLES</th></tr>${lignes.map(ligne).join('')}</table><p style="color:#94a3b8;font-size:13px;margin-top:10px">Un miroir de ta séance, jamais un conseil. Tes règles : ${e.regles && Object.keys(e.regles).length ? esc([e.regles.max_trades ? `${e.regles.max_trades} trades max` : '', e.regles.risque_max ? `${e.regles.risque_max} $ de risque max par trade` : ''].filter(Boolean).join(', ')) : 'dis-les-moi (« ma règle : 3 trades maximum, 100 dollars de risque par trade »)'} · stop toujours posé, jamais éloigné.</p></div>`);
+    const ligne = ({ x, pb }) => `<tr style="border-bottom:1px solid rgba(255,255,255,.08)"><td>${hm2(x.at)}</td><td><b>${esc(x.instr)}</b> ${x.sens === 'long' ? '▲' : '▼'}${x.lots > 1 && x.source !== 'ftmo' ? ` ×${x.lots}` : ''}<br><small style="color:#94a3b8">${x.source === 'ftmo' ? 'FTMO' : 'Topstep'}</small></td><td>${x.prix}</td><td>${x.stop_ticks ? `${x.stop_ticks} t` : '—'}</td><td>${x.fin ? x.sortie : 'ouvert'}</td><td style="color:${(x.pnl || 0) >= 0 ? '#86efac' : '#fca5a5'};text-align:right">${x.fin && x.pnl != null ? `${x.a_verifier ? '≈ ' : ''}${x.pnl > 0 ? '+' : ''}${Math.round(x.pnl)} $` : ''}</td><td style="font-size:13px;color:${pb.length ? '#fcd34d' : '#86efac'}">${pb.length ? `⚠ ${esc(pb.join(' · '))}` : '✓ dans ton plan'}</td></tr>`;
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,860px)"><small style="letter-spacing:.3em;color:#a5b4fc">LA SÉANCE · ${[...new Set(l.map(x => x.source === 'ftmo' ? 'FTMO' : 'TOPSTEPX'))].join(' + ')} · ${l.length} TRADE${l.length > 1 ? 'S' : ''} · ${tot > 0 ? '+' : ''}${Math.round(tot)} $</small><table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:15px;line-height:1.9"><tr style="color:#94a3b8;font-size:12px;text-align:left"><th>HEURE</th><th>CONTRAT</th><th>ENTRÉE</th><th>STOP</th><th>SORTIE</th><th style="text-align:right">RÉSULTAT</th><th>TES RÈGLES</th></tr>${lignes.map(ligne).join('')}</table><p style="color:#94a3b8;font-size:13px;margin-top:10px">Un miroir de ta séance, jamais un conseil.${l.some(x => x.a_verifier) ? ' « ≈ » : lu à l’écran (FTMO), à vérifier — dis « corrige mon dernier trade FTMO : plus 45 dollars ».' : ''} Tes règles : ${e.regles && Object.keys(e.regles).length ? esc([e.regles.max_trades ? `${e.regles.max_trades} trades max` : '', e.regles.risque_max ? `${e.regles.risque_max} $ de risque max par trade` : ''].filter(Boolean).join(', ')) : 'dis-les-moi (« ma règle : 3 trades maximum, 100 dollars de risque par trade »)'} · stop toujours posé, jamais éloigné.</p></div>`);
     const mal = lignes.filter(y => y.pb.length);
     const dits = [`Ta séance : ${l.length} trade${l.length > 1 ? 's' : ''}, ${signe(tot)}.`, mal.length ? `${ok} sur ${l.length} dans ton plan.` : 'Tous dans ton plan.'];
     mal.slice(0, 2).forEach(({ x, pb }) => dits.push(`À ${hm2(x.at)}, ${x.instr} : ${pb.join(', ')}.`));
@@ -155,6 +155,32 @@ const TRADING = (() => {
     }
     d.push(`Il te reste ${dollars(p.marge_mll)} avant ta perte maximale.`);
     return say(d.join(' '));
+  }
+  // le challenge FTMO (lu à l'écran) : l'objectif, la perte du jour, la perte maximale
+  async function ftmo() {
+    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const f = e.ftmo;
+    if (!f || !f.taille || f.equity == null) return say("Je n'ai pas encore lu ton compte FTMO : ouvre ton TradingView FTMO avec le panneau du bas, sur l'onglet Positions.");
+    const T = f.taille, eq = f.equity, verif = /verification|v[ée]rification|phase 2/i.test(f.compte || ''), cible = (verif ? 0.05 : 0.10) * T;
+    const profit = eq - T, jour = f.equity_debut_jour != null ? eq - f.equity_debut_jour : null, marge = eq - 0.9 * T;
+    const L = [['Compte', `${Math.round(T / 1000)}K · ${verif ? 'vérification' : 'challenge'}`, 'ok'], ['Capitaux propres', `${eq.toLocaleString('fr-FR')} $`, 'ok'],
+      ['Objectif', `${Math.round(profit)} / ${Math.round(cible)} $ (${Math.max(0, Math.round(profit / cible * 100))} %)`, profit >= cible ? 'ok' : 'alerte'],
+      ["Aujourd'hui", jour == null ? '—' : `${jour > 0 ? '+' : ''}${Math.round(jour)} $ · limite −${Math.round(0.05 * T)} $`, jour != null && jour < -0.025 * T ? 'alerte' : 'ok'],
+      ['Avant la perte maximale', `${Math.round(marge)} $`, marge < 0.02 * T ? 'alerte' : 'ok']];
+    try { SCIFI.hud('Challenge FTMO', L); } catch (er) { /* pas d'écran */ }
+    const d = [`Ton ${verif ? 'compte de vérification' : 'challenge'} FTMO de ${dollars(T)} : ${dollars(eq)} de capitaux propres.`];
+    d.push(profit >= cible ? `L'objectif de ${dollars(cible)} est atteint : vérifie aussi le nombre minimum de jours de trading sur ton espace FTMO.` : profit > 0 ? `Tu es à ${dollars(profit)} de profit, ${Math.round(profit / cible * 100)} % de l'objectif de ${dollars(cible)} : encore ${dollars(cible - profit)}.` : `Tu es à ${signe(profit)} : l'objectif est de ${dollars(cible)}.`);
+    if (jour != null) d.push(`Aujourd'hui : ${signe(jour)}, pour une limite de ${dollars(0.05 * T)} de perte par jour.`);
+    d.push(`Il te reste ${dollars(marge)} avant la perte maximale du challenge.`);
+    return say(d.join(' '));
+  }
+  async function corrigeFtmo(t) {
+    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const o = (e.trades || []).filter(x => x.source === 'ftmo' && x.fin).sort((a, b) => b.fin - a.fin)[0];
+    const v = montant(t);
+    if (!o || v == null) return say(!o ? "Je n'ai aucun trade FTMO à corriger." : "Dis par exemple : « corrige mon dernier trade FTMO : plus 45 dollars ».");
+    try { await appel('/maison/trading', { corrige: { id: o.id, pnl: v } }); } catch (er) { return say("Je n'ai pas réussi à le corriger."); }
+    fx.ok(); return say(`C'est corrigé : ton trade FTMO sur ${o.instr} fait ${signe(v)}.`);
   }
   async function payoutFait(t) {
     const m = String(t).replace(/(\d)[\s .](?=\d{3}\b)/g, '$1').match(/(\d+(?:[.,]\d+)?)\s*(?:\$|dollars?)/i);
@@ -283,6 +309,8 @@ const TRADING = (() => {
     if (/\b(ma limite|mes limites|limite (du jour|journaliere|de perte)|ma perte max(imale)?)\b/.test(n)) return () => limites(t, n);
     if (/\b(bilan|resume|recap)\b.*\b(seance|session du jour|mes trades du jour|trades d aujourd hui|journee de trading)\b|\bmes trades (du jour|d aujourd hui)\b/.test(n)) return () => bilanSeance();
     if (/\b(j ai (demande|fait|recu|eu) (mon|un|le) (payout|retrait|paiement topstep))\b/.test(n)) return () => payoutFait(t);
+    if (/\bcorrige\b.*\btrade\b.*\bftmo\b|\bftmo\b.*\bcorrige\b/.test(n) && /\d/.test(t)) return () => corrigeFtmo(t);
+    if (/\bftmo\b/.test(n) && /\b(challenge|ou j en suis|ou en est|mon compte|objectif|combien|bilan|etat)\b/.test(n)) return ftmo;
     if (/\b(payout|retrait topstep)\b/.test(n) && /\b(plafond|cap)\b/.test(n) && /\d/.test(t)) return () => monCompte(t, n);
     if (/\b(ma limite du jour|ma limite journaliere|ma perte max(imale)?|ma mll)\b.*\b(est|de|c est)\b.*\d/.test(n)) return () => monCompte(t, n);
     if (/\b(payout|retrait topstep|combien je peux retirer|quand (est ce que )?(je peux|j ai le droit de) (retirer|me payer)|droit (a|au) (un )?(payout|retrait))\b/.test(n)) return payout;
