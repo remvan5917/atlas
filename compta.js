@@ -103,7 +103,7 @@ ${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENT
   function corpsReponse(d) {
     const ok = d.achats.filter(a => a.fichiers.length), non = d.achats.filter(a => !a.fichiers.length);
     const jointes = d.ventes.flatMap(v => Object.keys(v.jointes).map(n => `F${n}`));
-    const lignes = [`Bonjour ${String(d.de).replace(/<.*$/, '').replace(/\b(C3J|Cabinet|Deshorgue)\b/gi, '').trim().split(' ')[0] || ''},`, '', `Veuillez trouver ci-joint les éléments demandés pour le point dossier du ${d.recu.split('-').reverse().join('/')} :`,
+    const lignes = [`Bonjour ${String(d.de).replace(/<.*$/, '').trim().split(' ')[0] || ''},`, '', `Veuillez trouver ci-joint les éléments demandés pour le point dossier du ${d.recu.split('-').reverse().join('/')} :`,
       `- le tableau complété (colonne Commentaires) ;`, `- ${ok.length} factures d'achats sur ${d.achats.length}${non.length ? ` ; pour les ${non.length} autres, la nature de la charge est indiquée dans le tableau` : ''} ;`];
     if (jointes.length) lignes.push(`- les factures de vente ${jointes.join(', ')}.`);
     d.ventes.filter(v => v.reponse).forEach(v => lignes.push('', `${v.client} : ${v.reponse}`));
@@ -154,8 +154,8 @@ ${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENT
   function route(t, n) {
     if (/\b(point compta|fais (ma|la) compta|ma compta|la compta|on fait la compta|ou en est (ma|la) compta)\b/.test(n)) return point;
     if (/\blivre (des|de) recettes?\b/.test(n)) return () => livre(n);
-    if (/\b(dossier (du|pour le|de la) (comptable|cabinet)|dossier de laurence|point dossier|demande du (comptable|cabinet)|ce que (le comptable|laurence|le cabinet) (demande|attend))\b/.test(n)) return dossier;
-    if (/\b(le|mon|du) (comptable|cabinet)\b.*\b(demande|veut|attend)\b|\bqu est ce que (le comptable|le cabinet|laurence) (m a demande|veut|attend)\b/.test(n)) return demandes;
+    if (/\b(dossier (du|pour le|de la) (comptable|cabinet)|point dossier|demande du (comptable|cabinet)|ce que (le comptable|le cabinet) (demande|attend))\b/.test(n)) return dossier;
+    if (/\b(le|mon|du) (comptable|cabinet)\b.*\b(demande|veut|attend)\b|\bqu est ce que (le comptable|le cabinet) (m a demande|veut|attend)\b/.test(n)) return demandes;
     if (/\b(relis|relit|reverifie|scanne)\b.*\b(mails?|factures)\b.*\bcompta\b|\brelance la compta\b/.test(n)) return relance;
     return null;
   }
