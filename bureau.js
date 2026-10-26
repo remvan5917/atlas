@@ -72,7 +72,7 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
   // le matin, sur l'ordinateur : une phrase, une fois par jour
   setInterval(async () => {
     const h = new Date().getHours(); if (h < 9 || h >= 12 || !dlg.started || voice.occupe()) return;
-    if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role && CONSTELLATION.role !== 'ordinateur') return;
+    if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return; // l'appareil où il est (l'ordi, la tablette ou l'iPhone)
     const j = new Date().toDateString(); if (S.bureauDit === j) return;
     let r; try { r = await api(); } catch (e) { return; }
     const l = r.a_valider || []; if (!l.length || r.en_cours) return;
