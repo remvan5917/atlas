@@ -18,7 +18,7 @@ const VEILLE = (() => {
   const nomAppareil = () => (S.settings.nomAppareil || '').trim() || (/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur');
   const actif = () => S.settings.veilleInterieure !== false && !(typeof voice !== 'undefined' && voice.endormi);
   let etat = { arme: false, rayon: false }, aStream = null, aCtx = null, proc = null, vStream = null, vid = null, petit = null, pctx = null;
-  let dbMax = -120, fond = null, fort = 0, dbNow = null, prec = null, plum = null, bouge = 0, camDepuis = 0, dernier = {}, dernierBattement = 0, derniereImage = 0, mouv = 0;
+  let anneau = [], enAttente = null, dbMax = -120, fond = null, fort = 0, dbNow = null, prec = null, plum = null, bouge = 0, camDepuis = 0, dernier = {}, dernierBattement = 0, derniereImage = 0, mouv = 0;
 
   async function appel(chemin, corps, ms = 15000) {
     const r0 = root(); if (!r0) throw new Error('pas de maison');
@@ -54,11 +54,15 @@ const VEILLE = (() => {
     src.connect(proc); proc.connect(muet); muet.connect(aCtx.destination);
     proc.onaudioprocess = ev => {
       const x = ev.inputBuffer.getChannelData(0); let s = 0; for (let i = 0; i < x.length; i++) s += x[i] * x[i];
+      anneau.push(new Float32Array(x)); if (anneau.length > Math.ceil(2.6 * aCtx.sampleRate / x.length)) anneau.shift();  // les 2,6 dernières secondes, en mémoire seulement
+      if (enAttente && Date.now() >= enAttente.fin) { const e = enAttente; enAttente = null; evenement('bruit', e.niveau, extrait()); }
       const db = 20 * Math.log10(Math.max(1e-6, Math.sqrt(s / x.length))); dbNow = db; dbMax = Math.max(dbMax, db);
       const parle = typeof voice !== 'undefined' && (voice.speaking || Date.now() - (voice.endedAt || 0) < 1500);  // sa propre voix ne compte pas
       if (fond === null) fond = db;
       else if (!parle && db < fond + 10) fond = fond * 0.995 + db * 0.005;  // le fond de la pièce, appris doucement
-      if (!parle && etat.arme && db > Math.max(fond + 25, -38)) { if (++fort === 2) evenement('bruit', db); } else fort = 0;  // le frigo, le chauffage : sous ce seuil
+      if (!parle && etat.arme && db > Math.max(fond + 25, -38)) {
+        if (++fort === 2 && !enAttente && Date.now() - (dernier.bruit || 0) > 45000) enAttente = { niveau: db, fin: Date.now() + 1000 };  // encore une seconde, puis l'extrait part
+      } else fort = 0;  // le frigo, le chauffage : sous ce seuil
       regardeSiBesoin();  // la caméra est regardée depuis ici aussi : pas de minuteur qui dort en arrière-plan
     };
   }
@@ -66,7 +70,7 @@ const VEILLE = (() => {
     if (proc) { proc.onaudioprocess = null; try { proc.disconnect(); } catch (e) { /* rien */ } }
     if (aCtx) aCtx.close().catch(() => {});
     if (aStream) aStream.getTracks().forEach(t => t.stop());
-    aStream = aCtx = proc = null; dbNow = null; fort = 0;
+    aStream = aCtx = proc = null; dbNow = null; fort = 0; anneau = []; enAttente = null;
   }
 
   /* ---------- la caméra : une petite image grise par seconde ---------- */
@@ -113,12 +117,22 @@ const VEILLE = (() => {
     return c.toDataURL('image/jpeg', 0.75);
   }
 
-  function evenement(genre, niveau) {
+  // l'extrait de 2 secondes autour du bruit, en 16 kHz : l'ordinateur de la maison reconnaît le son (fumée, vitre, alarme…) puis l'oublie
+  function extrait() {
+    if (!aCtx || !anneau.length) return null;
+    const n = anneau.reduce((k, a) => k + a.length, 0), x = new Float32Array(n); let o = 0; anneau.forEach(a => { x.set(a, o); o += a.length; });
+    const sr = aCtx.sampleRate, garde = Math.min(n, Math.round(2.2 * sr)), d = x.subarray(n - garde), m = Math.floor(garde * 16000 / sr), y = new Int16Array(m);
+    for (let i = 0; i < m; i++) { const p = i * sr / 16000, j = Math.floor(p), f = p - j, v = d[j] * (1 - f) + (d[Math.min(j + 1, garde - 1)] || 0) * f; y[i] = Math.max(-32768, Math.min(32767, v * 32767)); }
+    const b = new Uint8Array(y.buffer); let bin = ''; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  function evenement(genre, niveau, son) {
     const now = Date.now();
     if (now - (dernier[genre] || 0) < (genre === 'bruit' ? 45000 : 30000)) return;
     dernier[genre] = now;
     appel('/maison/interieur', { appareil: nomAppareil(), piece: S.settings.pieceAppareil || '', micro: !!aStream, camera: !!vStream, db: dbNow, base: fond, mouvement: mouv,
-      evenement: { genre, niveau }, image: photo() }).catch(() => {});
+      evenement: { genre, niveau }, image: photo(), son: son || undefined }).catch(() => {});
   }
 
   function battement() {
