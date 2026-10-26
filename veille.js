@@ -91,7 +91,7 @@ const VEILLE = (() => {
   let derniereVue = 0;
   function regardeSiBesoin() {
     const now = Date.now();
-    if (!vid || vid.readyState < 2 || now - derniereVue < 1000) return;
+    if (!vid || !pctx || vid.readyState < 2 || now - derniereVue < 1000) return; // la caméra s'ouvre encore : la petite image n'est pas prête
     derniereVue = now;
     pctx.drawImage(vid, 0, 0, 96, 72);
     const px = pctx.getImageData(0, 0, 96, 72).data, g = new Uint8Array(96 * 72);
