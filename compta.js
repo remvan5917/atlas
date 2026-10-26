@@ -160,5 +160,5 @@ ${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENT
     if (/\b(relis|relit|reverifie|scanne)\b.*\b(mails?|factures)\b.*\bcompta\b|\brelance la compta\b/.test(n)) return relance;
     return null;
   }
-  return { route, point, dossier };
+  return { route, point, dossier, _api: api, _dossierApi: dossierApi, _corpsReponse: corpsReponse };
 })();

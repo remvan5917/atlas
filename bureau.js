@@ -76,8 +76,65 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     const l = r.a_valider || []; if (!l.length || r.en_cours) return;
     S.bureauDit = j; save();
     const urg = l.filter(x => x.urgence === 'haute').length;
-    PROACTIF.annonce(`bureau-${j}`, `Ton bureau : ${l.length} chose${l.length > 1 ? 's' : ''} préparée${l.length > 1 ? 's' : ''}${urg ? `, dont ${urg} urgente${urg > 1 ? 's' : ''}` : ''}. Dis « mon bureau ».`, { expire: Date.now() + 3 * 3600000 });
+    PROACTIF.annonce(`bureau-${j}`, `Ton bureau : ${l.length} chose${l.length > 1 ? 's' : ''} préparée${l.length > 1 ? 's' : ''}${urg ? `, dont ${urg} urgente${urg > 1 ? 's' : ''}` : ''}. Dis « on valide le bureau ».`, { expire: Date.now() + 3 * 3600000 });
   }, 10 * 60000);
+  /* ---------- « on valide le bureau » : il lit chaque chose préparée, il répond oui / non / déjà fait / plus tard / « change : … » ---------- */
+  const coeur = t => String(t || '').split('\n').filter(l => l.trim() && !/^(bonjour|bonsoir|cher|chère|hello)\b/i.test(l.trim())).join(' ')
+    .replace(/\b(bien cordialement|cordialement|bien à vous|belle journée|à bientôt)\b[\s\S]*$/i, '').replace(/\s+/g, ' ').trim();
+  const PASSE = /^(plus tard|passe|suivant|la suivante|on verra|apres|pas maintenant)\b/, STOP = /^(stop|arrete|on arrete|c est tout|fin|termine|ca suffit)\b/, FAIT = /\b(deja fait|c est fait|je l ai fait|deja repondu|deja envoye)\b/;
+  async function valideVoix() {
+    let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const items = (r.a_valider || []).map(x => ({ k: 'bureau', x }));
+    try { const c = await COMPTA._api(); (c.a_valider_micro || []).filter(x => x.montant).forEach(x => items.push({ k: 'micro', x })); } catch (e) { /* sans la compta */ }
+    try { const d = (((await COMPTA._dossierApi()).dossiers) || []).filter(y => !y.brouillon).slice(-1)[0]; if (d) items.unshift({ k: 'dossier', x: d }); } catch (e) { /* sans le dossier */ }
+    if (!items.length) return say("Ton bureau est à jour : rien à valider.");
+    const bilan = { brouillon: 0, tache: 0, micro: 0, ignore: 0, plus_tard: 0, fait: 0 };
+    await say(`${items.length} chose${items.length > 1 ? 's' : ''} à valider. Réponds oui, non, déjà fait, plus tard, ou dis ce qu'il faut changer. Dis « stop » pour arrêter.`);
+    for (let i = 0; i < items.length; i++) {
+      const { k, x } = items[i], tete = `${i + 1} sur ${items.length}. `;
+      let q;
+      if (k === 'dossier') { if (COMPTA.dossier) { /* l'écran du dossier */ } q = `${tete}Le cabinet comptable attend ta réponse : ${x.achats.filter(a => a.fichiers.length).length} factures sur ${x.achats.length} retrouvées et le tableau complété. Je prépare le brouillon avec toutes les pièces ?`; }
+      else if (k === 'micro') q = `${tete}Ta micro-entreprise : ${eu2(x.montant)} de ${x.tiers}, le ${new Date(`${x.date}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}. Je le mets au livre des recettes ?`;
+      else {
+        await ecran(Object.assign({}, r, { a_valider: [x] }));
+        q = `${tete}${x.de} : ${x.resume}.${x.note ? ` Attention : ${x.note}.` : ''} ${avecTexte(x) ? `Je propose de répondre : ${coeur(x.brouillon_texte)}. Je la range en brouillon ?` : x.type === 'relancer' && !x.adresse ? "Je n'ai pas l'adresse du client : je le garde pour plus tard." : `${x.a_faire || 'Je le mets dans tes tâches'}. Dans tes tâches ?`}`;
+        if (x.type === 'relancer' && !x.adresse) { await say(q); bilan.plus_tard++; continue; }
+      }
+      for (let essai = 0; essai < 3; essai++) {
+        const a = await valideVisuel(q, { wait: 20000 }), n = N(a || '');
+        if (STOP.test(n)) { i = items.length; break; }
+        if (!a) { if (essai) { bilan.plus_tard++; break; } q = 'Oui, non, ou plus tard ?'; continue; }
+        if (PASSE.test(n)) { bilan.plus_tard++; break; }
+        if (k === 'bureau' && FAIT.test(n)) { await api({ action: 'fait', id: x.id }); bilan.fait++; break; }
+        if (a === 'non' || isNo(a) && n.split(' ').length <= 4) { if (k === 'bureau') await api({ action: 'ignore', id: x.id }); else if (k === 'micro') await COMPTA._api({ action: 'ignore', id: x.id }); bilan.ignore++; break; }
+        if (a === 'ok') {
+          if (k === 'dossier') { const rr = await COMPTA._dossierApi({ action: 'brouillon', id: x.id, corps: COMPTA._corpsReponse(x) }); if (rr && rr.ok) bilan.brouillon++; else await say("Le brouillon du dossier n'a pas pu être créé."); }
+          else if (k === 'micro') { await COMPTA._api({ action: 'valide', id: x.id }); bilan.micro++; }
+          else { const rr = await api({ action: 'valide', id: x.id }); if (rr.ok === false) await say(`Je n'ai pas pu : ${rr.raison}.`); else bilan[rr.fait === 'tache' ? 'tache' : 'brouillon']++; }
+          fx.ok(); break;
+        }
+        // une correction : il réécrit, et relit
+        if (k === 'bureau' && avecTexte(x)) {
+          patiente('Je réécris la réponse…', a.slice(0, 80));
+          const rr = await api({ action: 'modifie', id: x.id, consigne: a });
+          const nx = (rr.a_valider || []).find(y => y.id === x.id);
+          if (nx && nx.brouillon_texte) { items[i].x = nx; await ecran(Object.assign({}, rr, { a_valider: [nx] })); q = `Nouvelle version : ${coeur(nx.brouillon_texte)}. C'est bon ?`; continue; }
+          await say("Je n'ai pas réussi à la réécrire : je la garde pour plus tard."); bilan.plus_tard++; break;
+        }
+        q = 'Oui, non, ou plus tard ?';
+      }
+    }
+    hideBoard();
+    const p = [];
+    if (bilan.brouillon) p.push(`${bilan.brouillon} brouillon${bilan.brouillon > 1 ? 's' : ''} rangé${bilan.brouillon > 1 ? 's' : ''}, à envoyer depuis Gmail`);
+    if (bilan.tache) p.push(`${bilan.tache} dans tes tâches`);
+    if (bilan.micro) p.push(`${bilan.micro} recette${bilan.micro > 1 ? 's' : ''} au livre`);
+    if (bilan.fait) p.push(`${bilan.fait} déjà fait${bilan.fait > 1 ? 's' : ''}`);
+    if (bilan.ignore) p.push(`${bilan.ignore} ignoré${bilan.ignore > 1 ? 's' : ''}`);
+    if (bilan.plus_tard) p.push(`${bilan.plus_tard} pour plus tard`);
+    return say(`C'est fait : ${p.join(', ') || 'rien de changé'}.`);
+  }
+  const eu2 = v => `${Number(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} euros`;
   async function journal() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     const j = (r.journal || []).filter(x => Date.now() / 1000 - x.at < 86400);
@@ -85,10 +142,11 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     return say(j.length ? `Depuis hier : ${j.slice(0, 4).map(x => x.t).join(' ; ')}${j.length > 4 ? ', et le reste à l’écran' : ''}.` : "Je n'ai rien fait de nouveau depuis hier : ton bureau est à jour.");
   }
   function route(t, n) {
+    if (/\b(on valide|valide|valider|on fait) (le|mon) bureau\b|\bon valide tout\b|\bon traite (le bureau|mes mails)\b/.test(n)) return valideVoix;
     if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails|aujourd hui|pour moi)\b|\bjournal du bureau\b/.test(n)) return journal;
     if (/\b(mon bureau|le bureau|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return bureau;
     if (/\b(relis|regarde|verifie)\b.*\b(mes )?mails\b.*\b(maintenant|tout de suite)\b/.test(n)) return async () => { try { await api({ action: 'tour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Je relis tes mails. Dis « mon bureau » dans quelques minutes."); };
     return null;
   }
-  return { route, bureau };
+  return { route, bureau, valideVoix };
 })();
