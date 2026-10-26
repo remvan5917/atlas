@@ -1,6 +1,6 @@
 // Garde Atlas disponible même sans réseau (les outils sans Internet marchent toujours).
 // Les fichiers sont toujours vérifiés auprès du serveur (sinon le navigateur ressert une ancienne version).
-const CACHE = 'atlas-app-v183';
+const CACHE = 'atlas-app-v184';
 const FILES = ['./', 'index.html', 'style.css', 'orthographe.js', 'cerveau.js', 'oreilles.js', 'voix.js', 'empreintes.js', 'yeux.js', 'atlas.js', 'outils.js', 'memoire.js', 'marche.js', 'proactif.js', 'foyer.js', 'bord.js', 'vivant.js', 'cuisine.js', 'prix.js', 'cuisine-ui.js', 'agent.js', 'maison.js', 'securite.js', 'veille.js', 'gardien.js', 'pc.js', 'coequipier.js', 'compta.js', 'visio.js', 'scifi.js', 'trading.js', 'duo.js', 'constellation.js', 'agenda.js', 'secretaire.js', 'avenir.js', 'vie.js', 'futur.js', 'scene.js', 'noyau.js', 'jumeau.js', 'cockpit.html',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => {

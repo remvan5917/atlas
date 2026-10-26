@@ -133,6 +133,42 @@ const TRADING = (() => {
     await say(dits.join(' '));
     return { total: tot, l };
   }
+  // le payout Topstep : quand, combien — d'après les règles officielles et les vrais trades (TopstepX)
+  const jourDit = k => new Date(`${k}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' });
+  async function payout() {
+    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const p = e.payout;
+    if (!p || p.erreur) return say(e.topstepx && e.topstepx.relie ? "Je n'arrive pas à calculer ton payout pour le moment." : "Relie d'abord TopstepX : je calculerai ton payout tout seul.");
+    const L = [['Solde du compte', `${Math.round(p.solde).toLocaleString('fr-FR')} $`, 'ok'], ['Jours gagnants (150 $ et +)', `${p.gagnants.length} / 5`, p.std_ok ? 'ok' : 'alerte'],
+      ['Profit depuis le dernier payout', `${Math.round(p.net_cycle).toLocaleString('fr-FR')} $`, p.net_cycle > 0 ? 'ok' : 'alerte'], ['Meilleur jour', `${Math.round(p.meilleur)} $ · ${p.part_meilleur ?? '—'} % du profit (≤ 40 % pour la voie consistance)`, p.cons_ok ? 'ok' : 'alerte'],
+      ['Payout possible', p.eligible ? `${Math.round(p.montant).toLocaleString('fr-FR')} $ → ${Math.round(p.net_pour_toi).toLocaleString('fr-FR')} $ pour toi` : 'pas encore', p.eligible ? 'ok' : 'alerte'],
+      ['Marge avant la MLL', `${Math.round(p.marge_mll).toLocaleString('fr-FR')} $`, p.marge_mll < 1000 ? 'alerte' : 'ok'], ['Limite du jour', `${p.dll} $ · aujourd'hui ${p.pnl_jour > 0 ? '+' : ''}${Math.round(p.pnl_jour)} $`, p.pnl_jour < -p.dll / 2 ? 'alerte' : 'ok']];
+    try { SCIFI.hud(`Payout Topstep · ${p.taille / 1000}K`, L); } catch (er) { /* pas d'écran */ }
+    const d = [];
+    if (p.eligible) d.push(`Tu as droit à un payout ${p.cons_ok && !p.std_ok ? 'par la voie consistance' : ''} : tu peux demander jusqu'à ${dollars(p.montant)}, soit ${dollars(p.net_pour_toi)} pour toi${p.net_pour_toi >= p.montant ? ' : tes 10 000 premiers dollars sont à 100 %' : ', après la part de Topstep'}. Une fois la demande faite, dis-moi « j'ai demandé mon payout ».`);
+    else {
+      d.push(`Pas encore de payout. Tu as ${p.gagnants.length} jour${p.gagnants.length > 1 ? 's' : ''} gagnant${p.gagnants.length > 1 ? 's' : ''} de 150 dollars ou plus${p.gagnants.length ? `, ${p.gagnants.slice(-4).map(jourDit).join(', ')}` : ''} : il en faut 5${p.manque_std ? `, encore ${p.manque_std}` : ''}.`);
+      if (p.net_cycle <= 0) d.push("Il faut aussi que ton profit depuis le dernier payout soit positif.");
+      else if (p.profit_pour_consistance && !p.cons_ok) d.push(`L'autre voie, la consistance, demande que ton meilleur jour, ${dollars(p.meilleur)}, pèse 40 % au plus de ton profit : il faudrait environ ${dollars(p.profit_pour_consistance)} de profit au total.`);
+      const possible = Math.min(p.solde / 2, p.plafond);
+      if (possible >= 125) d.push(`Le jour où tu y as droit, avec le solde d'aujourd'hui, ce serait jusqu'à ${dollars(possible)} : la moitié de ton solde, ton plafond étant de ${dollars(p.plafond)}. Et tu le gardes à 100 %, tant que tu n'as pas retiré 10 000 dollars au total.`);
+    }
+    d.push(`Il te reste ${dollars(p.marge_mll)} avant ta perte maximale.`);
+    return say(d.join(' '));
+  }
+  async function payoutFait(t) {
+    const m = String(t).replace(/(\d)[\s .](?=\d{3}\b)/g, '$1').match(/(\d+(?:[.,]\d+)?)\s*(?:\$|dollars?)/i);
+    try { await appel('/maison/trading', { payout_fait: { montant: m ? parseFloat(m[1].replace(',', '.')) : null } }); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok(); return say(`C'est noté${m ? ` : un payout de ${dollars(parseFloat(m[1].replace(',', '.')))}` : ''}. Le compte des jours gagnants repart de zéro à partir de demain, et ta perte maximale passe à zéro. Je te dirai quand le prochain sera possible.`);
+  }
+  async function monCompte(t, n) {
+    const v = +((String(t).replace(/(\d)[\s .](?=\d{3}\b)/g, '$1').match(/(\d{3,6})/) || [])[1] || 0);
+    if (!v) return say("Dis par exemple : « mon plafond de payout est de 6 000 dollars ».");
+    const k = /\b(plafond|cap)\b.*\bconsistance\b/.test(n) ? 'cons' : /\b(plafond|cap)\b/.test(n) ? 'std' : /\blimite (du jour|journaliere)\b/.test(n) ? 'dll' : /\b(perte max|mll)\b/.test(n) ? 'mll' : null;
+    if (!k) return say("Je n'ai pas compris quel réglage changer : le plafond de payout, la limite du jour, ou la perte maximale ?");
+    try { await appel('/maison/trading', { compte_tsx: { [k]: v } }); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok(); return say(`C'est noté : ${{ std: 'ton plafond de payout', cons: 'ton plafond de payout en voie consistance', dll: 'ta limite du jour', mll: 'ta perte maximale' }[k]}, ${dollars(v)}.`);
+  }
   async function regles(t, n) {
     const mt = +((n.match(/\b(\d{1,2}) trades?\b/) || [])[1] || 0);
     const rm = +((String(t).replace(/(\d)[\s .](?=\d{3}\b)/g, '$1').match(/(\d+)\s*(?:\$|dollars?)\s*(?:de )?(?:risque|par trade|maximum par trade)/i) || String(t).match(/risque (?:maximum |max )?(?:de )?(\d+)/i) || [])[1] || 0);
@@ -246,6 +282,10 @@ const TRADING = (() => {
     if (/\b(mes resultats|mon bilan (de trading|de la semaine)|resultats? (de la |cette )?semaine|combien j ai (gagne|perdu) cette semaine|mes performances)\b/.test(n) && !/\b(foot|match|ecole)\b/.test(n)) return bilan;
     if (/\b(ma limite|mes limites|limite (du jour|journaliere|de perte)|ma perte max(imale)?)\b/.test(n)) return () => limites(t, n);
     if (/\b(bilan|resume|recap)\b.*\b(seance|session du jour|mes trades du jour|trades d aujourd hui|journee de trading)\b|\bmes trades (du jour|d aujourd hui)\b/.test(n)) return () => bilanSeance();
+    if (/\b(j ai (demande|fait|recu|eu) (mon|un|le) (payout|retrait|paiement topstep))\b/.test(n)) return () => payoutFait(t);
+    if (/\b(payout|retrait topstep)\b/.test(n) && /\b(plafond|cap)\b/.test(n) && /\d/.test(t)) return () => monCompte(t, n);
+    if (/\b(ma limite du jour|ma limite journaliere|ma perte max(imale)?|ma mll)\b.*\b(est|de|c est)\b.*\d/.test(n)) return () => monCompte(t, n);
+    if (/\b(payout|retrait topstep|combien je peux retirer|quand (est ce que )?(je peux|j ai le droit de) (retirer|me payer)|droit (a|au) (un )?(payout|retrait))\b/.test(n)) return payout;
     if (/\b(ma|mes) regles? (de trading|de trade)?\b|\bregle de trading\b/.test(n) && !/\b(jeu|ecole)\b/.test(n)) return () => regles(t, n);
     if (/\b(relie|connecte|branche)\b.*\btopstep\s?x?\b/.test(n)) return () => say("Sur l'ordinateur, lance le script « topstepx-connecter.sh », dans le dossier de la maison : colle ton nom d'utilisateur TopstepX et ta clé API. Ensuite, je note tes trades tout seul, sans jamais passer d'ordre.");
     if (/\b(bilan|stats|statistiques)\b.*\b(boite noire|mes trades|de trading)\b|\bboite noire\b.*\bbilan\b/.test(n)) return bilanNoire;
@@ -260,5 +300,5 @@ const TRADING = (() => {
     if (trade && /\b(j ai (perdu|gagne|pris|encaisse)|je perds|je gagne|stop (touche|pris)|j ai ete stoppe)\b/.test(n) && /\d/.test(t)) return () => sortie(t, n, montant(t)); // un trade ouvert dans la boîte noire : il le clôture
     return null;
   }
-  return { route, actif: () => actif, bilanNoire, bilanSeance, _controle: controle, _montant: montant, _prixApres: prixApres };
+  return { route, actif: () => actif, bilanNoire, bilanSeance, payout, _controle: controle, _montant: montant, _prixApres: prixApres };
 })();
