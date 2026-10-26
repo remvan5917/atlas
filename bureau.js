@@ -18,7 +18,7 @@ const BUREAU = (() => {
   function carte(x, i) {
     const urg = x.urgence === 'haute';
     const ech = x.echeance ? ` · <b style="color:#fca5a5">avant le ${esc(x.echeance.split('-').reverse().join('/'))}</b>` : '';
-    const btns = avecTexte(x) ? b_(`✓ Brouillon (boîte ${x.entite === 'lrf' ? 'pro' : 'perso'})`, 'valide', x.id, 'rgba(22,163,74,.6)') + b_('✏ Modifier', 'modifie', x.id) : b_('✓ À mes tâches', 'valide', x.id, 'rgba(22,163,74,.6)');
+    const btns = avecTexte(x) ? (x.adresse ? b_(`✉ Envoyer à ${esc(x.adresse)}`, 'envoie', x.id, 'rgba(37,99,235,.8)') : '') + b_(`📝 Brouillon (boîte ${x.entite === 'lrf' ? 'pro' : 'perso'})`, 'valide', x.id, 'rgba(22,163,74,.5)') + b_('✏ Modifier', 'modifie', x.id) : b_('✓ À mes tâches', 'valide', x.id, 'rgba(22,163,74,.6)');
     return `<div style="margin:9px 0;padding:11px 13px;border-radius:13px;background:${urg ? 'rgba(248,113,113,.09)' : 'rgba(255,255,255,.05)'};border-left:3px solid ${urg ? '#f87171' : '#475569'}">
 <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><small style="padding:2px 8px;border-radius:999px;background:rgba(165,180,252,.15);color:#c7d2fe">${esc(TYPE[x.type] || x.type)}</small><small style="color:#94a3b8">${esc(ENT[x.entite] || '')} · ${x.entite === 'lrf' ? '📁 boîte pro' : '📁 boîte perso'}</small><b style="flex:1;font-size:15px">${esc(x.de)}</b>${urg ? '<small style="color:#fca5a5">URGENT</small>' : ''}</div>
 <div style="font-size:15px;margin-top:4px">${esc(x.resume)}${ech}</div>
@@ -47,6 +47,7 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     if (act === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
     let corps = { action: act, id };
     const x0 = (dernier.a_valider || []).find(y => y.id === id);
+    if (act === 'envoie') { if (!x0 || !x0.adresse) return say("Je n'ai pas l'adresse du destinataire."); corps.a = x0.adresse; }
     if (act === 'adresse') { const el = document.getElementById(`adr-${id}`); corps.adresse = el ? el.value.trim() : ''; if (!corps.adresse) return say("Tape d'abord l'adresse mail du client."); patiente('Je rédige la relance…', corps.adresse); }
     if (act === 'modifie') {
       const a = await ask("Qu'est-ce que je change dans la réponse ?", { wait: 30000 });
@@ -56,6 +57,7 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     let r; try { r = await api(corps); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (r.ok === false) { await ecran(await api()); return say(`Je n'ai pas pu : ${r.raison || 'erreur'}.`); }
     fx.ok(); await ecran(r);
+    if (act === 'envoie') return say(`C'est parti, à ${x0.adresse}, depuis ta boîte ${x0.entite === 'lrf' ? 'pro' : 'perso'}.`);
     if (act === 'valide') { return say(r.fait === 'brouillon' ? `C'est dans les brouillons de ta boîte ${x0 && x0.entite !== 'lrf' ? 'perso' : 'pro'} : relis et envoie quand c'est bon.` : "C'est dans tes tâches, avec la date."); }
     if (act === 'modifie') return say("Voilà la nouvelle version, à l'écran.");
     if (act === 'adresse') return say("La relance est rédigée, à l'écran : valide-la pour la ranger en brouillon.");
@@ -80,7 +82,7 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
   }, 10 * 60000);
   /* ---------- « on valide le bureau » : il lit chaque chose préparée, il répond oui / non / déjà fait / plus tard / « change : … » ---------- */
   const coeur = t => String(t || '').split('\n').filter(l => l.trim() && !/^(bonjour|bonsoir|cher|chère|hello)\b/i.test(l.trim())).join(' ')
-    .replace(/\b(bien cordialement|cordialement|bien à vous|belle journée|à bientôt)\b[\s\S]*$/i, '').replace(/\s+/g, ' ').trim();
+    .replace(/\b(bien cordialement|cordialement|bien à vous|belle journée|à bientôt)\b[\s\S]*$/i, '').replace(/\s+/g, ' ').trim().replace(/[.!\s]+$/, '');
   const PASSE = /^(plus tard|passe|suivant|la suivante|on verra|apres|pas maintenant)\b/, STOP = /^(stop|arrete|on arrete|c est tout|fin|termine|ca suffit)\b/, FAIT = /\b(deja fait|c est fait|je l ai fait|deja repondu|deja envoye)\b/;
   async function valideVoix() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
@@ -88,16 +90,16 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     try { const c = await COMPTA._api(); (c.a_valider_micro || []).filter(x => x.montant).forEach(x => items.push({ k: 'micro', x })); } catch (e) { /* sans la compta */ }
     try { const d = (((await COMPTA._dossierApi()).dossiers) || []).filter(y => !y.brouillon).slice(-1)[0]; if (d) items.unshift({ k: 'dossier', x: d }); } catch (e) { /* sans le dossier */ }
     if (!items.length) return say("Ton bureau est à jour : rien à valider.");
-    const bilan = { brouillon: 0, tache: 0, micro: 0, ignore: 0, plus_tard: 0, fait: 0 };
+    const bilan = { envoye: 0, brouillon: 0, tache: 0, micro: 0, ignore: 0, plus_tard: 0, fait: 0 };
     await say(`${items.length} chose${items.length > 1 ? 's' : ''} à valider. Réponds oui, non, déjà fait, plus tard, ou dis ce qu'il faut changer. Dis « stop » pour arrêter.`);
     for (let i = 0; i < items.length; i++) {
       const { k, x } = items[i], tete = `${i + 1} sur ${items.length}. `;
       let q;
-      if (k === 'dossier') { if (COMPTA.dossier) { /* l'écran du dossier */ } q = `${tete}Le cabinet comptable attend ta réponse : ${x.achats.filter(a => a.fichiers.length).length} factures sur ${x.achats.length} retrouvées et le tableau complété. Je prépare le brouillon avec toutes les pièces ?`; }
+      if (k === 'dossier') { if (COMPTA.dossier) { /* l'écran du dossier */ } q = `${tete}Le cabinet comptable attend ta réponse : ${x.achats.filter(a => a.fichiers.length).length} factures sur ${x.achats.length} retrouvées et le tableau complété. Je l'envoie à ${adrDe(x.de)} avec toutes les pièces ?`; }
       else if (k === 'micro') q = `${tete}Ta micro-entreprise : ${eu2(x.montant)} de ${x.tiers}, le ${new Date(`${x.date}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}. Je le mets au livre des recettes ?`;
       else {
         await ecran(Object.assign({}, r, { a_valider: [x] }));
-        q = `${tete}${x.de} : ${x.resume}.${x.note ? ` Attention : ${x.note}.` : ''} ${avecTexte(x) ? `Je propose de répondre : ${coeur(x.brouillon_texte)}. Je la range en brouillon ?` : x.type === 'relancer' && !x.adresse ? "Je n'ai pas l'adresse du client : je le garde pour plus tard." : `${x.a_faire || 'Je le mets dans tes tâches'}. Dans tes tâches ?`}`;
+        q = `${tete}${x.de} : ${x.resume}.${x.note ? ` Attention : ${x.note}.` : ''} ${avecTexte(x) ? `Je propose de répondre : ${coeur(x.brouillon_texte)}. ${x.adresse ? `Je l'envoie à ${x.adresse} ?` : 'Je la range en brouillon ?'}` : x.type === 'relancer' && !x.adresse ? "Je n'ai pas l'adresse du client : je le garde pour plus tard." : `${x.a_faire || 'Je le mets dans tes tâches'}. Dans tes tâches ?`}`;
         if (x.type === 'relancer' && !x.adresse) { await say(q); bilan.plus_tard++; continue; }
       }
       for (let essai = 0; essai < 3; essai++) {
@@ -108,8 +110,9 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
         if (k === 'bureau' && FAIT.test(n)) { await api({ action: 'fait', id: x.id }); bilan.fait++; break; }
         if (a === 'non' || isNo(a) && n.split(' ').length <= 4) { if (k === 'bureau') await api({ action: 'ignore', id: x.id }); else if (k === 'micro') await COMPTA._api({ action: 'ignore', id: x.id }); bilan.ignore++; break; }
         if (a === 'ok') {
-          if (k === 'dossier') { const rr = await COMPTA._dossierApi({ action: 'brouillon', id: x.id, corps: COMPTA._corpsReponse(x) }); if (rr && rr.ok) bilan.brouillon++; else await say("Le brouillon du dossier n'a pas pu être créé."); }
+          if (k === 'dossier') { const rr = await COMPTA._dossierApi({ action: 'envoie', id: x.id, corps: COMPTA._corpsReponse(x), a: adrDe(x.de) }); if (rr && rr.ok) bilan.envoye++; else await say(`La réponse au cabinet n'est pas partie${rr && rr.raison ? ` : ${rr.raison}` : ''}.`); }
           else if (k === 'micro') { await COMPTA._api({ action: 'valide', id: x.id }); bilan.micro++; }
+          else if (avecTexte(x) && x.adresse) { const rr = await api({ action: 'envoie', id: x.id, a: x.adresse }); if (rr.ok === false) await say(`Je n'ai pas pu l'envoyer : ${rr.raison}.`); else bilan.envoye++; }
           else { const rr = await api({ action: 'valide', id: x.id }); if (rr.ok === false) await say(`Je n'ai pas pu : ${rr.raison}.`); else bilan[rr.fait === 'tache' ? 'tache' : 'brouillon']++; }
           fx.ok(); break;
         }
@@ -126,6 +129,7 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     }
     hideBoard();
     const p = [];
+    if (bilan.envoye) p.push(`${bilan.envoye} mail${bilan.envoye > 1 ? 's' : ''} envoyé${bilan.envoye > 1 ? 's' : ''}`);
     if (bilan.brouillon) p.push(`${bilan.brouillon} brouillon${bilan.brouillon > 1 ? 's' : ''} rangé${bilan.brouillon > 1 ? 's' : ''}, à envoyer depuis Gmail`);
     if (bilan.tache) p.push(`${bilan.tache} dans tes tâches`);
     if (bilan.micro) p.push(`${bilan.micro} recette${bilan.micro > 1 ? 's' : ''} au livre`);
@@ -134,6 +138,7 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     if (bilan.plus_tard) p.push(`${bilan.plus_tard} pour plus tard`);
     return say(`C'est fait : ${p.join(', ') || 'rien de changé'}.`);
   }
+  const adrDe = de => ((String(de).match(/<([^>]+)>/) || [])[1] || String(de)).trim();
   const eu2 = v => `${Number(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} euros`;
   async function journal() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }

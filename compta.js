@@ -99,7 +99,7 @@ ${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENT
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${[[`${ok.length}/${d.achats.length}`, "factures d'achats retrouvées"], [String(jointes), 'factures de vente jointes'], ['✓', 'tableau complété (commentaires)']].map(([v, t]) => `<div style="flex:1 1 150px;padding:10px 12px;border-radius:12px;background:rgba(134,239,172,.08)"><div style="font:700 22px system-ui;color:#86efac">${v}</div><small style="color:#94a3b8">${t}</small></div>`).join('')}</div>
 <div style="margin-top:14px"><small style="letter-spacing:.25em;color:#a5b4fc">CE QU'IL TE RESTE (LUI SEUL NE PEUT PAS)</small>${todo || '<div style="color:#64748b">Rien : tout est prêt.</div>'}</div>
 <details style="margin-top:12px"><summary style="cursor:pointer;color:#a5b4fc;letter-spacing:.2em;font-size:12px">LES ${d.achats.length} DÉPENSES DU TABLEAU</summary>${lAch}</details>
-<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)"><button type="button" data-dos="brouillon" data-id="${esc(d.id)}" style="width:100%;padding:16px;border:0;border-radius:16px;background:${d.brouillon ? '#15803d' : '#2563eb'};color:#fff;font:800 18px system-ui;cursor:pointer">${d.brouillon ? '✔ Brouillon prêt dans Gmail — refaire' : '✉ Préparer la réponse (brouillon dans Gmail)'}</button><div style="text-align:center;color:#94a3b8;font-size:12px;margin-top:6px">Atlas n'envoie rien : tu relis le brouillon dans ta boîte pro, et c'est toi qui cliques sur « Envoyer ». Dossier : ${esc(d.dossier)}</div></div></div>`);
+<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)">${d.envoye ? '<div style="text-align:center;color:#86efac;font-weight:700;margin-bottom:8px">✔ Envoyée au cabinet</div>' : `<button type="button" data-dos="envoie" data-id="${esc(d.id)}" style="width:100%;padding:16px;margin-bottom:8px;border:0;border-radius:16px;background:#2563eb;color:#fff;font:800 18px system-ui;cursor:pointer">✉ Envoyer à ${esc(((String(d.de).match(/<([^>]+)>/) || [])[1] || d.de))} avec toutes les pièces</button>`}<button type="button" data-dos="brouillon" data-id="${esc(d.id)}" style="width:100%;padding:16px;border:0;border-radius:16px;background:${d.brouillon ? '#15803d' : '#2563eb'};color:#fff;font:800 18px system-ui;cursor:pointer">${d.brouillon ? '✔ Brouillon prêt dans Gmail — refaire' : '✉ Préparer la réponse (brouillon dans Gmail)'}</button><div style="text-align:center;color:#94a3b8;font-size:12px;margin-top:6px">Atlas n'envoie rien : tu relis le brouillon dans ta boîte pro, et c'est toi qui cliques sur « Envoyer ». Dossier : ${esc(d.dossier)}</div></div></div>`);
   }
   function corpsReponse(d) {
     const ok = d.achats.filter(a => a.fichiers.length), non = d.achats.filter(a => !a.fichiers.length);
@@ -130,6 +130,14 @@ ${(r.lrf_ventes || []).length ? sec('LA RUE DU FINANCEMENT · VENTES ET PAIEMENT
       if (!a) return say("D'accord, plus tard.");
       try { await dossierApi({ action: 'repond', id: d.id, vente: +b.dataset.vente, texte: a.charAt(0).toUpperCase() + a.slice(1) }); } catch (e) { return say("Je n'ai pas réussi à le noter."); }
       fx.ok(); await say("C'est noté dans le tableau."); r = await dossierApi(); return dossierEcran(r.dossiers.find(x => x.id === d.id));
+    }
+    if (b.dataset.dos === 'envoie') {
+      const a_ = ((String(d.de).match(/<([^>]+)>/) || [])[1] || d.de).trim();
+      b.disabled = true; b.textContent = '…';
+      let x; try { x = await dossierApi({ action: 'envoie', id: d.id, corps: corpsReponse(d), a: a_ }); } catch (e) { x = null; }
+      if (!x || !x.ok) { b.disabled = false; return say(`La réponse n'est pas partie${x && x.raison ? ` : ${x.raison}` : ''}.`); }
+      fx.ok(); r = await dossierApi(); await dossierEcran(r.dossiers.find(y => y.id === d.id));
+      return say(`C'est envoyé à ${a_}, avec ${x.pieces} pièces jointes, depuis ta boîte pro.`);
     }
     if (b.dataset.dos === 'brouillon') {
       b.disabled = true; b.textContent = '…';
