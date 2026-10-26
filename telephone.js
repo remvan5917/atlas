@@ -17,7 +17,28 @@ const TELEPHONE = (() => {
     return r.json();
   }
   const lisible = n => String(n || '').replace(/^\+33/, '0').replace(/(\d{2})(?=\d)/g, '$1 ').trim();
-  const numeroDe = t => { const m = String(t).replace(/(\d)[\s.-](?=\d)/g, '$1').match(/(\+?\d{10,13})/); return m ? m[1] : null; };
+  // les nombres dits en lettres (« zéro six douze trente-quatre… ») → des chiffres
+  const U = { zero: 0, un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, onze: 11, douze: 12, treize: 13, quatorze: 14, quinze: 15, seize: 16 };
+  const D = { vingt: 20, trente: 30, quarante: 40, cinquante: 50, soixante: 60 };
+  function enChiffres(t) {
+    const m = N(t).replace(/-/g, ' ').split(' ').filter(Boolean), out = [];
+    const unite = w => (U[w] != null && U[w] <= 9 ? U[w] : null), ado = w => (U[w] != null && U[w] >= 10 ? U[w] : null);
+    // « dix » suivi d'une unité (dix-sept…), un nombre de 11 à 16, ou une unité seule
+    const finDe = (k) => { if (m[k] === 'dix') { const u = unite(m[k + 1]); return u != null ? [10 + u, 2] : [10, 1]; } if (ado(m[k]) != null) return [ado(m[k]), 1]; if (unite(m[k]) != null) return [unite(m[k]), 1]; return [0, 0]; };
+    for (let i = 0; i < m.length;) {
+      let v = null, n = 0;
+      if (m[i] === 'quatre' && /^vingts?$/.test(m[i + 1] || '')) { const [f, k] = finDe(i + 2); v = 80 + f; n = 2 + k; }
+      else if (D[m[i]] != null) {
+        const b = D[m[i]]; let k = i + 1; if (m[k] === 'et') k++;
+        if (b === 60) { const [f, c] = finDe(k); v = 60 + f; n = k - i + c; } else { const u = unite(m[k]); v = b + (u || 0); n = k - i + (u != null ? 1 : 0); }
+      } else if (m[i] === 'dix' || ado(m[i]) != null) { const [f, c] = finDe(i); v = f; n = c; }
+      else if (unite(m[i]) != null) { v = unite(m[i]); n = 1; out.push(String(v)); i += 1; continue; }
+      if (v != null) { out.push(String(v).padStart(2, '0')); i += n; continue; }
+      out.push(m[i]); i++;
+    }
+    return out.join(' ').replace(/\b0 ([1-9])\b/g, '0$1'); // « zéro six » → 06
+  }
+  const numeroDe = t => { const x = /\d{2}/.test(t) ? String(t) : enChiffres(t); const m = x.replace(/(\d)[\s.-](?=\d)/g, '$1').match(/(\+?\d{10,13})/); return m ? m[1] : null; };
   const estIphone = () => /iPhone|iPad/.test(navigator.userAgent);
   // la voix d'Atlas, confiée une fois à l'ordinateur de la maison (pour l'agent d'appel)
   setTimeout(async () => {
@@ -87,8 +108,11 @@ const TELEPHONE = (() => {
   function route(t, n) {
     if (/\b(comment relier|relie|brancher|connecter) (les )?appels\b/.test(n)) return relier;
     if (/\b(mes appels|les appels que tu as (faits|passes)|compte rendu (de l |du dernier )?appel)\b/.test(n)) return mesAppels;
-    let m = String(t).match(/\ble num[ée]ro (?:de |du |d['’]|des )(.+?) (?:c['’]est|est)\s*:?\s*([+\d][\d\s.-]{8,})/i);
-    if (m) return async () => { const num = numeroDe(m[2]); if (!num) return say("Je n'ai pas compris le numéro."); try { await carnet({ action: 'ajoute', item: { nom: m[1].trim(), tel: num } }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } fx.ok(); return say(`C'est noté : ${m[1].trim()}, ${lisible(num)}.`); };
+    // « le numéro de Paul c'est (le) 06… », « le numéro de Paul est le 06… », « enregistre le numéro de Paul : 06… », « mon numéro c'est 06… »
+    let m = String(t).match(/\b(?:(?:enregistre|note|retiens|ajoute)\s+)?(?:le |son )?num[ée]ro (?:de t[ée]l[ée]phone )?(?:de |du |d['’]|des )(.+?)[,\s]+(?:c['’]est|est|:)\s*(?:le |au |:)?\s*(.+)$/i) || String(t).match(/\b(?:enregistre|note|retiens|ajoute)\s+(.+?)\s+(?:au|:)\s+(.+)$/i);
+    const moi = String(t).match(/\bmon (?:num[ée]ro|t[ée]l[ée]phone|portable)[,\s]+(?:c['’]est|est|:)?\s*(?:le |:)?\s*(.+)$/i);
+    if (moi && numeroDe(moi[1])) m = [null, S.nom || 'moi', moi[1]];
+    if (m && numeroDe(m[2])) return async () => { const num = numeroDe(m[2]), nom = m[1].replace(/^(le|la|les|l['’])\s+/i, '').replace(/[,.]+$/, '').trim(); try { await carnet({ action: 'ajoute', item: { nom, tel: num } }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } fx.ok(); return say(`C'est noté : ${nom}, ${lisible(num)}.`); };
     m = String(t).match(/\b(?:envoie|écris|ecris)(?:-lui| lui)? un (?:message )?whats ?app (?:à|a|au|aux) (.+?)\s*(?::|pour (?:lui )?dire(?: que)?|que|en disant)\s*(.+)$/i);
     if (m) return () => whatsapp(m[1].trim(), m[2].trim());
     m = String(t).match(/\b(?:envoie|écris|ecris)(?:-lui| lui)? un (?:sms|texto) (?:à|a|au|aux) (.+?)\s*(?::|pour (?:lui )?dire(?: que)?|que|en disant)\s*(.+)$/i);
