@@ -113,10 +113,20 @@ const TELEPHONE = (() => {
     const moi = String(t).match(/\bmon (?:num[ée]ro|t[ée]l[ée]phone|portable)[,\s]+(?:c['’]est|est|:)?\s*(?:le |:)?\s*(.+)$/i);
     if (moi && numeroDe(moi[1])) m = [null, S.nom || 'moi', moi[1]];
     if (m && numeroDe(m[2])) return async () => { const num = numeroDe(m[2]), nom = m[1].replace(/^(le|la|les|l['’])\s+/i, '').replace(/[,.]+$/, '').trim(); try { await carnet({ action: 'ajoute', item: { nom, tel: num } }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } fx.ok(); return say(`C'est noté : ${nom}, ${lisible(num)}.`); };
-    m = String(t).match(/\b(?:envoie|écris|ecris)(?:-lui| lui)? un (?:message )?whats ?app (?:à|a|au|aux) (.+?)\s*(?::|pour (?:lui )?dire(?: que)?|que|en disant)\s*(.+)$/i);
+    m = String(t).match(/(?:^|[\s,])(?:envoie|écris|ecris)(?:-lui| lui)? un (?:message )?whats ?app (?:à|a|au|aux) (.+?)\s*(?::|pour (?:lui )?dire(?: que)?|que|en disant)\s*(.+)$/i);
     if (m) return () => whatsapp(m[1].trim(), m[2].trim());
-    m = String(t).match(/\b(?:envoie|écris|ecris)(?:-lui| lui)? un (?:sms|texto) (?:à|a|au|aux) (.+?)\s*(?::|pour (?:lui )?dire(?: que)?|que|en disant)\s*(.+)$/i);
+    m = String(t).match(/(?:^|[\s,])(?:envoie|écris|ecris)(?:-lui| lui)? un (?:sms|texto|message|petit message) (?:à|a|au|aux) (.+?)\s*(?::|pour (?:lui )?dire(?: que)?|que|en disant)\s*(.+)$/i);
     if (m) return () => sms(m[1].trim(), m[2].trim());
+    // sans le texte : « envoie un SMS à Rémi », « envoie un message WhatsApp à Paul » → il demande quoi écrire
+    m = String(t).match(/(?:^|[\s,])(?:envoie|écris|ecris|envoyer|écrire)(?:-lui| lui)? un (?:message |petit message )?(whats ?app|sms|texto|message)(?: whats ?app)? (?:à|a|au|aux) ([^,:.!?]+?)\s*[.!?]*$/i);
+    if (m) {
+      const qui = m[2].replace(/^(le|la|les|l['’])\s+/i, '').trim(), wa = /whats/i.test(m[0]);
+      return async () => {
+        const texte = String(await ask(`Qu'est-ce que j'écris à ${qui} ?`, { wait: 30000 }) || '').trim();
+        if (!texte || /^(rien|laisse tomber|annule|non)\b/i.test(texte)) return say("D'accord, je n'envoie rien.");
+        return wa ? whatsapp(qui, texte) : sms(qui, texte);
+      };
+    }
     m = String(t).match(/\b(?:appelle|téléphone à|telephone a|passe un coup de fil à|passe un coup de fil a)\s+(.+?)\s+(?:pour|et|afin de|afin d['’])\s+(.+)$/i);
     if (m && !/\b(mon fils|shadow|le petit)\b/i.test(m[1]) && !(typeof LIEN !== 'undefined' && LIEN.prenom() && new RegExp(`\\b${LIEN.prenom()}\\b`, 'i').test(m[1]))) return () => appelle(m[1].replace(/^(le|la|les|l['’])\s+/i, '').trim(), m[2].trim());
     return null;

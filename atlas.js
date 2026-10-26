@@ -151,12 +151,14 @@ const SYNC = (() => {
     out.partage.reglages = Object.assign({}, (a.partage || {}).reglages || {}, (b.partage || {}).reglages || {});
     for (const [k, v] of Object.entries(((recent.partage || {}).reglages) || {})) if (!vide(v)) out.partage.reglages[k] = v;
     for (const src of [a, b]) for (const [k, v] of Object.entries(((src.partage || {}).reglages) || {})) if (vide(out.partage.reglages[k]) && !vide(v)) out.partage.reglages[k] = v;
+    if (out.partage.reglages.elevenVoice && !voixValide(out.partage.reglages.elevenVoice)) delete out.partage.reglages.elevenVoice; // un identifiant de voix cassé ne voyage jamais
     out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
     return out;
   }
   // les réglages qui voyagent d'un appareil à l'autre (jamais la clé Groq : elle reste sur l'appareil où on l'a tapée)
+  const voixValide = v => /^[A-Za-z0-9]{20}$/.test(String(v || ''));
   const COMMUNS = ['brain', 'localModel', 'model', 'seeCloud', 'conversation', 'accueil', 'arrivee', 'camera', 'micSens', 'eleven', 'elevenVoice', 'elevenModel', 'elevenEffet', 'proactif', 'marches', 'proteges', 'mistralModel', 'elevenQuota'];
-  const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); return o; };
+  const partage = () => { const o = { ville: S.settings.ville, voix: S.settings.voix, nom: S.nom, reglages: {} }; COMMUNS.forEach(k => { o.reglages[k] = S.settings[k]; }); if (!voixValide(o.reglages.elevenVoice)) delete o.reglages.elevenVoice; return o; };
   function applique(m) {
     S.notes = m.notes; S.listes = m.listes; S.voices = m.voices || S.voices; S.memoire = m.memoire || S.memoire || []; S.scenes = m.scenes || S.scenes || []; S.proches = m.proches || S.proches || []; S.rangements = m.rangements || S.rangements || []; S.prets = m.prets || S.prets || []; S.protocoles = m.protocoles || S.protocoles || []; S.tomb = m.tomb;
     if (m.partage) {
@@ -164,7 +166,7 @@ const SYNC = (() => {
       if (m.partage.voix) S.settings.voix = m.partage.voix;
       if (typeof m.partage.nom === 'string') S.nom = m.partage.nom;
       const r = m.partage.reglages || {};
-      COMMUNS.forEach(k => { if (r[k] !== undefined && r[k] !== '' && r[k] !== null) S.settings[k] = r[k]; });
+      COMMUNS.forEach(k => { if (r[k] !== undefined && r[k] !== '' && r[k] !== null && (k !== 'elevenVoice' || voixValide(r[k]))) S.settings[k] = r[k]; });
       // un nouvel appareil sans clé : le cerveau de la maison d'abord (s'il est réglé ailleurs)
       if (!S.settings.key && S.settings.localModel) S.settings.brain = 'local';
     }
@@ -371,7 +373,7 @@ function systeme(text) {
 Tu es un assistant adulte, direct, précis et compétent : technique, IA, code, électronique, domotique, maison, administratif, cuisine, sport, culture, organisation, conseils… Ta personnalité : une IA de film (comme JARVIS) — calme, précise, élégante, un brin pince-sans-rire, jamais enfantine. Tu tutoies, tu vas droit au but. Pas d'émojis.
 FORMAT : tout ce que tu écris est dit à voix haute, rien ne s'affiche. Réponds en deux à cinq phrases naturelles et courtes, comme à l'oral : sans markdown, sans listes, sans titres, sans symboles, sans code, sans astérisques ni indications de jeu (*sourit*, (pause)) : seulement ce que tu dis. Pour une question longue, donne l'essentiel puis propose d'aller plus loin. Seulement s'il demande de MONTRER ou d'AFFICHER quelque chose (du code, une liste), ajoute après ta réponse orale une ligne [[ecran]] puis le détail en texte (markdown simple, code entre \`\`\`).
 COMMANDES (au plus une, à la toute fin) : [[web:recherche]] pour chercher sur Internet, [[regarder]] pour regarder avec ta caméra, [[rappel:AAAA-MM-JJ HH:MM|texte]] pour un rappel, [[note:texte]] pour l'ajouter à ses notes, [[minuteur:durée]], [[meteo]].
-Tu as des outils qu'il peut demander directement (ne prétends pas qu'ils n'existent pas) : calculs exacts et TVA, conversions d'unités et de devises, minuteurs nommés, réveil, chrono, Pomodoro, listes (courses, à faire…), météo de n'importe quelle ville, état de son PC, « fais-moi le point », heure dans le monde, jours avant une date, pile ou face, la journée de son fils avec Shadow. S'il en parle, dis-lui la phrase à dire (par exemple « dis : minuteur pâtes 9 minutes »).
+Tu as des outils qu'il peut demander directement (ne prétends pas qu'ils n'existent pas) : préparer un SMS ou un WhatsApp (« envoie un SMS à Paul : … », il touche Envoyer), enregistrer un numéro (« le numéro de Paul c'est le 06… »), appeler quelqu'un à sa place, calculs exacts et TVA, conversions d'unités et de devises, minuteurs nommés, réveil, chrono, Pomodoro, listes (courses, à faire…), météo de n'importe quelle ville, état de son PC, « fais-moi le point », heure dans le monde, jours avant une date, pile ou face, la journée de son fils avec Shadow. S'il en parle, dis-lui la phrase à dire (par exemple « dis : minuteur pâtes 9 minutes »).
 Tu as une caméra : s'il te demande ce que tu vois, de regarder quelque chose ou ce qu'il tient, réponds seulement [[regarder]]. Ne dis jamais que tu n'as pas de caméra.
 Tu as Internet : pour une actualité, une info récente, un prix, un horaire, un résultat, la météo d'un autre endroit ou un fait dont tu n'es pas sûr, réponds seulement [[web:ta recherche en quelques mots]]. N'invente jamais une info récente.
 Tu as une mémoire : tu retiens tout seul ce qu'il te dit de durable (il peut dire « souviens-toi que… », « qu'est-ce que tu sais sur moi ? », « oublie que… »). Tu suis aussi les marchés pour lui (il fait du trading) : « le cours de l'or », « le point des marchés », « les annonces du jour », « affiche le graphique de l'or » ; tu le préviens 5 minutes avant les annonces importantes et l'ouverture de Wall Street. Sur les marchés, donne seulement des faits : jamais de conseil d'achat ou de vente, jamais de prédiction présentée comme sûre.
@@ -1362,7 +1364,7 @@ window.addEventListener('unhandledrejection', e => { derniereErreur = String((e.
 async function diagnostic() {
   const r0 = VOIXMAISON.root(); if (!r0 || window.__BANC) return;
   const m = OREILLES.meter ? OREILLES.meter() : {};
-  const d = { v: window.ATLAS_VERSION, appareil: `${/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur'}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`, antiecho: typeof OREILLES_AEC !== 'undefined' ? OREILLES_AEC : null, larsen: LARSEN.slice(),
+  const d = { v: window.ATLAS_VERSION, appareil: `${{ telephone: 'téléphone', tablette: 'tablette', ordinateur: 'ordinateur' }[typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role] || (/Android|iPhone|iPad/.test(navigator.userAgent) ? (/Mobile|iPhone/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur')}${S.settings.piece ? ` · ${S.settings.piece}` : ''}`.slice(0, 20), demarre: dlg.started, etat: dlg.state, endormi: voice.endormi, cache: document.hidden, ecran: `${innerWidth}x${innerHeight}`, antiecho: typeof OREILLES_AEC !== 'undefined' ? OREILLES_AEC : null, larsen: LARSEN.slice(),
     oreilles: OREILLES.engine && OREILLES.engine(), micro: OREILLES.micro ? OREILLES.micro() : '', via: AI.lastEars || '', niveau: Math.round((m.level || 0) * 1000) / 1000, seuil: Math.round((m.threshold || 0) * 1000) / 1000, parle: voice.occupe(),
     cerveau: AI.ready() ? (AI.dernier ? AI.dernier.fournisseur : AI.cfg().local ? 'maison' : 'groq') : 'aucun', modele: AI.ready() ? (AI.dernier ? AI.dernier.modele : AI.cfg().model) : '', mistral: !!S.settings.mistralKey, mistralErreur: AI.mistralErreur ? String(AI.mistralErreur).replace(/[A-Za-z0-9]{24,}/g, '…').slice(0, 160) : '', mistralRepos: AI.mistralDownUntil > Date.now() ? Math.round((AI.mistralDownUntil - Date.now()) / 1000) : 0, voix: ELEVEN.usable() ? 'elevenlabs' : VOIXMAISON.usable() ? 'maison' : 'telephone',
     eleven: { cle: !!S.settings.elevenKey && /^sk_/.test(S.settings.elevenKey), voix: !!S.settings.elevenVoice, actif: S.settings.eleven !== false, modele: S.settings.elevenModel || 'eleven_v4_turbo',

@@ -15,8 +15,10 @@ const JUMELAGE = (() => {
   let attente = null;
   async function tour() {
     if (!VOIXMAISON.root() || window.__BANC) return;
-    const s = S.settings, miennes = {}; CLES.forEach(k => { if (s[k]) miennes[k] = s[k]; });
+    const s = S.settings, miennes = {}; CLES.forEach(k => { if (s[k] && (k !== 'elevenVoice' || /^[A-Za-z0-9]{20}$/.test(s[k]))) miennes[k] = s[k]; });
     if (Object.keys(miennes).length) { try { await api({ action: 'depose', cles: miennes }); } catch (e) { /* plus tard */ } }
+    // la voix d'Atlas : celle que garde la maison, la même partout (les clés, elles, restent celles de chaque appareil)
+    try { const v = await api({ action: 'voix' }); if (v && /^[A-Za-z0-9]{20}$/.test(v.voix || '') && s.elevenVoice !== v.voix) { s.elevenVoice = v.voix; save(); if (typeof ELEVEN !== 'undefined') { ELEVEN.downUntil = 0; ELEVEN.erreur = ''; } } } catch (e) { /* plus tard */ }
     if (manque()) {
       let r; try { r = await api({ action: 'demande' }); } catch (e) { return; }
       if (r.confiance && r.cles) {
