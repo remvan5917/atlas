@@ -64,7 +64,6 @@ const TELEPHONE = (() => {
     } catch (e) { return ''; }
   }
   async function appelle(qui, mission) {
-    if (typeof DEMO !== 'undefined' && DEMO.on()) return DEMO.appel(qui, mission); // en tournage : l'aperçu de l'appel
     let st; try { st = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!st.pret) return say(st.cle ? "Les appels ne sont pas encore reliés à un numéro de téléphone. Dis « comment relier les appels » : je t'explique, c'est une fois pour toutes." : "Il faut d'abord la voix d'Atlas : règle ElevenLabs dans mes réglages, sur l'ordinateur. Ensuite, dis « comment relier les appels ».");
     const n = await trouveNumero(qui); if (!n) return say("D'accord, sans numéro je ne peux pas appeler.");
@@ -77,14 +76,12 @@ const TELEPHONE = (() => {
     fx.ok(); return say(`C'est parti : j'appelle ${n.nom || qui}. Je te fais le compte rendu dès que c'est fini.`);
   }
   async function whatsapp(qui, texte) {
-    if (typeof DEMO !== 'undefined' && DEMO.on()) return DEMO.message(qui, texte, 'WhatsApp'); // en tournage : l'écran du message, rien ne part
     const n = await trouveNumero(qui); if (!n) return say("D'accord, sans numéro je ne peux pas le préparer.");
     const url = `https://wa.me/${n.numero.replace(/^\+/, '').replace(/^0/, '33')}?text=${encodeURIComponent(texte)}`;
     try { window.open(url, '_blank'); } catch (e) { location.href = url; }
     return say(`WhatsApp est ouvert, avec ${n.nom || qui} et ton message prêts : touche Envoyer.`);
   }
   async function sms(qui, texte) {
-    if (typeof DEMO !== 'undefined' && DEMO.on()) return DEMO.message(qui, texte, 'SMS');
     const n = await trouveNumero(qui); if (!n) return say("D'accord, sans numéro je ne peux pas l'envoyer.");
     let st = {}; try { st = await api(); } catch (e) { /* sans */ }
     if (st.sms && await askYesNo(`J'envoie à ${n.nom || qui}, au ${lisible(n.numero)}, depuis le numéro d'Atlas : « ${texte} ». Je l'envoie ?`)) {
@@ -96,7 +93,6 @@ const TELEPHONE = (() => {
   }
   async function groupe(nom, texte) {
     if (!texte) { texte = String(await ask(`Qu'est-ce que j'écris dans le groupe ${nom} ?`, { wait: 30000 }) || '').trim(); if (!texte || /^(rien|laisse tomber|annule|non)\b/i.test(texte)) return say("D'accord, je n'envoie rien."); }
-    if (typeof DEMO !== 'undefined' && DEMO.on()) return DEMO.message(nom, texte, 'WhatsApp', true);
     const url = `https://wa.me/?text=${encodeURIComponent(texte)}`; // WhatsApp ne permet pas d'ouvrir un groupe directement : il s'ouvre avec le message, tu choisis le groupe
     try { window.open(url, '_blank'); } catch (e) { location.href = url; }
     return say(`WhatsApp est ouvert avec ton message : choisis le groupe ${nom}, puis touche Envoyer.`);
