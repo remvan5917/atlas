@@ -71,6 +71,37 @@ const PRESENTATION = (() => {
 #pres .mur{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:min(1.6vw,16px);width:min(92vw,1040px);margin-top:3vh}
 #pres .mur div{padding:1.6vmin 1.8vmin;border:1px solid rgba(34,211,238,.3);border-radius:12px;background:rgba(2,16,28,.6);font:600 clamp(12px,2.1vmin,17px) system-ui;color:#e0f2fe;text-align:left;opacity:0;transform:scale(.8);animation:pr-monte .45s forwards}
 #pres .mur div small{display:block;margin-top:.4vh;font:400 clamp(10px,1.6vmin,13px) system-ui;color:#7dd3fc}
+#pres .tel{display:flex;align-items:center;gap:min(5vw,60px)}
+#pres .iphone{position:relative;flex:none;width:min(30vmin,290px);aspect-ratio:9/19;border-radius:min(5vmin,46px);border:3px solid #cbd5e1;background:#05070c;box-shadow:0 0 0 6px #1e293b,0 0 50px rgba(34,211,238,.25);overflow:hidden}
+#pres .iphone:before{content:'';position:absolute;top:2.2%;left:34%;width:32%;height:3.6%;border-radius:20px;background:#000;z-index:2}
+#pres .ecran-tel{position:absolute;inset:0;padding:16% 7% 8%;display:flex;flex-direction:column;font-family:system-ui;animation:pr-entre .5s}
+#pres .tel-tete{text-align:center;color:#f1f5f9;font:600 clamp(11px,1.8vmin,15px) system-ui;padding-bottom:6%;border-bottom:1px solid #1e293b}
+#pres .tel-tete small{display:block;font-weight:400;color:#94a3b8;font-size:.8em}
+#pres .tel-fil{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:6% 0}
+#pres .tb{max-width:84%;padding:7px 10px;border-radius:16px;font-size:clamp(10px,1.7vmin,14px);line-height:1.35;color:#fff;text-align:left;opacity:0;transform:translateY(8px);transition:all .35s}
+#pres .tb.moi{align-self:flex-end;background:#2563eb}#pres .tb.lui{align-self:flex-start;background:#1e293b}
+#pres .tb-etat{align-self:flex-end;font-size:clamp(9px,1.3vmin,11px);color:#94a3b8;opacity:0;transition:opacity .3s}
+#pres .tel-saisie{min-height:2.4em;border:1px solid #334155;border-radius:18px;padding:6px 10px;color:#e2e8f0;font-size:clamp(10px,1.7vmin,14px);text-align:left}
+#pres .tel-saisie:after{content:'|';animation:pr-clignote 1s infinite;color:#60a5fa}
+#pres .appel-av{width:44%;aspect-ratio:1;margin:12% auto 6%;border-radius:50%;background:radial-gradient(circle,#155e75,#0b1220);display:flex;align-items:center;justify-content:center;font:700 clamp(16px,3vmin,26px) system-ui;color:#e0f2fe;box-shadow:0 0 30px rgba(34,211,238,.4)}
+#pres .appel-nom{text-align:center;color:#f1f5f9;font:600 clamp(12px,2vmin,17px) system-ui}
+#pres .appel-t{text-align:center;color:#86efac;font:500 clamp(10px,1.6vmin,13px) ui-monospace,monospace;margin-top:4px}
+#pres canvas.onde{width:100%;height:18%;margin-top:10%}
+#pres .transcrit{width:min(40vw,460px);display:flex;flex-direction:column;gap:8px;text-align:left}
+#pres .hud-tel{font-size:clamp(10px,1.6vmin,13px);letter-spacing:.2em;color:#67e8f9;line-height:1.9;margin-bottom:1vh}
+#pres .tr{padding:9px 12px;border-radius:12px;font:400 clamp(12px,2vmin,16px) system-ui;line-height:1.4;color:#f1f5f9;opacity:0;animation:pr-monte .4s forwards}
+#pres .tr small{display:block;font:700 10px ui-monospace,monospace;letter-spacing:.2em;margin-bottom:3px}
+#pres .tr.a{background:rgba(34,211,238,.1);border-left:3px solid #22d3ee}#pres .tr.a small{color:#67e8f9}
+#pres .tr.e{background:rgba(255,255,255,.05);border-left:3px solid #94a3b8}#pres .tr.e small{color:#cbd5e1}
+#pres .resultat{padding:11px 14px;border-radius:12px;background:rgba(74,222,128,.13);border:1px solid #4ade80;color:#bbf7d0;font:700 clamp(12px,2vmin,16px) system-ui;opacity:0;animation:pr-monte .5s forwards}
+#pres .cadran{position:relative;width:min(50vmin,500px);height:min(50vmin,500px);margin-top:-4vh}
+#pres .cadran svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#pres .aiguille{transform-box:view-box;transform-origin:200px 200px;animation:pr-tourne 12s .8s linear forwards}
+#pres .cadran .centre{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font:200 clamp(26px,7vmin,64px) ui-monospace,monospace;color:#e0f2fe;text-shadow:0 0 18px #22d3ee}
+#pres .cadran .centre small{font:400 clamp(10px,1.6vmin,13px) ui-monospace,monospace;letter-spacing:.3em;color:#67e8f9;margin-top:.6vh}
+#pres .ev{position:absolute;width:min(24vmin,230px);transform:translate(-50%,-50%);text-align:center;font:600 clamp(11px,1.9vmin,15px) system-ui;color:#e0f2fe;opacity:0;animation:pr-monte .5s forwards}
+#pres .ev small{display:block;font:400 clamp(9px,1.5vmin,12px) system-ui;color:#7dd3fc;margin-top:2px}
+#pres .ev:before{content:attr(data-h);display:block;font:700 clamp(9px,1.4vmin,11px) ui-monospace,monospace;letter-spacing:.2em;color:#fbbf24;margin-bottom:2px}
 #pres .bulle{max-width:min(34vw,330px);margin:1.6vh auto 0;padding:9px 13px;border-radius:14px;font:400 clamp(12px,2vmin,16px) system-ui;line-height:1.4;color:#f1f5f9;text-align:left;opacity:0;animation:pr-monte .6s forwards}
 #pres .bulle.a{background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.45)}#pres .bulle.s{background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.5)}
 #pres .cam{position:relative;width:min(84vw,820px);height:min(56vh,470px);border:1px solid rgba(34,211,238,.35);border-radius:12px;overflow:hidden;background:repeating-linear-gradient(0deg,rgba(34,211,238,.035) 0 2px,transparent 2px 4px),radial-gradient(ellipse at 50% 70%,#0b2233,#02060b 75%)}
@@ -248,6 +279,30 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
 <path d="M92 166 H228 Q222 210 160 212 Q98 210 92 166 Z" fill="#050a1a" stroke="#e9f0ff" stroke-width="3.5" stroke-linejoin="round"/>
 <path d="M96 166 L104 186 L112 167 L120 192 L128 168 L136 196 L144 168 L152 198 L160 168 L168 198 L176 168 L184 196 L192 168 L200 192 L208 167 L216 186 L224 166 Z" fill="#f1f5ff" stroke="#e9f0ff" stroke-width="1.2" stroke-linejoin="round"/>
 <path d="M90 166 H230" stroke="#4c8dff" stroke-width="7" stroke-linecap="round"/><text x="160" y="219" text-anchor="middle" font-family="ui-monospace,monospace" font-size="6" fill="#9aa8cc" letter-spacing="1">SHADOW · S-01</text></svg>`;
+  const VOIX_EUX = 'TkwuwKE5cxtp46xF1Uw9'; // « Marianne », une autre voix du compte ElevenLabs : celle de la personne au téléphone
+  async function tamponEux(t) {
+    const s = S.settings; if (!s.elevenKey) return null;
+    try {
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOIX_EUX}?output_format=mp3_44100_128`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'xi-api-key': s.elevenKey, Accept: 'audio/mpeg' }, body: JSON.stringify({ text: t, model_id: s.elevenModel || 'eleven_v4_turbo', language_code: 'fr' }) });
+      if (!r.ok) return null;
+      const ab = await r.arrayBuffer();
+      return await new Promise((res, rej) => fx.audio().decodeAudioData(ab, res, rej)).catch(() => null);
+    } catch (e) { return null; }
+  }
+  // elle parle « au téléphone » (un filtre 300–3400 Hz) ; sans ElevenLabs, la voix du navigateur ; sinon, un silence de la bonne durée
+  async function voixEux(tampon, t) {
+    if (tampon) {
+      try {
+        const c = fx.audio(), src = c.createBufferSource(), hp = c.createBiquadFilter(), lp = c.createBiquadFilter(), g = c.createGain();
+        src.buffer = tampon; hp.type = 'highpass'; hp.frequency.value = 320; lp.type = 'lowpass'; lp.frequency.value = 3400; g.gain.value = 1.2;
+        src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(c.destination);
+        return await new Promise(res => { src.onended = res; src.start(); setTimeout(res, tampon.duration * 1000 + 800); });
+      } catch (e) { /* plus bas */ }
+    }
+    return new Promise(res => {
+      try { const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; u.rate = 1.05; u.pitch = 1.2; u.onend = res; u.onerror = res; speechSynthesis.speak(u); setTimeout(res, 1500 + 70 * t.length); } catch (e) { setTimeout(res, 1200 + 55 * t.length); }
+    });
+  }
   const SILHOUETTE = '<svg viewBox="0 0 60 160"><defs><linearGradient id="pr-hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#67e8f9" stop-opacity=".6"/><stop offset="1" stop-color="#0891b2" stop-opacity=".12"/></linearGradient></defs>'
     + '<g fill="url(#pr-hg)" stroke="#a5f3fc" stroke-width="1"><circle cx="30" cy="14" r="10"/><path d="M18 28 h24 q6 0 7 7 l4 40 q0 4 -4 4 h-2 l-3 -34 v42 l2 66 h-9 l-5 -60 l-5 60 h-9 l2 -66 v-42 l-3 34 h-2 q-4 0 -4 -4 l4 -40 q1 -7 7 -7 z"/></g>'
     + '<g fill="#fde68a">' + [[30, 14], [30, 30], [19, 32], [41, 32], [14, 74], [46, 74], [30, 74], [24, 110], [36, 110], [23, 150], [37, 150]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8"/>`).join('') + '</g>'
@@ -268,7 +323,7 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       let d = ecran(`<div class="balayage"></div>${anneaux()}<div class="journal"></div><div class="fin">SYSTÈMES OPÉRATIONNELS</div>`, moi);
       const j = d.querySelector('.journal');
       const lignes = [['Noyau neuronal', 'en ligne'], ['Voix', 'synthèse active'], ['Vision', 'active'], ['Mémoire', 'chargée'], ['Liaison avec Shadow', 'établie'], ['Maison holographique', 'projetée'],
-        ['Détection', 'armée'], ['Sentinelle', 'en veille'], ['Bureau · comptabilité', 'prêts'], ['Ordinateur · tablette · iPhone', 'synchronisés'], ['Protocole de confiance', 'rien ne part sans son oui']];
+        ['Détection', 'armée'], ['Sentinelle', 'en veille'], ['Bureau · comptabilité', 'prêts'], ['Téléphone · SMS · appels', 'reliés'], ['Automatisations', 'actives'], ['Ordinateur · tablette · iPhone', 'synchronisés'], ['Protocole de confiance', 'rien ne part sans son oui']];
       bip([[220, 0.25], [330, 0.25], [440, 0.4]]);
       await attends(2600);
       for (const [k, v] of lignes) {
@@ -307,9 +362,52 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       son('souffle'); d = ecran(chapitre(4, 'La comptabilité', tuiles('La comptabilité', [['Les factures', 'retrouvées chez les fournisseurs'], ['Le tableau', 'rempli seul'], ['La réponse', 'prête à valider']])), moi);
       if (!(await parle(d, ['Quand son cabinet comptable demande des pièces, je vais chercher les vraies factures, chez les fournisseurs.', 'Je remplis le tableau. Je prépare la réponse.']))) return;
 
+      // 05 · le téléphone : le SMS qui s'écrit, puis l'appel à deux voix
+      son('souffle');
+      const eux = ['Le Bistrot du Canal, bonjour !', 'Ah… très bien ! Samedi soir… vingt heures, ça vous irait ?', 'Merci à vous. À samedi !'];
+      const tampons = eux.map(tamponEux); // la voix de l'autre, préparée pendant le SMS
+      d = ecran(chapitre(5, 'Le téléphone', `<div class="tel"><div class="iphone"><div class="ecran-tel" id="pr-tel"></div></div><div class="transcrit" id="pr-tr"><div class="hud-tel">ATLAS · MESSAGES<br><span style="color:#94a3b8">PRÉPARÉ PAR ATLAS · ENVOYÉ APRÈS SON OUI</span></div></div></div>`), moi);
+      const tel = d.querySelector('#pr-tel'), tr = d.querySelector('#pr-tr');
+      tel.innerHTML = '<div class="tel-tete">Julie<small>SMS</small></div><div class="tel-fil"></div><div class="tel-saisie"></div>';
+      const sms = 'Je rentre dans 20 minutes, je ramène le dessert.', saisie = tel.querySelector('.tel-saisie'), fil = tel.querySelector('.tel-fil');
+      const tape = (async () => { await attends(900); for (let i = 1; i <= sms.length && vivant(moi); i++) { saisie.textContent = sms.slice(0, i); if (i % 3 === 0) bip([[2200, 0.012]]); await attends(42); } })();
+      if (!(await parle(d, ['Je parle aussi pour lui.', 'Un message à envoyer ? Il me le dit. Je l’écris.']))) return;
+      await tape; if (fini()) return;
+      const bulle = (t, cls) => { const b = document.createElement('div'); b.className = `tb ${cls}`; b.textContent = t; fil.appendChild(b); requestAnimationFrame(() => { b.style.opacity = '1'; b.style.transform = 'none'; }); return b; };
+      saisie.textContent = ''; bulle(sms, 'moi'); bip([[1568, 0.05]]);
+      const et = document.createElement('div'); et.className = 'tb-etat'; et.textContent = 'Distribué'; fil.appendChild(et); setTimeout(() => { et.style.opacity = '1'; }, 500);
+      if (!(await parle(d, ['Il dit oui. C’est parti.']))) return;
+      bulle('Parfait, à tout à l’heure !', 'lui'); bip([[1046, 0.05], [1318, 0.07]]); await attends(1400);
+      if (fini()) return;
+      // l'appel
+      tel.innerHTML = '<div class="appel-av">BC</div><div class="appel-nom">Le Bistrot du Canal</div><div class="appel-t" id="pr-chrono">appel…</div><canvas class="onde"></canvas>';
+      tr.innerHTML = '<div class="hud-tel">ATLAS · APPEL SORTANT<br><span style="color:#94a3b8">VOIX : ATLAS · IDENTITÉ : INTELLIGENCE ARTIFICIELLE, ANNONCÉE</span></div>';
+      if (!(await parle(d, ['Et quand il faut appeler… j’appelle. Avec ma voix.']))) return;
+      const onde = tel.querySelector('canvas.onde'), chrono = tel.querySelector('#pr-chrono'); let parleQui = 0; const t1 = Date.now();
+      const anim = setInterval(() => {
+        if (!vivant(moi) || !document.contains(onde)) return clearInterval(anim);
+        const c = onde.getContext('2d'), w = onde.width = onde.clientWidth * 2, h = onde.height = onde.clientHeight * 2; c.clearRect(0, 0, w, h);
+        for (let i = 0; i < 32; i++) { const a = parleQui ? 0.15 + Math.random() * 0.85 : 0.06 + Math.random() * 0.08, bh = a * h; c.fillStyle = parleQui === 1 ? '#22d3ee' : '#cbd5e1'; c.fillRect(i * w / 32 + 2, (h - bh) / 2, w / 32 - 4, bh); }
+        const sec = Math.floor((Date.now() - t1) / 1000); chrono.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+      }, 90);
+      bip([[440, 0.35], [0.01, 0.25], [440, 0.35]]); await attends(1400);
+      const ligneTr = (qui, t) => { const el = document.createElement('div'); el.className = `tr ${qui}`; el.innerHTML = `<small>${qui === 'a' ? 'ATLAS' : 'LE BISTROT DU CANAL'}</small>${esc(t)}`; tr.appendChild(el); };
+      const dialogue = [['e', 0], ['a', `Bonjour, je suis Atlas, l’assistant personnel de ${prenom()} Vancoppenolle. Je suis une intelligence artificielle. J’appelle pour réserver une table samedi soir, pour quatre personnes.`],
+        ['e', 1], ['a', 'Vingt heures, c’est parfait. Au nom de Vancoppenolle. Merci beaucoup, bonne journée !'], ['e', 2]];
+      for (const [qui_, x] of dialogue) {
+        if (fini()) { clearInterval(anim); return; }
+        const t = qui_ === 'e' ? eux[x] : x; ligneTr(qui_, t);
+        parleQui = qui_ === 'a' ? 1 : 2;
+        if (qui_ === 'a') await say(t); else await voixEux(await tampons[x], t);
+        parleQui = 0; await attends(250);
+      }
+      clearInterval(anim); bip([[523, 0.08], [392, 0.12]]);
+      const res_ = document.createElement('div'); res_.className = 'resultat'; res_.textContent = '✔ Table réservée · samedi 20 h · 4 personnes · ajoutée à l’agenda'; tr.appendChild(res_);
+      if (!(await parle(d, ['Réservé. C’est dans son agenda.', 'Et je me présente toujours : je suis une intelligence artificielle.']))) return;
+
       // 06 · la maison holographique — et les vraies lumières qui se rallument
       son('grondement');
-      d = ecran(chapitre(5, 'La maison holographique', '<canvas class="holo"></canvas>'), moi); holo(d.querySelector('canvas.holo'), moi);
+      d = ecran(chapitre(6, 'La maison holographique', '<canvas class="holo"></canvas>'), moi); holo(d.querySelector('canvas.holo'), moi);
       await attends(2200); if (fini()) return;
       if (!(await parle(d, ['Et je vis dans sa maison. Je la vois, en trois dimensions.']))) return;
       bip([[523, 0.08], [784, 0.12], [1046, 0.2]]); await eclaire(avant, 100, 100); await attends(700);
@@ -317,20 +415,35 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
 
       // 07 · la détection
       son('souffle');
-      d = ecran(chapitre(6, 'La détection', `<div class="cam"><div class="rec">CAMÉRA 1 · ANALYSE</div><div class="ts">${hh()}</div><div class="marcheur">${SILHOUETTE}<div class="cible"><span>PERSONNE · 97 %</span></div></div><div class="alerte">⚠ ALERTE ENVOYÉE SUR SON IPHONE · 0,8 s</div></div>`), moi);
-      setTimeout(() => { if (vivant(moi)) son('alerte'); }, 3600);
-      if (!(await parle(d, ['Mes yeux ne dorment jamais.', 'Une personne, une voiture, un bruit de verre brisé : je le vois, je le reconnais, et je le préviens. En moins d’une seconde.']))) return;
+      d = ecran(chapitre(7, 'La détection', `<div class="cam"><div class="rec">CAMÉRA 1 · ANALYSE</div><div class="ts">${hh()}</div><div class="marcheur">${SILHOUETTE}<div class="cible"><span>PERSONNE · 97 %</span></div></div><div class="alerte">⚠ ALERTE ENVOYÉE SUR SON IPHONE · 0,8 s</div></div>`), moi);
+      setTimeout(() => { if (!vivant(moi)) return; son('alerte'); try { fetch(`${root()}/maison/push/film`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texte: 'Personne détectée devant la caméra 1 (démonstration de la présentation).' }) }); } catch (e) { /* tant pis */ } }, 3600); // une vraie notification, sur son vrai téléphone
+      if (!(await parle(d, ['Mes yeux ne dorment jamais.', 'Une personne, une voiture, un bruit de verre brisé : je le vois, je le reconnais, et je le préviens.', 'Là. Maintenant. Sur son téléphone.']))) return;
 
       // 08 · la sentinelle
       son('souffle');
       const pts = [[30, 28, ''], [68, 22, ''], [76, 60, ''], [40, 70, ''], [58, 44, ''], [22, 52, ''], [63, 79, 'APPAREIL INCONNU']];
-      d = ecran(chapitre(7, 'La sentinelle', `<div class="radar"><div class="balai"></div>${pts.map(([x, y, l], i) => `<div class="pt${l ? ' rouge' : ''}" style="left:${x}%;top:${y}%;animation-delay:${0.5 + i * 0.45}s${l ? ',0s' : ''}">${l ? `<small>${l}</small>` : ''}</div>`).join('')}</div>`), moi);
+      d = ecran(chapitre(8, 'La sentinelle', `<div class="radar"><div class="balai"></div>${pts.map(([x, y, l], i) => `<div class="pt${l ? ' rouge' : ''}" style="left:${x}%;top:${y}%;animation-delay:${0.5 + i * 0.45}s${l ? ',0s' : ''}">${l ? `<small>${l}</small>` : ''}</div>`).join('')}</div>`), moi);
       setTimeout(() => { if (vivant(moi)) son('alerte'); }, 3300);
       if (!(await parle(d, ['La nuit, la sentinelle veille.', 'Le réseau, les caméras, l’imprimante, l’alarme. Un appareil inconnu se connecte ? Une caméra tombe ? Il est prévenu.']))) return;
 
+      // 08 bis · les automatisations : une journée qui tourne toute seule
+      son('grondement');
+      const jour = [[3, 'La nuit', 'la sentinelle veille'], [7, 'Le réveil', 'lumière douce, météo, planning'], [9, 'Le bureau', 'les mails sont déjà traités'], [12, 'Les courses', 'la liste se remplit seule'],
+        [16.5, 'Les devoirs', 'transmis à Shadow'], [18.5, 'Le retour', 'la maison s’allume, l’accueil'], [20.5, 'L’histoire du soir', 'Shadow la raconte'], [22.5, 'Le coucher', 'lumières, alarme, sentinelle']];
+      const tic = [...Array(24).keys()].map(h => { const a = h / 24 * 6.2832, r1 = h % 6 ? 146 : 138; return `<line x1="${200 + Math.sin(a) * r1}" y1="${200 - Math.cos(a) * r1}" x2="${200 + Math.sin(a) * 152}" y2="${200 - Math.cos(a) * 152}" stroke="#67e8f9" stroke-opacity="${h % 6 ? 0.35 : 0.8}" stroke-width="${h % 6 ? 1 : 2}"/>`; }).join('');
+      const points = jour.map(([h], i) => { const a = h / 24 * 6.2832; return `<circle cx="${200 + Math.sin(a) * 152}" cy="${200 - Math.cos(a) * 152}" r="6" fill="#fbbf24" style="opacity:0;animation:pr-ligne .3s ${(0.8 + h / 24 * 12).toFixed(2)}s forwards;filter:drop-shadow(0 0 6px #fbbf24)"/>`; }).join('');
+      const evs = jour.map(([h, a, b]) => { const g = h / 24 * 6.2832, hh_ = `${Math.floor(h)} h${h % 1 ? ' 30' : ''}`; return `<div class="ev" data-h="${hh_}" style="left:${50 + Math.sin(g) * 68}%;top:${50 - Math.cos(g) * 56}%;animation-delay:${(0.8 + h / 24 * 12).toFixed(2)}s">${esc(a)}<small>${esc(b)}</small></div>`; }).join('');
+      d = ecran(chapitre(9, 'Les automatisations', `<div class="cadran"><svg viewBox="0 0 400 400"><circle cx="200" cy="200" r="152" fill="none" stroke="#22d3ee" stroke-opacity=".35"/><circle cx="200" cy="200" r="120" fill="none" stroke="#22d3ee" stroke-opacity=".12" stroke-dasharray="3 6"/>${tic}${points}
+<line class="aiguille" x1="200" y1="200" x2="200" y2="40" stroke="#e0f2fe" stroke-width="2.5" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #22d3ee)"/><circle cx="200" cy="200" r="5" fill="#e0f2fe"/></svg><div class="centre"><span id="pr-heure">00:00</span><small>UNE JOURNÉE</small></div>${evs}</div>`), moi);
+      const t2 = performance.now(), hEl = d.querySelector('#pr-heure');
+      const horloge = setInterval(() => { if (!vivant(moi) || !document.contains(hEl)) return clearInterval(horloge); const k = Math.max(0, Math.min(1, (performance.now() - t2 - 800) / 12000)), m = Math.floor(k * 1440); hEl.textContent = `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }, 60);
+      jour.forEach(([h]) => setTimeout(() => { if (vivant(moi)) bip([[988, 0.05]]); }, 800 + h / 24 * 12000));
+      if (!(await parle(d, ['Et tout ça arrive tout seul.', 'Le matin, la maison se réveille avec lui. Le soir, elle s’endort avec le petit.', 'Personne n’appuie sur un bouton.']))) return;
+      await attends(Math.max(0, 13200 - (performance.now() - t2)));
+
       // 09 · Atlas et Shadow, ensemble : les deux robots de la maison se parlent
       son('grondement');
-      d = ecran(chapitre(8, 'Atlas & Shadow', `<div class="duo"><div class="bloc">${anneaux('', 'mini')}<div class="leg"><b style="color:#67e8f9">ATLAS</b>LA MAISON</div><div class="bulle a" style="animation-delay:2.2s">Ses devoirs de ce soir : les tables de 7.</div></div>
+      d = ecran(chapitre(10, 'Atlas & Shadow', `<div class="duo"><div class="bloc">${anneaux('', 'mini')}<div class="leg"><b style="color:#67e8f9">ATLAS</b>LA MAISON</div><div class="bulle a" style="animation-delay:2.2s">Ses devoirs de ce soir : les tables de 7.</div></div>
 <div class="lien">${[0, 0.55, 1.1].map(x => `<span class="paquet va" style="animation-delay:${1.4 + x}s"></span><span class="paquet vient" style="animation-delay:${2.2 + x}s"></span>`).join('')}</div>
 <div class="bloc" style="animation-delay:.6s">${SHADOW('parle')}<div class="leg"><b style="color:#93c5fd">SHADOW</b>SON FILS</div><div class="bulle s" style="animation-delay:4.2s">Reçu ! On s'y met après le goûter.</div></div></div>`), moi);
       if (!(await parle(d, ['Shadow et moi, on se parle.', 'Quand son père me dicte les devoirs, je les transmets à Shadow. Shadow les fait réviser au petit, en jouant.']))) return;
@@ -338,19 +451,19 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       const aDeux = [['Les devoirs', 'Atlas les reçoit, Shadow les fait réviser'], ['Les questions', 'le petit demande à Shadow, Atlas répond'], ['Les sketchs', 'à deux voix, rien que pour lui'],
         ['L’accueil', 'quand papa ou son fils rentrent'], ['La veille', 'Shadow le voit, Atlas garde la maison'], ['La maison', 'qui s’endort avec lui le soir']];
       son('souffle');
-      d = ecran(chapitre(9, 'À deux', `<div class="vitrine">${SHADOW('parle')}<div class="liste" style="--c:#67e8f9">${aDeux.map(([a, b], i) => `<div style="animation-delay:${0.4 + i * 0.35}s"><b>▸ ${esc(a)}</b>${esc(b)}</div>`).join('')}</div>${anneaux('', 'mini')}</div>`), moi);
+      d = ecran(chapitre(11, 'À deux', `<div class="vitrine">${SHADOW('parle')}<div class="liste" style="--c:#67e8f9">${aDeux.map(([a, b], i) => `<div style="animation-delay:${0.4 + i * 0.35}s"><b>▸ ${esc(a)}</b>${esc(b)}</div>`).join('')}</div>${anneaux('', 'mini')}</div>`), moi);
       if (!(await parle(d, ['Les devoirs, les questions, les histoires à deux voix, l’accueil quand on rentre…', 'Deux robots. Une seule famille.']))) return;
 
       // 10 · partout
-      son('souffle'); d = ecran(chapitre(10, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
+      son('souffle'); d = ecran(chapitre(12, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
       if (!(await parle(d, ['Je suis sur son ordinateur, sa tablette, son iPhone.', 'Une seule mémoire. Une seule voix.']))) return;
 
       // 10 bis · tout ce que fait Atlas
       son('grondement');
       const mur = [['Le bureau', 'mails lus, réponses écrites'], ['La comptabilité', 'factures, dossier du cabinet'], ['Le téléphone', 'SMS, WhatsApp, appels'],
-        ['L’agenda', 'le planning dicté à la voix'], ['La cuisine', 'menus, liste de courses'], ['L’imprimante', 'il imprime tout seul'], ['Le coéquipier', 'il voit son écran'],
+        ['L’agenda', 'le planning dicté à la voix'], ['La cuisine', 'menus, liste de courses'], ['Les automatisations', 'la maison vit toute seule'], ['Le coéquipier', 'il voit son écran'],
         ['La maison 3D', 'chaque pièce, en direct'], ['La détection', 'personnes, voitures, sons'], ['La sentinelle', 'réseau et caméras, la nuit'], ['La mémoire', 'il se souvient de tout'], ['Shadow', 'le robot de son fils']];
-      d = ecran(chapitre(11, 'Tout ce que je fais', `<div class="titre" style="font-size:clamp(22px,5vmin,52px)">Tout ce que je fais</div><div class="mur">${mur.map(([a, b], i) => `<div style="animation-delay:${0.3 + i * 0.16}s">${esc(a)}<small>${esc(b)}</small></div>`).join('')}</div>`), moi);
+      d = ecran(chapitre(13, 'Tout ce que je fais', `<div class="titre" style="font-size:clamp(22px,5vmin,52px)">Tout ce que je fais</div><div class="mur">${mur.map(([a, b], i) => `<div style="animation-delay:${0.3 + i * 0.16}s">${esc(a)}<small>${esc(b)}</small></div>`).join('')}</div>`), moi);
       mur.forEach((_, i) => setTimeout(() => { if (vivant(moi)) bip([[880 + i * 40, 0.03]]); }, 300 + i * 160));
       if (!(await parle(d, ['Voilà tout ce que je fais pour lui. Chaque jour.', 'Et ce n’est qu’une partie.']))) return;
 
