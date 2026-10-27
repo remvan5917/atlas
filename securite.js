@@ -161,12 +161,18 @@ const SECURITE = (() => {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
     absent = !!j.absent;
-    const l = (j.alertes || []).filter(a => a.id > vuJusqua);
+    let l = (j.alertes || []).filter(a => a.id > vuJusqua);
     if (!l.length) return;
     if (!vuJusqua) { vuJusqua = Math.max(...l.map(a => a.id)); try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ } return; } // un nouvel appareil : il ne raconte pas toute la semaine
     alertesRecentes = alertesRecentes.concat(l).slice(-30);
     vuJusqua = Math.max(...l.map(a => a.id));
     try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ }
+    // seulement ce qui vient d'arriver : un appareil resté éteint (ou en veille) ne raconte pas les alertes d'hier une par une
+    const quandA = a => (a.at > 1e11 ? a.at : a.at * 1000), fenetre = a => (a.gravite === 'urgent' ? 15 : 10) * 60000;
+    const tard = l.filter(a => Date.now() - quandA(a) >= fenetre(a) && a.gravite !== 'info' && a.genre !== 'reveil');
+    if (tard.length) PROACTIF.annonce(`alertes-manquees-${vuJusqua}`, `Pendant que j'étais en veille, il y a eu ${tard.length} alerte${tard.length > 1 ? 's' : ''}. Dis « rapport de sécurité » pour le détail.`, { expire: Date.now() + 30 * 60000 });
+    l = l.filter(a => Date.now() - quandA(a) < fenetre(a));
+    if (!l.length) return;
     // plusieurs « nouvel appareil » d'un coup (des ampoules, des prises qu'on installe) : une seule annonce, pas une liste
     const res = l.filter(a => a.genre === 'reseau' && a.gravite !== 'info');
     if (res.length > 1) {
@@ -182,7 +188,7 @@ const SECURITE = (() => {
     l.filter(a => a.genre === 'boite-noire').forEach(a => { if (typeof TRADING !== 'undefined') PROACTIF.annonce(`alerte-${a.id}`, async () => { await TRADING.bilanNoire(); return ''; }, { urgent: true, expire: Date.now() + 2 * 3600000 }); });
     l.filter(a => a.gravite === 'annonce' && a.genre !== 'accueil' && a.genre !== 'boite-noire').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
     l.filter(a => a.genre === 'lien' && a.gravite === 'attention').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { lueurLien(); fx.tone([[659, 0.15], [880, 0.15], [1319, 0.35]]); await wait(700); return a.texte; }, { urgent: true, expire: Date.now() + 6 * 3600000 }));
-    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && a.genre !== 'lien' && a.genre !== 'accueil' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000), lumiere: a.genre === 'marche' ? 'marche' : a.gravite === 'urgent' || /^(camera|ezviz|defense|visiteurs|reseau)$/.test(a.genre) ? 'alerte' : '' }));
+    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && a.genre !== 'lien' && a.genre !== 'accueil' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent', expire: Math.min(Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000), quandA(a) + 20 * 60000), lumiere: a.genre === 'marche' ? 'marche' : a.gravite === 'urgent' || /^(camera|ezviz|defense|visiteurs|reseau)$/.test(a.genre) ? 'alerte' : '' }));
   }
   setInterval(releveAlertes, 20000); setTimeout(releveAlertes, 9000);
   async function rapport(n) {

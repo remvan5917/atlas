@@ -125,5 +125,7 @@ const PROACTIF = (() => {
   }
   setInterval(ordinateur, 15 * 60000); setTimeout(ordinateur, 120000);
 
-  return { annonce, avecLumiere, reconnu, auDemarrage, briefMatin, _file: file, _tic: tic };
+  // « stop » : les annonces en attente (les alertes) s'en vont aussi, pas seulement la phrase en cours
+  function vide(prefixe = '') { for (let i = file.length - 1; i >= 0; i--) if (file[i].cle.startsWith(prefixe)) file.splice(i, 1); }
+  return { annonce, vide, avecLumiere, reconnu, auDemarrage, briefMatin, _file: file, _tic: tic };
 })();
