@@ -2,7 +2,7 @@
    ATLAS — la présentation : il filme, Atlas fait tout
    « Atlas, lance la présentation » (ou « mode présentation », « présente-toi à la caméra », « moteur, action », « on tourne ») :
    Atlas mène seul tout le film, plein écran, avec sa voix et sa bande-son — le réveil, qui il est (construit seul, en France),
-   Shadow (le premier robot, déjà publié : Atlas est la suite), le bureau, la compta, le trading, la maison holographique (et les vraies
+   Shadow (le premier robot, déjà publié : Atlas est la suite), le bureau, la compta, la maison holographique (et les vraies
    lumières qui baissent puis se rallument), la détection, la sentinelle, ses appareils, sa règle, le robot de demain, la carte de fin.
    AUCUNE donnée réelle (c'est confidentiel) : ni mail, ni compta, ni trading, ni caméra, ni plan de la maison — tout est dessiné pour le film.
    « Stop » ou « coupez » : il s'arrête, les lumières reviennent comme avant.
@@ -268,7 +268,7 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       let d = ecran(`<div class="balayage"></div>${anneaux()}<div class="journal"></div><div class="fin">SYSTÈMES OPÉRATIONNELS</div>`, moi);
       const j = d.querySelector('.journal');
       const lignes = [['Noyau neuronal', 'en ligne'], ['Voix', 'synthèse active'], ['Vision', 'active'], ['Mémoire', 'chargée'], ['Liaison avec Shadow', 'établie'], ['Maison holographique', 'projetée'],
-        ['Détection', 'armée'], ['Sentinelle', 'en veille'], ['Bureau · comptabilité · trading', 'prêts'], ['Ordinateur · tablette · iPhone', 'synchronisés'], ['Protocole de confiance', 'rien ne part sans son oui']];
+        ['Détection', 'armée'], ['Sentinelle', 'en veille'], ['Bureau · comptabilité', 'prêts'], ['Ordinateur · tablette · iPhone', 'synchronisés'], ['Protocole de confiance', 'rien ne part sans son oui']];
       bip([[220, 0.25], [330, 0.25], [440, 0.4]]);
       await attends(2600);
       for (const [k, v] of lignes) {
@@ -307,13 +307,9 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       son('souffle'); d = ecran(chapitre(4, 'La comptabilité', tuiles('La comptabilité', [['Les factures', 'retrouvées chez les fournisseurs'], ['Le tableau', 'rempli seul'], ['La réponse', 'prête à valider']])), moi);
       if (!(await parle(d, ['Quand son cabinet comptable demande des pièces, je vais chercher les vraies factures, chez les fournisseurs.', 'Je remplis le tableau. Je prépare la réponse.']))) return;
 
-      // 05 · le trading
-      son('souffle'); d = ecran(chapitre(5, 'Le trading', tuiles('Le trading', [['Le journal', 'tenu tout seul'], ['Les limites', 'surveillées en direct'], ['Les conseils', 'jamais']])), moi);
-      if (!(await parle(d, [`${prenom()} est trader. Pendant ses séances, je tiens son journal, trade par trade, et je surveille ses limites en temps réel.`, 'Jamais un conseil. Un miroir.']))) return;
-
       // 06 · la maison holographique — et les vraies lumières qui se rallument
       son('grondement');
-      d = ecran(chapitre(6, 'La maison holographique', '<canvas class="holo"></canvas>'), moi); holo(d.querySelector('canvas.holo'), moi);
+      d = ecran(chapitre(5, 'La maison holographique', '<canvas class="holo"></canvas>'), moi); holo(d.querySelector('canvas.holo'), moi);
       await attends(2200); if (fini()) return;
       if (!(await parle(d, ['Et je vis dans sa maison. Je la vois, en trois dimensions.']))) return;
       bip([[523, 0.08], [784, 0.12], [1046, 0.2]]); await eclaire(avant, 100, 100); await attends(700);
@@ -321,20 +317,20 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
 
       // 07 · la détection
       son('souffle');
-      d = ecran(chapitre(7, 'La détection', `<div class="cam"><div class="rec">CAMÉRA 1 · ANALYSE</div><div class="ts">${hh()}</div><div class="marcheur">${SILHOUETTE}<div class="cible"><span>PERSONNE · 97 %</span></div></div><div class="alerte">⚠ ALERTE ENVOYÉE SUR SON IPHONE · 0,8 s</div></div>`), moi);
+      d = ecran(chapitre(6, 'La détection', `<div class="cam"><div class="rec">CAMÉRA 1 · ANALYSE</div><div class="ts">${hh()}</div><div class="marcheur">${SILHOUETTE}<div class="cible"><span>PERSONNE · 97 %</span></div></div><div class="alerte">⚠ ALERTE ENVOYÉE SUR SON IPHONE · 0,8 s</div></div>`), moi);
       setTimeout(() => { if (vivant(moi)) son('alerte'); }, 3600);
       if (!(await parle(d, ['Mes yeux ne dorment jamais.', 'Une personne, une voiture, un bruit de verre brisé : je le vois, je le reconnais, et je le préviens. En moins d’une seconde.']))) return;
 
       // 08 · la sentinelle
       son('souffle');
       const pts = [[30, 28, ''], [68, 22, ''], [76, 60, ''], [40, 70, ''], [58, 44, ''], [22, 52, ''], [63, 79, 'APPAREIL INCONNU']];
-      d = ecran(chapitre(8, 'La sentinelle', `<div class="radar"><div class="balai"></div>${pts.map(([x, y, l], i) => `<div class="pt${l ? ' rouge' : ''}" style="left:${x}%;top:${y}%;animation-delay:${0.5 + i * 0.45}s${l ? ',0s' : ''}">${l ? `<small>${l}</small>` : ''}</div>`).join('')}</div>`), moi);
+      d = ecran(chapitre(7, 'La sentinelle', `<div class="radar"><div class="balai"></div>${pts.map(([x, y, l], i) => `<div class="pt${l ? ' rouge' : ''}" style="left:${x}%;top:${y}%;animation-delay:${0.5 + i * 0.45}s${l ? ',0s' : ''}">${l ? `<small>${l}</small>` : ''}</div>`).join('')}</div>`), moi);
       setTimeout(() => { if (vivant(moi)) son('alerte'); }, 3300);
       if (!(await parle(d, ['La nuit, la sentinelle veille.', 'Le réseau, les caméras, l’imprimante, l’alarme. Un appareil inconnu se connecte ? Une caméra tombe ? Il est prévenu.']))) return;
 
       // 09 · Atlas et Shadow, ensemble : les deux robots de la maison se parlent
       son('grondement');
-      d = ecran(chapitre(9, 'Atlas & Shadow', `<div class="duo"><div class="bloc">${anneaux('', 'mini')}<div class="leg"><b style="color:#67e8f9">ATLAS</b>LA MAISON</div><div class="bulle a" style="animation-delay:2.2s">Ses devoirs de ce soir : les tables de 7.</div></div>
+      d = ecran(chapitre(8, 'Atlas & Shadow', `<div class="duo"><div class="bloc">${anneaux('', 'mini')}<div class="leg"><b style="color:#67e8f9">ATLAS</b>LA MAISON</div><div class="bulle a" style="animation-delay:2.2s">Ses devoirs de ce soir : les tables de 7.</div></div>
 <div class="lien">${[0, 0.55, 1.1].map(x => `<span class="paquet va" style="animation-delay:${1.4 + x}s"></span><span class="paquet vient" style="animation-delay:${2.2 + x}s"></span>`).join('')}</div>
 <div class="bloc" style="animation-delay:.6s">${SHADOW('parle')}<div class="leg"><b style="color:#93c5fd">SHADOW</b>SON FILS</div><div class="bulle s" style="animation-delay:4.2s">Reçu ! On s'y met après le goûter.</div></div></div>`), moi);
       if (!(await parle(d, ['Shadow et moi, on se parle.', 'Quand son père me dicte les devoirs, je les transmets à Shadow. Shadow les fait réviser au petit, en jouant.']))) return;
@@ -342,19 +338,19 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       const aDeux = [['Les devoirs', 'Atlas les reçoit, Shadow les fait réviser'], ['Les questions', 'le petit demande à Shadow, Atlas répond'], ['Les sketchs', 'à deux voix, rien que pour lui'],
         ['L’accueil', 'quand papa ou son fils rentrent'], ['La veille', 'Shadow le voit, Atlas garde la maison'], ['La maison', 'qui s’endort avec lui le soir']];
       son('souffle');
-      d = ecran(chapitre(10, 'À deux', `<div class="vitrine">${SHADOW('parle')}<div class="liste" style="--c:#67e8f9">${aDeux.map(([a, b], i) => `<div style="animation-delay:${0.4 + i * 0.35}s"><b>▸ ${esc(a)}</b>${esc(b)}</div>`).join('')}</div>${anneaux('', 'mini')}</div>`), moi);
+      d = ecran(chapitre(9, 'À deux', `<div class="vitrine">${SHADOW('parle')}<div class="liste" style="--c:#67e8f9">${aDeux.map(([a, b], i) => `<div style="animation-delay:${0.4 + i * 0.35}s"><b>▸ ${esc(a)}</b>${esc(b)}</div>`).join('')}</div>${anneaux('', 'mini')}</div>`), moi);
       if (!(await parle(d, ['Les devoirs, les questions, les histoires à deux voix, l’accueil quand on rentre…', 'Deux robots. Une seule famille.']))) return;
 
       // 10 · partout
-      son('souffle'); d = ecran(chapitre(11, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
+      son('souffle'); d = ecran(chapitre(10, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
       if (!(await parle(d, ['Je suis sur son ordinateur, sa tablette, son iPhone.', 'Une seule mémoire. Une seule voix.']))) return;
 
       // 10 bis · tout ce que fait Atlas
       son('grondement');
-      const mur = [['Le bureau', 'mails lus, réponses écrites'], ['La comptabilité', 'factures, dossier du cabinet'], ['Le trading', 'journal, limites, payout'], ['Le téléphone', 'SMS, WhatsApp, appels'],
+      const mur = [['Le bureau', 'mails lus, réponses écrites'], ['La comptabilité', 'factures, dossier du cabinet'], ['Le téléphone', 'SMS, WhatsApp, appels'],
         ['L’agenda', 'le planning dicté à la voix'], ['La cuisine', 'menus, liste de courses'], ['L’imprimante', 'il imprime tout seul'], ['Le coéquipier', 'il voit son écran'],
-        ['La maison 3D', 'chaque pièce, en direct'], ['La détection', 'personnes, voitures, sons'], ['La sentinelle', 'réseau et caméras, la nuit'], ['Shadow', 'le robot de son fils']];
-      d = ecran(chapitre(12, 'Tout ce que je fais', `<div class="titre" style="font-size:clamp(22px,5vmin,52px)">Tout ce que je fais</div><div class="mur">${mur.map(([a, b], i) => `<div style="animation-delay:${0.3 + i * 0.16}s">${esc(a)}<small>${esc(b)}</small></div>`).join('')}</div>`), moi);
+        ['La maison 3D', 'chaque pièce, en direct'], ['La détection', 'personnes, voitures, sons'], ['La sentinelle', 'réseau et caméras, la nuit'], ['La mémoire', 'il se souvient de tout'], ['Shadow', 'le robot de son fils']];
+      d = ecran(chapitre(11, 'Tout ce que je fais', `<div class="titre" style="font-size:clamp(22px,5vmin,52px)">Tout ce que je fais</div><div class="mur">${mur.map(([a, b], i) => `<div style="animation-delay:${0.3 + i * 0.16}s">${esc(a)}<small>${esc(b)}</small></div>`).join('')}</div>`), moi);
       mur.forEach((_, i) => setTimeout(() => { if (vivant(moi)) bip([[880 + i * 40, 0.03]]); }, 300 + i * 160));
       if (!(await parle(d, ['Voilà tout ce que je fais pour lui. Chaque jour.', 'Et ce n’est qu’une partie.']))) return;
 
