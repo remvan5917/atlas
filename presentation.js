@@ -56,6 +56,23 @@ const PRESENTATION = (() => {
 #pres .shadow{width:min(26vmin,230px);height:min(26vmin,230px);border-radius:50%;background:radial-gradient(circle at 50% 40%,#2e1065,#0b0420 70%);box-shadow:0 0 40px #7c3aed,0 0 90px rgba(124,58,237,.5) inset;display:flex;align-items:center;justify-content:center;gap:16%}
 #pres .shadow i{width:16%;height:30%;border-radius:40%;background:#ddd6fe;box-shadow:0 0 18px #c4b5fd;animation:pr-cligne 3.4s infinite}
 #pres .mini{width:min(26vmin,230px);height:min(26vmin,230px)}
+#pres .lien{position:relative}
+#pres .paquet{position:absolute;top:-4px;width:10px;height:10px;margin-left:-5px;border-radius:50%;opacity:0}
+#pres .paquet.va{background:#67e8f9;box-shadow:0 0 12px #22d3ee;animation:pr-va 1.6s linear infinite}
+#pres .paquet.vient{background:#c4b5fd;box-shadow:0 0 12px #a78bfa;animation:pr-vient 1.6s linear infinite}
+#pres .sh-visage{width:min(40vmin,360px);height:auto;filter:drop-shadow(0 0 22px rgba(76,141,255,.45))}
+#pres .sh-crete{animation:pr-crete 1.6s ease-in-out infinite}
+#pres .sh-oeil{transform-box:fill-box;transform-origin:center;animation:pr-cligne 3.6s infinite}
+#pres .parle .sh-crete{animation:pr-crete .35s ease-in-out infinite alternate}
+#pres .vitrine{display:flex;align-items:center;gap:min(5vw,60px);padding:0 4vw}
+#pres .liste{text-align:left}
+#pres .liste div{font:400 clamp(14px,2.5vmin,21px) system-ui;color:#e2e8f0;padding:.7vh 0;opacity:0;transform:translateX(16px);animation:pr-monte .5s forwards}
+#pres .liste div b{color:var(--c,#67e8f9);margin-right:.6em}
+#pres .mur{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:min(1.6vw,16px);width:min(92vw,1040px);margin-top:3vh}
+#pres .mur div{padding:1.6vmin 1.8vmin;border:1px solid rgba(34,211,238,.3);border-radius:12px;background:rgba(2,16,28,.6);font:600 clamp(12px,2.1vmin,17px) system-ui;color:#e0f2fe;text-align:left;opacity:0;transform:scale(.8);animation:pr-monte .45s forwards}
+#pres .mur div small{display:block;margin-top:.4vh;font:400 clamp(10px,1.6vmin,13px) system-ui;color:#7dd3fc}
+#pres .bulle{max-width:min(34vw,330px);margin:1.6vh auto 0;padding:9px 13px;border-radius:14px;font:400 clamp(12px,2vmin,16px) system-ui;line-height:1.4;color:#f1f5f9;text-align:left;opacity:0;animation:pr-monte .6s forwards}
+#pres .bulle.a{background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.45)}#pres .bulle.s{background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.5)}
 #pres .cam{position:relative;width:min(84vw,820px);height:min(56vh,470px);border:1px solid rgba(34,211,238,.35);border-radius:12px;overflow:hidden;background:repeating-linear-gradient(0deg,rgba(34,211,238,.035) 0 2px,transparent 2px 4px),radial-gradient(ellipse at 50% 70%,#0b2233,#02060b 75%)}
 #pres .cam .rec{position:absolute;top:12px;left:14px;font-size:12px;letter-spacing:.25em;color:#fca5a5}
 #pres .cam .rec:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;animation:pr-clignote 1s infinite}
@@ -76,7 +93,7 @@ const PRESENTATION = (() => {
 @keyframes pr-monte{to{opacity:1;transform:none}}@keyframes pr-trait{to{transform:scaleX(1)}}@keyframes pr-clignote{0%,100%{opacity:1}50%{opacity:.25}}
 @keyframes pr-entre{0%{opacity:0;transform:translateX(-14px) skewX(-6deg);filter:blur(6px) hue-rotate(60deg)}35%{opacity:.8;transform:translateX(9px) skewX(3deg)}55%{transform:translateX(-4px)}100%{opacity:1;transform:none;filter:none}}
 @keyframes pr-flash{from{opacity:1}to{opacity:0}}@keyframes pr-cligne{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
-@keyframes pr-marche{to{left:42%}}@keyframes pr-cible{0%{opacity:0;transform:scale(1.6)}100%{opacity:1;transform:none}}@keyframes pr-pulse{50%{transform:scale(1.7)}}`;
+@keyframes pr-marche{to{left:42%}}@keyframes pr-crete{0%,100%{stroke:#4c8dff;filter:drop-shadow(0 0 3px #4c8dff)}50%{stroke:#8ff0ff;filter:drop-shadow(0 0 9px #8ff0ff)}}@keyframes pr-va{0%{left:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:100%;opacity:0}}@keyframes pr-vient{0%{left:100%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:0;opacity:0}}@keyframes pr-cible{0%{opacity:0;transform:scale(1.6)}100%{opacity:1;transform:none}}@keyframes pr-pulse{50%{transform:scale(1.7)}}`;
 
   /* ---------- la bande-son (fabriquée ici : un souffle entre les chapitres, un grondement, une alerte) ---------- */
   function son(genre) {
@@ -219,6 +236,18 @@ const PRESENTATION = (() => {
     'M180 252 l-8 64', 'M166 322 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0', 'M172 328 l-4 52', 'M156 384 h24',
     'M220 252 l8 64', 'M222 322 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0', 'M228 328 l4 52', 'M220 384 h24',
   ];
+  const SHADOW = (cls = '') => `<svg class="sh-visage ${cls}" viewBox="0 0 320 232"><defs><linearGradient id="sh-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#56668e"/><stop offset=".06" stop-color="#2e3a5c"/><stop offset=".5" stop-color="#1a2342"/><stop offset="1" stop-color="#0d1328"/></linearGradient>
+<radialGradient id="sh-v" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#14245a"/><stop offset=".55" stop-color="#0a1433"/><stop offset="1" stop-color="#040919"/></radialGradient><clipPath id="sh-b"><path d="M92 166 H228 Q222 210 160 212 Q98 210 92 166 Z"/></clipPath></defs>
+<rect x="118" y="21" width="84" height="9" rx="4" fill="#26304d"/><path class="sh-crete" d="M116 28 L124 13 L132 28 L140 11 L148 28 L156 10 L164 28 L172 11 L180 28 L188 12 L196 28 L203 17" fill="none" stroke="#4c8dff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3" y="92" width="14" height="64" rx="5" fill="#1a2342" stroke="#e9f0ff" stroke-width="2"/><rect x="303" y="92" width="14" height="64" rx="5" fill="#1a2342" stroke="#e9f0ff" stroke-width="2"/>
+<rect x="12" y="26" width="296" height="196" rx="18" fill="url(#sh-g)" stroke="#e9f0ff" stroke-width="4"/><rect x="34" y="36" width="252" height="176" rx="12" fill="url(#sh-v)"/>
+${[[23, 37], [297, 37], [23, 211], [297, 211]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5" fill="#8e9ab9"/>`).join('')}
+${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" width="66" height="62" rx="8" fill="#0a1330" stroke="#e9f0ff" stroke-width="3.5"/><rect x="54" y="50" width="52" height="48" rx="3" fill="#03040c"/><rect class="sh-oeil" x="68" y="56" width="24" height="36" rx="3" fill="#59c8ff" style="filter:drop-shadow(0 0 6px #59c8ff)"/></g>`).join('')}
+<path d="M152 142 L160 126 L168 142 Z" fill="none" stroke="#e9f0ff" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#e9f0ff" stroke-width="2.2" stroke-linecap="round"><path d="M138 134 L104 122"/><path d="M138 139 L101 139"/><path d="M138 144 L104 156"/><path d="M182 134 L216 122"/><path d="M182 139 L219 139"/><path d="M182 144 L216 156"/></g>
+<path d="M92 166 H228 Q222 210 160 212 Q98 210 92 166 Z" fill="#050a1a" stroke="#e9f0ff" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M96 166 L104 186 L112 167 L120 192 L128 168 L136 196 L144 168 L152 198 L160 168 L168 198 L176 168 L184 196 L192 168 L200 192 L208 167 L216 186 L224 166 Z" fill="#f1f5ff" stroke="#e9f0ff" stroke-width="1.2" stroke-linejoin="round"/>
+<path d="M90 166 H230" stroke="#4c8dff" stroke-width="7" stroke-linecap="round"/><text x="160" y="219" text-anchor="middle" font-family="ui-monospace,monospace" font-size="6" fill="#9aa8cc" letter-spacing="1">SHADOW · S-01</text></svg>`;
   const SILHOUETTE = '<svg viewBox="0 0 60 160"><defs><linearGradient id="pr-hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#67e8f9" stop-opacity=".6"/><stop offset="1" stop-color="#0891b2" stop-opacity=".12"/></linearGradient></defs>'
     + '<g fill="url(#pr-hg)" stroke="#a5f3fc" stroke-width="1"><circle cx="30" cy="14" r="10"/><path d="M18 28 h24 q6 0 7 7 l4 40 q0 4 -4 4 h-2 l-3 -34 v42 l2 66 h-9 l-5 -60 l-5 60 h-9 l2 -66 v-42 l-3 34 h-2 q-4 0 -4 -4 l4 -40 q1 -7 7 -7 z"/></g>'
     + '<g fill="#fde68a">' + [[30, 14], [30, 30], [19, 32], [41, 32], [14, 74], [46, 74], [30, 74], [24, 110], [36, 110], [23, 150], [37, 150]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8"/>`).join('') + '</g>'
@@ -238,7 +267,7 @@ const PRESENTATION = (() => {
       eclaire(avant, 8, 0); son('grondement');
       let d = ecran(`<div class="balayage"></div>${anneaux()}<div class="journal"></div><div class="fin">SYSTÈMES OPÉRATIONNELS</div>`, moi);
       const j = d.querySelector('.journal');
-      const lignes = [['Noyau neuronal', 'en ligne'], ['Voix', 'synthèse active'], ['Vision', 'active'], ['Mémoire', 'chargée'], ['Maison holographique', 'projetée'],
+      const lignes = [['Noyau neuronal', 'en ligne'], ['Voix', 'synthèse active'], ['Vision', 'active'], ['Mémoire', 'chargée'], ['Liaison avec Shadow', 'établie'], ['Maison holographique', 'projetée'],
         ['Détection', 'armée'], ['Sentinelle', 'en veille'], ['Bureau · comptabilité · trading', 'prêts'], ['Ordinateur · tablette · iPhone', 'synchronisés'], ['Protocole de confiance', 'rien ne part sans son oui']];
       bip([[220, 0.25], [330, 0.25], [440, 0.4]]);
       await attends(2600);
@@ -258,26 +287,33 @@ const PRESENTATION = (() => {
 
       // 02 · d'abord, il y a eu Shadow
       son('souffle');
-      d = ecran(chapitre(1, 'Hier, Shadow', `<div class="duo"><div class="bloc"><div class="shadow"><i></i><i></i></div><div class="leg">HIER<b style="color:#c4b5fd">SHADOW</b></div></div>
+      d = ecran(chapitre(1, 'Le début : Shadow', `<div class="duo"><div class="bloc">${SHADOW()}<div class="leg">HIER<b style="color:#93c5fd">SHADOW</b></div></div>
 <div class="lien"></div><div class="bloc" style="animation-delay:1.8s">${anneaux('', 'mini')}<div class="leg">AUJOURD'HUI<b style="color:#67e8f9">ATLAS</b></div></div></div>`), moi);
-      if (!(await parle(d, ["Avant moi, il y a eu Shadow : le petit robot qu'il a construit pour son fils. Vous l'avez peut-être déjà vu.",
-        'Shadow a appris à parler, à écouter, à voir.', 'Moi, je suis la suite.']))) return;
+      if (!(await parle(d, ['Tout a commencé par un robot. Pour son fils.', "Shadow. Un petit robot qui parle, qui écoute, qui apprend avec lui : ses devoirs, ses histoires, ses mille questions.",
+        "Vous l'avez peut-être déjà vu. C'est en le construisant que tout est né.", 'Moi, je suis la suite. Shadow veille sur le petit. Moi, je veille sur toute la maison.']))) return;
+
+      // 01 bis · ce que fait Shadow
+      son('souffle');
+      const fShadow = [['Il parle, il écoute', 'son ami, à la voix'], ['Il reconnaît', 'son visage, sa voix, ses émotions'], ['Il voit', 'les objets autour de lui'], ['Il fait réviser', 'la dictée, les tables, l’heure, l’anglais'],
+        ['Il raconte', 'les histoires du soir, les comptines'], ['Il joue', 'Jacques a dit, pierre-feuille-ciseaux, devinettes'], ['Il a 15 expressions', 'il rit, il rougit, il s’endort'], ['Il protège', 'les données de l’enfant']];
+      d = ecran(chapitre(2, 'Ce que fait Shadow', `<div class="vitrine"><div>${SHADOW()}</div><div class="liste" style="--c:#93c5fd">${fShadow.map(([a, b], i) => `<div style="animation-delay:${0.4 + i * 0.32}s"><b>▸ ${esc(a)}</b>${esc(b)}</div>`).join('')}</div></div>`), moi);
+      if (!(await parle(d, ['Shadow parle, écoute, reconnaît son visage et sa voix.', 'Il lui fait réviser la dictée et les tables, il lui raconte des histoires, il joue avec lui.', 'Un vrai copain. Fait à la maison.']))) return;
 
       // 03 · le bureau
-      son('souffle'); d = ecran(chapitre(2, 'Le bureau', tuiles('Le bureau', [['Ses mails', 'lus chaque matin'], ['Les réponses', 'écrites dans son style'], ['L’envoi', 'après son oui']])), moi);
+      son('souffle'); d = ecran(chapitre(3, 'Le bureau', tuiles('Le bureau', [['Ses mails', 'lus chaque matin'], ['Les réponses', 'écrites dans son style'], ['L’envoi', 'après son oui']])), moi);
       if (!(await parle(d, ["Chaque matin, je lis ses mails : ceux de sa société, et les siens.", "Je comprends ce qu'il faut faire. J'écris les réponses, dans son style.", 'Il relit. Il dit oui. C’est envoyé.']))) return;
 
       // 04 · la comptabilité
-      son('souffle'); d = ecran(chapitre(3, 'La comptabilité', tuiles('La comptabilité', [['Les factures', 'retrouvées chez les fournisseurs'], ['Le tableau', 'rempli seul'], ['La réponse', 'prête à valider']])), moi);
+      son('souffle'); d = ecran(chapitre(4, 'La comptabilité', tuiles('La comptabilité', [['Les factures', 'retrouvées chez les fournisseurs'], ['Le tableau', 'rempli seul'], ['La réponse', 'prête à valider']])), moi);
       if (!(await parle(d, ['Quand son cabinet comptable demande des pièces, je vais chercher les vraies factures, chez les fournisseurs.', 'Je remplis le tableau. Je prépare la réponse.']))) return;
 
       // 05 · le trading
-      son('souffle'); d = ecran(chapitre(4, 'Le trading', tuiles('Le trading', [['Le journal', 'tenu tout seul'], ['Les limites', 'surveillées en direct'], ['Les conseils', 'jamais']])), moi);
+      son('souffle'); d = ecran(chapitre(5, 'Le trading', tuiles('Le trading', [['Le journal', 'tenu tout seul'], ['Les limites', 'surveillées en direct'], ['Les conseils', 'jamais']])), moi);
       if (!(await parle(d, [`${prenom()} est trader. Pendant ses séances, je tiens son journal, trade par trade, et je surveille ses limites en temps réel.`, 'Jamais un conseil. Un miroir.']))) return;
 
       // 06 · la maison holographique — et les vraies lumières qui se rallument
       son('grondement');
-      d = ecran(chapitre(5, 'La maison holographique', '<canvas class="holo"></canvas>'), moi); holo(d.querySelector('canvas.holo'), moi);
+      d = ecran(chapitre(6, 'La maison holographique', '<canvas class="holo"></canvas>'), moi); holo(d.querySelector('canvas.holo'), moi);
       await attends(2200); if (fini()) return;
       if (!(await parle(d, ['Et je vis dans sa maison. Je la vois, en trois dimensions.']))) return;
       bip([[523, 0.08], [784, 0.12], [1046, 0.2]]); await eclaire(avant, 100, 100); await attends(700);
@@ -285,20 +321,42 @@ const PRESENTATION = (() => {
 
       // 07 · la détection
       son('souffle');
-      d = ecran(chapitre(6, 'La détection', `<div class="cam"><div class="rec">CAMÉRA 1 · ANALYSE</div><div class="ts">${hh()}</div><div class="marcheur">${SILHOUETTE}<div class="cible"><span>PERSONNE · 97 %</span></div></div><div class="alerte">⚠ ALERTE ENVOYÉE SUR SON IPHONE · 0,8 s</div></div>`), moi);
+      d = ecran(chapitre(7, 'La détection', `<div class="cam"><div class="rec">CAMÉRA 1 · ANALYSE</div><div class="ts">${hh()}</div><div class="marcheur">${SILHOUETTE}<div class="cible"><span>PERSONNE · 97 %</span></div></div><div class="alerte">⚠ ALERTE ENVOYÉE SUR SON IPHONE · 0,8 s</div></div>`), moi);
       setTimeout(() => { if (vivant(moi)) son('alerte'); }, 3600);
       if (!(await parle(d, ['Mes yeux ne dorment jamais.', 'Une personne, une voiture, un bruit de verre brisé : je le vois, je le reconnais, et je le préviens. En moins d’une seconde.']))) return;
 
       // 08 · la sentinelle
       son('souffle');
       const pts = [[30, 28, ''], [68, 22, ''], [76, 60, ''], [40, 70, ''], [58, 44, ''], [22, 52, ''], [63, 79, 'APPAREIL INCONNU']];
-      d = ecran(chapitre(7, 'La sentinelle', `<div class="radar"><div class="balai"></div>${pts.map(([x, y, l], i) => `<div class="pt${l ? ' rouge' : ''}" style="left:${x}%;top:${y}%;animation-delay:${0.5 + i * 0.45}s${l ? ',0s' : ''}">${l ? `<small>${l}</small>` : ''}</div>`).join('')}</div>`), moi);
+      d = ecran(chapitre(8, 'La sentinelle', `<div class="radar"><div class="balai"></div>${pts.map(([x, y, l], i) => `<div class="pt${l ? ' rouge' : ''}" style="left:${x}%;top:${y}%;animation-delay:${0.5 + i * 0.45}s${l ? ',0s' : ''}">${l ? `<small>${l}</small>` : ''}</div>`).join('')}</div>`), moi);
       setTimeout(() => { if (vivant(moi)) son('alerte'); }, 3300);
       if (!(await parle(d, ['La nuit, la sentinelle veille.', 'Le réseau, les caméras, l’imprimante, l’alarme. Un appareil inconnu se connecte ? Une caméra tombe ? Il est prévenu.']))) return;
 
-      // 09 · partout
-      son('souffle'); d = ecran(chapitre(8, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
+      // 09 · Atlas et Shadow, ensemble : les deux robots de la maison se parlent
+      son('grondement');
+      d = ecran(chapitre(9, 'Atlas & Shadow', `<div class="duo"><div class="bloc">${anneaux('', 'mini')}<div class="leg"><b style="color:#67e8f9">ATLAS</b>LA MAISON</div><div class="bulle a" style="animation-delay:2.2s">Ses devoirs de ce soir : les tables de 7.</div></div>
+<div class="lien">${[0, 0.55, 1.1].map(x => `<span class="paquet va" style="animation-delay:${1.4 + x}s"></span><span class="paquet vient" style="animation-delay:${2.2 + x}s"></span>`).join('')}</div>
+<div class="bloc" style="animation-delay:.6s">${SHADOW('parle')}<div class="leg"><b style="color:#93c5fd">SHADOW</b>SON FILS</div><div class="bulle s" style="animation-delay:4.2s">Reçu ! On s'y met après le goûter.</div></div></div>`), moi);
+      if (!(await parle(d, ['Shadow et moi, on se parle.', 'Quand son père me dicte les devoirs, je les transmets à Shadow. Shadow les fait réviser au petit, en jouant.']))) return;
+      // ce qu'ils font à deux
+      const aDeux = [['Les devoirs', 'Atlas les reçoit, Shadow les fait réviser'], ['Les questions', 'le petit demande à Shadow, Atlas répond'], ['Les sketchs', 'à deux voix, rien que pour lui'],
+        ['L’accueil', 'quand papa ou son fils rentrent'], ['La veille', 'Shadow le voit, Atlas garde la maison'], ['La maison', 'qui s’endort avec lui le soir']];
+      son('souffle');
+      d = ecran(chapitre(10, 'À deux', `<div class="vitrine">${SHADOW('parle')}<div class="liste" style="--c:#67e8f9">${aDeux.map(([a, b], i) => `<div style="animation-delay:${0.4 + i * 0.35}s"><b>▸ ${esc(a)}</b>${esc(b)}</div>`).join('')}</div>${anneaux('', 'mini')}</div>`), moi);
+      if (!(await parle(d, ['Les devoirs, les questions, les histoires à deux voix, l’accueil quand on rentre…', 'Deux robots. Une seule famille.']))) return;
+
+      // 10 · partout
+      son('souffle'); d = ecran(chapitre(11, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
       if (!(await parle(d, ['Je suis sur son ordinateur, sa tablette, son iPhone.', 'Une seule mémoire. Une seule voix.']))) return;
+
+      // 10 bis · tout ce que fait Atlas
+      son('grondement');
+      const mur = [['Le bureau', 'mails lus, réponses écrites'], ['La comptabilité', 'factures, dossier du cabinet'], ['Le trading', 'journal, limites, payout'], ['Le téléphone', 'SMS, WhatsApp, appels'],
+        ['L’agenda', 'le planning dicté à la voix'], ['La cuisine', 'menus, liste de courses'], ['L’imprimante', 'il imprime tout seul'], ['Le coéquipier', 'il voit son écran'],
+        ['La maison 3D', 'chaque pièce, en direct'], ['La détection', 'personnes, voitures, sons'], ['La sentinelle', 'réseau et caméras, la nuit'], ['Shadow', 'le robot de son fils']];
+      d = ecran(chapitre(12, 'Tout ce que je fais', `<div class="titre" style="font-size:clamp(22px,5vmin,52px)">Tout ce que je fais</div><div class="mur">${mur.map(([a, b], i) => `<div style="animation-delay:${0.3 + i * 0.16}s">${esc(a)}<small>${esc(b)}</small></div>`).join('')}</div>`), moi);
+      mur.forEach((_, i) => setTimeout(() => { if (vivant(moi)) bip([[880 + i * 40, 0.03]]); }, 300 + i * 160));
+      if (!(await parle(d, ['Voilà tout ce que je fais pour lui. Chaque jour.', 'Et ce n’est qu’une partie.']))) return;
 
       // 10 · la règle
       son('grondement'); d = ecran(`${sol()}<div class="regle">RIEN NE PART<br>SANS SON OUI.</div>`, moi);
@@ -319,9 +377,9 @@ const PRESENTATION = (() => {
 
       // 12 · la carte de fin
       son('grondement');
-      d = ecran(`<div class="balayage"></div>${anneaux()}<div class="france"></div><div class="signe">CONÇU ET CONSTRUIT SEUL · EN FRANCE<br><span style="color:#e0f2fe;letter-spacing:.35em">${esc(prenom().toUpperCase())} VANCOPPENOLLE</span></div><div class="phrase" style="opacity:0"></div>`, moi);
+      d = ecran(`<div class="balayage"></div>${anneaux()}<div class="france"></div><div class="signe"><span style="color:#c4b5fd">SHADOW</span> POUR SON FILS · <span style="color:#67e8f9">ATLAS</span> POUR LA MAISON<br>CONÇU ET CONSTRUIT SEUL · EN FRANCE<br><span style="color:#e0f2fe;letter-spacing:.35em">${esc(prenom().toUpperCase())} VANCOPPENOLLE</span></div><div class="phrase" style="opacity:0"></div>`, moi);
       bip([[440, 0.2], [554, 0.2], [659, 0.5]]); await attends(1800);
-      if (!(await parle(d, ['Je suis Atlas.', "Construit par un seul homme, chez lui, en France. Et ce n'est que le début."]))) return;
+      if (!(await parle(d, ['Pour son fils, il a construit Shadow.', "Pour sa maison, il m'a construit, moi. Seul, chez lui, en France.", "Je suis Atlas. Et ce n'est que le début."]))) return;
       await attends(3500);
       if (!fini()) await fermeEcran();
     } finally {
