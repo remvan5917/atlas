@@ -102,6 +102,24 @@ const PRESENTATION = (() => {
 #pres .ev{position:absolute;width:min(24vmin,230px);transform:translate(-50%,-50%);text-align:center;font:600 clamp(11px,1.9vmin,15px) system-ui;color:#e0f2fe;opacity:0;animation:pr-monte .5s forwards}
 #pres .ev small{display:block;font:400 clamp(9px,1.5vmin,12px) system-ui;color:#7dd3fc;margin-top:2px}
 #pres .ev:before{content:attr(data-h);display:block;font:700 clamp(9px,1.4vmin,11px) ui-monospace,monospace;letter-spacing:.2em;color:#fbbf24;margin-bottom:2px}
+#pres .msg{display:flex;align-items:flex-end;gap:min(4vw,46px);padding-top:24vh}
+#pres .voix-papa{max-width:min(30vw,330px);margin-bottom:12vh;padding:14px 16px;border-radius:16px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.45);font:italic 400 clamp(13px,2.2vmin,18px) system-ui;line-height:1.45;color:#e0f2fe;text-align:left;opacity:0;animation:pr-monte .6s forwards}
+#pres .voix-papa small{display:block;font:700 10px ui-monospace,monospace;letter-spacing:.25em;color:#67e8f9;margin-bottom:6px;font-style:normal}
+#pres .faisceau{position:relative;width:min(13vw,150px);height:2px;margin-bottom:18vh;background:linear-gradient(90deg,#22d3ee,#4c8dff);box-shadow:0 0 12px #22d3ee;transform:scaleX(0);transform-origin:left;animation:pr-trait .8s 1s forwards}
+#pres .scene-sh{position:relative;width:min(40vmin,370px)}
+#pres .scene-sh .sh-visage{width:100%}
+#pres .cone{position:absolute;left:8%;right:8%;bottom:88%;height:20vh;background:linear-gradient(0deg,rgba(125,211,252,.42),rgba(125,211,252,.04));clip-path:polygon(34% 100%,66% 100%,100% 0,0 0);opacity:0;animation:pr-ligne .8s forwards,pr-vacille 2.6s infinite}
+#pres .projection{position:absolute;left:50%;bottom:calc(88% + 20vh);width:min(58vw,620px);transform:translateX(-50%) perspective(700px) rotateX(10deg);padding:18px 24px;border:1px solid rgba(125,211,252,.55);border-radius:16px;background:rgba(6,34,58,.45);box-shadow:0 0 40px rgba(56,189,248,.35),0 0 80px rgba(56,189,248,.15) inset;opacity:0;animation:pr-materialise 1.1s forwards,pr-vacille 3.4s 1.2s infinite;overflow:hidden}
+#pres .projection:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(125,211,252,.12) 0 2px,transparent 2px 6px);animation:pr-defile 2.2s linear infinite;pointer-events:none}
+#pres .projection small{display:block;font:700 clamp(9px,1.5vmin,12px) ui-monospace,monospace;letter-spacing:.35em;color:#7dd3fc;margin-bottom:8px}
+#pres .projection .ht{font:600 clamp(18px,4vmin,40px)/1.25 system-ui;color:#d6f4ff;text-shadow:0 0 12px rgba(125,211,252,.9),0 0 28px rgba(56,189,248,.6);min-height:1.3em}
+#pres .retour{position:absolute;right:104%;bottom:-6%;width:min(28vw,300px);padding:12px 14px;border-radius:14px;background:rgba(76,141,255,.14);border:1px solid rgba(76,141,255,.55);font:400 clamp(12px,2vmin,16px) system-ui;color:#f1f5f9;text-align:left;opacity:0;animation:pr-retour 1s forwards}
+#pres .retour small{display:block;font:700 10px ui-monospace,monospace;letter-spacing:.22em;color:#93c5fd;margin-bottom:5px}
+#pres .buste{position:absolute;left:50%;bottom:calc(88% + 11vh);width:min(30vmin,270px);transform:translateX(-50%);opacity:0;animation:pr-materialise 1.6s forwards,pr-vacille 2.8s 1.6s infinite,pr-glitch 5s 2.5s infinite}
+#pres .buste svg{width:100%;height:auto;filter:drop-shadow(0 0 10px #38bdf8) drop-shadow(0 0 26px rgba(56,189,248,.6))}
+#pres .buste:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(2,12,20,.55) 0 2px,transparent 2px 5px);animation:pr-defile 1.6s linear infinite;pointer-events:none}
+#pres .direct{position:absolute;top:13vh;left:0;right:0;text-align:center;white-space:nowrap;font:700 clamp(9px,1.6vmin,13px) ui-monospace,monospace;letter-spacing:.3em;color:#fca5a5;opacity:0;animation:pr-ligne .5s 1.4s forwards}
+#pres .direct:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;animation:pr-clignote 1s infinite}
 #pres .bulle{max-width:min(34vw,330px);margin:1.6vh auto 0;padding:9px 13px;border-radius:14px;font:400 clamp(12px,2vmin,16px) system-ui;line-height:1.4;color:#f1f5f9;text-align:left;opacity:0;animation:pr-monte .6s forwards}
 #pres .bulle.a{background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.45)}#pres .bulle.s{background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.5)}
 #pres .cam{position:relative;width:min(84vw,820px);height:min(56vh,470px);border:1px solid rgba(34,211,238,.35);border-radius:12px;overflow:hidden;background:repeating-linear-gradient(0deg,rgba(34,211,238,.035) 0 2px,transparent 2px 4px),radial-gradient(ellipse at 50% 70%,#0b2233,#02060b 75%)}
@@ -124,7 +142,7 @@ const PRESENTATION = (() => {
 @keyframes pr-monte{to{opacity:1;transform:none}}@keyframes pr-trait{to{transform:scaleX(1)}}@keyframes pr-clignote{0%,100%{opacity:1}50%{opacity:.25}}
 @keyframes pr-entre{0%{opacity:0;transform:translateX(-14px) skewX(-6deg);filter:blur(6px) hue-rotate(60deg)}35%{opacity:.8;transform:translateX(9px) skewX(3deg)}55%{transform:translateX(-4px)}100%{opacity:1;transform:none;filter:none}}
 @keyframes pr-flash{from{opacity:1}to{opacity:0}}@keyframes pr-cligne{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
-@keyframes pr-marche{to{left:42%}}@keyframes pr-crete{0%,100%{stroke:#4c8dff;filter:drop-shadow(0 0 3px #4c8dff)}50%{stroke:#8ff0ff;filter:drop-shadow(0 0 9px #8ff0ff)}}@keyframes pr-va{0%{left:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:100%;opacity:0}}@keyframes pr-vient{0%{left:100%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:0;opacity:0}}@keyframes pr-cible{0%{opacity:0;transform:scale(1.6)}100%{opacity:1;transform:none}}@keyframes pr-pulse{50%{transform:scale(1.7)}}`;
+@keyframes pr-marche{to{left:42%}}@keyframes pr-materialise{0%{opacity:0;clip-path:inset(100% 0 0 0);filter:blur(6px)}60%{opacity:1}100%{opacity:1;clip-path:inset(0 0 0 0);filter:none}}@keyframes pr-vacille{0%,100%{opacity:1}47%{opacity:.86}50%{opacity:.5}53%{opacity:.92}}@keyframes pr-defile{from{background-position:0 0}to{background-position:0 48px}}@keyframes pr-retour{0%{opacity:0;transform:translateX(60%) scale(.8)}100%{opacity:1;transform:none}}@keyframes pr-glitch{0%,94%,100%{translate:0 0}95%{translate:-6px 0}96%{translate:5px 0}97%{translate:-2px 0}}@keyframes pr-crete{0%,100%{stroke:#4c8dff;filter:drop-shadow(0 0 3px #4c8dff)}50%{stroke:#8ff0ff;filter:drop-shadow(0 0 9px #8ff0ff)}}@keyframes pr-va{0%{left:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:100%;opacity:0}}@keyframes pr-vient{0%{left:100%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:0;opacity:0}}@keyframes pr-cible{0%{opacity:0;transform:scale(1.6)}100%{opacity:1;transform:none}}@keyframes pr-pulse{50%{transform:scale(1.7)}}`;
 
   /* ---------- la bande-son (fabriquée ici : un souffle entre les chapitres, un grondement, une alerte) ---------- */
   function son(genre) {
@@ -303,6 +321,10 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       try { const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; u.rate = 1.05; u.pitch = 1.2; u.onend = res; u.onerror = res; speechSynthesis.speak(u); setTimeout(res, 1500 + 70 * t.length); } catch (e) { setTimeout(res, 1200 + 55 * t.length); }
     });
   }
+  // le buste de papa en hologramme (une silhouette, pas son visage)
+  const BUSTE = `<svg viewBox="0 0 200 230"><defs><linearGradient id="pr-bu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7dd3fc" stop-opacity=".55"/><stop offset="1" stop-color="#0ea5e9" stop-opacity=".08"/></linearGradient></defs>
+<g fill="url(#pr-bu)" stroke="#bae6fd" stroke-width="1.6"><ellipse cx="100" cy="72" rx="38" ry="46"/><path d="M84 112 q16 10 32 0 v18 q-16 8 -32 0 z"/><path d="M20 230 q4 -70 60 -86 q20 10 40 0 q56 16 60 86 z"/></g>
+<g stroke="#e0f2fe" stroke-width="1.2" fill="none" opacity=".7"><path d="M82 68 h10 M108 68 h10 M92 92 q8 5 16 0 M100 72 v12"/></g></svg>`;
   const SILHOUETTE = '<svg viewBox="0 0 60 160"><defs><linearGradient id="pr-hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#67e8f9" stop-opacity=".6"/><stop offset="1" stop-color="#0891b2" stop-opacity=".12"/></linearGradient></defs>'
     + '<g fill="url(#pr-hg)" stroke="#a5f3fc" stroke-width="1"><circle cx="30" cy="14" r="10"/><path d="M18 28 h24 q6 0 7 7 l4 40 q0 4 -4 4 h-2 l-3 -34 v42 l2 66 h-9 l-5 -60 l-5 60 h-9 l2 -66 v-42 l-3 34 h-2 q-4 0 -4 -4 l4 -40 q1 -7 7 -7 z"/></g>'
     + '<g fill="#fde68a">' + [[30, 14], [30, 30], [19, 32], [41, 32], [14, 74], [46, 74], [30, 74], [24, 110], [36, 110], [23, 150], [37, 150]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8"/>`).join('') + '</g>'
@@ -454,8 +476,32 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       d = ecran(chapitre(11, 'À deux', `<div class="vitrine">${SHADOW('parle')}<div class="liste" style="--c:#67e8f9">${aDeux.map(([a, b], i) => `<div style="animation-delay:${0.4 + i * 0.35}s"><b>▸ ${esc(a)}</b>${esc(b)}</div>`).join('')}</div>${anneaux('', 'mini')}</div>`), moi);
       if (!(await parle(d, ['Les devoirs, les questions, les histoires à deux voix, l’accueil quand on rentre…', 'Deux robots. Une seule famille.']))) return;
 
+      // 11 bis · les messages à son fils : le texte, l'hologramme, l'appel holographique
+      son('souffle');
+      const motPapa = 'Je rentre à 19 h. Je suis fier de toi, champion.';
+      d = ecran(chapitre(12, 'Messages à son fils', `<div class="msg"><div class="voix-papa"><small>SON PÈRE, À ATLAS</small>« Atlas, dis à mon fils que je rentre à 19 heures, et que je suis fier de lui. »</div>
+<div class="faisceau">${[0, 0.4, 0.8].map(x => `<span class="paquet va" style="animation-delay:${1.6 + x}s"></span>`).join('')}</div><div class="scene-sh" id="pr-sh">${SHADOW('parle')}</div></div>`), moi);
+      const sc = d.querySelector('#pr-sh');
+      if (!(await parle(d, ['Son père me dit un message.', 'Je le porte jusqu’à Shadow…']))) return;
+      // le message jaillit de l'écran de Shadow
+      sc.insertAdjacentHTML('beforeend', '<div class="cone"></div><div class="projection"><small>◢ MESSAGE HOLOGRAPHIQUE · PAPA</small><div class="ht"></div></div>');
+      son('grondement'); bip([[1318, 0.08], [1760, 0.12]]);
+      const ht = sc.querySelector('.ht'); await attends(900);
+      for (let i = 1; i <= motPapa.length && vivant(moi); i++) { ht.textContent = motPapa.slice(0, i); if (i % 4 === 0) bip([[2600, 0.01]]); await attends(48); }
+      if (!(await parle(d, ['…et le message sort de l’écran. En hologramme, devant son fils.']))) return;
+      // la réponse du petit repart vers son père
+      { const vp = d.querySelector('.voix-papa'); if (vp) { vp.style.transition = 'opacity .6s'; vp.style.opacity = '.35'; } }
+      sc.insertAdjacentHTML('beforeend', '<div class="retour"><small>SON FILS, PAR SHADOW</small>« Dis à papa que moi aussi je l’aime ! »</div>');
+      bip([[1046, 0.06], [1318, 0.08]]);
+      if (!(await parle(d, ['Et quand le petit répond… c’est moi qui le dis à son père.']))) return;
+      // l'appel holographique : papa apparaît au-dessus de Shadow
+      son('souffle');
+      d = ecran(chapitre(12, 'Messages à son fils', `<div class="direct">APPEL HOLOGRAPHIQUE · PAPA · EN DIRECT</div><div class="msg" style="justify-content:center;padding-top:40vh"><div class="scene-sh" id="pr-sh2" style="width:min(30vmin,280px)">${SHADOW()}<div class="cone" style="height:12vh"></div><div class="buste">${BUSTE}</div></div></div>`), moi);
+      son('grondement');
+      if (!(await parle(d, ['Et s’il est loin…', 'il apparaît. En hologramme. Sur l’écran de Shadow, devant son fils.', 'Loin, mais là.']))) return;
+
       // 10 · partout
-      son('souffle'); d = ecran(chapitre(12, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
+      son('souffle'); d = ecran(chapitre(13, 'Partout', tuiles('Partout', [['Ordinateur', 'synchronisé'], ['Tablette', 'synchronisée'], ['iPhone', 'synchronisé']])), moi);
       if (!(await parle(d, ['Je suis sur son ordinateur, sa tablette, son iPhone.', 'Une seule mémoire. Une seule voix.']))) return;
 
       // 10 bis · tout ce que fait Atlas
@@ -463,7 +509,7 @@ ${[0, 160].map(dx => `<g transform="translate(${dx} 0)"><rect x="47" y="43" widt
       const mur = [['Le bureau', 'mails lus, réponses écrites'], ['La comptabilité', 'factures, dossier du cabinet'], ['Le téléphone', 'SMS, WhatsApp, appels'],
         ['L’agenda', 'le planning dicté à la voix'], ['La cuisine', 'menus, liste de courses'], ['Les automatisations', 'la maison vit toute seule'], ['Le coéquipier', 'il voit son écran'],
         ['La maison 3D', 'chaque pièce, en direct'], ['La détection', 'personnes, voitures, sons'], ['La sentinelle', 'réseau et caméras, la nuit'], ['La mémoire', 'il se souvient de tout'], ['Shadow', 'le robot de son fils']];
-      d = ecran(chapitre(13, 'Tout ce que je fais', `<div class="titre" style="font-size:clamp(22px,5vmin,52px)">Tout ce que je fais</div><div class="mur">${mur.map(([a, b], i) => `<div style="animation-delay:${0.3 + i * 0.16}s">${esc(a)}<small>${esc(b)}</small></div>`).join('')}</div>`), moi);
+      d = ecran(chapitre(14, 'Tout ce que je fais', `<div class="titre" style="font-size:clamp(22px,5vmin,52px)">Tout ce que je fais</div><div class="mur">${mur.map(([a, b], i) => `<div style="animation-delay:${0.3 + i * 0.16}s">${esc(a)}<small>${esc(b)}</small></div>`).join('')}</div>`), moi);
       mur.forEach((_, i) => setTimeout(() => { if (vivant(moi)) bip([[880 + i * 40, 0.03]]); }, 300 + i * 160));
       if (!(await parle(d, ['Voilà tout ce que je fais pour lui. Chaque jour.', 'Et ce n’est qu’une partie.']))) return;
 
