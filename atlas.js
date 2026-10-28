@@ -1113,7 +1113,8 @@ async function vie() {
       dlg.qui = pc && pc.nom ? pc.nom : CONV.nomPour(print);
       dlg.enfant = pc && pc.nom ? pc.role === 'enfant' : estEnfant(dlg.qui);
       if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'telephone') { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; } // son téléphone, dans sa main : c'est lui (son micro trompait la reconnaissance)
-      if (dlg.enfant && dlg.pitch != null && dlg.pitch < 7.3) { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; } // une voix grave (moins de 160 Hz) n'est jamais celle d'un enfant de 7 ans : c'est papa
+      if (dlg.enfant && dlg.pitch != null && dlg.pitch < 7.3) { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; }
+      if (dlg.enfant && typeof SECURITE !== 'undefined' && SECURITE.enfantAbsent && SECURITE.enfantAbsent()) { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; } // le téléphone de Shadow n'est pas à la maison : son fils non plus — c'est papa // une voix grave (moins de 160 Hz) n'est jamais celle d'un enfant de 7 ans : c'est papa
       dlg.quiAt = Date.now(); dlg.quiPC = !!(pc && pc.nom);
       // le jumeau 3D : le petit est ici (sa voix, entendue par cet Atlas) — au plus une fois par minute
       if (dlg.enfant && Date.now() - (dlg.enfantSignale || 0) > 60000) { dlg.enfantSignale = Date.now(); const r0 = VOIXMAISON.root(); if (r0 && !window.__BANC) fetch(`${r0}/atlas/enfant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '', piece: S.settings.piece || '' }) }).catch(() => {}); }

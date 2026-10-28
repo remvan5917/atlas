@@ -136,7 +136,7 @@ const SECURITE = (() => {
   }
 
   /* =================== la sentinelle : ce qu'elle a vu de suspect (réseau, Tailscale, ordinateur, caméra, alarme, prises) =================== */
-  let vuJusqua = 0, alertesRecentes = [], absent = false, retourAt = 0; // retourAt : son téléphone vient de rentrer à la maison (la sentinelle le voit)
+  let vuJusqua = 0, alertesRecentes = [], absent = false, retourAt = 0, enfantMaison = null, sante = null; // retourAt : son téléphone vient de rentrer à la maison (la sentinelle le voit)
   try { vuJusqua = +localStorage.getItem('atlas-alertes-vues') || 0; } catch (e) { /* rien */ }
   const quand = at => { const d = new Date(at), auj = dayKey() === dayKey(d); return `${auj ? "aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'long' })} à ${hhmm(d)}`; };
   async function photoAlerte(a) {
@@ -160,7 +160,7 @@ const SECURITE = (() => {
   async function releveAlertes() {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
-    absent = !!j.absent; retourAt = j.retour_at || 0;
+    absent = !!j.absent; retourAt = j.retour_at || 0; if (j.enfant_maison != null) enfantMaison = !!j.enfant_maison; sante = j.sante || sante;
     let l = (j.alertes || []).filter(a => a.id > vuJusqua);
     if (!l.length) return;
     if (!vuJusqua) { vuJusqua = Math.max(...l.map(a => a.id)); try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ } return; } // un nouvel appareil : il ne raconte pas toute la semaine
@@ -299,6 +299,13 @@ const SECURITE = (() => {
   };
   function route(t, n) {
     if (/\b(mode absent|je pars|on part|je m en vais|je sors de la maison|on s en va de la maison|surveille la maison)\b/.test(n) && !/\balarme\b/.test(n)) return () => modeAbsent(true);
+    if (/\b(bilan de sante|etat de sante|tout fonctionne|tout marche|est ce que tout va bien|tu vas bien atlas|diagnostic de la maison)\b/.test(n)) return async () => {
+      let j; try { j = await appel('/maison/alertes?depuis=99999999999999', null, 8000); sante = j.sante || sante; } catch (e) { return say("L'ordinateur de la maison ne répond pas : c'est déjà un problème."); }
+      const pb = (sante && sante.problemes) || [];
+      if (!sante) return say("Je n'ai pas encore fait mon bilan de santé : il passe toutes les demi-heures.");
+      const il = Math.max(0, Math.round((Date.now() / 1000 - sante.at) / 60));
+      return say(pb.length ? `Bilan de santé, il y a ${il} minute${il > 1 ? 's' : ''} : ${pb.join(' ; ')}.` : `Tout fonctionne : les services, la voix, l'heure et les appareils. Vérifié il y a ${il} minute${il > 1 ? 's' : ''}.`);
+    };
     if (/\b(je suis rentre|je suis de retour|on est rentre|mode presence|je suis a la maison|fin du mode absent)\b/.test(n)) return () => modeAbsent(false);
     if (/\b(montre|affiche)\b.*\b(derniere|dernieres) alertes?\b|\bla photo de l alerte\b/.test(n)) return derniereAlerte;
     if (/\b(rapport de securite|il s est passe quoi|qu est ce qui s est passe|des alertes|les alertes|quelque chose de suspect|rien de suspect|tout va bien a la maison|la maison va bien|etat de la securite)\b/.test(n)) return () => rapport(n);
@@ -321,7 +328,7 @@ const SECURITE = (() => {
     return null;
   }
   const nomsCameras = () => cams.map(x => x.nom).concat(ezCams.map(x => x.nom));
-  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent,
+  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent, enfantAbsent: () => enfantMaison === false, sante: () => sante,
     // son téléphone est revenu sur le Wi-Fi il y a moins de 15 min : « je suis rentré » n'a pas besoin de sa voix (elle se trompe parfois)
     retourRecent: async () => { try { const j = await appel('/maison/alertes?depuis=99999999999999', null, 5000); absent = !!j.absent; retourAt = j.retour_at || 0; } catch (e) { /* le dernier relevé */ } return !!retourAt && Date.now() - retourAt < 15 * 60000; }, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
 })();
