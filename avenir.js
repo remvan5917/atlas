@@ -315,8 +315,10 @@ ${l.map(({ d, x }) => `<div style="display:flex;gap:10px;padding:6px 0;border-bo
     let b; try { b = await carnet('budget'); } catch (e) { return; }
     S.prelevDit = j; save();
     const demain = new Date(); demain.setDate(demain.getDate() + 1);
-    const l = aVenir(b.charges, demain, 1);
-    if (l.length) PROACTIF.annonce(`prelev-${j}`, `Demain, ${l.length > 1 ? `${l.length} prélèvements` : 'un prélèvement'} : ${l.map(({ x }) => `${x.nom || x.beneficiaire}, ${euros(Math.abs(+x.montant))} sur ${x.compte || 'ton compte'}`).join(' ; ')}.`, { expire: Date.now() + 10 * 3600000 });
+    const ld = aVenir(b.charges, new Date(), 1), l = aVenir(b.charges, demain, 1);
+    const dire = q => q.map(({ x }) => `${x.nom || x.beneficiaire}, ${euros(Math.abs(+x.montant))} sur ${x.compte || 'ton compte'}`).join(' ; ');
+    // au jour le jour, sans qu'il demande : aujourd'hui et demain, en une phrase (rien à dire : il se tait)
+    if (ld.length || l.length) PROACTIF.annonce(`prelev-${j}`, [ld.length ? `Aujourd'hui, ${ld.length > 1 ? `${ld.length} prélèvements` : 'un prélèvement'} : ${dire(ld)}.` : '', l.length ? `Demain, ${l.length > 1 ? `${l.length} prélèvements` : 'un prélèvement'} : ${dire(l)}.` : (ld.length ? 'Demain, rien.' : '')].filter(Boolean).join(' '), { expire: Date.now() + 10 * 3600000 });
     if (new Date().getDay() === 1) {
       const s7 = aVenir(b.charges, new Date(), 7);
       if (s7.length) PROACTIF.annonce(`prelev-semaine-${j}`, `Cette semaine, ${s7.length} prélèvement${s7.length > 1 ? 's' : ''} : ${Object.entries(parCompte(s7)).map(([c, v]) => `${euros(v)} sur ${c}`).join(', ')}. Dis « mes prélèvements » pour le détail.`, { expire: Date.now() + 10 * 3600000 });
