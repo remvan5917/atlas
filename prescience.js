@@ -103,14 +103,17 @@ const PRESCIENCE = (() => {
   const millions = n => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace('.', ',')} million${n >= 2e6 ? 's' : ''}` : `${Math.round(n / 1000)} mille`);
   async function corps() {
     let c; try { c = await lisCorps(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
-    if (!c.meilleur) return say("Mon corps n'a pas encore commencé à s'entraîner. Il s'y met chaque nuit à minuit et demi.");
+    if (!c.meilleur && !c.robot) return say("Mon corps n'a pas encore commencé à s'entraîner. Il s'y met chaque nuit à minuit et demi.");
     const et = ETAPES.filter(k => c.etapes[k]).map(k => c.etapes[k]);
-    const m = c.meilleur;
-    showBoard(`<div style="font-family:system-ui;text-align:center;min-width:min(92vw,660px)"><small style="letter-spacing:.3em;color:#7dd3fc">MON CORPS · HUMANOÏDE · MUJOCO</small>
-      <video src="${root()}/maison/corps/video/${esc(m.video)}" autoplay muted loop playsinline style="width:100%;max-width:640px;border-radius:12px;margin-top:8px;border:1px solid #1e6a8a"></video>
+    const m = c.meilleur || { duree_s: 0, distance_m: 0 }, rb = c.robot;
+    const vid = (v, h) => `<video src="${root()}/maison/corps/video/${esc(v)}" autoplay muted loop playsinline style="width:100%;max-width:${h}px;border-radius:12px;margin-top:8px;border:1px solid #1e6a8a"></video>`;
+    showBoard(`<div style="font-family:system-ui;text-align:center;min-width:min(92vw,660px)">${rb ? `<small style="letter-spacing:.3em;color:#7dd3fc">MON FUTUR CORPS · ${esc(rb.nom.toUpperCase())} · AVEC MA TÊTE</small>${vid(rb.video, 640)}<div style="font-size:14px;color:#e0f2fe;margin:4px 0 14px">un vrai robot open source (1 m, 22 moteurs) : il marche ${String(rb.distance_m).replace('.', ',')} m en ${String(rb.secondes).replace('.', ',')} s dans mon simulateur</div>` : ''}
+      ${c.meilleur ? `<small style="letter-spacing:.3em;color:#7dd3fc">MON CORPS D'ENTRAÎNEMENT · IL APPREND SEUL</small>${vid(m.video, rb ? 420 : 640)}` : ''}
       <div style="display:flex;justify-content:center;gap:18px;margin-top:8px;font-size:15px;color:#e0f2fe"><span>⏱ debout ${String(m.duree_s).replace('.', ',')} s</span><span>➜ ${String(Math.max(0, m.distance_m)).replace('.', ',')} m</span><span>🧠 ${millions(c.pas_total)} de tentatives</span>${c.en_cours ? '<span style="color:#86efac">● à l\'entraînement</span>' : ''}</div>
       <div style="margin-top:8px;font-size:14px;color:#cbd5e1">${ETAPES.map(k => `<span style="margin:0 6px;color:${c.etapes[k] ? '#86efac' : '#64748b'}">${c.etapes[k] ? '✓' : '○'} ${esc({ tenir: 'tenir 3 s', debout: 'tenir debout', pas: 'premiers pas', marcher: 'marcher', courir: 'courir' }[k])}</span>`).join('')}</div></div>`);
-    return say(`${et.length ? `Mon corps a déjà appris à ${et.map(x => x.dit).join(', puis à ')}.` : "Pour l'instant, mon corps tombe encore : il apprend, comme un bébé."} Mon meilleur examen : je tiens debout ${String(m.duree_s).replace('.', ',')} secondes${m.distance_m >= 0.5 ? ` et j'avance de ${String(m.distance_m).replace('.', ',')} mètres` : ''}, après ${millions(c.pas_total)} de tentatives.${c.en_cours ? " Je suis en train de m'entraîner." : ''}`);
+    const futur = rb ? `Voici mon futur corps : le ${rb.nom}, un vrai robot open source d'un mètre, avec ma tête. Il marche déjà dans mon simulateur. ` : '';
+    if (!c.meilleur) return say(futur);
+    return say(`${futur}Et mon corps d'entraînement apprend seul. ${et.length ? `Il a déjà appris à ${et.map(x => x.dit).join(', puis à ')}.` : "Pour l'instant, il tombe encore : il apprend, comme un bébé."} Son meilleur examen : il tient debout ${String(m.duree_s).replace('.', ',')} secondes${m.distance_m >= 0.5 ? ` et avance de ${String(m.distance_m).replace('.', ',')} mètres` : ''}, après ${millions(c.pas_total)} de tentatives.${c.en_cours ? " Il est en train de s'entraîner." : ''}`);
   }
   async function corpsMatin() {
     if (!root() || !dlg.started || (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal())) return;
