@@ -63,10 +63,10 @@ const TELEPHONE = (() => {
       return l.length ? `Rémy est déjà pris : ${l.join(' ; ')}. Propose seulement des créneaux libres, en journée.` : '';
     } catch (e) { return ''; }
   }
-  async function appelle(qui, mission) {
+  async function appelle(qui, mission, numero) {
     let st; try { st = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!st.pret) return say(st.cle ? "Les appels ne sont pas encore reliés à un numéro de téléphone. Dis « comment relier les appels » : je t'explique, c'est une fois pour toutes." : "Il faut d'abord la voix d'Atlas : règle ElevenLabs dans mes réglages, sur l'ordinateur. Ensuite, dis « comment relier les appels ».");
-    const n = await trouveNumero(qui); if (!n) return say("D'accord, sans numéro je ne peux pas appeler.");
+    const n = numero ? { numero, nom: qui } : await trouveNumero(qui); if (!n) return say("D'accord, sans numéro je ne peux pas appeler.");
     const ok = await askYesNo(`J'appelle ${n.nom || qui}, au ${lisible(n.numero)}, avec ma voix, en me présentant comme ton robot personnel, pour : ${mission}. J'appelle ?`);
     if (!ok) return say("D'accord, je n'appelle pas.");
     patiente(`J'appelle ${n.nom || qui}…`, mission.slice(0, 90));
@@ -111,7 +111,32 @@ const TELEPHONE = (() => {
     const d = l[0];
     return say(d.resume ? `Le dernier appel, à ${d.qui || lisible(d.a)} : ${d.resume}` : `Le dernier appel, à ${d.qui || lisible(d.a)}, est ${d.statut}.`);
   }
+  /* ---------- la secrétaire : les appels reçus quand il ne décroche pas ---------- */
+  const recus = l => (l || []).filter(x => x.sens === 'entrant' && x.categorie !== 'soi');
+  async function quiAppele() {
+    let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const tous = recus(r.derniers).filter(x => Date.now() / 1000 - x.at < 2 * 86400);
+    const l = tous.filter(x => x.categorie !== 'demarchage'), pub = tous.length - l.length;
+    const quand = x => new Date(x.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    if (!l.length) return say(pub ? `Personne d'important : seulement ${pub} démarchage${pub > 1 ? 's' : ''}, que j'ai écarté${pub > 1 ? 's' : ''}.` : "Personne ne t'a appelé depuis hier.");
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,640px)"><small style="letter-spacing:.3em;color:#fcd34d">TES MESSAGES · PRIS PAR ATLAS</small>${l.map(x => `<div style="margin:8px 0;padding:10px 12px;border-radius:12px;background:${x.urgent ? 'rgba(248,113,113,.14)' : 'rgba(255,255,255,.05)'}"><b>${esc(x.qui || lisible(x.a))}</b> <small style="color:#94a3b8">${quand(x)}${x.urgent ? ' · prioritaire' : ''}</small><div style="font-size:15px;color:#e2e8f0;margin-top:3px">${esc(x.resume || 'pas de message')}</div>${x.rappel || /^\+?\d{9,}$/.test(x.a || '') ? `<div style="font-size:13px;color:#86efac;margin-top:3px">☎ ${esc(lisible(x.rappel || x.a))}</div>` : ''}</div>`).join('')}${pub ? `<p style="color:#94a3b8;font-size:13px">${pub} démarchage${pub > 1 ? 's' : ''} écarté${pub > 1 ? 's' : ''}.</p>` : ''}</div>`);
+    const dit = l.slice(0, 4).map(x => `${x.qui || 'un numéro inconnu'}${x.resume ? ` : ${x.resume}` : ''}`).join('. ');
+    return say(`${l.length} message${l.length > 1 ? 's' : ''}. ${dit}.${pub ? ` Et ${pub} démarchage${pub > 1 ? 's' : ''} écarté${pub > 1 ? 's' : ''}.` : ''} Dis « rappelle-le » pour que je rappelle le dernier.`);
+  }
+  async function rappelle(texte) {
+    let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const x = recus(r.derniers).filter(y => y.categorie !== 'demarchage' && Date.now() / 1000 - y.at < 3 * 86400).find(y => y.rappel || /^\+?\d{9,}$/.test(y.a || ''));
+    if (!x) return say("Je n'ai aucun message récent avec un numéro à rappeler.");
+    let quoi = String(texte || '').trim();
+    if (!quoi) quoi = String(await ask(`Je rappelle ${x.qui || 'cette personne'}. Qu'est-ce que je lui dis de ta part ?`, { wait: 30000 }) || '').trim();
+    if (!quoi || /^(rien|laisse tomber|annule|non)\b/i.test(quoi)) return say("D'accord, je ne rappelle pas.");
+    const mission = `rappeler ${x.qui || 'cette personne'}, qui a appelé Rémy${x.resume ? ` (son message : ${x.resume})` : ''}. De la part de Rémy, lui dire : ${quoi}`;
+    return appelle(x.qui || lisible(x.rappel || x.a), mission, x.rappel || x.a);
+  }
   function route(t, n) {
+    if (/\b(qui m a appele|qui a appele|quelqu un (m )?a appele|on m a appele|j ai (eu )?des (appels|messages)|mes messages (telephoniques|vocaux|du telephone)|les messages (du telephone|de la secretaire)|des appels en absence|mes appels en absence)\b/.test(n)) return quiAppele;
+    const rp = n.match(/^(?:atlas )?rappelle (?:le|la|les|lui|cette personne|ce numero|la personne|celui qui a appele|celle qui a appele)(?: pour (?:lui |leur )?(?:dire )?(?:que )?(.+))?$/);
+    if (rp) { const m0 = String(t).match(/\bpour\s+(?:lui |leur )?(?:dire\s+)?(?:que\s+)?(.+)$/i); return () => rappelle(m0 ? m0[1].replace(/[.!?]+$/, '') : ''); }
     // l'appel filmé pour LinkedIn : « Atlas, appel LinkedIn », « appelle-moi pour LinkedIn »
     if (/\b(appel (pour |de )?linkedin|appelle moi pour linkedin|appel filme|appel de demonstration)\b/.test(n)) return async () => {
       if (!(await askYesNo("J'appelle ton iPhone pour l'appel filmé pour LinkedIn. Ta caméra est prête ? J'appelle ?"))) return say("D'accord, dis-le-moi quand tu es prêt.");
