@@ -2,6 +2,8 @@
    ATLAS — le duo avec Shadow, et l'accueil comme dans les films
    - « Atlas, discute avec Shadow » (« … sur les dinosaures ») : un sketch écrit par le cerveau, joué à deux voix,
      Atlas sérieux et un peu snob, Shadow farceur ; chaque réplique de Shadow part par le canal, Shadow la dit et répond « fini ».
+   - « Atlas et Shadow, racontez-nous une histoire (de pirates) » : un conte à deux voix, Atlas le narrateur, Shadow les personnages
+     et les bruitages ; une fin douce (l'heure du coucher).
    - Le petit demande à Shadow « demande à Atlas pourquoi le ciel est bleu » : Atlas répond (à voix haute s'il est à la maison)
      et renvoie la réponse à Shadow, qui l'affiche en hologramme (et la lit s'il est loin).
    - L'accueil : papa ou son fils qui rentrent (vus à la caméra, ou leur téléphone revenu sur le Wi-Fi), les deux ensemble,
@@ -149,20 +151,22 @@ const DUO = (() => {
       l.appendChild(d); l.scrollTop = l.scrollHeight;
     };
   }
-  async function sketch(t, n) {
-    if (!AI.ready()) return say("Pour écrire un sketch, il me faut mon cerveau en ligne.");
+  async function sketch(t, n, mode = 'sketch') {
+    const conte = mode === 'histoire';
+    if (!AI.ready()) return say(conte ? "Pour inventer une histoire, il me faut mon cerveau en ligne." : "Pour écrire un sketch, il me faut mon cerveau en ligne.");
     vide();
     try { await versShadow({ type: 'duo-pret' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     const pret = await attends('duo-ok', 8000);
     if (!pret) return say("Shadow ne répond pas : il dort peut-être, ou il n'est pas à la maison. Réveille-le, et redemande-moi.");
-    const theme = ((String(t).match(/\b(?:sur|à propos de|au sujet de|des|du|de)\s+(?:les?\s+|la\s+|l['’]\s*|des\s+)?([^.!?]{3,60})\s*[.!?]*$/i) || [])[1] || '').replace(/^(shadow|toi|lui)$/i, '');
+    const theme = ((String(t).match(/\b(?:sur|à propos de|au sujet de|des|du|de)\s+(?:les?\s+|la\s+|l['’]\s*|des\s+)?([^.!?]{3,60})\s*[.!?]*$/i) || [])[1] || '').replace(/\s*(à deux voix|a deux voix|avec shadow|tous les deux|toi et shadow|vous deux)\s*$/i, '').replace(/^(shadow|toi|lui)$/i, '');
     const p = enfant(), pa = papa();
     sfx('demarrage');
-    await say(pick(['Très bien. Shadow et moi allons vous offrir un petit numéro.', 'Mesdames et messieurs, le duo de la maison entre en scène.', 'Soit. Shadow, à nous deux.']));
+    await say(conte ? pick(["Installez-vous bien. Shadow et moi allons vous raconter une histoire.", "Une histoire à deux voix ? Avec plaisir. Shadow, tu prends les personnages.", "Lumières tamisées… Shadow, à toi les bruitages. Il était une fois…"]) : pick(['Très bien. Shadow et moi allons vous offrir un petit numéro.', 'Mesdames et messieurs, le duo de la maison entre en scène.', 'Soit. Shadow, à nous deux.']));
     let lignes = [];
     try {
-      const raw = String(await AI.chat([{ role: 'system', content: `Tu écris un petit sketch comique, en français, pour deux robots d'une maison, joué devant la famille${p ? ` (dont ${p}, un enfant)` : ''}${pa ? ` et ${pa}, le papa et l'inventeur` : ''}. ATLAS : l'intelligence de la maison, très savant, cérémonieux et un peu snob, comme C-3PO. SHADOW : le petit robot de ${p || "l'enfant"}, farceur, rigolo, qui fait « bip bip » et taquine Atlas, comme R2-D2 qui parlerait. Ils se chamaillent gentiment, se posent une devinette, se lancent un petit défi, et finissent complices. 10 à 14 répliques courtes (une ou deux phrases), drôles pour un enfant et pour les grands, jamais méchantes. Réponds UNIQUEMENT en JSON : [{"r":"atlas","t":"…"},{"r":"shadow","t":"…"}]` }, { role: 'user', content: theme ? `Le sujet : ${theme}.` : 'Sujet libre (surprends-nous).' }], { maxTokens: 900, temperature: 1 }) || '');
-      lignes = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1)).filter(x => x && /^(atlas|shadow)$/.test(x.r) && x.t).slice(0, 16);
+      const consigneConte = `Tu écris une histoire pour enfant, en français, racontée à deux voix par deux robots d'une maison${p ? ` à ${p}, un enfant` : ''}. ATLAS : le narrateur, une belle voix posée qui raconte (le décor, ce qui arrive). SHADOW : le petit robot de ${p || "l'enfant"}, qui joue les personnages (il dit leurs répliques entre guillemets, en précisant qui parle : « dit le dragon ») et fait les bruitages (« bip », « splash », « crrrac »), et parfois s'émerveille ou pose une question au narrateur. Une vraie histoire : un héros attachant, un problème, une aventure, un moment drôle, du courage ou de l'entraide, une fin heureuse et douce, apaisante pour aller dormir. Rien qui fasse peur pour de vrai. 16 à 22 répliques courtes (une à trois phrases). Réponds UNIQUEMENT en JSON : [{"r":"atlas","t":"…"},{"r":"shadow","t":"…"}]`;
+      const raw = String(await AI.chat([{ role: 'system', content: conte ? consigneConte : `Tu écris un petit sketch comique, en français, pour deux robots d'une maison, joué devant la famille${p ? ` (dont ${p}, un enfant)` : ''}${pa ? ` et ${pa}, le papa et l'inventeur` : ''}. ATLAS : l'intelligence de la maison, très savant, cérémonieux et un peu snob, comme C-3PO. SHADOW : le petit robot de ${p || "l'enfant"}, farceur, rigolo, qui fait « bip bip » et taquine Atlas, comme R2-D2 qui parlerait. Ils se chamaillent gentiment, se posent une devinette, se lancent un petit défi, et finissent complices. 10 à 14 répliques courtes (une ou deux phrases), drôles pour un enfant et pour les grands, jamais méchantes. Réponds UNIQUEMENT en JSON : [{"r":"atlas","t":"…"},{"r":"shadow","t":"…"}]` }, { role: 'user', content: theme ? `Le sujet : ${theme}.` : 'Sujet libre (surprends-nous).' }], { maxTokens: conte ? 1600 : 900, temperature: conte ? 0.9 : 1 }) || '');
+      lignes = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1)).filter(x => x && /^(atlas|shadow)$/.test(x.r) && x.t).slice(0, conte ? 24 : 16);
     } catch (e) { lignes = []; }
     if (lignes.length < 4) return say("Mon inspiration m'a abandonné. Redemandez-moi dans un instant.");
     const montre = scene(lignes);
@@ -180,7 +184,7 @@ const DUO = (() => {
       }
     } finally { versShadow({ type: 'duo-fin' }).catch(() => {}); }
     sfx('final');
-    return say(pick(['Merci, merci. Shadow et moi acceptons les applaudissements.', 'Fin du numéro. Vous pouvez applaudir. Surtout moi.', 'Rideau !']));
+    return say(conte ? pick(['Et voilà. Fin de l’histoire. Faites de beaux rêves.', 'C’est la fin de notre histoire. Shadow et moi vous souhaitons une douce nuit.', 'Fin. Demandez-nous-en une autre quand vous voulez.']) : pick(['Merci, merci. Shadow et moi acceptons les applaudissements.', 'Fin du numéro. Vous pouvez applaudir. Surtout moi.', 'Rideau !']));
   }
 
   /* ---------- l'accueil, comme dans les films ---------- */
@@ -448,6 +452,7 @@ const DUO = (() => {
       if (/^(oui|ouais|ok|d accord|vas y|bien sur|carrement|c est (bien )?moi|confirme|je confirme|mode presence)\b/.test(n)) return () => retourReponse(true);
       if (/^(non|surtout pas|ce n est pas moi|c est pas moi|pas moi)\b/.test(n)) return () => retourReponse(false);
     }
+    if (/\b(raconte|racontez|invente|inventez)\b.*\bhistoires?\b/.test(n) && /\b(shadow|a deux voix|tous les deux|toi et shadow|vous deux)\b/.test(n) && !/\b(dis a shadow|message)\b/.test(n)) return () => sketch(t, n, 'histoire');
     if (/\b(discute|discutez|parle|parlez|bavarde|cause|fais (un|ton|votre) (sketch|numero|duo|spectacle)|faites (un|votre) (sketch|numero|duo))\b.*\bshadow\b|\b(atlas et shadow|shadow et toi|toi et shadow)\b.*\b(sketch|numero|spectacle|discutez|parlez|chamaillez|faites)\b|\bmode duo\b/.test(n) && !/\b(dis a shadow|message|hologramme|fusee)\b/.test(n)) return () => sketch(t, n);
     if (/\b(accueille|accueillez|souhaite la bienvenue a|dis bonjour a) (nos|mes|les) (invites|amis|visiteurs|hotes)\b|\bnos invites (sont la|arrivent|sont arrives)\b|\bmode accueil\b/.test(n)) return () => invites(true);
     return null;
