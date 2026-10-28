@@ -866,7 +866,7 @@ const CONV = (() => {
   function nomPour(print) {
     if (!print) return '';
     const id = VOIX.identify(print);
-    if (id) { VOIX.learn(id.name, print); return id.name; } // il affine la voix des gens qu'il connaît
+    if (id) { if (id.sure && !(estEnfant(id.name) && print.pitch != null && print.pitch < 7.6)) VOIX.learn(id.name, print); return id.name; } // il affine la voix des gens qu'il connaît — seulement quand il est sûr (sinon les erreurs s'accumulent)
     let g = invites.find(x => VOIX.dist(x.p, print) < 7.5);
     if (!g) { g = { p: print, n: (invites.length ? invites[invites.length - 1].n : 0) + 1, vu: 0, debut: Date.now() }; invites.push(g); if (invites.length > 6) invites.shift(); }
     g.vu++; g.at = Date.now();
@@ -1110,11 +1110,16 @@ async function vie() {
       const print = OREILLES.takePrint(); let pc = typeof VOIXPC !== 'undefined' ? await VOIXPC.resultat() : null;
       dlg.pitch = print && print.pitch != null ? print.pitch : null;
       if (pc && pc.nom && pc.role === 'papa' && dlg.pitch != null && dlg.pitch >= 7.6) pc = null; // une voix aiguë (plus de 195 Hz) n'est pas celle de papa : le modèle s'est trompé
+      if (pc && pc.nom && pc.role === 'enfant' && dlg.pitch != null && dlg.pitch < 7.6) pc = null; // une voix grave (moins de 195 Hz) n'est pas celle d'un enfant de 7 ans : on ne croit pas le modèle
       dlg.qui = pc && pc.nom ? pc.nom : CONV.nomPour(print);
       dlg.enfant = pc && pc.nom ? pc.role === 'enfant' : estEnfant(dlg.qui);
       if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'telephone') { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; } // son téléphone, dans sa main : c'est lui (son micro trompait la reconnaissance)
       if (dlg.enfant && dlg.pitch != null && dlg.pitch < 7.3) { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; }
-      if (dlg.enfant && typeof SECURITE !== 'undefined' && SECURITE.enfantAbsent && SECURITE.enfantAbsent()) { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; } // le téléphone de Shadow n'est pas à la maison : son fils non plus — c'est papa // une voix grave (moins de 160 Hz) n'est jamais celle d'un enfant de 7 ans : c'est papa
+      if (dlg.enfant && typeof SECURITE !== 'undefined' && SECURITE.enfantAbsent && SECURITE.enfantAbsent()) { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; }
+      // sur l'ordinateur : quelqu'un vient de taper ou de bouger la souris (moins de 90 s) et la voix n'est pas clairement aiguë : c'est papa, à son bureau
+      if (dlg.enfant && typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur' && !(dlg.pitch != null && dlg.pitch >= 7.9) && VOIXMAISON.root()) {
+        try { const j = await (await fetch(`${VOIXMAISON.root()}/maison/pc/inactif`, { cache: 'no-store' })).json(); if (j.secondes != null && j.secondes < 90) { dlg.qui = S.nom || dlg.qui; dlg.enfant = false; } } catch (e) { /* sans */ }
+      } // le téléphone de Shadow n'est pas à la maison : son fils non plus — c'est papa // une voix grave (moins de 160 Hz) n'est jamais celle d'un enfant de 7 ans : c'est papa
       dlg.quiAt = Date.now(); dlg.quiPC = !!(pc && pc.nom);
       // le jumeau 3D : le petit est ici (sa voix, entendue par cet Atlas) — au plus une fois par minute
       if (dlg.enfant && Date.now() - (dlg.enfantSignale || 0) > 60000) { dlg.enfantSignale = Date.now(); const r0 = VOIXMAISON.root(); if (r0 && !window.__BANC) fetch(`${r0}/atlas/enfant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '', piece: S.settings.piece || '' }) }).catch(() => {}); }
