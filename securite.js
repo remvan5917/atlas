@@ -136,7 +136,7 @@ const SECURITE = (() => {
   }
 
   /* =================== la sentinelle : ce qu'elle a vu de suspect (réseau, Tailscale, ordinateur, caméra, alarme, prises) =================== */
-  let vuJusqua = 0, alertesRecentes = [], absent = false;
+  let vuJusqua = 0, alertesRecentes = [], absent = false, retourAt = 0; // retourAt : son téléphone vient de rentrer à la maison (la sentinelle le voit)
   try { vuJusqua = +localStorage.getItem('atlas-alertes-vues') || 0; } catch (e) { /* rien */ }
   const quand = at => { const d = new Date(at), auj = dayKey() === dayKey(d); return `${auj ? "aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'long' })} à ${hhmm(d)}`; };
   async function photoAlerte(a) {
@@ -160,7 +160,7 @@ const SECURITE = (() => {
   async function releveAlertes() {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
-    absent = !!j.absent;
+    absent = !!j.absent; retourAt = j.retour_at || 0;
     let l = (j.alertes || []).filter(a => a.id > vuJusqua);
     if (!l.length) return;
     if (!vuJusqua) { vuJusqua = Math.max(...l.map(a => a.id)); try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ } return; } // un nouvel appareil : il ne raconte pas toute la semaine
@@ -321,5 +321,7 @@ const SECURITE = (() => {
     return null;
   }
   const nomsCameras = () => cams.map(x => x.nom).concat(ezCams.map(x => x.nom));
-  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
+  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent,
+    // son téléphone est revenu sur le Wi-Fi il y a moins de 15 min : « je suis rentré » n'a pas besoin de sa voix (elle se trompe parfois)
+    retourRecent: async () => { try { const j = await appel('/maison/alertes?depuis=99999999999999', null, 5000); absent = !!j.absent; retourAt = j.retour_at || 0; } catch (e) { /* le dernier relevé */ } return !!retourAt && Date.now() - retourAt < 15 * 60000; }, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
 })();

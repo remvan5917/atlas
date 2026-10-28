@@ -82,6 +82,7 @@ const FUTUR = (() => {
     const absent = typeof SECURITE !== 'undefined' && SECURITE.absent && SECURITE.absent();
     if (!(SENSIBLE.test(n) || (absent && SENSIBLE_ABSENT.test(n))) || !papaVoix() || S.settings.accesVocal === false) return true; // pas d'empreinte de papa : on ne peut pas vérifier
     if (dlg.qui && pareil(dlg.qui, S.nom)) return true;
+    if (absent && SENSIBLE_ABSENT.test(n) && typeof SECURITE !== 'undefined' && SECURITE.retourRecent && await SECURITE.retourRecent()) return true; // son téléphone vient de rentrer : c'est lui
     refusEcran(); fx.tone([[220, 0.2], [180, 0.35]]);
     if (!S.codeAcces) { await say("Accès refusé : voix non reconnue. Seul mon inventeur peut donner cet ordre."); return false; }
     const a = await ask('Voix non reconnue. Code d\'accès ?', { wait: 10000 });
