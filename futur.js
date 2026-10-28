@@ -252,8 +252,12 @@ const FUTUR = (() => {
 
   /* ---------- la voix de la sentinelle : dissuader un intrus ---------- */
   // sur le téléphone : le bouton « Dissuader » (ou « Atlas, dissuasion ») demande à la maison ; la tablette (avec la sono) parle
-  async function dissuade() {
-    try { const r = await appel('/maison/dissuasion', {}, 20000); return say(`Dissuasion lancée : ${r.lumieres} lumières allumées, et la voix de la maison prévient l'intrus.`); }
+  async function dissuade(force = false) {
+    try {
+      const r = await appel('/maison/dissuasion', force ? { force: true } : {}, 20000);
+      if (r.ok === false) return say(`Je ne la lance pas : ${r.raison}`);
+      return say(`Dissuasion lancée : ${r.lumieres} lumières allumées, et la voix de la maison prévient l'intrus.`);
+    }
     catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
   }
   let dissuasionAt = 0;
@@ -285,7 +289,7 @@ const FUTUR = (() => {
     if (/\b(mode cinema|lance le cinema|on regarde un film|seance de cinema|ambiance cinema)\b/.test(n)) return () => cinema(true);
     if (/\b(missions?)\b/.test(n) && /\b(mon fils|du petit|de mon fils|pour mon fils|le petit|galactiques?)\b/.test(n) || /\bmedaille\b.*\b(mon fils|au petit|a mon fils)\b|\b(donne|decerne|envoie)\b.*\bmedaille\b/.test(n)) return () => missions(t, n);
     if (/\b(depart|on part|il part)\b.*\b(ecole)\b.*\b\d{1,2} h/.test(n)) return () => depart(t, n);
-    if (/\b(dissuasion|dissuade|fais fuir|fais peur a l intrus|protocole dissuasion)\b/.test(n)) return dissuade;
+    if (/\b(dissuasion|dissuade|fais fuir|fais peur a l intrus|protocole dissuasion)\b/.test(n)) return () => dissuade(true); // à la voix : toujours (lui seul peut le dire, la commande est protégée)
     if (/\b(protocole )?fantome\b/.test(n)) return async () => {
       const on = /\b(active|remets|reactive|lance|allume)\b/.test(n) ? true : /\b(desactive|coupe|arrete|stop|eteins)\b/.test(n) ? false : null;
       let r; try { r = await appel('/maison/reveils', on == null ? undefined : { fantome: on }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
