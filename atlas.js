@@ -752,6 +752,8 @@ async function handleBrut(text) {
   // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
+  const presc = typeof PRESCIENCE !== 'undefined' && PRESCIENCE.routeFixe(t, n); // « qu'est-ce que tu as appris ? », « active-la », « mes habitudes »
+  if (presc) return presc();
   const film = typeof PRESENTATION !== 'undefined' && PRESENTATION.route(t, n); // la présentation : « lance la présentation » (il fait tout le film), « stop » / « coupez »
   if (film) return film();
   if (/\b(test|teste|tester|essai) (du |le |de |un )?(larsen|larcene|larsene)\b/.test(n)) return testLarsen();
@@ -849,6 +851,9 @@ async function handleBrut(text) {
     const q = t.replace(/^.*?\b(?:cherche|recherche|regarde|trouve|va voir|vérifie|verifie)\b\s*(?:sur|dans|en)?\s*(?:internet|le web|ligne|google)?\s*(?:si|ce que|qui|quel|quelle|pour)?\s*/i, '').trim();
     return internet(t, q.length > 3 ? q : t);
   }
+  const appris = typeof PRESCIENCE !== 'undefined' && PRESCIENCE.route(t, n); // une compétence qu'il a apprise seul (après son oui)
+  if (appris) return appris();
+  if (typeof PRESCIENCE !== 'undefined') PRESCIENCE.note(t, n); // rien ne l'a prise : notée pour l'apprentissage de la nuit
   return repondre(t);
 }
 
