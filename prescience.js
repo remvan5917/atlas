@@ -5,6 +5,9 @@
      pour le cerveau, les données qu'elle peut lire (l'heure, la météo, l'agenda). Le matin, Atlas la propose : « active-la » / « oublie-la ».
      Une recette n'est pas du code : c'est ce moteur fixe qui la joue, et il ne sait que réfléchir et parler (jamais appeler, écrire,
      acheter ni toucher à la maison). « Qu'est-ce que tu as appris ? », « oublie la compétence … ».
+   - Son corps : un humanoïde complet dans MuJoCo (le simulateur de DeepMind) qui apprend seul, la nuit, à tenir debout puis à marcher
+     (corps/entraine.py, par renforcement). « Montre-moi ton corps », « tu sais marcher ? » : la vidéo de son meilleur examen et ses étapes ;
+     le matin, une étape franchie dans la nuit est annoncée.
    - Ce qu'il a remarqué : « qu'est-ce que tu as remarqué sur mes habitudes ? » (ses heures de départ, de retour, l'arrivée de son fils :
      la sentinelle s'en sert pour anticiper — prevision.py).
    ========================================================= */
@@ -94,6 +97,33 @@ const PRESCIENCE = (() => {
     catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
   }
 
+  /* ---------- son corps : l'humanoïde qui apprend à marcher ---------- */
+  const ETAPES = ['tenir', 'debout', 'pas', 'marcher', 'courir'];
+  async function lisCorps() { return (await fetch(`${root()}/maison/corps`, { cache: 'no-store' })).json(); }
+  const millions = n => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace('.', ',')} million${n >= 2e6 ? 's' : ''}` : `${Math.round(n / 1000)} mille`);
+  async function corps() {
+    let c; try { c = await lisCorps(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!c.meilleur) return say("Mon corps n'a pas encore commencé à s'entraîner. Il s'y met chaque nuit à minuit et demi.");
+    const et = ETAPES.filter(k => c.etapes[k]).map(k => c.etapes[k]);
+    const m = c.meilleur;
+    showBoard(`<div style="font-family:system-ui;text-align:center;min-width:min(92vw,660px)"><small style="letter-spacing:.3em;color:#7dd3fc">MON CORPS · HUMANOÏDE · MUJOCO</small>
+      <video src="${root()}/maison/corps/video/${esc(m.video)}" autoplay muted loop playsinline style="width:100%;max-width:640px;border-radius:12px;margin-top:8px;border:1px solid #1e6a8a"></video>
+      <div style="display:flex;justify-content:center;gap:18px;margin-top:8px;font-size:15px;color:#e0f2fe"><span>⏱ debout ${String(m.duree_s).replace('.', ',')} s</span><span>➜ ${String(Math.max(0, m.distance_m)).replace('.', ',')} m</span><span>🧠 ${millions(c.pas_total)} de tentatives</span>${c.en_cours ? '<span style="color:#86efac">● à l\'entraînement</span>' : ''}</div>
+      <div style="margin-top:8px;font-size:14px;color:#cbd5e1">${ETAPES.map(k => `<span style="margin:0 6px;color:${c.etapes[k] ? '#86efac' : '#64748b'}">${c.etapes[k] ? '✓' : '○'} ${esc({ tenir: 'tenir 3 s', debout: 'tenir debout', pas: 'premiers pas', marcher: 'marcher', courir: 'courir' }[k])}</span>`).join('')}</div></div>`);
+    return say(`${et.length ? `Mon corps a déjà appris à ${et.map(x => x.dit).join(', puis à ')}.` : "Pour l'instant, mon corps tombe encore : il apprend, comme un bébé."} Mon meilleur examen : je tiens debout ${String(m.duree_s).replace('.', ',')} secondes${m.distance_m >= 0.5 ? ` et j'avance de ${String(m.distance_m).replace('.', ',')} mètres` : ''}, après ${millions(c.pas_total)} de tentatives.${c.en_cours ? " Je suis en train de m'entraîner." : ''}`);
+  }
+  async function corpsMatin() {
+    if (!root() || !dlg.started || (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal())) return;
+    const h = new Date().getHours(); if (h < 7 || h >= 21) return;
+    let c; try { c = await lisCorps(); } catch (e) { return; }
+    S.corpsVu = S.corpsVu || {};
+    const neuves = ETAPES.filter(k => c.etapes[k] && !S.corpsVu[k]);
+    if (!neuves.length) return;
+    neuves.forEach(k => { S.corpsVu[k] = c.etapes[k].at; }); save();
+    PROACTIF.annonce(`corps-${neuves.join('-')}`, `Cette nuit, mon corps a appris à ${neuves.map(k => c.etapes[k].dit).join(', puis à ')}. Dis « montre-moi ton corps » pour voir la vidéo.`, { expire: Date.now() + 8 * 3600000 });
+  }
+  setInterval(() => corpsMatin().catch(() => {}), 15 * 60000); setTimeout(() => corpsMatin().catch(() => {}), 90000);
+
   /* ---------- ce que rien n'a pris : noté pour la nuit (seulement papa, seulement les demandes) ---------- */
   function note(t, n) {
     if (!root() || !dlg.qui || dlg.enfant || /^invité/.test(dlg.qui)) return;
@@ -106,6 +136,7 @@ const PRESCIENCE = (() => {
     if (/\b(qu est ce que|qu as) tu (as )?appris\b|\b(tes|les) competences\b|\bce que tu as appris (tout )?seul\b/.test(n)) return appris;
     if (/^(?:atlas )?(?:oui )?active (?:la|cette competence|la competence|ta competence)(?: (.+))?$/.test(n)) { const m = n.match(/competence (.+)$/); return () => decide(true, m ? m[1] : ''); }
     if (/^(?:atlas )?(?:non )?oublie (?:la|cette competence|la competence|ta competence)(?: (.+))?$/.test(n)) { const m = n.match(/competence (.+)$/); return () => decide(false, m ? m[1] : ''); }
+    if (/\b(ton corps|tes progres|ton entrainement|tu sais (marcher|tenir debout|courir)|montre moi (comment tu marches|ton corps)|ton corps de robot)\b/.test(n)) return corps;
     if (/\b(qu est ce que tu as remarque|tu as remarque quoi|mes habitudes|tu connais mes habitudes|tu me connais bien)\b/.test(n)) return habitudes;
     return null;
   }
