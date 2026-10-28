@@ -62,6 +62,15 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     if (act === 'modifie') return say("Voilà la nouvelle version, à l'écran.");
     if (act === 'adresse') return say("La relance est rédigée, à l'écran : valide-la pour la ranger en brouillon.");
   });
+  async function ficheClient(q) {
+    let r; try { r = await api({ action: 'client', q }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!r.ok) return say(`${r.raison || 'Je ne trouve pas ce contact'}.`);
+    const f = r.fiche || {}, l = f.echanges || [];
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,700px)"><small style="letter-spacing:.3em;color:#fcd34d">FICHE CLIENT · ${esc((f.entreprise || (f.noms || [f.cle])[0] || '').toUpperCase())}</small>
+<div style="font-size:14px;color:#94a3b8;margin-top:4px">${esc((f.noms || []).join(', '))}${f.adresses && f.adresses.length ? ` · ${esc(f.adresses.join(', '))}` : ''}${f.entite === 'lrf' ? ' · La Rue du financement' : ''}</div>
+${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border-radius:10px;background:rgba(255,255,255,.05);border-left:3px solid ${e.sens === 'recu' ? '#38bdf8' : '#4ade80'}"><small style="color:#94a3b8">${new Date(e.at * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${e.sens === 'recu' ? 'reçu' : 'envoyé'}</small><div style="font-size:14px">${esc(e.resume || e.sujet)}</div></div>`).join('')}</div>`);
+    return say(r.texte);
+  }
   async function bureau() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     await ecran(r);
@@ -147,6 +156,9 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     return say(j.length ? `Depuis hier : ${j.slice(0, 4).map(x => x.t).join(' ; ')}${j.length > 4 ? ', et le reste à l’écran' : ''}.` : "Je n'ai rien fait de nouveau depuis hier : ton bureau est à jour.");
   }
   function route(t, n) {
+    // la mémoire des clients : « où en est le dossier Nexa ? », « fiche client Euridis », « qu'est-ce que j'ai avec Atelier Brume ? »
+    const mc = n.match(/\b(?:ou en est (?:le dossier|le client|mon client|l affaire|avec)|fiche (?:du )?client|parle moi du client|qu est ce que j ai (?:en cours )?avec|historique (?:avec|du client))\s+(.{2,60})$/);
+    if (mc) return () => ficheClient(mc[1]);
     if (/\b(on valide|valide|valider|on fait) (le|mon) bureau\b|\bon valide tout\b|\bon traite (le bureau|mes mails)\b/.test(n)) return valideVoix;
     if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails|aujourd hui|pour moi)\b|\bjournal du bureau\b/.test(n)) return journal;
     if (/\b(mon bureau|le bureau|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return bureau;
