@@ -112,6 +112,13 @@ const TELEPHONE = (() => {
     return say(d.resume ? `Le dernier appel, à ${d.qui || lisible(d.a)} : ${d.resume}` : `Le dernier appel, à ${d.qui || lisible(d.a)}, est ${d.statut}.`);
   }
   function route(t, n) {
+    // l'appel filmé pour LinkedIn : « Atlas, appel LinkedIn », « appelle-moi pour LinkedIn »
+    if (/\b(appel (pour |de )?linkedin|appelle moi pour linkedin|appel filme|appel de demonstration)\b/.test(n)) return async () => {
+      if (!(await askYesNo("J'appelle ton iPhone pour l'appel filmé pour LinkedIn. Ta caméra est prête ? J'appelle ?"))) return say("D'accord, dis-le-moi quand tu es prêt.");
+      let r; try { r = await api({ action: 'linkedin' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+      if (!r.ok) return say(`L'appel n'est pas parti : ${r.raison}.`);
+      fx.ok(); return say("Ça sonne sur ton iPhone. Lance l'enregistrement et décroche !");
+    };
     if (/\b(comment relier|relie|brancher|connecter) (les )?appels\b/.test(n)) return relier;
     if (/\b(mes appels|les appels que tu as (faits|passes)|compte rendu (de l |du dernier )?appel)\b/.test(n)) return mesAppels;
     // « le numéro de Paul c'est (le) 06… », « le numéro de Paul est le 06… », « enregistre le numéro de Paul : 06… », « mon numéro c'est 06… »
