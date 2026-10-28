@@ -98,7 +98,8 @@ const PRESCIENCE = (() => {
   }
 
   /* ---------- son corps : l'humanoïde qui apprend à marcher ---------- */
-  const ETAPES = ['tenir', 'debout', 'pas', 'marcher', 'courir'];
+  const ETAPES = ['tenir', 'debout', 'pas', 'marcher', 'dehors', 'suivre', 'relever', 'courir'];
+  const NOMS_ETAPES = { tenir: 'tenir 3 s', debout: 'tenir debout', pas: 'premiers pas', marcher: 'marcher', dehors: 'dehors', suivre: 'te suivre', relever: 'se relever', courir: 'courir' };
   async function lisCorps() { return (await fetch(`${root()}/maison/corps`, { cache: 'no-store' })).json(); }
   const millions = n => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace('.', ',')} million${n >= 2e6 ? 's' : ''}` : `${Math.round(n / 1000)} mille`);
   async function corps() {
@@ -110,7 +111,7 @@ const PRESCIENCE = (() => {
     showBoard(`<div style="font-family:system-ui;text-align:center;min-width:min(92vw,660px)">${rb ? `<small style="letter-spacing:.3em;color:#7dd3fc">MON FUTUR CORPS · ${esc(rb.nom.toUpperCase())}</small>${vid(rb.video, 640)}<div style="font-size:14px;color:#e0f2fe;margin:4px 0 14px">${rb.ecran ? esc(rb.ecran) : rb.marche === false ? `un vrai humanoïde (${esc(rb.taille || '')}, un visage, des mains) : son modèle officiel dans mon simulateur — sa marche s'apprendra avec la carte NVIDIA` : `il marche ${String(rb.distance_m).replace('.', ',')} m en ${String(rb.secondes).replace('.', ',')} s dans mon simulateur`}</div>` : ''}
       ${c.meilleur ? `<small style="letter-spacing:.3em;color:#7dd3fc">${rb && rb.dit ? 'SON MODÈLE EXACT · IL APPREND SEUL' : "MON CORPS D'ENTRAÎNEMENT · IL APPREND SEUL"}</small>${vid(m.video, rb ? 420 : 640)}` : ''}
       <div style="display:flex;justify-content:center;gap:18px;margin-top:8px;font-size:15px;color:#e0f2fe"><span>⏱ debout ${String(m.duree_s).replace('.', ',')} s</span><span>➜ ${String(Math.max(0, m.distance_m)).replace('.', ',')} m</span><span>🧠 ${millions(c.pas_total)} de tentatives</span>${c.en_cours ? '<span style="color:#86efac">● à l\'entraînement</span>' : ''}</div>
-      <div style="margin-top:8px;font-size:14px;color:#cbd5e1">${ETAPES.map(k => `<span style="margin:0 6px;color:${c.etapes[k] ? '#86efac' : '#64748b'}">${c.etapes[k] ? '✓' : '○'} ${esc({ tenir: 'tenir 3 s', debout: 'tenir debout', pas: 'premiers pas', marcher: 'marcher', courir: 'courir' }[k])}</span>`).join('')}</div></div>`);
+      <div style="margin-top:8px;font-size:14px;color:#cbd5e1">${ETAPES.filter(k => k !== 'courir' || c.etapes.courir).map(k => `<span style="margin:0 6px;color:${c.etapes[k] ? '#86efac' : '#64748b'}">${c.etapes[k] ? '✓' : '○'} ${esc(NOMS_ETAPES[k])}</span>`).join('')}</div></div>`);
     const futur = rb ? (rb.dit ? rb.dit : rb.marche === false ? `Voici mon futur corps : le ${rb.nom}, un humanoïde d'${rb.taille || '1,80 m'}, avec un visage et des mains. Il est déjà dans mon simulateur ; il apprendra à marcher quand on aura la carte graphique NVIDIA. ` : `Voici mon futur corps : le ${rb.nom}. Il marche déjà dans mon simulateur. `) : '';
     if (!c.meilleur) return say(futur);
     return say(`${futur}${rb && rb.dit ? '' : "Et mon corps d'entraînement apprend seul. "}${et.length ? `Il a déjà appris à ${et.map(x => x.dit).join(', puis à ')}.` : "Pour l'instant, il tombe encore : il apprend, comme un bébé."} Son meilleur examen : il tient debout ${String(m.duree_s).replace('.', ',')} secondes${m.distance_m >= 0.5 ? ` et avance de ${String(m.distance_m).replace('.', ',')} mètres` : ''}, après ${millions(c.pas_total)} de tentatives.${c.en_cours ? " Il est en train de s'entraîner." : ''}`);
@@ -125,6 +126,25 @@ const PRESCIENCE = (() => {
     neuves.forEach(k => { S.corpsVu[k] = c.etapes[k].at; }); save();
     PROACTIF.annonce(`corps-${neuves.join('-')}`, `Cette nuit, mon corps a appris à ${neuves.map(k => c.etapes[k].dit).join(', puis à ')}. Dis « montre-moi ton corps » pour voir la vidéo.`, { expire: Date.now() + 8 * 3600000 });
   }
+  async function linkedin() {
+    let c; try { c = await lisCorps(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const v = c.montage; if (!v) return say("Pas encore de vidéo : le montage se fait chaque dimanche matin, avec les records de la semaine.");
+    const url = `${root()}/maison/corps/video/${esc(v.video)}`;
+    showBoard(`<div style="font-family:system-ui;text-align:center;min-width:min(92vw,560px)"><small style="letter-spacing:.3em;color:#7dd3fc">LA VIDÉO LINKEDIN DE LA SEMAINE</small>
+      <video src="${url}" controls autoplay muted playsinline style="width:100%;max-width:540px;border-radius:12px;margin-top:8px"></video>
+      <div style="margin-top:10px"><a href="${url}" download style="display:inline-block;padding:12px 22px;border-radius:12px;background:#0e7490;color:#fff;font:600 17px system-ui;text-decoration:none">⬇ Enregistrer la vidéo</a></div>
+      <p style="color:#94a3b8;font-size:13px">${v.records} record${v.records > 1 ? 's' : ''} · ${String(v.secondes).replace('.', ',')} s · seulement le robot et son simulateur, aucune donnée personnelle</p></div>`);
+    return say(`Voici la vidéo de la semaine : ${v.records} record${v.records > 1 ? 's' : ''} de mon corps, en ${Math.round(v.secondes)} secondes. Tu peux l'enregistrer avec le bouton, puis la poster.`);
+  }
+  async function linkedinMatin() {
+    if (!root() || !dlg.started || (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal())) return;
+    const h = new Date().getHours(); if (h < 8 || h >= 21) return;
+    let c; try { c = await lisCorps(); } catch (e) { return; }
+    if (!c.montage || S.montageVu === c.montage.video || Date.now() / 1000 - c.montage.at > 3 * 86400) return;
+    S.montageVu = c.montage.video; save();
+    PROACTIF.annonce(`montage-${c.montage.video}`, "Ta vidéo LinkedIn de la semaine est prête : les progrès de mon corps, nuit après nuit. Dis « montre-moi la vidéo LinkedIn ».", { expire: Date.now() + 10 * 3600000 });
+  }
+  setInterval(() => linkedinMatin().catch(() => {}), 20 * 60000);
   setInterval(() => corpsMatin().catch(() => {}), 15 * 60000); setTimeout(() => corpsMatin().catch(() => {}), 90000);
 
   /* ---------- ce que rien n'a pris : noté pour la nuit (seulement papa, seulement les demandes) ---------- */
@@ -139,6 +159,7 @@ const PRESCIENCE = (() => {
     if (/\b(qu est ce que|qu as) tu (as )?appris\b|\b(tes|les) competences\b|\bce que tu as appris (tout )?seul\b/.test(n)) return appris;
     if (/^(?:atlas )?(?:oui )?active (?:la|cette competence|la competence|ta competence)(?: (.+))?$/.test(n)) { const m = n.match(/competence (.+)$/); return () => decide(true, m ? m[1] : ''); }
     if (/^(?:atlas )?(?:non )?oublie (?:la|cette competence|la competence|ta competence)(?: (.+))?$/.test(n)) { const m = n.match(/competence (.+)$/); return () => decide(false, m ? m[1] : ''); }
+    if (/\b(video|montage) (linkedin|de la semaine)\b|\bla video pour linkedin\b/.test(n)) return linkedin;
     if (/\b(ton corps|tes progres|ton entrainement|tu sais (marcher|tenir debout|courir)|montre moi (comment tu marches|ton corps)|ton corps de robot)\b/.test(n)) return corps;
     if (/\b(qu est ce que tu as remarque|tu as remarque quoi|mes habitudes|tu connais mes habitudes|tu me connais bien)\b/.test(n)) return habitudes;
     return null;
