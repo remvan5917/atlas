@@ -279,7 +279,52 @@ const AVENIR = (() => {
   }, 10 * 60000);
 
   /* =================== les phrases =================== */
+  /* ---------- les prélèvements à venir (son tableau des dépenses : le jour du mois, le montant, le compte) ---------- */
+  const euros = v => `${Number(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} euros`;
+  function aVenir(charges, debut, jours) {
+    const out = [];
+    for (let k = 0; k < jours; k++) {
+      const d = new Date(debut.getFullYear(), debut.getMonth(), debut.getDate() + k), dernier = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      for (const x of charges || []) {
+        if (!x.jour || !x.montant || (x.jusqua && dJ(d) > x.jusqua)) continue;
+        if (d.getDate() === Math.min(+x.jour, dernier)) out.push({ d, x }); // le 31 d'un mois de 30 jours : le 30
+      }
+    }
+    return out;
+  }
+  const jourDit = d => { const k = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000); return k === 0 ? "aujourd'hui" : k === 1 ? 'demain' : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' }); };
+  function parCompte(l) { const m = {}; l.forEach(({ x }) => { const c = x.compte || 'ton compte'; m[c] = (m[c] || 0) + Math.abs(+x.montant); }); return m; }
+  async function prelevements(n) {
+    let b; try { b = await carnet('budget'); } catch (e) { return injoignable(); }
+    const jours = /\bmois\b/.test(n) ? 31 : /\bprochain\b/.test(n) && !/\bsemaine\b/.test(n) ? 62 : 7;
+    let l = aVenir(b.charges, new Date(), jours);
+    if (/\bprochain\b/.test(n) && !/\b(semaine|mois)\b/.test(n)) l = l.slice(0, 1);
+    if (!l.length) return say(jours === 7 ? 'Aucun prélèvement prévu dans les sept prochains jours.' : 'Aucun prélèvement prévu sur cette période.');
+    const tot = parCompte(l);
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,620px)"><small style="letter-spacing:.3em;color:#fcd34d">PRÉLÈVEMENTS À VENIR · ${jours === 7 ? '7 JOURS' : jours === 31 ? 'CE MOIS-CI' : 'LE PROCHAIN'}</small>
+${l.map(({ d, x }) => `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px dotted rgba(255,255,255,.12)"><span style="flex:0 0 110px;color:#94a3b8">${esc(jourDit(d))}</span><span style="flex:1">${esc(x.nom || x.beneficiaire || '')}</span><span style="flex:0 0 130px;color:#94a3b8">${esc(x.compte || '')}</span><b style="flex:0 0 90px;text-align:right">${esc(Math.abs(+x.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 }))} €</b></div>`).join('')}
+<div style="margin-top:10px;font-size:14px;color:#cbd5e1">${Object.entries(tot).map(([c, v]) => `${esc(c)} : <b>${esc(v.toLocaleString('fr-FR', { minimumFractionDigits: 2 }))} €</b>`).join(' · ')}</div></div>`);
+    const dits = l.slice(0, 6).map(({ d, x }) => `${jourDit(d)}, ${x.nom || x.beneficiaire} : ${euros(Math.abs(+x.montant))} sur ${x.compte || 'ton compte'}`);
+    return say(`${l.length === 1 ? 'Le prochain prélèvement' : `${l.length} prélèvements`} : ${dits.join(' ; ')}${l.length > 6 ? ', et le reste à l’écran' : ''}.${Object.keys(tot).length > 1 || l.length > 1 ? ` En tout : ${Object.entries(tot).map(([c, v]) => `${euros(v)} sur ${c}`).join(', ')}.` : ''}`);
+  }
+  // il prévient tout seul : la veille au matin (à partir de 9 h), et le lundi le total de la semaine, compte par compte
+  setInterval(async () => {
+    const h = new Date().getHours(); if (h < 9 || h >= 21 || !dlg.started || voice.occupe()) return;
+    if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
+    const j = auj(); if (S.prelevDit === j) return;
+    let b; try { b = await carnet('budget'); } catch (e) { return; }
+    S.prelevDit = j; save();
+    const demain = new Date(); demain.setDate(demain.getDate() + 1);
+    const l = aVenir(b.charges, demain, 1);
+    if (l.length) PROACTIF.annonce(`prelev-${j}`, `Demain, ${l.length > 1 ? `${l.length} prélèvements` : 'un prélèvement'} : ${l.map(({ x }) => `${x.nom || x.beneficiaire}, ${euros(Math.abs(+x.montant))} sur ${x.compte || 'ton compte'}`).join(' ; ')}.`, { expire: Date.now() + 10 * 3600000 });
+    if (new Date().getDay() === 1) {
+      const s7 = aVenir(b.charges, new Date(), 7);
+      if (s7.length) PROACTIF.annonce(`prelev-semaine-${j}`, `Cette semaine, ${s7.length} prélèvement${s7.length > 1 ? 's' : ''} : ${Object.entries(parCompte(s7)).map(([c, v]) => `${euros(v)} sur ${c}`).join(', ')}. Dis « mes prélèvements » pour le détail.`, { expire: Date.now() + 10 * 3600000 });
+    }
+  }, 10 * 60000);
+
   function route(t, n) {
+    if (/\b(prelevements?|prelevement)\b/.test(n) && !/\b(ajoute|enleve|supprime|retire)\b/.test(n)) return () => prelevements(n);
     if (simOffre && Date.now() - simOffre.at < 150000) {
       if (/^(oui|ouais|ok|d accord|vas y|imprime|bien sur)\b/.test(n)) return async () => { const o = simOffre; simOffre = null; dlg.attendReponse = 0; const ok = await imprime(o.job); return say(ok ? "La simulation s'imprime sur l'imprimante du bureau." : "Je n'arrive pas à joindre l'ordinateur pour imprimer."); };
       if (/^(non|pas la peine|laisse)\b/.test(n)) return () => { simOffre = null; dlg.attendReponse = 0; return say("D'accord."); };
