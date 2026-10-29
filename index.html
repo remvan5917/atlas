@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '232';
+    window.ATLAS_VERSION = '233';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -14,11 +14,25 @@
           (document.body || document.documentElement).appendChild(b);
         }
         b.textContent = 'Atlas a un souci (v' + window.ATLAS_VERSION + ') : ' + msg;
+        note(msg, '');
       }
+      // le rapport d'erreurs : envoyé à l'ordinateur de la maison (le message, le fichier, la ligne, l'appareil — rien d'autre), pour qu'on répare sans voir l'écran
+      var file = [];
+      function note(msg, pile) { if (file.length < 20 && !file.some(function (x) { return x.msg === msg; })) file.push({ msg: String(msg).slice(0, 400), pile: String(pile || '').slice(0, 800) }); }
+      window.__noteErreur = note;
+      setInterval(function () {
+        try {
+          if (!file.length || typeof VOIXMAISON === 'undefined' || !VOIXMAISON.root()) return;
+          var l = file.splice(0, file.length);
+          fetch(VOIXMAISON.root() + '/atlas/erreurs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ erreurs: l, v: window.ATLAS_VERSION, role: typeof CONSTELLATION !== 'undefined' ? CONSTELLATION.role : '', ua: navigator.userAgent }) }).catch(function () {});
+        } catch (e) { /* rien */ }
+      }, 15000);
+      window.addEventListener('unhandledrejection', function (e) { var r = e.reason || {}; if (r && r.name === 'AbortError') return; note('promesse : ' + (r.message || String(r)), r.stack || ''); });
       if (/[?&]banc\b/.test(location.search)) window.__BANC = true;
       window.addEventListener('error', function (e) {
         if (e.target && e.target !== window && e.target.src) return show('fichier introuvable ' + e.target.src.split('/').pop());
         show((e.message || 'erreur') + (e.filename ? ' (' + e.filename.split('/').pop() + ', ligne ' + e.lineno + ')' : ''));
+        if (e.error && e.error.stack) note((e.message || 'erreur') + ' (' + String(e.filename || '').split('/').pop() + ':' + e.lineno + ')', e.error.stack);
       }, true);
     })();
   </script>
@@ -30,7 +44,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=232">
+  <link rel="stylesheet" href="style.css?v=233">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -155,47 +169,47 @@
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=232"></script>
-  <script src="cerveau.js?v=232"></script>
-  <script src="oreilles.js?v=232"></script>
-  <script src="voix.js?v=232"></script>
-  <script src="empreintes.js?v=232"></script>
-  <script src="yeux.js?v=232"></script>
-  <script src="atlas.js?v=232"></script>
-  <script src="outils.js?v=232"></script>
-  <script src="memoire.js?v=232"></script>
-  <script src="marche.js?v=232"></script>
-  <script src="proactif.js?v=232"></script>
-  <script src="foyer.js?v=232"></script>
-  <script src="bord.js?v=232"></script>
-  <script src="vivant.js?v=232"></script>
-  <script src="cuisine.js?v=232"></script>
-  <script src="prix.js?v=232"></script>
-  <script src="cuisine-ui.js?v=232"></script>
-  <script src="agent.js?v=232"></script>
-  <script src="maison.js?v=232"></script>
-  <script src="securite.js?v=232"></script>
-  <script src="veille.js?v=232"></script>
-  <script src="gardien.js?v=232"></script>
-  <script src="pc.js?v=232"></script>
-  <script src="coequipier.js?v=232"></script>
-  <script src="compta.js?v=232"></script>
-  <script src="bureau.js?v=232"></script>
-  <script src="telephone.js?v=232"></script>
-  <script src="jumelage.js?v=232"></script>
-  <script src="visio.js?v=232"></script>
-  <script src="scifi.js?v=232"></script>
-  <script src="trading.js?v=232"></script>
-  <script src="duo.js?v=232"></script>
-  <script src="prescience.js?v=232"></script>
-  <script src="constellation.js?v=232"></script>
-  <script src="agenda.js?v=232"></script>
-  <script src="secretaire.js?v=232"></script>
-  <script src="avenir.js?v=232"></script>
-  <script src="vie.js?v=232"></script>
-  <script src="futur.js?v=232"></script>
-  <script src="scene.js?v=232"></script>
-  <script src="presentation.js?v=232"></script>
-  <script src="noyau.js?v=232"></script>
+  <script src="orthographe.js?v=233"></script>
+  <script src="cerveau.js?v=233"></script>
+  <script src="oreilles.js?v=233"></script>
+  <script src="voix.js?v=233"></script>
+  <script src="empreintes.js?v=233"></script>
+  <script src="yeux.js?v=233"></script>
+  <script src="atlas.js?v=233"></script>
+  <script src="outils.js?v=233"></script>
+  <script src="memoire.js?v=233"></script>
+  <script src="marche.js?v=233"></script>
+  <script src="proactif.js?v=233"></script>
+  <script src="foyer.js?v=233"></script>
+  <script src="bord.js?v=233"></script>
+  <script src="vivant.js?v=233"></script>
+  <script src="cuisine.js?v=233"></script>
+  <script src="prix.js?v=233"></script>
+  <script src="cuisine-ui.js?v=233"></script>
+  <script src="agent.js?v=233"></script>
+  <script src="maison.js?v=233"></script>
+  <script src="securite.js?v=233"></script>
+  <script src="veille.js?v=233"></script>
+  <script src="gardien.js?v=233"></script>
+  <script src="pc.js?v=233"></script>
+  <script src="coequipier.js?v=233"></script>
+  <script src="compta.js?v=233"></script>
+  <script src="bureau.js?v=233"></script>
+  <script src="telephone.js?v=233"></script>
+  <script src="jumelage.js?v=233"></script>
+  <script src="visio.js?v=233"></script>
+  <script src="scifi.js?v=233"></script>
+  <script src="trading.js?v=233"></script>
+  <script src="duo.js?v=233"></script>
+  <script src="prescience.js?v=233"></script>
+  <script src="constellation.js?v=233"></script>
+  <script src="agenda.js?v=233"></script>
+  <script src="secretaire.js?v=233"></script>
+  <script src="avenir.js?v=233"></script>
+  <script src="vie.js?v=233"></script>
+  <script src="futur.js?v=233"></script>
+  <script src="scene.js?v=233"></script>
+  <script src="presentation.js?v=233"></script>
+  <script src="noyau.js?v=233"></script>
 </body>
 </html>
