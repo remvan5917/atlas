@@ -234,7 +234,7 @@
 <div id="boot"><div id="boot-l"></div></div>
 <header>
   <div>
-    <div class="marque" id="marque">ATLAS <b>//</b> COCKPIT DE LA MAISON</div>
+    <div class="marque" id="marque">ATLAS <b>//</b> COCKPIT DE LA MAISON</div><button id="bascule" hidden style="margin-left:10px;padding:5px 12px;border-radius:999px;border:1px solid #1e6a8a;background:rgba(14,116,144,.25);color:#e0f2fe;font:600 12px system-ui;letter-spacing:.08em;cursor:pointer"></button>
     <div class="horloge"><div class="heure" id="heure">--:--</div><div class="date" id="date"></div></div>
   </div>
   <div class="bandeau"><span id="bandeau">SYSTÈMES EN LIGNE</span></div>
@@ -347,6 +347,18 @@ const IC = {
   bowl: '<path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 7c0-1.5 1-2 1-3M12 7c0-1.5 1-2 1-3M16 7c0-1.5 1-2 1-3"/>',
 };
 const POSTE = new URLSearchParams(location.search).get('poste') === 'travail' ? 'travail' : 'maison'; // l'ordinateur : le poste de travail
+// sur l'ordinateur : un bouton pour passer du poste de travail au cockpit de la maison (celui de la tablette), et retour ; le choix est retenu
+if (new URLSearchParams(location.search).get('pc') === '1') setTimeout(() => {
+  const b = document.getElementById('bascule'); if (!b) return;
+  b.hidden = false; b.textContent = POSTE === 'travail' ? '⌂ LA MAISON' : '▣ LE TRAVAIL';
+  b.title = POSTE === 'travail' ? 'Gérer la maison, comme sur la tablette' : 'Revenir au poste de travail';
+  b.addEventListener('click', () => {
+    const vers = POSTE === 'travail' ? 'maison' : 'travail';
+    try { localStorage.setItem('cockpit-poste', vers); } catch (e) { /* rien */ }
+    const q = new URLSearchParams(location.search); if (vers === 'travail') q.set('poste', 'travail'); else q.delete('poste');
+    location.search = q.toString();
+  });
+}, 0);
 // un toucher dans le cockpit : il est ici (Atlas le suit d'un appareil à l'autre)
 document.addEventListener('pointerdown', () => { try { if (window.parent !== window && window.parent.CONSTELLATION) window.parent.CONSTELLATION.actif(); } catch (e) { /* rien */ } }, { passive: true, capture: true });
 const ic = k => `<svg class="ic" viewBox="0 0 24 24">${IC[k]}</svg>`;

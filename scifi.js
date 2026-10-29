@@ -530,7 +530,9 @@ const SCIFI = (() => {
   function modeCockpit(on, maisonForcee) {
     document.body.classList.toggle('cockpit', on);
     let f = document.getElementById('cockpit-cadre');
-    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = `cockpit.html?v=${window.ATLAS_VERSION || ''}${!maisonForcee && typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur' ? '&poste=travail' : ''}`; f.title = 'Cockpit de la maison'; document.body.appendChild(f); f.addEventListener('load', () => { try { f.contentDocument.addEventListener('pointerdown', pleinEcran); } catch (e) { /* rien */ } }); }
+    const surPC = typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur';
+    let posteMaison = false; try { posteMaison = localStorage.getItem('cockpit-poste') === 'maison'; } catch (e) { /* rien */ }
+    if (on && !f) { f = document.createElement('iframe'); f.id = 'cockpit-cadre'; f.src = `cockpit.html?v=${window.ATLAS_VERSION || ''}${!maisonForcee && surPC && !posteMaison ? '&poste=travail' : ''}${surPC ? '&pc=1' : ''}`; f.title = 'Cockpit de la maison'; document.body.appendChild(f); f.addEventListener('load', () => { try { f.contentDocument.addEventListener('pointerdown', pleinEcran); } catch (e) { /* rien */ } }); }
     if (!on && f) f.remove();
     // le plein écran (sans les barres d'Android) : le navigateur l'accorde au premier toucher de l'écran
     if (on && !document.fullscreenElement && document.documentElement.requestFullscreen) {
@@ -862,6 +864,10 @@ const SCIFI = (() => {
     };
     if (/\b(fais|lance|commence|demarre) (une |la |ta )?ronde\b|\bronde (de nuit|de securite|du soir|de la maison)\b|^(la )?ronde$/.test(n)) return () => ronde().then(ok => ok || say("L'ordinateur de la maison ne répond pas : pas de ronde ce soir."));
     if (/\b(ferme|quitte|sors du|enleve|cache)\b.*\b(cockpit|tableau de bord)\b|\bfin du (mode )?cockpit\b/.test(n)) return () => { modeCockpit(false); return say('Mode cockpit fermé.'); };
+    // l'ordinateur : le cockpit de la maison (comme la tablette) ou le poste de travail — il retient le choix
+    const pcCockpit = (poste, phrase) => () => { try { localStorage.setItem('cockpit-poste', poste); } catch (e) { /* rien */ } modeCockpit(false); modeCockpit(true, poste === 'maison'); return say(phrase); };
+    if (/\b(cockpit|tableau de bord|ecran) de la maison\b|\bgere(r)? la maison\b|\bla maison sur l ordi\b|\bcomme (sur )?la tablette\b|\bmode tablette\b/.test(n)) return pcCockpit('maison', "Le cockpit de la maison : les lumières, les scènes, les caméras, la sentinelle, comme sur la tablette. Dis « poste de travail » pour revenir au travail.");
+    if (/\b(poste de travail|cockpit (du |de )?travail|tableau de bord (du |de )?travail)\b/.test(n)) return pcCockpit('travail', "Le poste de travail. Dis « cockpit de la maison » pour gérer la maison.");
     // le jumeau holographique : la maison en 3D dans le cockpit, et la journée qu'on rejoue
     const jum = /\b(jumeau|maison en (3d|trois d)|hologramme de la maison|maison holographique)\b/.test(n), rejoue = /\b(rejoue|revois|repasse|montre moi) (ma|la) journee\b/.test(n);
     if (jum || rejoue) return () => {

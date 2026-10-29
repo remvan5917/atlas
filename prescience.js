@@ -109,7 +109,7 @@ const PRESCIENCE = (() => {
     const m = c.meilleur || { duree_s: 0, distance_m: 0 }, rb = c.robot;
     const vid = (v, h) => `<video src="${root()}/maison/corps/video/${esc(v)}" autoplay muted loop playsinline style="width:100%;max-width:${h}px;border-radius:12px;margin-top:8px;border:1px solid #1e6a8a"></video>`;
     showBoard(`<div style="font-family:system-ui;text-align:center;min-width:min(92vw,660px)">${rb ? `<small style="letter-spacing:.3em;color:#7dd3fc">MON FUTUR CORPS · ${esc(rb.nom.toUpperCase())}</small>${vid(rb.video, 640)}<div style="font-size:14px;color:#e0f2fe;margin:4px 0 14px">${rb.ecran ? esc(rb.ecran) : rb.marche === false ? `un vrai humanoïde (${esc(rb.taille || '')}, un visage, des mains) : son modèle officiel dans mon simulateur — sa marche s'apprendra avec la carte NVIDIA` : `il marche ${String(rb.distance_m).replace('.', ',')} m en ${String(rb.secondes).replace('.', ',')} s dans mon simulateur`}</div>` : ''}
-      ${c.meilleur ? `<small style="letter-spacing:.3em;color:#7dd3fc">${rb && rb.dit ? 'SON MODÈLE EXACT · IL APPREND SEUL' : "MON CORPS D'ENTRAÎNEMENT · IL APPREND SEUL"}</small>${vid(m.video, rb ? 420 : 640)}` : ''}
+      ${c.meilleur ? `<div style="margin:2px 0 10px"><a href="${root()}/maison/corps/video/${esc(m.video)}" download style="display:inline-block;padding:9px 18px;border-radius:12px;background:#0e7490;color:#fff;font:600 15px system-ui;text-decoration:none">⬇ Enregistrer sa meilleure vidéo</a></div><small style="letter-spacing:.3em;color:#7dd3fc">${rb && rb.dit ? 'SON MODÈLE EXACT · IL APPREND SEUL' : "MON CORPS D'ENTRAÎNEMENT · IL APPREND SEUL"}</small>${vid(m.video, rb ? 420 : 640)}` : ''}
       <div style="display:flex;justify-content:center;gap:18px;margin-top:8px;font-size:15px;color:#e0f2fe"><span>⏱ debout ${String(m.duree_s).replace('.', ',')} s</span><span>➜ ${String(Math.max(0, m.distance_m)).replace('.', ',')} m</span><span>🧠 ${millions(c.pas_total)} de tentatives</span>${c.en_cours ? '<span style="color:#86efac">● à l\'entraînement</span>' : ''}</div>
       <div style="margin-top:8px;font-size:14px;color:#cbd5e1">${ETAPES.filter(k => k !== 'courir' || c.etapes.courir).map(k => `<span style="margin:0 6px;color:${c.etapes[k] ? '#86efac' : '#64748b'}">${c.etapes[k] ? '✓' : '○'} ${esc(NOMS_ETAPES[k])}</span>`).join('')}</div></div>`);
     const futur = rb ? (rb.dit ? rb.dit : rb.marche === false ? `Voici mon futur corps : le ${rb.nom}, un humanoïde d'${rb.taille || '1,80 m'}, avec un visage et des mains. Il est déjà dans mon simulateur ; il apprendra à marcher quand on aura la carte graphique NVIDIA. ` : `Voici mon futur corps : le ${rb.nom}. Il marche déjà dans mon simulateur. `) : '';
@@ -122,6 +122,10 @@ const PRESCIENCE = (() => {
     let c; try { c = await lisCorps(); } catch (e) { return; }
     S.corpsVu = S.corpsVu || {};
     const neuves = ETAPES.filter(k => c.etapes[k] && !S.corpsVu[k]);
+    if (c.jour && S.jourVu !== c.jour.video && Date.now() / 1000 - c.jour.at < 14 * 3600 && typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur') {
+      S.jourVu = c.jour.video; save();
+      PROACTIF.annonce(`corps-jour-${c.jour.at}`, `La vidéo de la nuit de mon corps est enregistrée sur l'ordinateur, dans ton dossier Vidéos, « Atlas - son corps ».`, { expire: Date.now() + 8 * 3600000 });
+    }
     if (!neuves.length) return;
     neuves.forEach(k => { S.corpsVu[k] = c.etapes[k].at; }); save();
     PROACTIF.annonce(`corps-${neuves.join('-')}`, `Cette nuit, mon corps a appris à ${neuves.map(k => c.etapes[k].dit).join(', puis à ')}. Dis « montre-moi ton corps » pour voir la vidéo.`, { expire: Date.now() + 8 * 3600000 });
