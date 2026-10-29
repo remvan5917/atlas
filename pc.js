@@ -250,26 +250,33 @@ const PC = (() => {
     }
     return null;
   }
-  async function radioLibre(q) {
+  async function radioLibre(q, surPC) {
     face.set('think');
     const r = await chercheRadio(q);
     if (!r) return say(`Je ne trouve pas la radio « ${q} ». Dis-moi son nom exact, par exemple « mets Skyrock ».`);
+    if (surPC || !ici()) { // sur l'ordinateur (ou demandée depuis le téléphone « sur le PC ») : ses haut-parleurs la jouent, même page fermée
+      if (lecteur && surPC) { lecteur.pause(); lecteur = null; majBouton(); }
+      let x; try { x = await pc({ action: 'radio', id: r.id, nom: r.nom }); } catch (e) { return injoignable(); }
+      if (!x.ok) return say(`${r.nom} ne passe pas.`);
+      radioPC = true; fx.ok(); return say(`${r.nom}, sur l'ordi.`);
+    }
     if (/^https:/.test(r.url)) return radioJoue(r.url, r.nom);
     const r0 = typeof VOIXMAISON !== 'undefined' ? VOIXMAISON.root() : '';
     if (!r0) return say(`${r.nom} ne passe que par l'ordinateur de la maison, et il ne répond pas.`);
     return radioJoue(`${r0}/maison/radio/flux?id=${r.id}`, r.nom); // un flux « http » : relayé par l'ordinateur
   }
   const nomDans = n => n.replace(/^(et )?(mets|met|mais|allume|lance|joue|ecoute|ecouter|branche|passe|fais moi ecouter|je veux ecouter|on ecoute|tu peux mettre|peux tu mettre)( moi)?\b/, '')
-    .replace(/\b(s il te plait|stp|sur (la )?tablette|sur (le )?telephone|ici|maintenant|s il vous plait)\b/g, '').replace(/\b(la|une|de la|sur la)? ?(station de )?radio\b/g, '').replace(/\s+/g, ' ').trim();
-  async function radio(cle, nom) {
-    if (ici()) return radioIci(cle, nom); // ici : la tablette (et sa sono), le téléphone
+    .replace(/\b(s il te plait|stp|sur (la )?tablette|sur (le )?telephone|sur (le )?pc|sur l ordi(nateur)?|dans le bureau|ici|maintenant|s il vous plait)\b/g, '').replace(/\b(la|une|de la|sur la)? ?(station de )?radio\b/g, '').replace(/\s+/g, ' ').trim();
+  async function radio(cle, nom, surPC) {
+    if (ici() && !surPC) return radioIci(cle, nom); // ici : la tablette (et sa sono), le téléphone — sauf « sur le PC »
+    if (lecteur && surPC) { lecteur.pause(); lecteur = null; majBouton(); }
     let r; try { r = await pc({ action: 'radio', cle }); } catch (e) { return injoignable(); }
     if (!r.ok) return say(`${nom} ne passe pas.`);
     radioPC = true; // la radio de l'ordi : il ne prend pas ses voix pour des ordres
     fx.ok(); return say(`${nom}, sur l'ordi.`);
   }
-  async function radioStop() {
-    if (lecteur) { lecteur.pause(); lecteur = null; majBouton(); fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
+  async function radioStop(surPC) {
+    if (lecteur && !surPC) { lecteur.pause(); lecteur = null; majBouton(); fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
     radioPC = false;
     let r; try { r = await pc({ action: 'radio_stop' }); } catch (e) { return injoignable(); }
     return say(r.nom ? `${r.nom} : arrêtée.` : "Il n'y avait pas de radio.");
@@ -423,26 +430,27 @@ const PC = (() => {
       const rang = n.match(/\b(premier|1er|dernier|deuxieme|second|troisieme)\b/);
       return () => mails({ id: derniersMails[rang ? RANG[rang[1]] : 0].id });
     }
-    // la radio
-    if (/\b(arrete|coupe|eteins|stop) (la radio|france ?info|france inter|fip|les infos)\b/.test(n)) return radioStop;
+    // la radio (« … sur le PC » depuis le téléphone ou la tablette : ce sont les haut-parleurs de l'ordinateur qui la jouent)
+    const surPC = /\b(sur (le )?pc|sur l ordi(nateur)?|dans le bureau|sur les enceintes de l ordi)\b/.test(n);
+    if (/\b(arrete|coupe|eteins|stop) (la radio|france ?info|france inter|fip|les infos)\b/.test(n)) return () => radioStop(surPC);
     if (/^(mets|met|allume|lance|joue|fais moi ecouter|branche|ecoute|je veux ecouter|on ecoute)\b/.test(n)) {
       const ra = RADIOS.find(([re]) => re.test(n));
-      if (ra) return () => radio(ra[1], ra[2]);
+      if (ra) return () => radio(ra[1], ra[2], surPC);
       const sn = nomRadio(n); // NRJ, RTL, Skyrock… (même sans le mot « radio »)
-      if (sn) return () => radioLibre(sn);
+      if (sn) return () => radioLibre(sn, surPC);
     }
-    if (/\b(arrete|coupe|eteins|stop)\b/.test(n) && nomRadio(n) && n.split(' ').length <= 5) return radioStop;
+    if (/\b(arrete|coupe|eteins|stop)\b/.test(n) && nomRadio(n) && n.split(' ').length <= 5) return () => radioStop(surPC);
     if (/\bradios? (de|a|du|sur) (lille|la region|du nord|locales?)\b|\bradios? locales?\b/.test(n) && !/^(mets|met|allume|lance|joue)\b/.test(n)) return () => say("Les radios de Lille et du Nord : Ici Nord, l'ancien France Bleu Nord, Mona FM, Radio Campus Lille, RCF Nord de France, Radio PFM, Galaxie, Radio Contact, Métropole FM et Radio Boomerang. Et aussi NRJ Lille et Chérie FM Lille. Dis par exemple « mets Mona FM ».");
     if (/^(mets|met|allume|lance|joue) (une |la )?radio (de lille|du nord|locale)$/.test(n)) return () => radioLibre('ICI NORD');
     if (/\b(quelles?|lesquelles|tu connais|liste|toutes les)\b.*\bradios\b|\bradios (tu connais|disponibles|que tu (as|connais))\b/.test(n)) return () => say("Je trouve presque toutes les radios : Radio France bien sûr, mais aussi NRJ, RTL, Skyrock, Nostalgie, RMC, Europe 1, Chérie FM, Radio Nova, TSF Jazz, Radio Classique, et les radios locales. Dis simplement « mets » et son nom.");
     // « la radio France Info », « mais la radio… » (le « mets » mal entendu) : le mot radio, ou une station, suffit
     if (/\bradio\b/.test(n) && !/\b(arrete|coupe|eteins|stop|c est quoi|quelle radio|pourquoi|comment)\b/.test(n) && n.split(' ').length <= 9) {
       const ra = RADIOS.find(([re]) => re.test(n));
-      if (ra) return () => radio(ra[1], ra[2]);
+      if (ra) return () => radio(ra[1], ra[2], surPC);
       const q = nomRadio(n) || nomDans(n);
-      if (!q) return () => radio(RADIOS[1][1], RADIOS[1][2]); // « mets la radio » tout court : France Inter
+      if (!q) return () => radio(RADIOS[1][1], RADIOS[1][2], surPC); // « mets la radio » tout court : France Inter
       if (/\b(quelles?|lesquelles|tu connais|liste)\b/.test(n)) return () => say("Je trouve presque toutes les radios du monde : Radio France, mais aussi NRJ, RTL, Skyrock, Nostalgie, RMC, Europe 1, Chérie FM, Radio Nova, TSF Jazz, Radio Classique… Dis simplement « mets » et son nom.");
-      return () => radioLibre(q);
+      return () => radioLibre(q, surPC);
     }
     // la musique par YouTube : « mets du Daft Punk », « joue Bohemian Rhapsody », « mets la chanson X », « mets X sur YouTube »
     const yt = String(t).match(/^\s*(?:mets|met|joue|lance|fais[- ]moi écouter|fais moi ecouter|passe)\s+(?:moi\s+)?(?:(?:de la |la |une )?(?:musique|chanson|vidéo|video)\s+(?:de\s+|d['’]\s*)?|du\s+|de la\s+|des\s+|de\s+l['’])?(.+?)\s*(?:sur youtube|sur l['’]ordi(?:nateur)?)?[.!?]*\s*$/i);
@@ -498,5 +506,6 @@ const PC = (() => {
     if (va && /^(passe|va|bascule|reviens|retourne)\b/.test(n) && !/\b(chanson|musique|video|suivante?|precedente?)\b/.test(n)) return () => fenetre('active', va[1].replace(/\b(sur l['’]ordi(nateur)?|du pc)\b/i, '').trim());
     return null;
   }
-  return { route, _charge: charge, radioIci: () => !!(lecteur && !lecteur.paused) || radioPC, radioCoupe: () => radioStop(), radioBaisse: ms => { baisseJusqua = Date.now() + ms; } };
+  const estRadio = n => !!(RADIOS.find(([re]) => re.test(n)) || nomRadio(n) || /\bradio\b/.test(n));
+  return { route, estRadio, _charge: charge, radioIci: () => !!(lecteur && !lecteur.paused) || radioPC, radioCoupe: () => radioStop(), radioBaisse: ms => { baisseJusqua = Date.now() + ms; } };
 })();

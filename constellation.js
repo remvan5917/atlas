@@ -126,6 +126,7 @@ const CONSTELLATION = (() => {
     if (!m) return null;
     const cible = quelle(m[1]);
     const reste = n.slice(0, m.index).trim();
+    if (cible === 'ordinateur' && typeof PC !== 'undefined' && PC.estRadio && PC.estRadio(reste)) return null; // la radio « sur le PC » : l'ordinateur la joue directement (même page d'Atlas fermée)
     if (/^(envoie|envoi|transfere|passe|balance|mets|affiche|montre)( moi)?( (ca|ceci|cela|tout ca|l ecran|ce que tu (montres|affiches)|la reponse|la recette|le resultat))?$/.test(reste)) return () => envoie(cible);
     if (reste.split(' ').length < 2) return null;
     if (cible === role) return typeof handle === 'function' ? () => handle(String(t).replace(/\s*(?:sur|à|a|vers|dans)\s+(?:mon |ma |le |la |l['’]\s*)?(?:téléphone|telephone|portable|tel|ordi|ordinateur|pc|tablette)\s*[.!?]*$/i, '')) : null;
