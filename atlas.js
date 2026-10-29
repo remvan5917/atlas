@@ -1169,7 +1169,7 @@ async function vie() {
       // il vient de te poser une question (une habitude, l'oracle) : un « oui » ou un « non » tout court lui répond
       // son travail (« mon bureau », « point compta », « envoie un SMS à … ») : de SA voix, une phrase courte, pas besoin que son nom soit bien entendu (« Glace, mon bureau »)
       const travail = !appele && !!dlg.qui && !/^invité/.test(dlg.qui) && !dlg.enfant && n.split(' ').length <= 12 && !!((typeof BUREAU !== 'undefined' && BUREAU.route(r, n)) || (typeof COMPTA !== 'undefined' && COMPTA.route(r, n)) || (typeof TELEPHONE !== 'undefined' && TELEPHONE.route(r, n)));
-      const reponse = !appele && dlg.attendReponse > Date.now() && /^(oui|ouais|ok|d accord|vas y|carrement|bien sur|fais le|volontiers|non|non merci|pas la peine|laisse|surtout pas)\b/.test(n);
+      const reponse = !appele && dlg.attendReponse > Date.now() && /^(oui|ouais|ok|d accord|vas y|carrement|bien sur|fais le|volontiers|non|non merci|pas la peine|laisse|surtout pas|plus tard|demain|pas maintenant|on verra|active la|active|allez|je veux bien|oublie la|oublie)\b/.test(n);
       if (!appele && !suite && !seul && !frag && !direct && !reponse && !naturel && !travail) {
         journal(r, dlg.qui, dlg.discret ? 'ignoré (discret)' : 'conversation : il écoute');
         if (dlg.discret) continue;

@@ -16,7 +16,7 @@
 const PRESCIENCE = (() => {
   const root = () => VOIXMAISON.root();
   const json = raw => { const s = String(raw || ''); return JSON.parse(s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)); };
-  let actives = [], proposees = [], lu = 0;
+  let actives = [], proposees = [], lu = 0, offre = null; // offre : la compétence qu'il vient de proposer, en attente d'un « oui » ou d'un « non »
   async function api(corps) {
     const r = await fetch(`${root()}/maison/competences`, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store' });
     if (!r.ok) throw new Error(`competences ${r.status}`);
@@ -41,7 +41,9 @@ const PRESCIENCE = (() => {
     S.compProposees = S.compProposees || {};
     if (S.compProposees[c.id] === new Date().toDateString()) return;
     S.compProposees[c.id] = new Date().toDateString(); save();
-    PROACTIF.annonce(`competence-${c.id}`, `Cette nuit, j'ai appris tout seul une nouvelle compétence : ${c.nom}. ${c.description}${c.pourquoi && !/idee d atlas/.test(N(c.pourquoi)) ? ` Je l'ai apprise parce que ${c.pourquoi.charAt(0).toLowerCase()}${c.pourquoi.slice(1).replace(/[.!]+$/, '')}.` : ''} Dis « Atlas, active-la » pour l'essayer, ou « oublie-la ».`, { expire: Date.now() + 6 * 3600000 });
+    const texte = `Cette nuit, j'ai appris tout seul une nouvelle compétence : ${c.nom}. ${c.description}${c.pourquoi && !/idee d atlas/.test(N(c.pourquoi)) ? ` Je l'ai apprise parce que ${c.pourquoi.charAt(0).toLowerCase()}${c.pourquoi.slice(1).replace(/[.!]+$/, '')}.` : ''} Je l'active ? Réponds simplement oui, non, ou plus tard.`;
+    // au moment où il la dit : la réponse est attendue (un « oui » tout court, sans redire son nom), pendant une minute et demie après la question
+    PROACTIF.annonce(`competence-${c.id}`, () => { offre = { id: c.id, nom: c.nom, jusqua: Date.now() + 120000 }; dlg.attendReponse = Date.now() + 120000; return texte; }, { expire: Date.now() + 6 * 3600000 });
   }
   setTimeout(relis, 12000); setInterval(() => propose().catch(() => {}), 10 * 60000); setTimeout(() => propose().catch(() => {}), 60000);
 
@@ -160,6 +162,12 @@ const PRESCIENCE = (() => {
 
   // les phrases fixes (tout au début de la chaîne)
   function routeFixe(t, n) {
+    if (offre && Date.now() < offre.jusqua) { // sa réponse à la proposition du matin
+      const o = offre, m = n.replace(/^atlas /, '');
+      if (/^(oui|ouais|ok|d accord|vas y|active|activ|bien sur|volontiers|carrement|allez|go|je veux bien)\b/.test(m)) { offre = null; dlg.attendReponse = 0; return () => decide(true, o.nom); }
+      if (/^(non|pas la peine|laisse|oublie|surtout pas|non merci|j en veux pas)\b/.test(m)) { offre = null; dlg.attendReponse = 0; return () => decide(false, o.nom); }
+      if (/^(plus tard|demain|attends|pas maintenant|on verra|je reflechis|laisse moi reflechir)\b/.test(m)) { offre = null; dlg.attendReponse = 0; return () => say(`D'accord, je te la reproposerai demain : ${o.nom}.`); }
+    }
     if (/\b(qu est ce que|qu as) tu (as )?appris\b|\b(tes|les) competences\b|\bce que tu as appris (tout )?seul\b/.test(n)) return appris;
     if (/^(?:atlas )?(?:oui )?active (?:la|cette competence|la competence|ta competence)(?: (.+))?$/.test(n)) { const m = n.match(/competence (.+)$/); return () => decide(true, m ? m[1] : ''); }
     if (/^(?:atlas )?(?:non )?oublie (?:la|cette competence|la competence|ta competence)(?: (.+))?$/.test(n)) { const m = n.match(/competence (.+)$/); return () => decide(false, m ? m[1] : ''); }
@@ -173,5 +181,5 @@ const PRESCIENCE = (() => {
     const c = actives.find(c => c.res.some(r => r.test(n)));
     return c ? () => joue(c, t) : null;
   }
-  return { route, routeFixe, note, relis, _joue: joue, _etat: () => ({ actives, proposees }) };
+  return { route, routeFixe, note, relis, _joue: joue, _etat: () => ({ actives, proposees }), _offre: o => { offre = o; } };
 })();
