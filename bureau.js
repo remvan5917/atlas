@@ -37,15 +37,25 @@ ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''} style="margin-top:6px"><summar
   async function ecran(r) {
     dernier = r;
     const dos = await dossierCabinet(), l = r.a_valider || [], urg = l.filter(x => x.urgence === 'haute').length;
+    const f = S.bureauFiltre || 'tout', estPro = x => x.entite === 'lrf' || x.entite === 'micro';
+    const nPro = l.filter(estPro).length, nPerso = l.length - nPro;
+    const onglet = (k, t, coul) => `<button type="button" data-bur="filtre" data-id="${k}" style="padding:7px 14px;margin:8px 6px 0 0;border-radius:999px;border:1px solid ${f === k ? coul : 'rgba(255,255,255,.15)'};background:${f === k ? coul + '33' : 'transparent'};color:${f === k ? '#fff' : '#94a3b8'};font:600 13px system-ui;cursor:pointer">${t}</button>`;
+    const titre = (t, coul, n) => `<div style="margin:16px 0 4px;padding-bottom:4px;border-bottom:2px solid ${coul};display:flex;justify-content:space-between;align-items:baseline"><b style="letter-spacing:.18em;font-size:13px;color:${coul}">${t}</b><small style="color:#94a3b8">${n} à valider</small></div>`;
+    const sousTitre = t => `<div style="margin:10px 0 0;font-size:12px;letter-spacing:.12em;color:#93c5fd;text-transform:uppercase">${t}</div>`;
+    const lrf = l.filter(x => x.entite === 'lrf'), micro = l.filter(x => x.entite === 'micro'), perso = l.filter(x => !estPro(x));
+    const espacePro = (f === 'perso' || !nPro) ? '' : titre('PRO', '#60a5fa', nPro) + (lrf.length ? (micro.length ? sousTitre('La rue du financement') : '') + lrf.map(carte).join('') : '') + (micro.length ? sousTitre('Micro-entreprise') + micro.map(carte).join('') : '');
+    const espacePerso = (f === 'pro' || !nPerso) ? '' : titre('PERSO', '#4ade80', nPerso) + perso.map(carte).join('');
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,800px)"><small style="letter-spacing:.3em;color:#fcd34d">MON BUREAU · ${l.length} À VALIDER${urg ? ` · ${urg} URGENT${urg > 1 ? 'S' : ''}` : ''}${r.en_cours ? ' · JE LIS TES MAILS…' : ''}</small>
 <div style="font-size:13px;color:#94a3b8;margin-top:4px">J'ai lu tes mails et préparé ce qu'il faut. Tu vérifies, tu valides : je range en brouillon dans Gmail (tu envoies toi-même) ou dans tes tâches.${r.faits_semaine ? ` Cette semaine : ${r.faits_semaine} chose${r.faits_semaine > 1 ? 's' : ''} validée${r.faits_semaine > 1 ? 's' : ''}.` : ''}</div>
-${dos ? `<div style="margin:10px 0;padding:11px 13px;border-radius:13px;background:rgba(253,230,138,.08);border-left:3px solid #fcd34d"><b>Le cabinet comptable attend ta réponse</b><div style="font-size:14px;color:#cbd5e1">« ${esc(dos.sujet)} » : ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures déjà retrouvées, le tableau complété.</div>${b_('Ouvrir le dossier', 'dossier', dos.id, 'rgba(253,230,138,.25)')}</div>` : ''}
-${l.map(carte).join('') || '<div style="color:#64748b;margin-top:10px">Rien à faire : ton bureau est à jour.</div>'}
+<div>${onglet('tout', `Tout · ${l.length}`, '#fcd34d')}${onglet('pro', `Pro · ${nPro}`, '#60a5fa')}${onglet('perso', `Perso · ${nPerso}`, '#4ade80')}</div>
+${dos && f !== 'perso' ? `<div style="margin:10px 0;padding:11px 13px;border-radius:13px;background:rgba(253,230,138,.08);border-left:3px solid #fcd34d"><b>Le cabinet comptable attend ta réponse</b><div style="font-size:14px;color:#cbd5e1">« ${esc(dos.sujet)} » : ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures déjà retrouvées, le tableau complété.</div>${b_('Ouvrir le dossier', 'dossier', dos.id, 'rgba(253,230,138,.25)')}</div>` : ''}
+${(espacePro + espacePerso) || `<div style="color:#64748b;margin-top:10px">${l.length ? 'Rien de ce côté-là.' : 'Rien à faire : ton bureau est à jour.'}</div>`}
 ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="cursor:pointer;color:#a5b4fc;letter-spacing:.2em;font-size:12px">CE QUE J'AI FAIT</summary>${r.journal.map(j => `<div style="font-size:13px;padding:3px 0;color:#cbd5e1"><span style="color:#64748b">${new Date(j.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span> · ${esc(j.t)}</div>`).join('')}</details>` : ''}</div>`);
   }
   document.addEventListener('click', async ev => {
     const b = ev.target.closest && ev.target.closest('[data-bur]'); if (!b) return;
     const act = b.dataset.bur, id = b.dataset.id;
+    if (act === 'filtre') { S.bureauFiltre = id; save(); return ecran(dernier); }
     if (act === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
     if (act === 'lire') { // le document de l'atelier : demandé PAR Atlas (l'ordinateur de la maison ne répond qu'à lui), puis ouvert
       const w = window.open('', '_blank'); const xl = (dernier.a_valider || []).find(y => y.id === id) || {};
@@ -87,9 +97,11 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
   async function bureau() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     await ecran(r);
-    const l = r.a_valider || [], urg = l.filter(x => x.urgence === 'haute'), rep = l.filter(avecTexte).length;
+    const f = S.bureauFiltre || 'tout', tous = r.a_valider || [], pro_ = x => x.entite === 'lrf' || x.entite === 'micro';
+    const l = f === 'pro' ? tous.filter(pro_) : f === 'perso' ? tous.filter(x => !pro_(x)) : tous, urg = l.filter(x => x.urgence === 'haute'), rep = l.filter(avecTexte).length;
+    const part = f === 'tout' && tous.length ? ` (${tous.filter(pro_).length} en pro, ${tous.filter(x => !pro_(x)).length} en perso)` : f === 'pro' ? ' en pro' : f === 'perso' ? ' en perso' : '';
     if (!l.length) return say(r.en_cours ? "Je suis en train de lire tes mails ; reviens dans quelques minutes." : "Ton bureau est à jour : rien à faire pour le moment.");
-    return say(`Ton bureau : ${l.length} chose${l.length > 1 ? 's' : ''} à valider${urg.length ? `, dont ${urg.length} urgente${urg.length > 1 ? 's' : ''} : ${urg.slice(0, 2).map(x => x.resume).join(' ; ')}` : ''}. ${rep ? `J'ai déjà rédigé ${rep} réponse${rep > 1 ? 's' : ''}. ` : ''}Tout est à l'écran : valide, modifie ou ignore.`);
+    return say(`Ton bureau : ${l.length} chose${l.length > 1 ? 's' : ''} à valider${part}${urg.length ? `, dont ${urg.length} urgente${urg.length > 1 ? 's' : ''} : ${urg.slice(0, 2).map(x => x.resume).join(' ; ')}` : ''}. ${rep ? `J'ai déjà rédigé ${rep} réponse${rep > 1 ? 's' : ''}. ` : ''}Tout est à l'écran : valide, modifie ou ignore.`);
   }
   // le matin, sur l'ordinateur : une phrase, une fois par jour
   setInterval(async () => {
@@ -182,6 +194,8 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     return say("D'accord, je la remets dans ton bureau.");
   }
   function route(t, n) {
+    const fb = n.match(/\bbureau (pro|perso|professionnel|personnel)\b|\b(?:le |mon )?(pro|perso) (?:du|de mon) bureau\b/);
+    if (fb) return () => { S.bureauFiltre = /^pro/.test(fb[1] || fb[2]) ? 'pro' : 'perso'; save(); return bureau(); };
     if (derniersFaits && Date.now() - derniersFaits.at < 120000 && /^(atlas )?(annule|non (c est|pas) (pas )?(celle|celui) la|tu t es trompe|pas celle la|pas celui la)\b/.test(n)) return annuleFait;
     const mf = n.match(/^(?:atlas )?(?:c est (?:deja )?(?:fait|regle|envoye)|je l ai deja (?:fait|envoye|regle)|j ai deja (?:fait|envoye|repondu|regle|paye|relance|appele|traite)|j ai (?:envoye|repondu|regle|paye|relance|traite))\b\s*(.*)$/);
     if (mf && /[a-z]{3,}/.test(mf[1].replace(/\b(le|la|les|un|une|a|au|aux|pour|de|du|des|ca|tout)\b/g, ''))) return () => faitTexte(mf[1]);
@@ -190,7 +204,7 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     if (mc) return () => ficheClient(mc[1]);
     if (/\b(on valide|valide|valider|on fait) (le|mon) bureau\b|\bon valide tout\b|\bon traite (le bureau|mes mails)\b/.test(n)) return valideVoix;
     if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails|aujourd hui|pour moi)\b|\bjournal du bureau\b/.test(n)) return journal;
-    if (/\b(mon bureau|le bureau|mod(?:e|es)? bureau|mot bureau|(?:ouvre|affiche|montre)(?: moi)? (?:ton|ce) bureau|bureau d atlas|(?:mon|ton|l) atelier(?: d atlas)?|ce que l atelier a fait|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return bureau;
+    if (/\b(mon bureau|le bureau|mod(?:e|es)? bureau|mot bureau|(?:ouvre|affiche|montre)(?: moi)? (?:ton|ce) bureau|bureau d atlas|(?:mon|ton|l) atelier(?: d atlas)?|ce que l atelier a fait|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return () => { S.bureauFiltre = 'tout'; save(); return bureau(); };
     if (/\b(relis|regarde|verifie)\b.*\b(mes )?mails\b.*\b(maintenant|tout de suite)\b/.test(n)) return async () => { try { await api({ action: 'tour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Je relis tes mails. Dis « mon bureau » dans quelques minutes."); };
     return null;
   }
