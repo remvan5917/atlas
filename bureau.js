@@ -47,6 +47,7 @@ ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''} style="margin-top:6px"><summar
     const espacePerso = (f === 'pro' || !nPerso) ? '' : titre('PERSO', '#4ade80', nPerso) + perso.map(carte).join('');
     showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,800px)"><small style="letter-spacing:.3em;color:#fcd34d">MON BUREAU · ${l.length} À VALIDER${urg ? ` · ${urg} URGENT${urg > 1 ? 'S' : ''}` : ''}${r.en_cours ? ' · JE LIS TES MAILS…' : ''}</small>
 <div style="font-size:13px;color:#94a3b8;margin-top:4px">J'ai lu tes mails et préparé ce qu'il faut. Tu vérifies, tu valides : je range en brouillon dans Gmail (tu envoies toi-même) ou dans tes tâches.${r.faits_semaine ? ` Cette semaine : ${r.faits_semaine} chose${r.faits_semaine > 1 ? 's' : ''} validée${r.faits_semaine > 1 ? 's' : ''}.` : ''}</div>
+<div>${b_('📜 Tout ce que j’ai fait', 'activite', 'x', 'rgba(252,211,77,.15)')}</div>
 <div>${onglet('tout', `Tout · ${l.length}`, '#fcd34d')}${onglet('pro', `Pro · ${nPro}`, '#60a5fa')}${onglet('perso', `Perso · ${nPerso}`, '#4ade80')}</div>
 ${dos && f !== 'perso' ? `<div style="margin:10px 0;padding:11px 13px;border-radius:13px;background:rgba(253,230,138,.08);border-left:3px solid #fcd34d"><b>Le cabinet comptable attend ta réponse</b><div style="font-size:14px;color:#cbd5e1">« ${esc(dos.sujet)} » : ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures déjà retrouvées, le tableau complété.</div>${b_('Ouvrir le dossier', 'dossier', dos.id, 'rgba(253,230,138,.25)')}</div>` : ''}
 ${(espacePro + espacePerso) || `<div style="color:#64748b;margin-top:10px">${l.length ? 'Rien de ce côté-là.' : 'Rien à faire : ton bureau est à jour.'}</div>`}
@@ -56,6 +57,12 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     const b = ev.target.closest && ev.target.closest('[data-bur]'); if (!b) return;
     const act = b.dataset.bur, id = b.dataset.id;
     if (act === 'filtre') { S.bureauFiltre = id; save(); return ecran(dernier); }
+    if (act === 'actf') { S.actFiltre = id; save(); return ecranActivite(); }
+    if (act === 'actg') { S.actGenre = id; save(); return ecranActivite(); }
+    if (act === 'activite') return activite();
+    if (act === 'actd') { const x = affichee[+id]; return x ? detailActivite(x) : null; }
+    if (act === 'actretour') return ecranActivite();
+    if (act === 'piece') { const w = window.open('', '_blank'); return ouvrePdf(`${root()}/maison/bureau/piece?nom=${encodeURIComponent(id)}`, id, w); }
     if (act === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
     if (act === 'lire') { // le document de l'atelier : demandé PAR Atlas (l'ordinateur de la maison ne répond qu'à lui), puis ouvert
       const w = window.open('', '_blank'); const xl = (dernier.a_valider || []).find(y => y.id === id) || {};
@@ -174,6 +181,63 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
   }
   const adrDe = de => ((String(de).match(/<([^>]+)>/) || [])[1] || String(de)).trim();
   const eu2 = v => `${Number(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} euros`;
+  // ---------- tout ce que fait Atlas, au même endroit : les mails, l'atelier, la compta et Tiime, l'agenda, ce que tu as fait, la plateforme ----------
+  const GENRES_ACT = { mails: ['✉', 'Mails'], atelier: ['📄', 'Atelier'], compta: ['🧾', 'Compta et Tiime'], agenda: ['📅', 'Agenda'], toi: ['✓', 'Fait par toi'], plateforme: ['💻', 'Plateforme'], bureau: ['•', 'Bureau'] };
+  let derniereAct = [], affichee = [];
+  async function ouvrePdf(url, nom, w) { // un PDF de l'ordinateur de la maison : demandé par Atlas (il ne répond qu'à lui), puis ouvert
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok || !/pdf|word/.test(r.headers.get('Content-Type') || '')) throw new Error('pdf');
+      const u = URL.createObjectURL(await r.blob());
+      if (w) w.location.href = u; else { const a = document.createElement('a'); a.href = u; a.download = nom || 'document.pdf'; document.body.appendChild(a); a.click(); a.remove(); }
+      setTimeout(() => URL.revokeObjectURL(u), 10 * 60000);
+    } catch (e) { if (w) w.close(); say("Je n'arrive pas à ouvrir ce document."); }
+  }
+  async function detailActivite(x) {
+    if (x.dossier && typeof COMPTA !== 'undefined' && COMPTA.dossier) return COMPTA.dossier();
+    let r; try { r = await api(Object.assign({ action: 'detail' }, x.carte ? { carte: x.carte } : x.rapport ? { rapport: x.rapport } : { fichiers: x.fichiers })); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!r.ok) return say(`${(r.raison || 'je ne peux pas le montrer').replace(/^./, c => c.toUpperCase())}.`);
+    const retour = b_('← Retour', 'actretour', 'x');
+    const bloc = (titre, contenu) => contenu ? `<div style="margin-top:10px"><small style="letter-spacing:.14em;color:#94a3b8;text-transform:uppercase">${titre}</small><div style="white-space:pre-wrap;font-size:14px;color:#e2e8f0;background:rgba(0,0,0,.25);padding:9px 11px;border-radius:9px;margin-top:4px">${esc(contenu)}</div></div>` : '';
+    let corps = '';
+    if (r.carte) {
+      const c = r.carte, ST = { a_valider: 'à valider', brouillon: 'en brouillon dans Gmail', envoye: 'envoyé', fait: 'fait', tache: 'dans tes tâches', ignore: 'ignoré' };
+      corps = `<div style="font-size:17px;margin-top:6px"><b>${esc(c.de || '')}</b> <small style="color:#94a3b8">${esc(c.adresse || '')}</small></div>
+<div style="font-size:13px;color:#94a3b8">${esc(c.sujet || '')} · ${c.entite === 'lrf' || c.entite === 'micro' ? 'pro' : 'perso'} · ${esc(ST[c.statut] || c.statut || '')}${c.fait_par ? ` (${esc(c.fait_par)})` : ''}${c.echeance ? ` · avant le ${esc(c.echeance.split('-').reverse().join('/'))}` : ''}</div>`
+        + bloc('Ce que dit le mail', c.resume) + bloc('Ce qu’il faut faire', c.a_faire) + bloc('Pourquoi / la consigne', c.consigne) + bloc('La réponse que j’ai préparée', c.brouillon_texte)
+        + (c.seul_toi ? bloc('À toi', c.seul_toi) : '') + (c.pj && c.pj.length ? bloc('Pièces jointes du mail', c.pj.join('\n')) : '')
+        + (c.livrable ? `<div style="margin-top:10px">${b_(`📄 Lire « ${esc(c.livrable_titre || 'le document')} »`, 'lire', c.id, 'rgba(234,179,8,.25)')}</div>` : '');
+    } else if (r.texte) corps = bloc('Le rapport de la nuit', r.texte);
+    else if (r.fichiers) corps = `<div style="margin-top:8px">${r.fichiers.map(f => f.ok ? b_(`🧾 ${esc(f.nom)}`, 'piece', f.nom) : `<div style="color:#64748b;font-size:13px">${esc(f.nom)} (plus sur l'ordinateur)</div>`).join('')}</div>`;
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,780px)">${retour}<div style="margin-top:6px"><small style="letter-spacing:.2em;color:#fcd34d">${esc(new Date(x.at * 1000).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))}</small></div><div style="font-size:15px;margin-top:4px">${esc(x.t)}</div>${corps}</div>`);
+  }
+  function ecranActivite() {
+    const f = S.actFiltre || 'tout', g = S.actGenre || 'tous';
+    const l = derniereAct.filter(x => (f === 'tout' || (f === 'pro') === !!x.pro) && (g === 'tous' || x.genre === g)); affichee = l;
+    const puce = (k, t, actif, quoi) => `<button type="button" data-bur="${quoi}" data-id="${k}" style="padding:6px 12px;margin:6px 6px 0 0;border-radius:999px;border:1px solid ${actif ? '#fcd34d' : 'rgba(255,255,255,.15)'};background:${actif ? 'rgba(252,211,77,.18)' : 'transparent'};color:${actif ? '#fff' : '#94a3b8'};font:600 12px system-ui;cursor:pointer">${t}</button>`;
+    const jour = at => { const d = new Date(at * 1000), a = new Date(); const diff = Math.round((new Date(a.toDateString()) - new Date(d.toDateString())) / 86400000); return diff === 0 ? "Aujourd'hui" : diff === 1 ? 'Hier' : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); };
+    let html = '', dernierJour = '';
+    for (const x of l) {
+      const j = jour(x.at);
+      if (j !== dernierJour) { html += `<div style="margin:14px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#fcd34d">${esc(j)}</div>`; dernierJour = j; }
+      const [ic] = GENRES_ACT[x.genre] || ['•'];
+      const ouvrable = x.carte || x.rapport || x.fichiers || x.dossier;
+      html += `<div ${ouvrable ? `data-bur="actd" data-id="${l.indexOf(x)}"` : ''} style="display:flex;gap:10px;padding:6px 8px;border-left:3px solid ${x.pro ? '#60a5fa' : '#4ade80'};margin:3px 0;background:rgba(255,255,255,.03);border-radius:0 8px 8px 0;${ouvrable ? 'cursor:pointer' : ''}"><span style="flex:0 0 44px;color:#64748b;font-size:12px;padding-top:2px">${new Date(x.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span><span style="flex:0 0 18px">${ic}</span><span style="font-size:14px;color:#e2e8f0;flex:1">${esc(x.t)}</span>${ouvrable ? '<span style="color:#fcd34d;font-size:12px;padding-top:2px">voir ›</span>' : ''}</div>`;
+    }
+    const nPro = derniereAct.filter(x => x.pro).length;
+    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,820px)"><small style="letter-spacing:.3em;color:#fcd34d">TOUT CE QUE FAIT ATLAS · 14 DERNIERS JOURS · ${derniereAct.length}</small>
+<div style="font-size:13px;color:#94a3b8;margin-top:4px">Tout ce que j'ai fait pour toi : les mails lus et préparés, les documents de l'atelier, la compta et Tiime, l'agenda, ce que tu as fait toi-même, et la plateforme la nuit. Bleu : pro · vert : perso.</div>
+<div>${puce('tout', `Tout · ${derniereAct.length}`, f === 'tout', 'actf')}${puce('pro', `Pro · ${nPro}`, f === 'pro', 'actf')}${puce('perso', `Perso · ${derniereAct.length - nPro}`, f === 'perso', 'actf')}</div>
+<div>${puce('tous', 'Tous', g === 'tous', 'actg')}${Object.entries(GENRES_ACT).filter(([k]) => derniereAct.some(x => x.genre === k)).map(([k, [ic, t]]) => puce(k, `${ic} ${t}`, g === k, 'actg')).join('')}</div>
+${html || '<div style="color:#64748b;margin-top:12px">Rien de ce côté-là ces 14 derniers jours.</div>'}</div>`);
+  }
+  async function activite() {
+    let r; try { r = await api({ action: 'activite' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    derniereAct = r.activite || []; ecranActivite();
+    const auj = derniereAct.filter(x => new Date(x.at * 1000).toDateString() === new Date().toDateString());
+    const compte = k => auj.filter(x => x.genre === k).length;
+    return say(derniereAct.length ? `Ces quatorze derniers jours, ${derniereAct.length} choses. Aujourd'hui : ${[['mails', 'mails traités'], ['atelier', 'documents faits'], ['compta', 'actions de compta'], ['agenda', 'dates ajoutées à ton agenda'], ['toi', 'choses que tu as faites toi-même']].filter(([k]) => compte(k)).map(([k, t]) => `${compte(k)} ${t}`).join(', ') || 'rien de nouveau'}. Tout est à l'écran.` : "Je n'ai encore rien noté ces quatorze derniers jours.");
+  }
   async function journal() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     const j = (r.journal || []).filter(x => Date.now() / 1000 - x.at < 86400);
@@ -204,7 +268,8 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     const mc = n.match(/\b(?:ou en est (?:le dossier|le client|mon client|l affaire|avec)|fiche (?:du )?client|parle moi du client|qu est ce que j ai (?:en cours )?avec|historique (?:avec|du client))\s+(.{2,60})$/);
     if (mc) return () => ficheClient(mc[1]);
     if (/\b(on valide|valide|valider|on fait) (le|mon) bureau\b|\bon valide tout\b|\bon traite (le bureau|mes mails)\b/.test(n)) return valideVoix;
-    if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails|aujourd hui|pour moi)\b|\bjournal du bureau\b/.test(n)) return journal;
+    if (/\b(tout ce que tu (as )?fai[st]|tout ce que fait atlas|ton activite|ton journal|journal d atlas|journal du bureau|qu est ce que tu (as fait|fais) (pour moi|aujourd hui|cette semaine|ces derniers jours)|tu as fait quoi (pour moi|aujourd hui|cette semaine)|qu as tu fait (pour moi|aujourd hui)|ce que tu fais pour moi|espace activite)\b/.test(n)) return activite;
+    if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails)\b/.test(n)) return journal;
     if (/\b(mon bureau|le bureau|mod(?:e|es)? bureau|mot bureau|(?:ouvre|affiche|montre)(?: moi)? (?:ton|ce) bureau|bureau d atlas|(?:mon|ton|l) atelier(?: d atlas)?|ce que l atelier a fait|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return () => { S.bureauFiltre = 'tout'; save(); return bureau(); };
     if (/\b(relis|regarde|verifie)\b.*\b(mes )?mails\b.*\b(maintenant|tout de suite)\b/.test(n)) return async () => { try { await api({ action: 'tour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Je relis tes mails. Dis « mon bureau » dans quelques minutes."); };
     return null;
