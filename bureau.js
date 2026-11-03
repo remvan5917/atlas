@@ -119,17 +119,22 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     if (!l.length) return say(r.en_cours ? "Je suis en train de lire tes mails ; reviens dans quelques minutes." : "Ton bureau est à jour : rien à faire pour le moment.");
     return say(`Ton bureau : ${l.length} chose${l.length > 1 ? 's' : ''} à valider${part}${urg.length ? `, dont ${urg.length} urgente${urg.length > 1 ? 's' : ''} : ${urg.slice(0, 2).map(x => x.resume).join(' ; ')}` : ''}. ${rep ? `J'ai déjà rédigé ${rep} réponse${rep > 1 ? 's' : ''}. ` : ''}Tout est à l'écran : valide, modifie ou ignore.`);
   }
-  // le matin, sur l'ordinateur : une phrase, une fois par jour
+  // le point du matin (9 h) : tout le travail d'un coup — le bureau, les documents prêts, ce qui a été gardé depuis hier ; en dehors, Atlas ne parle de travail que si c'est urgent
   setInterval(async () => {
     const h = new Date().getHours(); if (h < 9 || h >= 12 || !dlg.started || voice.occupe()) return;
     if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return; // l'appareil où il est (l'ordi, la tablette ou l'iPhone)
     const j = new Date().toDateString(); if (S.bureauDit === j) return;
-    let r; try { r = await api(); } catch (e) { return; }
-    const l = r.a_valider || []; if (!l.length || r.en_cours) return;
     S.bureauDit = j; save();
-    const urg = l.filter(x => x.urgence === 'haute').length;
-    PROACTIF.annonce(`bureau-${j}`, `Ton bureau : ${l.length} chose${l.length > 1 ? 's' : ''} préparée${l.length > 1 ? 's' : ''}${urg ? `, dont ${urg} urgente${urg > 1 ? 's' : ''}` : ''}. Dis « on valide le bureau ».`, { expire: Date.now() + 3 * 3600000 });
-  }, 10 * 60000);
+    PROACTIF.annonce(`point-${j}`, async () => {
+      let r; try { r = await api({ action: 'point' }); } catch (e) { return ''; }
+      const parts = [];
+      if (r.a_valider) parts.push(`ton bureau : ${r.a_valider} chose${r.a_valider > 1 ? 's' : ''} à valider (${r.pro} en pro, ${r.perso} en perso)${r.urgents ? `, dont ${r.urgents} urgente${r.urgents > 1 ? 's' : ''}` : ''}`);
+      if ((r.documents || []).length) parts.push(`${r.documents.length} document${r.documents.length > 1 ? 's' : ''} prêt${r.documents.length > 1 ? 's' : ''} à relire : ${r.documents.slice(0, 3).join(', ')}`);
+      const msgs = (r.messages || []).map(m => m.texte.replace(/\s*Dis « on valide le bureau »\.?/, '').replace(/^Bureau : /, '')).filter(Boolean);
+      if (!parts.length && !msgs.length) return '';
+      return `Bonjour. Le point du matin. ${parts.length ? parts.join(' ; ') + '. ' : ''}${msgs.slice(0, 4).join(' ')}${msgs.length > 4 ? ` Et ${msgs.length - 4} autre${msgs.length - 4 > 1 ? 's' : ''} chose${msgs.length - 4 > 1 ? 's' : ''} dans ton activité.` : ''} Dis « on valide le bureau » quand tu veux. Après ça, je ne te parle plus de travail aujourd'hui, sauf urgence.`;
+    }, { expire: Date.now() + 3 * 3600000 });
+  }, 5 * 60000);
   /* ---------- « on valide le bureau » : il lit chaque chose préparée, il répond oui / non / déjà fait / plus tard / « change : … » ---------- */
   const coeur = t => String(t || '').split('\n').filter(l => l.trim() && !/^(bonjour|bonsoir|cher|chère|hello)\b/i.test(l.trim())).join(' ')
     .replace(/\b(bien cordialement|cordialement|bien à vous|belle journée|à bientôt)\b[\s\S]*$/i, '').replace(/\s+/g, ' ').trim().replace(/[.!\s]+$/, '');
