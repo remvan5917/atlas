@@ -302,7 +302,60 @@ const TRADING = (() => {
     return say(dits.join(' '));
   }
 
+  // ---------- « mon trading » : ton journal en chiffres et tes comptes (objectifs, drawdown, payout) — jamais un conseil, jamais un ordre ----------
+  let tdEtat = null;
+  const usd = x => `${x < 0 ? '−' : ''}${Math.round(Math.abs(Number(x) || 0)).toLocaleString('fr-FR')} $`;
+  function statsTrades(l) {
+    const c = l.filter(x => x.fin && x.pnl != null && !x.ouvert), g = c.filter(x => x.pnl > 0), p = c.filter(x => x.pnl < 0);
+    const somme = a => a.reduce((s_, x) => s_ + x.pnl, 0);
+    let serie = 0, pire = 0; c.slice().sort((a, b) => a.fin - b.fin).forEach(x => { serie = x.pnl < 0 ? serie + 1 : 0; pire = Math.max(pire, serie); });
+    const par = cle => { const m = {}; c.forEach(x => { const k = cle(x); m[k] = m[k] || { n: 0, pnl: 0, g: 0 }; m[k].n++; m[k].pnl += x.pnl; if (x.pnl > 0) m[k].g++; }); return m; };
+    return { n: c.length, pnl: somme(c), g: g.length, p: p.length, taux: c.length ? Math.round(100 * g.length / c.length) : 0, gm: g.length ? somme(g) / g.length : 0, pm: p.length ? somme(p) / p.length : 0,
+      pf: p.length ? somme(g) / Math.abs(somme(p)) : null, esp: c.length ? somme(c) / c.length : 0, meilleur: c.reduce((m, x) => (!m || x.pnl > m.pnl ? x : m), null), pire_t: c.reduce((m, x) => (!m || x.pnl < m.pnl ? x : m), null),
+      serie_pertes: pire, elargis: c.filter(x => x.stop_elargi), parInstr: par(x => x.instr || '?'), parHeure: par(x => new Date(x.at * 1000).getHours()), parJour: par(x => new Date(x.at * 1000).getDay()) };
+  }
+  function ecranTrading() {
+    const e = tdEtat, per = S.tdPeriode || 'mois', now = Date.now() / 1000;
+    const lim = { semaine: 7, mois: 31, tout: 99999 }[per] * 86400;
+    const tr = (e.trades || []).filter(x => (x.fin || x.at) >= now - lim);
+    const st = statsTrades(tr), p = e.payout || {}, f = e.ftmo || {};
+    const seg = (k, t) => `<button type="button" class="${per === k ? 'on' : ''}" data-td="per" data-id="${k}">${t}</button>`;
+    const jours = Object.entries(e.jours || {}).sort(([a], [b]) => a.localeCompare(b)).filter(([d]) => new Date(d).getTime() / 1000 >= now - lim);
+    let cum = 0; const courbe = jours.map(([d, v]) => { cum += v; return [d, cum, v]; });
+    const mx = Math.max(1, ...courbe.map(c => Math.abs(c[1])));
+    const barresJ = jours.map(([d, v]) => `<div title="${esc(d.split('-').reverse().join('/'))} : ${usd(v)}" style="flex:1;display:flex;flex-direction:column;justify-content:${v >= 0 ? 'flex-end' : 'flex-start'};height:110px"><div style="height:${Math.max(2, Math.round(50 * Math.abs(v) / Math.max(1, ...jours.map(j => Math.abs(j[1])))))}px;background:${v >= 0 ? '#4ade80' : '#f87171'};border-radius:3px;${v >= 0 ? 'margin-bottom:55px' : 'margin-top:55px'}"></div></div>`).join('');
+    const ligneTab = (k, o) => `<div class="bx-evt" style="padding:6px 10px"><div class="bx-evt-corps"><div>${esc(String(k))}</div><div class="bx-meta">${o.n} trade${o.n > 1 ? 's' : ''} · ${Math.round(100 * o.g / o.n)} % gagnants</div></div><b style="color:${o.pnl >= 0 ? '#86efac' : '#f87171'};padding-top:3px">${usd(o.pnl)}</b></div>`;
+    const JOURS_S = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    const heures = Object.entries(st.parHeure).sort((a, b) => +a[0] - +b[0]);
+    const elig = p.eligible;
+    showBoard(`<div class="bx-in">
+<div class="bx-tete"><div><div class="bx-sur">Atlas · ton journal, tes chiffres</div><div class="bx-titre">Mon trading</div><div class="bx-sous">Tes résultats et tes comptes, lus dans ton journal (TopstepX, FTMO). Des statistiques, jamais un conseil.</div></div></div>
+<div class="bx-section" style="--c:#60a5fa"><i></i><b>Mes comptes</b><small>objectifs et marges</small></div>
+<div class="bx-carte" style="--c:#60a5fa"><div class="bx-ligne1"><div class="bx-qui">Topstep · compte financé<small>${esc(((e.topstepx || {}).comptes || []).join(', '))}${p.taille ? ` · ${Math.round(p.taille / 1000)} K` : ''}</small></div><div class="bx-tags">${elig ? '<span class="bx-tag" style="background:#16a34a33;color:#86efac">payout possible</span>' : '<span class="bx-tag date">pas encore de payout</span>'}</div></div>
+<div class="bx-stats"><div class="bx-stat"><b>${usd(p.solde)}</b><span>profit sur le compte</span></div><div class="bx-stat"><b style="color:#86efac">${usd(p.net_cycle)}</b><span>depuis le dernier payout</span></div><div class="bx-stat"><b>${(p.gagnants || []).length}</b><span>jours gagnants du cycle</span></div><div class="bx-stat ${(p.marge_mll || 0) < 1000 ? 'urgent' : ''}"><b>${usd(p.marge_mll)}</b><span>marge avant la perte max</span></div><div class="bx-stat"><b>${usd(p.dll)}</b><span>limite de perte du jour</span></div></div>
+<div class="bx-info">${elig ? `Tu peux demander jusqu'à <b>${usd(p.montant)}</b>${p.plafond ? ` (plafond ${usd(p.plafond)})` : ''}. Ton meilleur jour pèse ${p.part_meilleur} % du profit du cycle.` : `Le payout n'est pas encore possible.${p.manque_std ? ` Il manque ${p.manque_std} jour${p.manque_std > 1 ? 's' : ''} gagnant${p.manque_std > 1 ? 's' : ''}.` : ''}`} Les règles appliquées sont celles que je connais de Topstep : vérifie toujours sur ton espace avant de demander.</div></div>
+${f.taille ? `<div class="bx-carte" style="--c:#a78bfa"><div class="bx-ligne1"><div class="bx-qui">FTMO · challenge<small>${esc(String(f.compte || '').replace(/\s*\(.*$/, ''))} · ${Math.round(f.taille / 1000)} K</small></div></div>
+<div class="bx-stats"><div class="bx-stat"><b>${usd(f.equity)}</b><span>equity</span></div><div class="bx-stat"><b style="color:${f.equity - f.taille >= 0 ? '#86efac' : '#f87171'}">${usd(f.equity - f.taille)}</b><span>résultat (${((100 * (f.equity - f.taille)) / f.taille).toFixed(1).replace('.', ',')} %)</span></div></div>
+<div class="bx-info">Lu à l'écran de ton TradingView FTMO${f.at ? `, le ${esc(new Date(f.at * 1000).toLocaleDateString('fr-FR'))}` : ''}. L'objectif et les pertes maximales dépendent de la phase de ton challenge : vérifie-les sur ton espace FTMO.</div></div>` : ''}
+<div class="bx-barre"><div class="bx-seg">${seg('semaine', '7 jours')}${seg('mois', '30 jours')}${seg('tout', 'Tout')}</div></div>
+<div class="bx-section" style="--c:#fcd34d"><i></i><b>Mon journal</b><small>${st.n} trade${st.n > 1 ? 's' : ''} clôturé${st.n > 1 ? 's' : ''} (TopstepX)</small></div>
+<div class="bx-stats"><div class="bx-stat"><b style="color:${st.pnl >= 0 ? '#86efac' : '#f87171'}">${usd(st.pnl)}</b><span>résultat</span></div><div class="bx-stat"><b>${st.taux} %</b><span>gagnants (${st.g}/${st.n})</span></div><div class="bx-stat"><b>${usd(st.gm)} / ${usd(st.pm)}</b><span>gain / perte moyens</span></div><div class="bx-stat"><b>${st.pf == null ? '—' : st.pf.toFixed(2).replace('.', ',')}</b><span>profit factor</span></div><div class="bx-stat"><b>${usd(st.esp)}</b><span>par trade en moyenne</span></div><div class="bx-stat ${st.serie_pertes >= 3 ? 'urgent' : ''}"><b>${st.serie_pertes}</b><span>pertes d'affilée (pire série)</span></div><div class="bx-stat ${st.elargis.length ? 'urgent' : 'ok'}"><b>${st.elargis.length}</b><span>stops élargis${st.elargis.length ? ` (${usd(st.elargis.reduce((s_, x) => s_ + x.pnl, 0))})` : ''}</span></div></div>
+${jours.length ? `<div class="bx-section" style="--c:#4ade80"><i></i><b>Jour par jour</b><small>${jours.filter(j => j[1] > 0).length} verts · ${jours.filter(j => j[1] < 0).length} rouges · cumul ${usd(cum)}</small></div><div style="display:flex;gap:3px;align-items:center;padding:4px">${barresJ}</div>` : ''}
+<div class="bx-section" style="--c:#a5b4fc"><i></i><b>Par instrument</b></div>${Object.entries(st.parInstr).sort((a, b) => b[1].pnl - a[1].pnl).map(([k, o]) => ligneTab(k, o)).join('') || '<div class="bx-vide">Pas de trade sur la période.</div>'}
+<div class="bx-section" style="--c:#a5b4fc"><i></i><b>Par heure d'entrée</b><small>heure de Paris</small></div>${heures.map(([h, o]) => ligneTab(`${h} h`, o)).join('')}
+<div class="bx-section" style="--c:#a5b4fc"><i></i><b>Par jour de la semaine</b></div>${Object.entries(st.parJour).sort((a, b) => ((+a[0] + 6) % 7) - ((+b[0] + 6) % 7)).map(([j, o]) => ligneTab(JOURS_S[j], o)).join('')}
+${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : ${esc(st.meilleur.instr)} ${esc(st.meilleur.sens || '')}, ${usd(st.meilleur.pnl)} · Pire : ${esc(st.pire_t.instr)} ${esc(st.pire_t.sens || '')}, ${usd(st.pire_t.pnl)}</div>` : ''}
+</div>`, 'bx');
+  }
+  async function monTrading() {
+    try { tdEtat = await appel('/maison/trading'); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    ecranTrading();
+    const st = statsTrades((tdEtat.trades || []).filter(x => (x.fin || x.at) >= Date.now() / 1000 - 31 * 86400)), p = tdEtat.payout || {};
+    return say(`Sur 30 jours : ${st.n} trades, ${st.pnl >= 0 ? 'plus' : 'moins'} ${dollars(st.pnl)}, ${st.taux} % de gagnants.${st.elargis.length ? ` ${st.elargis.length} stop${st.elargis.length > 1 ? 's' : ''} élargi${st.elargis.length > 1 ? 's' : ''}.` : ''} Topstep : ${p.eligible ? `payout possible, jusqu'à ${dollars(p.montant)}` : 'pas encore de payout'}, ${dollars(p.marge_mll)} de marge avant la perte maximale. Le détail est à l'écran.`);
+  }
+  document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-td]'); if (!b) return; if (b.dataset.td === 'per') { S.tdPeriode = b.dataset.id; save(); ecranTrading(); } });
   function route(t, n) {
+    if (/\b(mon trading|mon journal de trading|mes (stats|statistiques) de trading|statistiques de trading|tableau de bord (du )?trading|mes comptes (de trading|financés|finances|topstep)|mes objectifs de trading)\b/.test(n)) return monTrading;
     if (/\b(fin (de (la |ma )?)?(session|trading)|j arrete (de trader|le trading|ma session|la session)|je coupe (le trading|ma session)|session terminee|je termine (ma session|le trading)|fin du mode trading)\b/.test(n)) return fin;
     if (/\b(mode trading|session de trading|copilote de trading|je (commence|lance|demarre|attaque) (ma |la )?(session|journee de trading)|je vais trader|on va trader)\b/.test(n)) return () => debut(n);
     if (/\b(mes resultats|mon bilan (de trading|de la semaine)|resultats? (de la |cette )?semaine|combien j ai (gagne|perdu) cette semaine|mes performances)\b/.test(n) && !/\b(foot|match|ecole)\b/.test(n)) return bilan;
@@ -328,5 +381,5 @@ const TRADING = (() => {
     if (trade && /\b(j ai (perdu|gagne|pris|encaisse)|je perds|je gagne|stop (touche|pris)|j ai ete stoppe)\b/.test(n) && /\d/.test(t)) return () => sortie(t, n, montant(t)); // un trade ouvert dans la boîte noire : il le clôture
     return null;
   }
-  return { route, actif: () => actif, bilanNoire, bilanSeance, payout, _controle: controle, _montant: montant, _prixApres: prixApres };
+  return { route, actif: () => actif, bilanNoire, bilanSeance, payout, monTrading, _controle: controle, _montant: montant, _prixApres: prixApres };
 })();
