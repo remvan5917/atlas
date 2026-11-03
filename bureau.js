@@ -263,6 +263,41 @@ ${html || '<div class="bx-vide">Rien de ce côté-là ces 14 derniers jours.</di
     const compte = k => auj.filter(x => x.genre === k).length;
     return say(derniereAct.length ? `Ces quatorze derniers jours, ${derniereAct.length} choses. Aujourd'hui : ${[['mails', 'mails traités'], ['atelier', 'documents faits'], ['compta', 'actions de compta'], ['agenda', 'dates ajoutées à ton agenda'], ['toi', 'choses que tu as faites toi-même']].filter(([k]) => compte(k)).map(([k, t]) => `${compte(k)} ${t}`).join(', ') || 'rien de nouveau'}. Tout est à l'écran.` : "Je n'ai encore rien noté ces quatorze derniers jours.");
   }
+  // ---------- la revue de la semaine : une page pour tout piloter (le dimanche soir, ou à la demande) ----------
+  async function revue() {
+    let r; try { r = await (await fetch(`${root()}/maison/revue`, { cache: 'no-store' })).json(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const eur = x => `${Math.round(Number(x || 0)).toLocaleString('fr-FR')} €`;
+    const sec = (t, c, n) => `<div class="bx-section" style="--c:${c}"><i></i><b>${t}</b><small>${n || ''}</small></div>`;
+    const ligne = (ic, t, meta) => `<div class="bx-evt"><div class="bx-ic">${ic}</div><div class="bx-evt-corps"><div>${esc(t)}</div>${meta ? `<div class="bx-meta">${esc(meta)}</div>` : ''}</div></div>`;
+    const p = r.plateforme || {}, s = r.sopam || {}, g = r.gazette || {}, a = r.argent || {}, b = r.bureau || {}, tr = r.trading || {};
+    const fr = iso => String(iso || '').split('-').reverse().slice(0, 2).join('/');
+    showBoard(`<div class="bx-in">
+<div class="bx-tete"><div><div class="bx-sur">Atlas · du ${esc(fr(r.du))} au ${esc(fr(r.au))}</div><div class="bx-titre">La revue de la semaine</div><div class="bx-sous">Tout piloter en cinq minutes : La rue du financement, SOPAM, la Gazette, l'argent, ton bureau et ton trading en chiffres.</div></div>${bb('← Mon bureau', 'bureau', 'x', 'fantome')}</div>
+<div class="bx-stats"><div class="bx-stat"><b style="color:#c4b5fd">${p.faits || 0}/${p.total || 0}</b><span>sujets plateforme faits</span></div><div class="bx-stat"><b style="color:#fdba74">${s.faits || 0}/${s.total || 0}</b><span>étapes SOPAM faites</span></div><div class="bx-stat"><b style="color:#4ade80">${g.total || 0}</b><span>lecteurs-testeurs${g.semaine ? ` (+${g.semaine})` : ''}</span></div><div class="bx-stat urgent"><b>${eur(a.total_impayes)}</b><span>impayés</span></div><div class="bx-stat"><b>${b.a_valider || 0}</b><span>à valider au bureau</span></div></div>
+${sec('La rue du financement · la plateforme', '#c4b5fd', `${(p.nuits || []).length} nuit${(p.nuits || []).length > 1 ? 's' : ''} de travail`)}
+${(p.nuits || []).map(n => ligne('💻', n.resume || 'rapport écrit', `nuit du ${fr(n.nuit)}`)).join('') || '<div class="bx-info" style="padding:0 4px">Pas encore de nuit de travail cette semaine.</div>'}
+${(p.a_valider || []).length ? `<div class="bx-info" style="padding:4px 4px 0">À valider : ${esc(p.a_valider.join(' · '))}</div>` : ''}
+${sec('SOPAM · vers le financement', '#fdba74', `${(s.documents_semaine || []).length} document${(s.documents_semaine || []).length > 1 ? 's' : ''} cette semaine`)}
+${(s.documents_semaine || []).map(d => ligne('📄', d.replace(/^Claude - \d{4}-\d{2}-\d{2} - /, '').replace(/\.pdf$/, ''), 'fait par Claude, à relire dans ton bureau')).join('') || '<div class="bx-info" style="padding:0 4px">Pas encore de document cette semaine.</div>'}
+${(s.attend_equipe || []).length ? `<div class="bx-info" style="padding:4px 4px 0">Attend SOPAM / l'équipe : ${esc(s.attend_equipe.join(' · '))}</div>` : ''}
+${sec('La Gazette · les futurs abonnés', '#4ade80', `${g.total || 0} inscrits`)}
+${g.semaine ? ligne('✉', `${g.semaine} nouveau${g.semaine > 1 ? 'x' : ''} lecteur${g.semaine > 1 ? 's' : ''}-testeur${g.semaine > 1 ? 's' : ''} : ${(g.nouveaux || []).join(', ')}`) : '<div class="bx-info" style="padding:0 4px">Aucune inscription cette semaine : partage la Gazette sur LinkedIn.</div>'}
+${sec("L'argent", '#f87171', a.total_impayes ? `${eur(a.total_impayes)} d'impayés` : '')}
+${(a.impayes || []).map(x => ligne('⏳', `${x.client} : ${eur(x.montant)} (${x.factures.join(', ')})`, x.note)).join('') || '<div class="bx-info" style="padding:0 4px">Aucun impayé.</div>'}
+${a.banque ? '' : '<div class="bx-info" style="padding:4px 4px 0">Exporte ton relevé Tiime dans Téléchargements pour voir l’argent vraiment encaissé.</div>'}
+${sec('Ton bureau', '#a5b4fc', `${b.valides_semaine || 0} validé${(b.valides_semaine || 0) > 1 ? 's' : ''}, ${b.faits_par_toi || 0} fait${(b.faits_par_toi || 0) > 1 ? 's' : ''} par toi`)}
+${(b.vieux || []).map(v => ligne('⚠', v, 'attend depuis plus de 5 jours')).join('') || '<div class="bx-info" style="padding:0 4px">Rien ne traîne.</div>'}
+${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pas un conseil')}
+<div class="bx-stats"><div class="bx-stat"><b>${tr.trades || 0}</b><span>trades clôturés</span></div><div class="bx-stat"><b style="color:${(tr.pnl || 0) >= 0 ? '#86efac' : '#f87171'}">${(tr.pnl || 0) >= 0 ? '+' : ''}${eur(tr.pnl)}</b><span>résultat</span></div><div class="bx-stat"><b>${tr.gagnants || 0} / ${tr.perdants || 0}</b><span>gagnants / perdants</span></div><div class="bx-stat"><b>${eur(tr.gain_moyen)} / ${eur(tr.perte_moyenne)}</b><span>gain / perte moyens</span></div><div class="bx-stat ${tr.stops_elargis ? 'urgent' : 'ok'}"><b>${tr.stops_elargis || 0}</b><span>stop${(tr.stops_elargis || 0) > 1 ? 's' : ''} élargi${(tr.stops_elargis || 0) > 1 ? 's' : ''}</span></div></div>
+</div>`, 'bx');
+    return say(`La revue de la semaine. Plateforme : ${p.faits || 0} sujets faits sur ${p.total || 0}. SOPAM : ${(s.documents_semaine || []).length} documents à relire. Gazette : ${g.total || 0} lecteurs-testeurs. ${a.total_impayes ? `Impayés : ${eur(a.total_impayes)}. ` : ''}${b.a_valider ? `${b.a_valider} choses attendent ton oui au bureau. ` : ''}Trading : ${tr.trades || 0} trades, ${(tr.pnl || 0) >= 0 ? 'plus' : 'moins'} ${eur(Math.abs(tr.pnl || 0))}${tr.stops_elargis ? `, et ${tr.stops_elargis} stop élargi` : ''}. Le détail est à l'écran.`);
+  }
+  // le dimanche, vers 19 h : « ta revue de la semaine est prête » (une fois)
+  setInterval(() => {
+    const d = new Date(); if (d.getDay() !== 0 || d.getHours() < 19 || d.getHours() >= 22 || !dlg.started) return;
+    if (typeof CONSTELLATION !== 'undefined' && !CONSTELLATION.principal()) return;
+    if (typeof PROACTIF !== 'undefined') PROACTIF.annonce(`revue-${d.toDateString()}`, async () => { await revue(); return ''; }, { expire: Date.now() + 3 * 3600000 });
+  }, 10 * 60000);
   async function journal() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     const j = (r.journal || []).filter(x => Date.now() / 1000 - x.at < 86400);
@@ -293,6 +328,7 @@ ${html || '<div class="bx-vide">Rien de ce côté-là ces 14 derniers jours.</di
     const mc = n.match(/\b(?:ou en est (?:le dossier|le client|mon client|l affaire|avec)|fiche (?:du )?client|parle moi du client|qu est ce que j ai (?:en cours )?avec|historique (?:avec|du client))\s+(.{2,60})$/);
     if (mc) return () => ficheClient(mc[1]);
     if (/\b(on valide|valide|valider|on fait) (le|mon) bureau\b|\bon valide tout\b|\bon traite (le bureau|mes mails)\b/.test(n)) return valideVoix;
+    if (/\b(revue (de la |de ma )?semaine|rapport du dimanche|le point de la semaine|mon (tableau de )?pilotage|bilan de ma semaine de travail)\b/.test(n)) return revue;
     if (/\b(tout ce que tu (as )?fai[st]|tout ce que fait atlas|ton activite|ton journal|journal d atlas|journal du bureau|qu est ce que tu (as fait|fais) (pour moi|aujourd hui|cette semaine|ces derniers jours)|tu as fait quoi (pour moi|aujourd hui|cette semaine)|qu as tu fait (pour moi|aujourd hui)|ce que tu fais pour moi|espace activite)\b/.test(n)) return activite;
     if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails)\b/.test(n)) return journal;
     if (/\b(mon bureau|le bureau|mod(?:e|es)? bureau|mot bureau|(?:ouvre|affiche|montre)(?: moi)? (?:ton|ce) bureau|bureau d atlas|(?:mon|ton|l) atelier(?: d atlas)?|ce que l atelier a fait|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return () => { S.bureauFiltre = 'tout'; save(); return bureau(); };
