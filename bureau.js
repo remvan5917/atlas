@@ -24,7 +24,7 @@ const BUREAU = (() => {
 <div style="font-size:15px;margin-top:4px">${esc(x.resume)}${ech}</div>
 ${x.a_faire ? `<div style="font-size:13px;color:#fde68a;margin-top:2px">→ ${esc(x.a_faire)}</div>` : ''}
 ${x.note ? `<div style="font-size:13px;color:#fca5a5">⚠ ${esc(x.note)}</div>` : ''}
-${x.livrable ? `<a href="${esc(root())}/maison/bureau/livrable?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:8px 12px;border-radius:10px;background:rgba(234,179,8,.25);color:#fde68a;font:600 13px system-ui;text-decoration:none">📄 Lire « ${esc(x.livrable_titre || 'le document')} » (fait par Atlas)</a>` : ''}
+${x.livrable ? `<div>${b_(`📄 Lire « ${esc(x.livrable_titre || 'le document')} » (fait par Atlas)`, 'lire', x.id, 'rgba(234,179,8,.25)')}</div>` : ''}
 ${x.seul_toi ? `<div style="font-size:13px;color:#93c5fd;margin-top:2px">👤 À toi : ${esc(x.seul_toi)}</div>` : ''}
 ${x.document ? `<div style="font-size:13px;color:#94a3b8">Pièce demandée : ${esc(x.document)} — ajoute-la au brouillon dans Gmail.</div>` : ''}
 ${x.type === 'relancer' && !x.adresse ? `<div style="display:flex;gap:6px;margin-top:6px"><input type="email" id="adr-${esc(x.id)}" placeholder="l'adresse mail du client" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#e2e8f0;font:14px system-ui">${b_('Rédiger la relance', 'adresse', x.id, 'rgba(37,99,235,.7)')}</div>` : ''}
@@ -47,6 +47,17 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     const b = ev.target.closest && ev.target.closest('[data-bur]'); if (!b) return;
     const act = b.dataset.bur, id = b.dataset.id;
     if (act === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
+    if (act === 'lire') { // le document de l'atelier : demandé PAR Atlas (l'ordinateur de la maison ne répond qu'à lui), puis ouvert
+      const w = window.open('', '_blank'); const xl = (dernier.a_valider || []).find(y => y.id === id) || {};
+      try {
+        const r = await fetch(`${root()}/maison/bureau/livrable?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+        if (!r.ok || !/pdf|word/.test(r.headers.get('Content-Type') || '')) throw new Error('livrable');
+        const u = URL.createObjectURL(await r.blob());
+        if (w) w.location.href = u; else { const a = document.createElement('a'); a.href = u; a.download = `${xl.livrable_titre || 'document'}.pdf`; document.body.appendChild(a); a.click(); a.remove(); }
+        setTimeout(() => URL.revokeObjectURL(u), 10 * 60000);
+      } catch (e) { if (w) w.close(); say("Je n'arrive pas à ouvrir ce document : l'ordinateur de la maison ne répond pas."); }
+      return;
+    }
     let corps = { action: act, id };
     const x0 = (dernier.a_valider || []).find(y => y.id === id);
     if (act === 'envoie') { if (!x0 || !x0.adresse) return say("Je n'ai pas l'adresse du destinataire."); corps.a = x0.adresse; }
