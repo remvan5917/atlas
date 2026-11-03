@@ -197,6 +197,7 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     const fb = n.match(/\bbureau (pro|perso|professionnel|personnel)\b|\b(?:le |mon )?(pro|perso) (?:du|de mon) bureau\b/);
     if (fb) return () => { S.bureauFiltre = /^pro/.test(fb[1] || fb[2]) ? 'pro' : 'perso'; save(); return bureau(); };
     if (derniersFaits && Date.now() - derniersFaits.at < 120000 && /^(atlas )?(annule|non (c est|pas) (pas )?(celle|celui) la|tu t es trompe|pas celle la|pas celui la)\b/.test(n)) return annuleFait;
+    if (typeof COMPTA !== 'undefined' && COMPTA.clientDuDossier && COMPTA.clientDuDossier(n)) { const c = COMPTA.route(t, n); if (c) return c; } // un client du dossier du cabinet : la compta s'en charge
     const mf = n.match(/^(?:atlas )?(?:c est (?:deja )?(?:fait|regle|envoye)|je l ai deja (?:fait|envoye|regle)|j ai deja (?:fait|envoye|repondu|regle|paye|relance|appele|traite)|j ai (?:envoye|repondu|regle|paye|relance|traite))\b\s*(.*)$/);
     if (mf && /[a-z]{3,}/.test(mf[1].replace(/\b(le|la|les|un|une|a|au|aux|pour|de|du|des|ca|tout)\b/g, ''))) return () => faitTexte(mf[1]);
     // la mémoire des clients : « où en est le dossier Nexa ? », « fiche client Euridis », « qu'est-ce que j'ai avec Atelier Brume ? »

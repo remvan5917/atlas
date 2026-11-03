@@ -176,7 +176,22 @@ ${aTel ? `<div style="margin-top:14px"><small style="letter-spacing:.25em;color:
     PROACTIF.annonce(`compta-${j}`, `Compta : ${n} pièce${n > 1 ? 's' : ''} à regarder dans tes mails${r.lrf_demandes.length ? `, dont ${r.lrf_demandes.length} demande${r.lrf_demandes.length > 1 ? 's' : ''} du cabinet` : ''}. Dis « point compta ».`, { expire: Date.now() + 3 * 3600000 });
   }, 10 * 60000);
 
+  // ce qu'il a fait pour un client du dossier du cabinet, dit à Atlas : « pour Théorème, j'ai fait les factures manquantes »,
+  // « IFTES : ce sont les notes de frais de Clément, je les ai téléchargées » → la réponse au cabinet (et les justificatifs joints)
+  let clientsDossier = [];
+  async function majClients() { try { const r = await dossierApi(); const d = (r.dossiers || []).filter(x => !x.envoye).slice(-1)[0]; clientsDossier = d ? d.ventes.map(v => N(v.client)).filter(Boolean) : []; } catch (e) { /* plus tard */ } }
+  setTimeout(majClients, 20000); setInterval(majClients, 10 * 60000);
+  const clientDuDossier = n => clientsDossier.find(c => n.includes(c) || n.split(' ').includes(c.split(' ')[0]));
+  const DIT_FAIT = /\b(c est fait|j ai|je l ai|deja|fait|faites|relance|relancee?s?|envoye|telecharge|emis|cree|ce sont|c est|pour le cabinet|dis au cabinet|reponds?)\b/;
+  async function repondClient(t) {
+    let r; try { r = await dossierApi({ action: 'client', texte: t }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!r.ok) return say(`${(r.raison || 'je n’ai pas pu').replace(/^./, c => c.toUpperCase())}${r.clients ? ` : ${r.clients.join(', ')}` : ''}.`);
+    fx.ok(); majClients();
+    if (/\b(relance|envoye|fait|emis)\b/.test(N(t))) { try { await fetch(`${root()}/maison/bureau`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'fait_texte', q: r.client }) }); } catch (e) { /* tant pis */ } }
+    return say(`C'est noté pour le cabinet. ${r.client} : « ${r.reponse} ».${r.joints.length ? ` J'ai joint au dossier ${r.joints.length} justificatif${r.joints.length > 1 ? 's' : ''} pris dans tes Téléchargements.` : ''} Dis « dossier du cabinet » pour tout revoir.`);
+  }
   function route(t, n) {
+    if (clientDuDossier(n) && DIT_FAIT.test(n) && !/\b(ou en est|fiche client|historique)\b/.test(n)) return () => repondClient(t);
     if (/\b(point compta|fais (ma|la) compta|ma compta|la compta|on fait la compta|ou en est (ma|la) compta)\b/.test(n)) return point;
     if (/\blivre (des|de) recettes?\b/.test(n)) return () => livre(n);
     if (/\b(dossier (du|pour le|de la) (comptable|cabinet)|point dossier|demande du (comptable|cabinet)|ce que (le comptable|le cabinet) (demande|attend))\b/.test(n)) return dossier;
@@ -184,5 +199,5 @@ ${aTel ? `<div style="margin-top:14px"><small style="letter-spacing:.25em;color:
     if (/\b(relis|relit|reverifie|scanne)\b.*\b(mails?|factures)\b.*\bcompta\b|\brelance la compta\b/.test(n)) return relance;
     return null;
   }
-  return { route, point, dossier, _api: api, _dossierApi: dossierApi, _corpsReponse: corpsReponse };
+  return { route, point, dossier, clientDuDossier, _api: api, _dossierApi: dossierApi, _corpsReponse: corpsReponse };
 })();
