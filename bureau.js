@@ -15,21 +15,27 @@ const BUREAU = (() => {
   const TYPE = { repondre: 'Répondre', envoyer_document: 'Envoyer un document', relancer: 'Relancer', payer: 'Payer', rendez_vous: 'Rendez-vous', tache: 'À faire' };
   const avecTexte = x => ['repondre', 'envoyer_document', 'relancer'].includes(x.type) && x.brouillon_texte;
   const b_ = (txt, act, id, fond = 'rgba(255,255,255,.08)') => `<button type="button" data-bur="${act}" data-id="${esc(id)}" style="padding:8px 12px;margin:4px 5px 0 0;border:0;border-radius:10px;background:${fond};color:#e2e8f0;font:600 13px system-ui;cursor:pointer">${txt}</button>`;
+  // les boutons et la carte : la mise en page commune (style.css, « bx- »)
+  const bb = (txt, act, id, cls = '') => `<button type="button" class="bx-btn ${cls}" data-bur="${act}" data-id="${esc(id)}">${txt}</button>`;
+  const estPro_ = x => x.entite === 'lrf' || x.entite === 'micro';
+  const couleur = x => estPro_(x) ? '#60a5fa' : '#4ade80';
+  const initiales = t => String(t || '?').replace(/[<"].*$/, '').trim().split(/\s+/).filter(w => /^[A-Za-zÀ-ÿ0-9]/.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+  const dateFr = iso => iso ? iso.split('-').reverse().slice(0, 2).join('/') : '';
   function carte(x, i) {
-    const urg = x.urgence === 'haute';
-    const ech = x.echeance ? ` · <b style="color:#fca5a5">avant le ${esc(x.echeance.split('-').reverse().join('/'))}</b>` : '';
-    const btns = avecTexte(x) ? (x.adresse ? b_(`✉ Envoyer à ${esc(x.adresse)}`, 'envoie', x.id, 'rgba(37,99,235,.8)') : '') + b_(`📝 Brouillon (boîte ${x.entite === 'lrf' ? 'pro' : 'perso'})`, 'valide', x.id, 'rgba(22,163,74,.5)') + b_('✏ Modifier', 'modifie', x.id) : b_('✓ À mes tâches', 'valide', x.id, 'rgba(22,163,74,.6)');
-    return `<div style="margin:9px 0;padding:11px 13px;border-radius:13px;background:${urg ? 'rgba(248,113,113,.09)' : 'rgba(255,255,255,.05)'};border-left:3px solid ${urg ? '#f87171' : '#475569'}">
-<div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><small style="padding:2px 8px;border-radius:999px;background:rgba(165,180,252,.15);color:#c7d2fe">${esc(TYPE[x.type] || x.type)}</small><small style="color:#94a3b8">${esc(ENT[x.entite] || '')} · ${x.entite === 'lrf' ? '📁 boîte pro' : '📁 boîte perso'}</small><b style="flex:1;font-size:15px">${esc(x.de)}</b>${urg ? '<small style="color:#fca5a5">URGENT</small>' : ''}</div>
-<div style="font-size:15px;margin-top:4px">${esc(x.resume)}${ech}</div>
-${x.a_faire ? `<div style="font-size:13px;color:#fde68a;margin-top:2px">→ ${esc(x.a_faire)}</div>` : ''}
-${x.note ? `<div style="font-size:13px;color:#fca5a5">⚠ ${esc(x.note)}</div>` : ''}
-${x.livrable ? `<div>${b_(`📄 Lire « ${esc(x.livrable_titre || 'le document')} » (fait par Atlas)`, 'lire', x.id, 'rgba(234,179,8,.25)')}</div>` : ''}
-${x.seul_toi ? `<div style="font-size:13px;color:#93c5fd;margin-top:2px">👤 À toi : ${esc(x.seul_toi)}</div>` : ''}
-${x.document ? `<div style="font-size:13px;color:#94a3b8">Pièce demandée : ${esc(x.document)} — ajoute-la au brouillon dans Gmail.</div>` : ''}
-${x.type === 'relancer' && !x.adresse ? `<div style="display:flex;gap:6px;margin-top:6px"><input type="email" id="adr-${esc(x.id)}" placeholder="l'adresse mail du client" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#e2e8f0;font:14px system-ui">${b_('Rédiger la relance', 'adresse', x.id, 'rgba(37,99,235,.7)')}</div>` : ''}
-${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''} style="margin-top:6px"><summary style="cursor:pointer;color:#a5b4fc;font-size:13px">La réponse que j'ai rédigée${x.adresse ? ` (à ${esc(x.adresse)})` : ''}</summary><div style="white-space:pre-wrap;font-size:14px;color:#e2e8f0;background:rgba(0,0,0,.25);padding:9px 11px;border-radius:9px;margin-top:5px">${esc(x.brouillon_texte)}</div></details>` : ''}
-<div>${btns}${b_('✓ Déjà fait', 'fait', x.id)}${b_('✗ Ignorer', 'ignore', x.id)}</div></div>`;
+    const urg = x.urgence === 'haute', c = couleur(x);
+    const principal = avecTexte(x) ? (x.adresse ? bb(`✉ Envoyer à ${esc(x.adresse.split('@')[0])}…`, 'envoie', x.id, 'prim') : '') + bb(`📝 En brouillon (boîte ${x.entite === 'lrf' ? 'pro' : 'perso'})`, 'valide', x.id, 'vert') + bb('✏ Modifier', 'modifie', x.id)
+      : bb('✓ Dans mes tâches', 'valide', x.id, 'vert');
+    return `<div class="bx-carte${urg ? ' urgent' : ''}" style="--c:${c}">
+<div class="bx-ligne1"><div class="bx-avatar" style="--c:${c}">${esc(initiales(x.de))}</div><div class="bx-qui">${esc(x.de)}<small>${esc(x.sujet || '')}</small></div>
+<div class="bx-tags"><span class="bx-tag">${esc(TYPE[x.type] || x.type)}</span>${urg ? '<span class="bx-tag urgent">urgent</span>' : ''}${x.echeance ? `<span class="bx-tag date">avant le ${esc(dateFr(x.echeance))}</span>` : ''}${x.livrable ? '<span class="bx-tag atlas">fait par Atlas</span>' : ''}</div></div>
+<div class="bx-resume">${esc(x.resume)}</div>
+${x.a_faire ? `<div class="bx-afaire">${esc(x.a_faire)}</div>` : ''}
+${x.note ? `<div class="bx-info alerte">⚠ ${esc(x.note)}</div>` : ''}
+${x.seul_toi ? `<div class="bx-info toi">👤 À toi : ${esc(x.seul_toi)}</div>` : ''}
+${x.document ? `<div class="bx-info">Pièce demandée : ${esc(x.document)} — ajoute-la au brouillon dans Gmail.</div>` : ''}
+${x.type === 'relancer' && !x.adresse ? `<div style="display:flex;gap:6px;margin-top:8px"><input type="email" id="adr-${esc(x.id)}" placeholder="l'adresse mail du client" style="flex:1;padding:9px 11px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.3);color:#e2e8f0;font:14px system-ui">${bb('Rédiger la relance', 'adresse', x.id, 'prim')}</div>` : ''}
+${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''}><summary>La réponse que j'ai rédigée${x.adresse ? ` · à ${esc(x.adresse)}` : ''}</summary><div class="bx-texte">${esc(x.brouillon_texte)}</div></details>` : ''}
+<div class="bx-actions">${x.livrable ? bb(`📄 Lire « ${esc(x.livrable_titre || 'le document')} »`, 'lire', x.id, 'ambre') : ''}${principal}<span class="bx-espace"></span>${bb('✓ Déjà fait', 'fait', x.id, 'fantome')}${bb('✗ Ignorer', 'ignore', x.id, 'fantome')}</div></div>`;
   }
   async function dossierCabinet() {
     try { const r = await (await fetch(`${root()}/maison/compta/dossier`, { cache: 'no-store' })).json(); return (r.dossiers || []).filter(d => !d.brouillon).slice(-1)[0] || null; } catch (e) { return null; }
@@ -37,21 +43,23 @@ ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''} style="margin-top:6px"><summar
   async function ecran(r) {
     dernier = r;
     const dos = await dossierCabinet(), l = r.a_valider || [], urg = l.filter(x => x.urgence === 'haute').length;
-    const f = S.bureauFiltre || 'tout', estPro = x => x.entite === 'lrf' || x.entite === 'micro';
+    const f = S.bureauFiltre || 'tout', estPro = estPro_;
     const nPro = l.filter(estPro).length, nPerso = l.length - nPro;
-    const onglet = (k, t, coul) => `<button type="button" data-bur="filtre" data-id="${k}" style="padding:7px 14px;margin:8px 6px 0 0;border-radius:999px;border:1px solid ${f === k ? coul : 'rgba(255,255,255,.15)'};background:${f === k ? coul + '33' : 'transparent'};color:${f === k ? '#fff' : '#94a3b8'};font:600 13px system-ui;cursor:pointer">${t}</button>`;
-    const titre = (t, coul, n) => `<div style="margin:16px 0 4px;padding-bottom:4px;border-bottom:2px solid ${coul};display:flex;justify-content:space-between;align-items:baseline"><b style="letter-spacing:.18em;font-size:13px;color:${coul}">${t}</b><small style="color:#94a3b8">${n} à valider</small></div>`;
-    const sousTitre = t => `<div style="margin:10px 0 0;font-size:12px;letter-spacing:.12em;color:#93c5fd;text-transform:uppercase">${t}</div>`;
-    const lrf = l.filter(x => x.entite === 'lrf'), micro = l.filter(x => x.entite === 'micro'), perso = l.filter(x => !estPro(x));
-    const espacePro = (f === 'perso' || !nPro) ? '' : titre('PRO', '#60a5fa', nPro) + (lrf.length ? (micro.length ? sousTitre('La rue du financement') : '') + lrf.map(carte).join('') : '') + (micro.length ? sousTitre('Micro-entreprise') + micro.map(carte).join('') : '');
-    const espacePerso = (f === 'pro' || !nPerso) ? '' : titre('PERSO', '#4ade80', nPerso) + perso.map(carte).join('');
-    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,800px)"><small style="letter-spacing:.3em;color:#fcd34d">MON BUREAU · ${l.length} À VALIDER${urg ? ` · ${urg} URGENT${urg > 1 ? 'S' : ''}` : ''}${r.en_cours ? ' · JE LIS TES MAILS…' : ''}</small>
-<div style="font-size:13px;color:#94a3b8;margin-top:4px">J'ai lu tes mails et préparé ce qu'il faut. Tu vérifies, tu valides : je range en brouillon dans Gmail (tu envoies toi-même) ou dans tes tâches.${r.faits_semaine ? ` Cette semaine : ${r.faits_semaine} chose${r.faits_semaine > 1 ? 's' : ''} validée${r.faits_semaine > 1 ? 's' : ''}.` : ''}</div>
-<div>${b_('📜 Tout ce que j’ai fait', 'activite', 'x', 'rgba(252,211,77,.15)')}</div>
-<div>${onglet('tout', `Tout · ${l.length}`, '#fcd34d')}${onglet('pro', `Pro · ${nPro}`, '#60a5fa')}${onglet('perso', `Perso · ${nPerso}`, '#4ade80')}</div>
-${dos && f !== 'perso' ? `<div style="margin:10px 0;padding:11px 13px;border-radius:13px;background:rgba(253,230,138,.08);border-left:3px solid #fcd34d"><b>Le cabinet comptable attend ta réponse</b><div style="font-size:14px;color:#cbd5e1">« ${esc(dos.sujet)} » : ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures déjà retrouvées, le tableau complété.</div>${b_('Ouvrir le dossier', 'dossier', dos.id, 'rgba(253,230,138,.25)')}</div>` : ''}
-${(espacePro + espacePerso) || `<div style="color:#64748b;margin-top:10px">${l.length ? 'Rien de ce côté-là.' : 'Rien à faire : ton bureau est à jour.'}</div>`}
-${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="cursor:pointer;color:#a5b4fc;letter-spacing:.2em;font-size:12px">CE QUE J'AI FAIT</summary>${r.journal.map(j => `<div style="font-size:13px;padding:3px 0;color:#cbd5e1"><span style="color:#64748b">${new Date(j.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span> · ${esc(j.t)}</div>`).join('')}</details>` : ''}</div>`);
+    const ordre = a => a.slice().sort((x, y) => (y.urgence === 'haute') - (x.urgence === 'haute') || String(x.echeance || '9').localeCompare(String(y.echeance || '9')));
+    const section = (t, c, n) => `<div class="bx-section" style="--c:${c}"><i></i><b>${t}</b><small>${n} à valider</small></div>`;
+    const lrf = ordre(l.filter(x => x.entite === 'lrf')), micro = ordre(l.filter(x => x.entite === 'micro')), perso = ordre(l.filter(x => !estPro(x)));
+    let k = 0; const cartes = a => a.map(x => carte(x, k++)).join('');
+    const espacePro = (f === 'perso' || !nPro) ? '' : section('Pro', '#60a5fa', nPro) + (lrf.length ? (micro.length ? '<div class="bx-sous-section">La rue du financement</div>' : '') + cartes(lrf) : '') + (micro.length ? '<div class="bx-sous-section">Micro-entreprise</div>' + cartes(micro) : '');
+    const espacePerso = (f === 'pro' || !nPerso) ? '' : section('Perso', '#4ade80', nPerso) + cartes(perso);
+    const seg = (k_, t, cls) => `<button type="button" class="${f === k_ ? 'on ' : ''}${cls}" data-bur="filtre" data-id="${k_}">${t}</button>`;
+    const auj = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    showBoard(`<div class="bx-in">
+<div class="bx-tete"><div><div class="bx-sur">Atlas · ${esc(auj)}${r.en_cours ? ' · je lis tes mails…' : ''}</div><div class="bx-titre">Mon bureau</div><div class="bx-sous">J'ai lu tes mails et préparé le travail. Tu vérifies, tu valides : rien ne part sans toi.</div></div>${bb('📜 Tout ce que j’ai fait', 'activite', 'x', 'ambre')}</div>
+<div class="bx-stats"><div class="bx-stat"><b>${l.length}</b><span>à valider</span></div><div class="bx-stat urgent"><b>${urg}</b><span>urgent${urg > 1 ? 's' : ''}</span></div><div class="bx-stat"><b style="color:#60a5fa">${nPro}</b><span>pro</span></div><div class="bx-stat"><b style="color:#4ade80">${nPerso}</b><span>perso</span></div><div class="bx-stat ok"><b>${r.faits_semaine || 0}</b><span>validé${(r.faits_semaine || 0) > 1 ? 's' : ''} cette semaine</span></div></div>
+<div class="bx-barre"><div class="bx-seg">${seg('tout', `Tout · ${l.length}`, '')}${seg('pro', `Pro · ${nPro}`, 'pro')}${seg('perso', `Perso · ${nPerso}`, 'perso')}</div></div>
+${dos && f !== 'perso' ? `<div class="bx-bandeau"><div><b>Le cabinet comptable attend ta réponse</b><span>« ${esc(dos.sujet)} » · ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures retrouvées · réponses sur les ventes ${(dos.ventes || []).filter(v => v.reponse).length}/${(dos.ventes || []).length}</span></div>${bb('Ouvrir le dossier', 'dossier', dos.id, 'ambre')}</div>` : ''}
+${(espacePro + espacePerso) || `<div class="bx-vide">${l.length ? 'Rien de ce côté-là.' : '✓ Ton bureau est à jour : rien à valider.'}</div>`}
+</div>`, 'bx');
   }
   document.addEventListener('click', async ev => {
     const b = ev.target.closest && ev.target.closest('[data-bur]'); if (!b) return;
@@ -60,6 +68,7 @@ ${(r.journal || []).length ? `<details style="margin-top:12px"><summary style="c
     if (act === 'actf') { S.actFiltre = id; save(); return ecranActivite(); }
     if (act === 'actg') { S.actGenre = id; save(); return ecranActivite(); }
     if (act === 'activite') return activite();
+    if (act === 'bureau') return bureau();
     if (act === 'actd') { const x = affichee[+id]; return x ? detailActivite(x) : null; }
     if (act === 'actretour') return ecranActivite();
     if (act === 'piece') { const w = window.open('', '_blank'); return ouvrePdf(`${root()}/maison/bureau/piece?nom=${encodeURIComponent(id)}`, id, w); }
@@ -197,39 +206,55 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     if (x.dossier && typeof COMPTA !== 'undefined' && COMPTA.dossier) return COMPTA.dossier();
     let r; try { r = await api(Object.assign({ action: 'detail' }, x.carte ? { carte: x.carte } : x.rapport ? { rapport: x.rapport } : { fichiers: x.fichiers })); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     if (!r.ok) return say(`${(r.raison || 'je ne peux pas le montrer').replace(/^./, c => c.toUpperCase())}.`);
-    const retour = b_('← Retour', 'actretour', 'x');
-    const bloc = (titre, contenu) => contenu ? `<div style="margin-top:10px"><small style="letter-spacing:.14em;color:#94a3b8;text-transform:uppercase">${titre}</small><div style="white-space:pre-wrap;font-size:14px;color:#e2e8f0;background:rgba(0,0,0,.25);padding:9px 11px;border-radius:9px;margin-top:4px">${esc(contenu)}</div></div>` : '';
-    let corps = '';
+    const bloc = (titre, contenu) => contenu ? `<div class="bx-bloc"><h4>${titre}</h4><div class="bx-texte">${esc(contenu)}</div></div>` : '';
+    const [ic, nomG] = GENRES_ACT[x.genre] || ['•', ''];
+    let corps = '', titre = esc(lisible(x.t, '').texte);
     if (r.carte) {
       const c = r.carte, ST = { a_valider: 'à valider', brouillon: 'en brouillon dans Gmail', envoye: 'envoyé', fait: 'fait', tache: 'dans tes tâches', ignore: 'ignoré' };
-      corps = `<div style="font-size:17px;margin-top:6px"><b>${esc(c.de || '')}</b> <small style="color:#94a3b8">${esc(c.adresse || '')}</small></div>
-<div style="font-size:13px;color:#94a3b8">${esc(c.sujet || '')} · ${c.entite === 'lrf' || c.entite === 'micro' ? 'pro' : 'perso'} · ${esc(ST[c.statut] || c.statut || '')}${c.fait_par ? ` (${esc(c.fait_par)})` : ''}${c.echeance ? ` · avant le ${esc(c.echeance.split('-').reverse().join('/'))}` : ''}</div>`
-        + bloc('Ce que dit le mail', c.resume) + bloc('Ce qu’il faut faire', c.a_faire) + bloc('Pourquoi / la consigne', c.consigne) + bloc('La réponse que j’ai préparée', c.brouillon_texte)
+      const col = c.entite === 'lrf' || c.entite === 'micro' ? '#60a5fa' : '#4ade80';
+      titre = esc(c.resume || x.t);
+      corps = `<div class="bx-carte" style="--c:${col};margin-top:14px"><div class="bx-ligne1"><div class="bx-avatar" style="--c:${col}">${esc(initiales(c.de))}</div><div class="bx-qui">${esc(c.de || '')}<small>${esc(c.adresse || '')}</small></div>
+<div class="bx-tags"><span class="bx-tag">${esc(TYPE[c.type] || c.type || '')}</span><span class="bx-tag" style="background:${col}22;color:${col}">${c.entite === 'lrf' || c.entite === 'micro' ? 'pro' : 'perso'}</span><span class="bx-tag date">${esc(ST[c.statut] || c.statut || '')}${c.fait_par ? ` · ${esc(c.fait_par)}` : ''}</span></div></div>
+${[c.sujet, c.echeance ? `avant le ${dateFr(c.echeance)}` : ''].filter(Boolean).length ? `<div class="bx-meta" style="margin-top:8px">${esc([c.sujet, c.echeance ? `avant le ${dateFr(c.echeance)}` : ''].filter(Boolean).join(' · '))}</div>` : ''}</div>`
+        // (le résumé du mail est déjà le titre) + bloc('Ce qu’il faut faire', c.a_faire) + bloc('La consigne pour la réponse', c.consigne) + bloc('La réponse que j’ai préparée', c.brouillon_texte)
         + (c.seul_toi ? bloc('À toi', c.seul_toi) : '') + (c.pj && c.pj.length ? bloc('Pièces jointes du mail', c.pj.join('\n')) : '')
-        + (c.livrable ? `<div style="margin-top:10px">${b_(`📄 Lire « ${esc(c.livrable_titre || 'le document')} »`, 'lire', c.id, 'rgba(234,179,8,.25)')}</div>` : '');
+        + (c.livrable ? `<div class="bx-actions">${bb(`📄 Lire « ${esc(c.livrable_titre || 'le document')} »`, 'lire', c.id, 'ambre')}</div>` : '');
     } else if (r.texte) corps = bloc('Le rapport de la nuit', r.texte);
-    else if (r.fichiers) corps = `<div style="margin-top:8px">${r.fichiers.map(f => f.ok ? b_(`🧾 ${esc(f.nom)}`, 'piece', f.nom) : `<div style="color:#64748b;font-size:13px">${esc(f.nom)} (plus sur l'ordinateur)</div>`).join('')}</div>`;
-    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,780px)">${retour}<div style="margin-top:6px"><small style="letter-spacing:.2em;color:#fcd34d">${esc(new Date(x.at * 1000).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))}</small></div><div style="font-size:15px;margin-top:4px">${esc(x.t)}</div>${corps}</div>`);
+    else if (r.fichiers) corps = `<div class="bx-bloc"><h4>Les factures déposées</h4>${r.fichiers.map(f => f.ok ? `<div class="bx-evt ouvre" data-bur="piece" data-id="${esc(f.nom)}"><div class="bx-ic">🧾</div><div class="bx-evt-corps"><div>${esc(f.nom)}</div></div><div class="bx-chevron">›</div></div>` : `<div class="bx-evt"><div class="bx-ic">🧾</div><div class="bx-evt-corps"><div style="color:#78716c">${esc(f.nom)} (plus sur l'ordinateur)</div></div></div>`).join('')}</div>`;
+    showBoard(`<div class="bx-in"><div class="bx-barre" style="margin-top:-18px">${bb('← Retour', 'actretour', 'x', 'fantome')}<span class="bx-sur" style="margin-left:auto">${ic} ${esc(nomG)}</span></div>
+<div class="bx-sur" style="margin-top:14px">${esc(new Date(x.at * 1000).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))}</div><div class="bx-titre" style="font-size:20px">${titre}</div>${corps}</div>`, 'bx');
+  }
+  // « Déjà fait par toi : la réponse pour X (vu dans…) » → l'action en petit (« Déjà fait par toi »), le contenu en grand, sans les adresses ni les dates à l'anglaise
+  function lisible(t, defaut) {
+    const m = String(t).match(/^([^:]{3,48}) : (.+)$/s);
+    let texte = (m ? m[2] : String(t)).replace(/\s*<[^<>@\s]+@[^<>\s]+>/g, '').replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, '$3/$2/$1').replace(/^—\s*/, '').trim();
+    texte = texte.charAt(0).toUpperCase() + texte.slice(1);
+    return { label: m ? m[1] : defaut, texte };
   }
   function ecranActivite() {
     const f = S.actFiltre || 'tout', g = S.actGenre || 'tous';
     const l = derniereAct.filter(x => (f === 'tout' || (f === 'pro') === !!x.pro) && (g === 'tous' || x.genre === g)); affichee = l;
-    const puce = (k, t, actif, quoi) => `<button type="button" data-bur="${quoi}" data-id="${k}" style="padding:6px 12px;margin:6px 6px 0 0;border-radius:999px;border:1px solid ${actif ? '#fcd34d' : 'rgba(255,255,255,.15)'};background:${actif ? 'rgba(252,211,77,.18)' : 'transparent'};color:${actif ? '#fff' : '#94a3b8'};font:600 12px system-ui;cursor:pointer">${t}</button>`;
+    const COUL = { mails: '#a5b4fc', atelier: '#fcd34d', compta: '#fdba74', agenda: '#67e8f9', toi: '#86efac', plateforme: '#c4b5fd', bureau: '#94a3b8' };
     const jour = at => { const d = new Date(at * 1000), a = new Date(); const diff = Math.round((new Date(a.toDateString()) - new Date(d.toDateString())) / 86400000); return diff === 0 ? "Aujourd'hui" : diff === 1 ? 'Hier' : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); };
     let html = '', dernierJour = '';
-    for (const x of l) {
+    l.forEach((x, k) => {
       const j = jour(x.at);
-      if (j !== dernierJour) { html += `<div style="margin:14px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#fcd34d">${esc(j)}</div>`; dernierJour = j; }
-      const [ic] = GENRES_ACT[x.genre] || ['•'];
+      if (j !== dernierJour) { html += `<div class="bx-jour">${esc(j)}</div>`; dernierJour = j; }
+      const [ic, nomG] = GENRES_ACT[x.genre] || ['•', ''];
       const ouvrable = x.carte || x.rapport || x.fichiers || x.dossier;
-      html += `<div ${ouvrable ? `data-bur="actd" data-id="${l.indexOf(x)}"` : ''} style="display:flex;gap:10px;padding:6px 8px;border-left:3px solid ${x.pro ? '#60a5fa' : '#4ade80'};margin:3px 0;background:rgba(255,255,255,.03);border-radius:0 8px 8px 0;${ouvrable ? 'cursor:pointer' : ''}"><span style="flex:0 0 44px;color:#64748b;font-size:12px;padding-top:2px">${new Date(x.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span><span style="flex:0 0 18px">${ic}</span><span style="font-size:14px;color:#e2e8f0;flex:1">${esc(x.t)}</span>${ouvrable ? '<span style="color:#fcd34d;font-size:12px;padding-top:2px">voir ›</span>' : ''}</div>`;
-    }
+      const { label, texte } = lisible(x.t, nomG);
+      html += `<div class="bx-evt${ouvrable ? ' ouvre' : ''}" ${ouvrable ? `data-bur="actd" data-id="${k}"` : ''}><div class="bx-ic" style="--c:${COUL[x.genre] || '#94a3b8'}">${ic}</div><div class="bx-evt-corps"><div>${esc(texte)}</div><div class="bx-meta">${new Date(x.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · ${esc(label)} · <span class="${x.pro ? 'p' : 'q'}">${x.pro ? 'pro' : 'perso'}</span></div></div>${ouvrable ? '<div class="bx-chevron">›</div>' : ''}</div>`;
+    });
     const nPro = derniereAct.filter(x => x.pro).length;
-    showBoard(`<div style="text-align:left;font-family:system-ui;min-width:min(94vw,820px)"><small style="letter-spacing:.3em;color:#fcd34d">TOUT CE QUE FAIT ATLAS · 14 DERNIERS JOURS · ${derniereAct.length}</small>
-<div style="font-size:13px;color:#94a3b8;margin-top:4px">Tout ce que j'ai fait pour toi : les mails lus et préparés, les documents de l'atelier, la compta et Tiime, l'agenda, ce que tu as fait toi-même, et la plateforme la nuit. Bleu : pro · vert : perso.</div>
-<div>${puce('tout', `Tout · ${derniereAct.length}`, f === 'tout', 'actf')}${puce('pro', `Pro · ${nPro}`, f === 'pro', 'actf')}${puce('perso', `Perso · ${derniereAct.length - nPro}`, f === 'perso', 'actf')}</div>
-<div>${puce('tous', 'Tous', g === 'tous', 'actg')}${Object.entries(GENRES_ACT).filter(([k]) => derniereAct.some(x => x.genre === k)).map(([k, [ic, t]]) => puce(k, `${ic} ${t}`, g === k, 'actg')).join('')}</div>
-${html || '<div style="color:#64748b;margin-top:12px">Rien de ce côté-là ces 14 derniers jours.</div>'}</div>`);
+    const auj = derniereAct.filter(x => new Date(x.at * 1000).toDateString() === new Date().toDateString()).length;
+    const seg = (k_, t, cls) => `<button type="button" class="${f === k_ ? 'on ' : ''}${cls}" data-bur="actf" data-id="${k_}">${t}</button>`;
+    const puce = (k_, t) => `<button type="button" class="bx-puce${g === k_ ? ' on' : ''}" data-bur="actg" data-id="${k_}">${t}</button>`;
+    const nG = k_ => derniereAct.filter(x => x.genre === k_).length;
+    showBoard(`<div class="bx-in">
+<div class="bx-tete"><div><div class="bx-sur">Atlas · les 14 derniers jours</div><div class="bx-titre">Tout ce que fait Atlas</div><div class="bx-sous">Les mails lus et préparés, les documents de l'atelier, la compta et Tiime, l'agenda, ce que tu as fait toi-même, la plateforme la nuit. Touche une ligne pour revoir son contenu.</div></div>${bb('← Mon bureau', 'bureau', 'x', 'fantome')}</div>
+<div class="bx-stats"><div class="bx-stat"><b>${derniereAct.length}</b><span>actions en 14 jours</span></div><div class="bx-stat"><b>${auj}</b><span>aujourd'hui</span></div><div class="bx-stat"><b style="color:#fcd34d">${nG('atelier')}</b><span>documents faits</span></div><div class="bx-stat"><b style="color:#fdba74">${nG('compta')}</b><span>compta et Tiime</span></div><div class="bx-stat ok"><b>${nG('toi')}</b><span>faits par toi</span></div></div>
+<div class="bx-barre"><div class="bx-seg">${seg('tout', `Tout · ${derniereAct.length}`, '')}${seg('pro', `Pro · ${nPro}`, 'pro')}${seg('perso', `Perso · ${derniereAct.length - nPro}`, 'perso')}</div>${puce('tous', 'Tous')}${Object.entries(GENRES_ACT).filter(([k_]) => nG(k_)).map(([k_, [ic, t]]) => puce(k_, `${ic} ${t} · ${nG(k_)}`)).join('')}</div>
+${html || '<div class="bx-vide">Rien de ce côté-là ces 14 derniers jours.</div>'}</div>`, 'bx');
   }
   async function activite() {
     let r; try { r = await api({ action: 'activite' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
