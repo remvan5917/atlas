@@ -174,7 +174,7 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     if (mc) return () => ficheClient(mc[1]);
     if (/\b(on valide|valide|valider|on fait) (le|mon) bureau\b|\bon valide tout\b|\bon traite (le bureau|mes mails)\b/.test(n)) return valideVoix;
     if (/\b(qu est ce que tu as fait|tu as fait quoi|qu as tu fait)\b.*\b(bureau|travail|mails|aujourd hui|pour moi)\b|\bjournal du bureau\b/.test(n)) return journal;
-    if (/\b(mon bureau|le bureau|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return bureau;
+    if (/\b(mon bureau|le bureau|mod(?:e|es)? bureau|mot bureau|(?:ouvre|affiche|montre)(?: moi)? (?:ton|ce) bureau|bureau d atlas|(?:mon|ton|l) atelier(?: d atlas)?|ce que l atelier a fait|qu est ce que j ai a faire (au travail|au boulot|pour le travail|pour la rue du financement)|point (travail|boulot)|fais le point (du|sur le) (travail|boulot)|mes mails a traiter|qu est ce qu il faut que je fasse)\b/.test(n)) return bureau;
     if (/\b(relis|regarde|verifie)\b.*\b(mes )?mails\b.*\b(maintenant|tout de suite)\b/.test(n)) return async () => { try { await api({ action: 'tour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Je relis tes mails. Dis « mon bureau » dans quelques minutes."); };
     return null;
   }
