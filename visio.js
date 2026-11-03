@@ -205,6 +205,9 @@ const VISIO = (() => {
 
   /* ---------- « je vais me coucher » : la maison se met en nuit ---------- */
   async function coucher() {
+    // en pleine journée, ce n'est sûrement pas lui (la radio, la télé, une phrase mal entendue) : il demande d'abord
+    const hj = new Date().getHours();
+    if (hj >= 7 && hj < 18 && !(await askYesNo(`Il est ${hhmm()} : tu veux vraiment que je mette la maison en mode nuit ?`))) return say("D'accord, je ne touche à rien.");
     let l = []; try { l = (await appel('/maison/appareils', null, 15000)).appareils || []; } catch (e) { return say("L'ordinateur de la maison ne répond pas. Bonne nuit quand même."); }
     const enfant = N((typeof LIEN !== 'undefined' && LIEN.prenom()) || '');
     // en bas, tout s'éteint ; jamais les chambres (ni celle du petit, ni la tienne : tu y vas) ; la télé aussi

@@ -665,7 +665,7 @@ function reformule(n) {
   const ins = (m.match(/\b(l or|l argent|le cuivre|l euro dollar|l euro|le bitcoin)\b/) || [])[1];
   if (ins && (/^(l or|l argent|le cuivre|l euro dollar|l euro|le bitcoin)\b.*\b(combien|a quel prix|ou en est|il fait quoi|ca donne quoi|comment (il|elle) va|ca bouge)\b/.test(m) || /^(comment va|ou en est|ca donne quoi|quoi de neuf sur) /.test(m))) return `cours de ${ins}`;
   if (/\b((il )?y a (quelqu un|du monde) dehors|quelqu un dans (le jardin|la cour)|tout est calme dehors|rien a signaler dehors)\b/.test(m)) return 'scan de securite';
-  if (/^bonne nuit$/.test(m)) return 'je vais me coucher';
+  if (/^bonne nuit$/.test(m) && (new Date().getHours() >= 19 || new Date().getHours() < 5)) return 'je vais me coucher'; // « bonne nuit » tout court : le soir seulement (pas une voix de la radio à midi)
   if (/\b(c est l heure du film|on se (fait|regarde) un film|soiree film|on mate un film)\b/.test(m)) return 'mode cinema';
   if (/^(fais la fete|c est la fete|ambiance (soiree|fete)|mets l ambiance)$/.test(m)) return 'mode soiree';
   // la politesse enlevée : seulement si ce qui reste est un ordre (une vraie question va au cerveau telle quelle)
