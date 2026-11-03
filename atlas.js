@@ -752,6 +752,8 @@ async function handleBrut(text) {
   // plusieurs ordres d'affilée : « mets les lumières à 30 % et mets de la musique romantique », « éteins la télé, puis verrouille l'ordi »
   const ordres = enchaine(t);
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
+  const anti = typeof ANTICIPE !== 'undefined' && ANTICIPE.routeFixe(t, n); // « je le fais à chaque fois ? » oui / non, « tes anticipations »
+  if (anti) return anti();
   const presc = typeof PRESCIENCE !== 'undefined' && PRESCIENCE.routeFixe(t, n); // « qu'est-ce que tu as appris ? », « active-la », « mes habitudes »
   if (presc) return presc();
   const film = typeof PRESENTATION !== 'undefined' && PRESENTATION.route(t, n); // la présentation : « lance la présentation » (il fait tout le film), « stop » / « coupez »
