@@ -754,6 +754,7 @@ async function handleBrut(text) {
   if (ordres) { for (const o of ordres) { if (o.f) await o.f(); else await handle(o.t); } return; }
   const anti = typeof ANTICIPE !== 'undefined' && ANTICIPE.routeFixe(t, n); // « je le fais à chaque fois ? » oui / non, « tes anticipations »
   if (anti) return anti();
+  if (/\b(mets toi a jour|met toi a jour|mise a jour d atlas|fais ta mise a jour|recharge toi|actualise toi|quelle version es tu|tu es en quelle version)\b/.test(n)) return /version/.test(n) && !/mets|met |fais|recharge|actualise/.test(n) ? say(`Je suis en version ${window.ATLAS_VERSION}.`) : majForcee();
   const presc = typeof PRESCIENCE !== 'undefined' && PRESCIENCE.routeFixe(t, n); // « qu'est-ce que tu as appris ? », « active-la », « mes habitudes »
   if (presc) return presc();
   const film = typeof PRESENTATION !== 'undefined' && PRESENTATION.route(t, n); // la présentation : « lance la présentation » (il fait tout le film), « stop » / « coupez »
@@ -1350,6 +1351,16 @@ function lieReglages() {
   $('#btn-reglages').addEventListener('click', ouvreReglages);
 }
 
+/* ---------- « mets-toi à jour » : tout de suite, sans attendre le calme ---------- */
+async function majForcee() {
+  let v = ''; try { v = ((await (await fetch(`index.html?maj=${Date.now()}`, { cache: 'no-store' })).text()).match(/ATLAS_VERSION = '(\d+)'/) || [])[1] || ''; } catch (e) { /* hors ligne */ }
+  if (v && +v <= +window.ATLAS_VERSION) return say(`Je suis déjà à jour : version ${window.ATLAS_VERSION}.`);
+  await say(`Je me mets à jour${v ? ` : version ${window.ATLAS_VERSION} vers ${v}` : ''}. Je reviens dans quelques secondes.`);
+  try { if (dlg.started) localStorage.setItem('atlas-reprise', String(Date.now())); } catch (e) { /* rien */ }
+  try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => k.startsWith('atlas-app')).map(k => caches.delete(k))); } } catch (e) { /* rien */ }
+  try { const regs = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : []; await Promise.all(regs.map(r => r.update().catch(() => {}))); } catch (e) { /* rien */ }
+  location.reload();
+}
 /* ---------- une version plus récente ? il se met à jour tout seul (une fois) ---------- */
 async function verifierMaj() {
   try {

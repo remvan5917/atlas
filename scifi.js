@@ -524,7 +524,7 @@ const SCIFI = (() => {
 
   /* ---------- le mode cockpit : le tableau de bord en grand, et Atlas en petit dans le coin (il écoute et parle toujours) ---------- */
   function pleinEcran() {
-    if (!document.body.classList.contains('cockpit') || document.fullscreenElement) return;
+    if (!document.body.classList.contains('cockpit') || document.fullscreenElement || !document.documentElement.requestFullscreen) return; // (l'iPhone ne sait pas)
     document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => { const h = document.getElementById('cockpit-pe'); if (h) h.remove(); }).catch(() => {});
   }
   function modeCockpit(on, maisonForcee) {
