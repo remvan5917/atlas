@@ -168,7 +168,23 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     await ecran(r);
     return say(j.length ? `Depuis hier : ${j.slice(0, 4).map(x => x.t).join(' ; ')}${j.length > 4 ? ', et le reste à l’écran' : ''}.` : "Je n'ai rien fait de nouveau depuis hier : ton bureau est à jour.");
   }
+  // ce qu'il a fait lui-même : « c'est fait pour Frédéric Baille », « j'ai déjà envoyé la facture à C3J » → la carte sort de sa liste
+  let derniersFaits = null;
+  async function faitTexte(q) {
+    let r; try { r = await api({ action: 'fait_texte', q }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!r.ok) return say(`${r.raison.charAt(0).toUpperCase()}${r.raison.slice(1)}. Dis par exemple « c'est fait pour Frédéric Baille ».`);
+    derniersFaits = { ids: r.faits.map(x => x.id), at: Date.now() }; fx.ok();
+    return say(`C'est noté, je l'enlève de ta liste : ${r.faits.map(x => `${x.de}, ${x.resume.charAt(0).toLowerCase()}${x.resume.slice(1)}`).join(' ; ')}. Si je me suis trompé de carte, dis « annule ».`);
+  }
+  async function annuleFait() {
+    const ids = derniersFaits.ids; derniersFaits = null;
+    for (const id of ids) { try { await api({ action: 'defait', id }); } catch (e) { /* tant pis */ } }
+    return say("D'accord, je la remets dans ton bureau.");
+  }
   function route(t, n) {
+    if (derniersFaits && Date.now() - derniersFaits.at < 120000 && /^(atlas )?(annule|non (c est|pas) (pas )?(celle|celui) la|tu t es trompe|pas celle la|pas celui la)\b/.test(n)) return annuleFait;
+    const mf = n.match(/^(?:atlas )?(?:c est (?:deja )?(?:fait|regle|envoye)|je l ai deja (?:fait|envoye|regle)|j ai deja (?:fait|envoye|repondu|regle|paye|relance|appele|traite)|j ai (?:envoye|repondu|regle|paye|relance|traite))\b\s*(.*)$/);
+    if (mf && /[a-z]{3,}/.test(mf[1].replace(/\b(le|la|les|un|une|a|au|aux|pour|de|du|des|ca|tout)\b/g, ''))) return () => faitTexte(mf[1]);
     // la mémoire des clients : « où en est le dossier Nexa ? », « fiche client Euridis », « qu'est-ce que j'ai avec Atelier Brume ? »
     const mc = n.match(/\b(?:ou en est (?:le dossier|le client|mon client|l affaire|avec)|fiche (?:du )?client|parle moi du client|qu est ce que j ai (?:en cours )?avec|historique (?:avec|du client))\s+(.{2,60})$/);
     if (mc) return () => ficheClient(mc[1]);
