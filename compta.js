@@ -111,7 +111,12 @@ ${aTel ? `<div style="margin-top:14px"><small style="letter-spacing:.25em;color:
     const lignes = [`Bonjour ${String(d.de).replace(/<.*$/, '').trim().split(' ')[0] || ''},`, '', `Veuillez trouver ci-joint les éléments demandés pour le point dossier du ${d.recu.split('-').reverse().join('/')} :`,
       `- le tableau complété (colonne Commentaires) ;`, `- ${ok.length} factures d'achats sur ${d.achats.length}${non.length ? ` ; pour les ${non.length} autres, la nature de la charge est indiquée dans le tableau` : ''} ;`];
     if (jointes.length) lignes.push(`- les factures de vente ${jointes.join(', ')}.`);
-    d.ventes.filter(v => v.reponse).forEach(v => lignes.push('', `${v.client} : ${v.reponse}`));
+    // chaque question du cabinet sur les ventes : sa réponse, ou un trou bien visible (seul papa sait ce qui s'est passé)
+    const eur = x => `${Number(x || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+    d.ventes.forEach(v => {
+      const etat = v.n_factures ? ` (${v.n_factures} facture${v.n_factures > 1 ? 's' : ''} pour ${eur(v.facture)}, ${v.n_reglements} règlement${v.n_reglements > 1 ? 's' : ''} pour ${eur(v.regle)})` : '';
+      lignes.push('', `${v.client}${etat} : ${v.reponse || '[À COMPLÉTER PAR RÉMY]'}`);
+    });
     if ((d.banque || []).length) lignes.push('', 'Les relevés bancaires suivront dans un prochain envoi.');
     lignes.push('', 'Bien cordialement,', prenomPapa());
     return lignes.join('\n');
