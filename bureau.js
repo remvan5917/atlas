@@ -24,6 +24,8 @@ const BUREAU = (() => {
 <div style="font-size:15px;margin-top:4px">${esc(x.resume)}${ech}</div>
 ${x.a_faire ? `<div style="font-size:13px;color:#fde68a;margin-top:2px">→ ${esc(x.a_faire)}</div>` : ''}
 ${x.note ? `<div style="font-size:13px;color:#fca5a5">⚠ ${esc(x.note)}</div>` : ''}
+${x.livrable ? `<a href="${esc(root())}/maison/bureau/livrable?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:8px 12px;border-radius:10px;background:rgba(234,179,8,.25);color:#fde68a;font:600 13px system-ui;text-decoration:none">📄 Lire « ${esc(x.livrable_titre || 'le document')} » (fait par Atlas)</a>` : ''}
+${x.seul_toi ? `<div style="font-size:13px;color:#93c5fd;margin-top:2px">👤 À toi : ${esc(x.seul_toi)}</div>` : ''}
 ${x.document ? `<div style="font-size:13px;color:#94a3b8">Pièce demandée : ${esc(x.document)} — ajoute-la au brouillon dans Gmail.</div>` : ''}
 ${x.type === 'relancer' && !x.adresse ? `<div style="display:flex;gap:6px;margin-top:6px"><input type="email" id="adr-${esc(x.id)}" placeholder="l'adresse mail du client" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#e2e8f0;font:14px system-ui">${b_('Rédiger la relance', 'adresse', x.id, 'rgba(37,99,235,.7)')}</div>` : ''}
 ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''} style="margin-top:6px"><summary style="cursor:pointer;color:#a5b4fc;font-size:13px">La réponse que j'ai rédigée${x.adresse ? ` (à ${esc(x.adresse)})` : ''}</summary><div style="white-space:pre-wrap;font-size:14px;color:#e2e8f0;background:rgba(0,0,0,.25);padding:9px 11px;border-radius:9px;margin-top:5px">${esc(x.brouillon_texte)}</div></details>` : ''}
