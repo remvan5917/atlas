@@ -190,7 +190,46 @@ ${aTel ? `<div style="margin-top:14px"><small style="letter-spacing:.25em;color:
     if (/\b(relance|envoye|fait|emis)\b/.test(N(t))) { try { await fetch(`${root()}/maison/bureau`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'fait_texte', q: r.client }) }); } catch (e) { /* tant pis */ } }
     return say(`C'est noté pour le cabinet. ${r.client} : « ${r.reponse} ».${r.joints.length ? ` J'ai joint au dossier ${r.joints.length} justificatif${r.joints.length > 1 ? 's' : ''} pris dans tes Téléchargements.` : ''} Dis « dossier du cabinet » pour tout revoir.`);
   }
+  // ---------- mes revenus : ce que La rue du financement et la micro facturent, encaissent, dépensent ; les impayés ; le consulting qui doit baisser ----------
+  let rev = null;
+  const eur0 = x => `${Math.round(Number(x || 0)).toLocaleString('fr-FR')} €`;
+  async function revApi(corps) { const r = await fetch(`${root()}/maison/revenus`, corps ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) } : { cache: 'no-store' }); return r.json(); }
+  function ecranRevenus() {
+    const r = rev, sr = r.series, n = r.mois.length;
+    const total = k => sr[k].reduce((a, b) => a + b, 0);
+    const max = Math.max(1, ...r.mois.map((_, i) => Math.max(sr.lrf_facture[i] + sr.micro_ca[i], sr.lrf_depense[i])));
+    const barres = r.mois.map((m, i) => { const h = v => Math.round(120 * v / max); return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="height:124px;display:flex;align-items:flex-end;gap:3px"><div title="Consulting facturé (La rue du financement)" style="width:14px;height:${h(sr.lrf_facture[i])}px;background:#60a5fa;border-radius:4px 4px 0 0"></div><div title="Micro-entreprise" style="width:14px;height:${h(sr.micro_ca[i])}px;background:#a78bfa;border-radius:4px 4px 0 0"></div><div title="Dépenses" style="width:14px;height:${h(sr.lrf_depense[i])}px;background:#f87171;opacity:.75;border-radius:4px 4px 0 0"></div></div><small style="color:rgba(244,236,224,.5);font-size:11px">${esc(r.noms[i].slice(0, 4))}</small></div>`; }).join('');
+    const imp = r.impayes.map(x => `<div class="bx-carte" style="--c:#f87171"><div class="bx-ligne1"><div class="bx-qui">${esc(x.client)}<small>${esc(x.factures.join(', '))}</small></div><div class="bx-tags"><span class="bx-tag urgent">${eur0(x.montant)} impayés</span></div></div>${x.note ? `<div class="bx-info">${esc(x.note)}</div>` : ''}<div class="bx-actions"><span class="bx-espace"></span><button type="button" class="bx-btn vert" data-rev="paye" data-id="${esc(x.client)}">✓ Il a payé</button></div></div>`).join('');
+    const rec = (r.recurrents || []).map(x => `<div class="bx-evt"><div class="bx-ic">🔁</div><div class="bx-evt-corps"><div>${esc(x.client)} : ${eur0(x.montant)} ${x.ht ? 'HT' : 'TTC'} chaque mois, le ${x.jour}</div><div class="bx-meta">prochaine facture le ${esc(String(x.prochain || '').split('-').reverse().join('/'))} · consulting</div></div></div>`).join('');
+    showBoard(`<div class="bx-in">
+<div class="bx-tete"><div><div class="bx-sur">Atlas · les ${n} derniers mois</div><div class="bx-titre">Mes revenus</div><div class="bx-sous">Ce que tes deux activités facturent, encaissent et dépensent. Le cap : moins de consulting, plus de revenus automatiques (la plateforme).</div></div></div>
+<div class="bx-stats"><div class="bx-stat"><b style="color:#60a5fa">${eur0(total('lrf_facture'))}</b><span>consulting facturé (${n} mois)</span></div><div class="bx-stat"><b style="color:#a78bfa">${eur0(total('micro_ca'))}</b><span>micro-entreprise</span></div><div class="bx-stat"><b style="color:#f87171">${eur0(total('lrf_depense'))}</b><span>dépenses La rue</span></div><div class="bx-stat urgent"><b>${eur0(r.total_impayes)}</b><span>impayés</span></div><div class="bx-stat ok"><b>0 €</b><span>automatique (abonnements)</span></div></div>
+${r.banque ? '' : `<div class="bx-bandeau"><div><b>Pour voir l'argent vraiment encaissé</b><span>Les avis de virement de Tiime ne donnent pas les montants. Exporte le relevé de ton compte Tiime (CSV ou Excel) dans Téléchargements : je le lis tout seul.</span></div></div>`}
+<div class="bx-section" style="--c:#fcd34d"><i></i><b>Mois par mois</b><small><span style="color:#60a5fa">■</span> consulting · <span style="color:#a78bfa">■</span> micro · <span style="color:#f87171">■</span> dépenses</small></div>
+<div style="display:flex;gap:6px;padding:8px 4px 0">${barres}</div>
+<div class="bx-section" style="--c:#f87171"><i></i><b>Impayés</b><small>${r.impayes.length ? eur0(r.total_impayes) : 'aucun'}</small></div>${imp || '<div class="bx-vide">Aucun impayé connu.</div>'}
+${rec ? `<div class="bx-section" style="--c:#94a3b8"><i></i><b>Factures récurrentes</b><small>je te rappelle le jour venu</small></div>${rec}` : ''}
+<div class="bx-section" style="--c:#4ade80"><i></i><b>Revenus automatiques</b><small>le cap</small></div><div class="bx-info" style="padding:0 4px">Les abonnements à La rue du financement apparaîtront ici dès le lancement. C'est le chiffre à faire monter.</div>
+</div>`, 'bx');
+  }
+  async function revenus() {
+    try { rev = await revApi(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    ecranRevenus();
+    const n = rev.mois.length, t = k => rev.series[k].reduce((a, b) => a + b, 0);
+    return say(`Sur ${n} mois : ${eur0(t('lrf_facture'))} de consulting facturé pour La rue du financement, ${eur0(t('micro_ca'))} pour la micro-entreprise, ${eur0(t('lrf_depense'))} de dépenses.${rev.impayes.length ? ` ${eur0(rev.total_impayes)} d'impayés : ${rev.impayes.map(x => x.client).join(' et ')}.` : ''}${rev.banque ? '' : " Pour l'argent vraiment encaissé, exporte ton relevé Tiime dans Téléchargements."}`);
+  }
+  async function aPaye(client) {
+    try { rev = await revApi({ action: 'paye', client }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    fx.ok(); ecranRevenus(); return say(`C'est noté : ${client} a payé. Je l'enlève des impayés.`);
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest && ev.target.closest('[data-rev]'); if (!b) return;
+    if (b.dataset.rev === 'paye') aPaye(b.dataset.id);
+  });
   function route(t, n) {
+    if (/\b(mes revenus|mon argent|combien j ai (gagne|encaisse|facture)|mon chiffre d affaires|tableau de bord (des revenus|financier)|l argent de (mes entreprises|ma societe|la rue))\b/.test(n)) return revenus;
+    const mp = n.match(/^(?:atlas )?(.{2,40}?) (?:a|m a) (?:paye|regle|vire)\b/);
+    if (mp && rev && rev.impayes.some(x => N(x.client).includes(N(mp[1])) || N(mp[1]).includes(N(x.client).split(' ')[0]))) { const c = rev.impayes.find(x => N(x.client).includes(N(mp[1])) || N(mp[1]).includes(N(x.client).split(' ')[0])); return () => aPaye(c.client); }
     if (clientDuDossier(n) && DIT_FAIT.test(n) && !/\b(ou en est|fiche client|historique)\b/.test(n)) return () => repondClient(t);
     if (/\b(point compta|fais (ma|la) compta|ma compta|la compta|on fait la compta|ou en est (ma|la) compta)\b/.test(n)) return point;
     if (/\blivre (des|de) recettes?\b/.test(n)) return () => livre(n);
@@ -199,5 +238,6 @@ ${aTel ? `<div style="margin-top:14px"><small style="letter-spacing:.25em;color:
     if (/\b(relis|relit|reverifie|scanne)\b.*\b(mails?|factures)\b.*\bcompta\b|\brelance la compta\b/.test(n)) return relance;
     return null;
   }
-  return { route, point, dossier, clientDuDossier, _api: api, _dossierApi: dossierApi, _corpsReponse: corpsReponse };
+  setTimeout(async () => { try { rev = await revApi(); } catch (e) { /* plus tard */ } }, 25000);
+  return { route, point, dossier, clientDuDossier, revenus, _api: api, _dossierApi: dossierApi, _corpsReponse: corpsReponse };
 })();
