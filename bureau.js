@@ -40,8 +40,17 @@ ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''}><summary>La réponse que j'ai 
   async function dossierCabinet() {
     try { const r = await (await fetch(`${root()}/maison/compta/dossier`, { cache: 'no-store' })).json(); return (r.dossiers || []).filter(d => !d.brouillon).slice(-1)[0] || null; } catch (e) { return null; }
   }
+  let decs = [];
+  async function decApi(corps) { const r = await fetch(`${root()}/maison/decisions`, corps ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) } : { cache: 'no-store' }); return r.json(); }
+  function carteDecision(x) {
+    const PROJ = { plateforme: 'La rue du financement · plateforme', sopam: 'SOPAM', compta: 'Compta' };
+    return `<div class="bx-carte" style="--c:#fcd34d"><div class="bx-ligne1"><div class="bx-avatar" style="--c:#fcd34d">?</div><div class="bx-qui">${esc(x.question)}<small>${esc(PROJ[x.projet] || x.projet)}${x.source ? ` · ${esc(x.source)}` : ''}</small></div></div>
+${x.contexte ? `<details><summary>Le contexte</summary><div class="bx-texte">${esc(x.contexte)}</div></details>` : ''}
+<div class="bx-actions">${(x.options || []).map((o, i) => `<button type="button" class="bx-btn ${i === 0 ? 'vert' : ''}" data-bur="decide" data-id="${esc(x.id)}" data-opt="${i}">${esc(o)}</button>`).join('')}${bb('✍ Autre réponse', 'decide-libre', x.id, 'fantome')}</div></div>`;
+  }
   async function ecran(r) {
     dernier = r;
+    try { decs = (await decApi()).a_prendre || []; } catch (e) { decs = []; }
     const dos = await dossierCabinet(), l = r.a_valider || [], urg = l.filter(x => x.urgence === 'haute').length;
     const f = S.bureauFiltre || 'tout', estPro = estPro_;
     const nPro = l.filter(estPro).length, nPerso = l.length - nPro;
@@ -57,6 +66,7 @@ ${avecTexte(x) ? `<details ${i < 2 ? 'open' : ''}><summary>La réponse que j'ai 
 <div class="bx-tete"><div><div class="bx-sur">Atlas · ${esc(auj)}${r.en_cours ? ' · je lis tes mails…' : ''}</div><div class="bx-titre">Mon bureau</div><div class="bx-sous">J'ai lu tes mails et préparé le travail. Tu vérifies, tu valides : rien ne part sans toi.</div></div>${bb('📜 Tout ce que j’ai fait', 'activite', 'x', 'ambre')}</div>
 <div class="bx-stats"><div class="bx-stat"><b>${l.length}</b><span>à valider</span></div><div class="bx-stat urgent"><b>${urg}</b><span>urgent${urg > 1 ? 's' : ''}</span></div><div class="bx-stat"><b style="color:#60a5fa">${nPro}</b><span>pro</span></div><div class="bx-stat"><b style="color:#4ade80">${nPerso}</b><span>perso</span></div><div class="bx-stat ok"><b>${r.faits_semaine || 0}</b><span>validé${(r.faits_semaine || 0) > 1 ? 's' : ''} cette semaine</span></div></div>
 <div class="bx-barre"><div class="bx-seg">${seg('tout', `Tout · ${l.length}`, '')}${seg('pro', `Pro · ${nPro}`, 'pro')}${seg('perso', `Perso · ${nPerso}`, 'perso')}</div></div>
+${decs.length && f !== 'perso' ? `<div class="bx-section" style="--c:#fcd34d"><i></i><b>Décisions à prendre</b><small>${decs.length} · la suite attend ta réponse</small></div>${decs.map(carteDecision).join('')}` : ''}
 ${dos && f !== 'perso' ? `<div class="bx-bandeau"><div><b>Le cabinet comptable attend ta réponse</b><span>« ${esc(dos.sujet)} » · ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures retrouvées · réponses sur les ventes ${(dos.ventes || []).filter(v => v.reponse).length}/${(dos.ventes || []).length}</span></div>${bb('Ouvrir le dossier', 'dossier', dos.id, 'ambre')}</div>` : ''}
 ${(espacePro + espacePerso) || `<div class="bx-vide">${l.length ? 'Rien de ce côté-là.' : '✓ Ton bureau est à jour : rien à valider.'}</div>`}
 </div>`, 'bx');
@@ -69,6 +79,14 @@ ${(espacePro + espacePerso) || `<div class="bx-vide">${l.length ? 'Rien de ce c�
     if (act === 'actg') { S.actGenre = id; save(); return ecranActivite(); }
     if (act === 'activite') return activite();
     if (act === 'bureau') return bureau();
+    if (act === 'decide' || act === 'decide-libre') {
+      const x = decs.find(y => y.id === id); if (!x) return;
+      let rep_ = act === 'decide' ? (x.options || [])[+b.dataset.opt] : await ask(`Ta réponse : ${x.question}`, { wait: 40000 });
+      if (!rep_) return say("D'accord, je la garde pour plus tard.");
+      try { await decApi({ action: 'repond', id, reponse: rep_ }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+      fx.ok(); await say(`C'est noté : ${rep_}. La prochaine séance l'appliquera.`);
+      try { return ecran(await api()); } catch (e) { return; }
+    }
     if (act === 'actd') { const x = affichee[+id]; return x ? detailActivite(x) : null; }
     if (act === 'actretour') return ecranActivite();
     if (act === 'piece') { const w = window.open('', '_blank'); return ouvrePdf(`${root()}/maison/bureau/piece?nom=${encodeURIComponent(id)}`, id, w); }
@@ -128,10 +146,12 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
     PROACTIF.annonce(`point-${j}`, async () => {
       let r; try { r = await api({ action: 'point' }); } catch (e) { return ''; }
       const parts = [];
+      if ((r.decisions || []).length) parts.push(`${r.decisions.length} décision${r.decisions.length > 1 ? 's' : ''} à prendre : ${r.decisions.slice(0, 2).join(' ; ')}`);
       if (r.a_valider) parts.push(`ton bureau : ${r.a_valider} chose${r.a_valider > 1 ? 's' : ''} à valider (${r.pro} en pro, ${r.perso} en perso)${r.urgents ? `, dont ${r.urgents} urgente${r.urgents > 1 ? 's' : ''}` : ''}`);
       if ((r.documents || []).length) parts.push(`${r.documents.length} document${r.documents.length > 1 ? 's' : ''} prêt${r.documents.length > 1 ? 's' : ''} à relire : ${r.documents.slice(0, 3).join(', ')}`);
       const msgs = (r.messages || []).map(m => m.texte.replace(/\s*Dis « on valide le bureau »\.?/, '').replace(/^Bureau : /, '')).filter(Boolean);
       if (!parts.length && !msgs.length) return '';
+      // (les décisions sont en tête de ton bureau)
       return `Bonjour. Le point du matin. ${parts.length ? parts.join(' ; ') + '. ' : ''}${msgs.slice(0, 4).join(' ')}${msgs.length > 4 ? ` Et ${msgs.length - 4} autre${msgs.length - 4 > 1 ? 's' : ''} chose${msgs.length - 4 > 1 ? 's' : ''} dans ton activité.` : ''} Dis « on valide le bureau » quand tu veux. Après ça, je ne te parle plus de travail aujourd'hui, sauf urgence.`;
     }, { expire: Date.now() + 3 * 3600000 });
   }, 5 * 60000);
@@ -345,6 +365,7 @@ ${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pa
     return say("D'accord, je la remets dans ton bureau.");
   }
   function route(t, n) {
+    if (/\b(mes decisions|decisions a prendre|qu est ce que je dois decider|les decisions)\b/.test(n)) return () => { S.bureauFiltre = 'tout'; save(); return bureau(); };
     const fb = n.match(/\bbureau (pro|perso|professionnel|personnel)\b|\b(?:le |mon )?(pro|perso) (?:du|de mon) bureau\b/);
     if (fb) return () => { S.bureauFiltre = /^pro/.test(fb[1] || fb[2]) ? 'pro' : 'perso'; save(); return bureau(); };
     if (derniersFaits && Date.now() - derniersFaits.at < 120000 && /^(atlas )?(annule|non (c est|pas) (pas )?(celle|celui) la|tu t es trompe|pas celle la|pas celui la)\b/.test(n)) return annuleFait;
