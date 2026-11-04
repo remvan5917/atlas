@@ -207,6 +207,28 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
       setTimeout(() => URL.revokeObjectURL(u), 10 * 60000);
     } catch (e) { if (w) w.close(); say("Je n'arrive pas à ouvrir ce document."); }
   }
+  // un rapport écrit en markdown → une page lisible (titres, gras, listes, tableaux) ; les chemins de fichiers et numéros de ligne s'effacent
+  function mdLisible(md) {
+    const inl = t => esc(t)
+      .replace(/`(?:(?:src|supabase|docs|scripts)\/[^`]*|[^`\s]*\.(?:tsx?|jsx?|py|sql|json|md)(?::[\d, -]+)?)`(?::[\d, -]+)?/g, '')   // les chemins de fichiers et leurs numéros de ligne (pas les adresses de pages, comme /pricing)
+      .replace(/\b(?:T|l\.)\s?:?\s?\d+(?:[-–]\d+)?(?:,\s?(?:T:)?\d+(?:[-–]\d+)?)*/g, '')              // « T:2821 », « l. 71, 124 »
+      .replace(/(?:\s*[,;]\s*)+(?=\s*—)/g, ' ').replace(/\s+—\s+(?=—)/g, ' ').replace(/\s+—\s*(?:—\s*)+/g, ' — ').replace(/\(\s*[,;]?\s*\)/g, '').replace(/\s{2,}/g, ' ')
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<span style="color:#fcd34d">$1</span>');
+    const out = []; let liste = false, tab = [];
+    const ferme = () => { if (liste) { out.push('</ul>'); liste = false; } if (tab.length) { const lignes = tab.filter(r => !/^\|[\s:|-]+\|$/.test(r)); out.push('<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:13.5px">' + lignes.map((r, i) => '<tr>' + r.replace(/^\||\|$/g, '').split('|').map(c => `<${i ? 'td' : 'th'} style="border:1px solid rgba(255,255,255,.12);padding:5px 8px;text-align:left;vertical-align:top">${inl(c.trim())}</${i ? 'td' : 'th'}>`).join('') + '</tr>').join('') + '</table>'); tab = []; } };
+    for (const l of String(md).split('\n')) {
+      if (/^\s*\|/.test(l)) { if (liste) { out.push('</ul>'); liste = false; } tab.push(l.trim()); continue; }
+      if (tab.length) ferme();
+      const h = l.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { ferme(); out.push(`<div style="margin:${h[1].length < 3 ? 18 : 12}px 0 6px;font-weight:700;font-size:${h[1].length === 1 ? 19 : h[1].length === 2 ? 16 : 14.5}px;color:${h[1].length < 3 ? 'var(--ambre2)' : '#e7e5e4'}">${inl(h[2])}</div>`); continue; }
+      const li = l.match(/^\s*[-*]\s+(.*)$/);
+      if (li) { if (!liste) { out.push('<ul style="margin:4px 0;padding-left:20px">'); liste = true; } out.push(`<li style="margin:4px 0;line-height:1.45">${inl(li[1])}</li>`); continue; }
+      if (/^\s*---+\s*$/.test(l)) { ferme(); out.push('<hr style="border:0;border-top:1px solid rgba(255,255,255,.1);margin:12px 0">'); continue; }
+      if (!l.trim()) { ferme(); continue; }
+      ferme(); out.push(`<p style="margin:6px 0;line-height:1.5">${inl(l)}</p>`);
+    }
+    ferme(); return `<div style="font-size:14.5px;color:#e7e5e4">${out.join('')}</div>`;
+  }
   async function detailActivite(x) {
     if (x.dossier && typeof COMPTA !== 'undefined' && COMPTA.dossier) return COMPTA.dossier();
     let r; try { r = await api(Object.assign({ action: 'detail' }, x.carte ? { carte: x.carte } : x.rapport ? { rapport: x.rapport } : { fichiers: x.fichiers })); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
@@ -224,7 +246,7 @@ ${[c.sujet, c.echeance ? `avant le ${dateFr(c.echeance)}` : ''].filter(Boolean).
         // (le résumé du mail est déjà le titre) + bloc('Ce qu’il faut faire', c.a_faire) + bloc('La consigne pour la réponse', c.consigne) + bloc('La réponse que j’ai préparée', c.brouillon_texte)
         + (c.seul_toi ? bloc('À toi', c.seul_toi) : '') + (c.pj && c.pj.length ? bloc('Pièces jointes du mail', c.pj.join('\n')) : '')
         + (c.livrable ? `<div class="bx-actions">${bb(`📄 Lire « ${esc(c.livrable_titre || 'le document')} »`, 'lire', c.id, 'ambre')}</div>` : '');
-    } else if (r.texte) corps = bloc('Le rapport de la nuit', r.texte);
+    } else if (r.texte) corps = `<div class="bx-bloc">${mdLisible(r.texte)}</div>`;
     else if (r.fichiers) corps = `<div class="bx-bloc"><h4>Les factures déposées</h4>${r.fichiers.map(f => f.ok ? `<div class="bx-evt ouvre" data-bur="piece" data-id="${esc(f.nom)}"><div class="bx-ic">🧾</div><div class="bx-evt-corps"><div>${esc(f.nom)}</div></div><div class="bx-chevron">›</div></div>` : `<div class="bx-evt"><div class="bx-ic">🧾</div><div class="bx-evt-corps"><div style="color:#78716c">${esc(f.nom)} (plus sur l'ordinateur)</div></div></div>`).join('')}</div>`;
     showBoard(`<div class="bx-in"><div class="bx-barre" style="margin-top:-18px">${bb('← Retour', 'actretour', 'x', 'fantome')}<span class="bx-sur" style="margin-left:auto">${ic} ${esc(nomG)}</span></div>
 <div class="bx-sur" style="margin-top:14px">${esc(new Date(x.at * 1000).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))}</div><div class="bx-titre" style="font-size:20px">${titre}</div>${corps}</div>`, 'bx');
