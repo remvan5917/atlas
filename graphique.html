@@ -63,7 +63,7 @@
     <div class="espace"></div>
  <button class="b masque-mobile" id="nouvelle" title="Une fenêtre de plus, à glisser sur un autre écran">+ Fenêtre</button>
     <a class="b bleu masque-mobile" id="lien-radar" href="radar.html" target="radar" style="text-decoration:none">Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.6">· v4</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.6">· v5</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" title="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -78,7 +78,7 @@
     <table><thead><tr><th>Symbole</th><th>Dernier</th><th>Chg</th><th>Chg%</th></tr></thead><tbody id="liste"></tbody></table>
     <div class="aide">
       <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. <b>Tes lignes</b> sont gardées sur l'ordinateur de la maison et apparaissent sur tous tes écrans. Atlas te prévient quand le prix <b>touche</b> ou <b>casse</b> une ligne (voix et ntfy).<br>
-      Glisser : déplacer · molette : zoom · double-clic : recadrer<br>
+      Glisser dans le graphique : le déplacer · sur l'échelle des prix : l'étirer · sur l'échelle du temps : zoomer · molette : zoom (sur les prix aussi) · double-clic sur les prix : échelle auto · double-clic dans le graphique : tout recadrer<br>
       <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M (en vue à 3 : clique d'abord sur un graphique) · <kbd>Échap</kbd> curseur
     </div>
   </div>
@@ -211,24 +211,46 @@ class Pane {
     this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b> <span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span><br><span style="color:#555">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R H4' : ''}${opt.aimant ? ' · aimant' : ''}</span>`;
   }
   ecoute() {
+    // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
+    // verticalement ; glisser sur l'échelle du temps = zoomer dans le temps ; double-clic sur l'échelle des prix = cadrage automatique
     const cv = this.cv; let glisse = null;
     const pos = ev => { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
+    const zone = (x, y) => (this.pw && x >= this.pw ? 'prix' : this.ph && y >= this.ph ? 'temps' : 'graphe');
     cv.addEventListener('pointerdown', ev => { actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
-      if (outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
-      const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { glisse = { ligne: l, x, y, orig: { ...l } }; return; } }
-      else if (choisie) { choisie = null; toutDessine(); }
-      glisse = { x, y, fin: this.fin, y0: this.y ? [...this.y] : null }; });
+      const z = zone(x, y);
+      if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
+      if (z === 'graphe') {
+        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { glisse = { ligne: l, x, y, orig: { ...l } }; return; } }
+        else if (choisie) { choisie = null; toutDessine(); }
+      }
+      glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; });
     cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev); this.souris = [x, y];
+      cv.style.cursor = glisse ? (glisse.mode === 'prix' ? 'ns-resize' : glisse.mode === 'temps' ? 'ew-resize' : 'grabbing') : zone(x, y) === 'prix' ? 'ns-resize' : zone(x, y) === 'temps' ? 'ew-resize' : outil === 'curseur' ? 'default' : 'crosshair';
       if (brouillon && brouillon.pane === this) majBrouillon(this, x, y);
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
         l.t1 = o.t1 + (l.genre === 'horizontale' ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; toutDessine(); return; }
-      if (glisse && !glisse.ligne && this.bw > 0) { const nbB = ((this.d && this.d.bougies) || []).length, f = glisse.fin + (x - glisse.x) / this.bw;
-        this.fin = Number.isFinite(f) ? Math.min(Math.max(0, nbB - 10), Math.max(-this.n * .8, f)) : glisse.fin; if (glisse.y0 && this.y) { const dy = (y - glisse.y) / (this.ph) * (glisse.y0[1] - glisse.y0[0]); this.y = [glisse.y0[0] + dy, glisse.y0[1] + dy]; } }
+      if (glisse && !glisse.ligne && this.bw > 0) {
+        const nbB = ((this.d && this.d.bougies) || []).length, [lo0, hi0] = glisse.y0, h = hi0 - lo0;
+        if (glisse.mode === 'prix') { // étirer les prix : vers le haut = plus grand, vers le bas = plus petit (autour du milieu)
+          const f = Math.exp((y - glisse.y) / 200), mid = (lo0 + hi0) / 2; if (Number.isFinite(f) && h > 0) this.y = [mid - h / 2 * f, mid + h / 2 * f];
+        } else if (glisse.mode === 'temps') { // le temps : vers la gauche = dézoomer, vers la droite = zoomer
+          this.n = Math.min(1500, Math.max(15, glisse.n * Math.exp(-(x - glisse.x) / 300)));
+        } else { // déplacer : dans le temps, et dans les prix (l'échelle passe alors en manuel, comme sur TradingView)
+          const f = glisse.fin + (x - glisse.x) / this.bw;
+          this.fin = Number.isFinite(f) ? Math.min(Math.max(0, nbB - 10), Math.max(-this.n * .8, f)) : glisse.fin;
+          const dy = (y - glisse.y) / Math.max(50, this.ph - 40) * h; if (Math.abs(y - glisse.y) > 6 && h > 0) this.y = [lo0 + dy, hi0 + dy];
+        }
+      }
       this.dessine(); });
     cv.addEventListener('pointerup', () => { if (glisse && glisse.ligne) sauve(); glisse = null; });
     cv.addEventListener('pointerleave', () => { this.souris = null; this.dessine(); });
-    cv.addEventListener('wheel', ev => { ev.preventDefault(); const f = ev.deltaY > 0 ? 1.12 : 1 / 1.12; this.n = Math.min(1500, Math.max(20, this.n * f)); this.y = null; this.dessine(); }, { passive: false });
-    cv.addEventListener('dblclick', () => { this.n = 120; this.fin = 0; this.y = null; this.dessine(); });
+    cv.addEventListener('wheel', ev => { ev.preventDefault(); const [x, y] = pos(ev), f = ev.deltaY > 0 ? 1.12 : 1 / 1.12;
+      if (zone(x, y) === 'prix') { const lo = this.lo, hi = this.hi, mid = (lo + hi) / 2; this.y = [mid - (hi - lo) / 2 * f, mid + (hi - lo) / 2 * f]; }
+      else { // zoomer dans le temps autour de la bougie pointée (elle reste sous la souris)
+        const n0 = this.n, n1 = Math.min(1500, Math.max(15, n0 * f)), k = this.pw ? x / this.pw : 1;
+        this.fin = Math.max(-n1 * .8, this.fin + (n0 - n1) * (1 - k)); this.n = n1; }
+      this.dessine(); }, { passive: false });
+    cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev); if (zone(x, y) === 'prix') this.y = null; else { this.n = 120; this.fin = 0; this.y = null; } this.dessine(); });
   }
 }
 function niceStep(r) { const p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
