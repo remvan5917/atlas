@@ -427,6 +427,16 @@
   .pub .reac div small { display: block; font: 700 9.5px var(--mono); color: var(--ambre); letter-spacing: .06em; } .pub .reac div b { font: 800 16px var(--mono); } .pub .reac div em { display: block; font: 600 9.5px var(--mono); font-style: normal; color: var(--tres-doux); }
   @media (max-width: 1300px) { .pub { left: 8px; right: 8px; grid-template-columns: 1fr 1fr auto; } .pub .reac { grid-column: 1 / -1; grid-row: 2; } }
   .pub .x { background: none; border: 1px solid rgba(255, 255, 255, .15); color: var(--doux); border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; }
+
+  /* le moniteur rétractable : rentré sur les écrans de graphique de la salle, toujours là sur la vue d'ensemble */
+  .liste .tete .retracte { margin-left: 8px; background: none; border: 1px solid var(--bord2); color: var(--doux); border-radius: 6px; width: 24px; height: 22px; display: grid; place-items: center; font-size: 12px; }
+  .liste .tete .retracte:hover { color: var(--ambre); border-color: var(--ambre); }
+  .onglet-mon { position: fixed; right: 0; top: 50%; z-index: 30; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; display: none; padding: 14px 6px; border: 1px solid var(--bord2); border-right: 0;
+    border-radius: 0 8px 8px 0; background: #0b0e14; color: var(--ambre); font: 800 10px 'Inter'; letter-spacing: .22em; }
+  .onglet-mon:hover { background: #121621; }
+  body.sans-moniteur .app { grid-template-columns: 64px 1fr 0; } body.sans-moniteur .liste { display: none; } body.sans-moniteur .onglet-mon { display: block; }
+  body.sans-moniteur .pub { right: 30px; } body.sans-moniteur .graphes { margin-right: 22px; }
+  body.role-ensemble .retracte, body.role-ensemble .onglet-mon { display: none !important; }
 </style>
 </head>
 <body>
@@ -457,7 +467,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v37</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v38</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -488,7 +498,7 @@
   </div>
   <div class="graphes un" id="graphes"></div>
   <div class="liste">
-    <div class="tete"><b><i class="led"></i>MONITEUR</b><span>TopstepX · temps réel</span></div>
+    <div class="tete"><b><i class="led"></i>MONITEUR</b><span>TopstepX · temps réel</span><button class="retracte" id="mon-x" title="Rentrer le moniteur (il reste sur ta vue d'ensemble)">▸</button></div>
     <div class="fam" style="cursor:default">LIENS ENTRE MARCHÉS<i title="Chaque couple : ses deux courbes des 4 dernières heures. Clique pour agrandir, clique un nom pour ouvrir ce marché. Ambre : ils se séparent.">?</i></div>
     <div class="liens" id="liens"><div class="lien-m relache"><i></i><span>chargement…</span></div></div>
     <div class="cols-t"><span>MARCHÉ</span><span>5 JOURS</span><span>DERNIER · VAR</span></div>
@@ -521,6 +531,7 @@
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
 <div class="amb asie" id="amb-asie"></div><div class="amb londres" id="amb-londres"></div><div class="amb ny" id="amb-ny"></div>
 <div class="pub" id="pub"><div class="q" id="pub-q"></div><div class="chiffres" id="pub-c"></div><div class="reac" id="pub-r"></div><button class="x" id="pub-x">×</button></div>
+<button class="onglet-mon" id="mon-o" title="Sortir le moniteur">MONITEUR</button>
 <div class="bulle" id="bulle"></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
@@ -1330,7 +1341,7 @@ async function installeSalle() {
   const ici = ecrans ? (ecrans.find(e => window.screenLeft >= e.left && window.screenLeft < e.left + e.width) || ecrans[0]) : null;
   const autres = ecrans ? ecrans.filter(e => e !== ici).sort((a, b) => a.left - b.left || a.top - b.top) : [];
   if (!ROLE) { history.replaceState(null, '', location.pathname + location.search + '#' + (location.hash.slice(1) ? location.hash.slice(1) + '&' : '') + 'role=structure'); document.title = 'Atlas · Structure'; }
-  vue = 'trois'; utsTrois = ['D1', 'H4', 'H1']; ecrit(K('g-vue'), vue); ecrit(K('g-uts'), JSON.stringify(utsTrois)); construit();
+  vue = 'trois'; utsTrois = ['D1', 'H4', 'H1']; ecrit(K('g-vue'), vue); ecrit(K('g-uts'), JSON.stringify(utsTrois)); construit(); moniteur(false);
   const bloques = [];
   ROLES_SALLE.forEach(([role, nom], k) => {
     const p = pos[role], e = autres[k];
@@ -1720,6 +1731,11 @@ async function majEvt() {
 }
 $('#pub-x').onclick = () => { if (EVT) { evtFermes.add(EVT.cle); ecrit('g-evt-fermes', JSON.stringify([...evtFermes].slice(-40))); } $('#pub').classList.remove('on'); EVT = null; };
 setInterval(majEvt, 1000);
+
+/* --- le moniteur : rentré par défaut sur les écrans de graphique de la salle (structure, marché lié) --- */
+function moniteur(on, garde = true) { if (ROLE === 'ensemble') on = true; document.body.classList.toggle('sans-moniteur', !on); if (garde) ecrit(K('g-moniteur'), on ? '1' : '0'); setTimeout(toutDessine, 60); }
+$('#mon-x').onclick = () => moniteur(false); $('#mon-o').onclick = () => moniteur(true);
+moniteur(lit(K('g-moniteur'), ['structure', 'lie'].includes(ROLE) ? '0' : '1') === '1', false);
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
