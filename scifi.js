@@ -132,10 +132,11 @@ const SCIFI = (() => {
     appel('/maison/sentinelle', { absent: false }, 10000).catch(() => {});
     let l = []; try { l = (await appel('/maison/appareils', null, 15000)).appareils || []; } catch (e) { /* tant pis */ }
     const h = new Date().getHours(), soir = h >= 18 || h < 7;
-    const bas = l.filter(a => a.type === 'lampe' && !chambre(a) && a.allume != null);
-    let allume = false; // il ne dit « la maison s'allume » que si c'est vrai
+    // le rez-de-chaussée seulement (salon, cuisine, lingerie) : pas les chambres, ni les escaliers, ni la salle de bain
+    const bas = l.filter(a => a.type === 'lampe' && a.allume != null && !chambre(a) && !/\b(chambres?|escaliers?|salle de bains?|salle d eau|toilettes?|wc|etage|fusee|musique)\b/.test(N(a.nom)));
+    let allume = false; // il ne dit « le bas s'allume » que si c'est vrai
     if (bas.length) allume = await regle(bas.map(a => a.id), true, soir ? 70 : 85, soir ? 15 : 65).then(() => true).catch(() => false);
-    const phrase = !l.length ? "Bon retour. Je n'arrive pas à joindre la maison, les lumières restent comme elles sont." : allume ? "Bon retour. La maison s'allume." : 'Bon retour.';
+    const phrase = !l.length ? "Bon retour. Je n'arrive pas à joindre la maison, les lumières restent comme elles sont." : allume ? "Bon retour. J'allume le bas." : 'Bon retour.';
     const depuis = S.absentDepuis || Date.now() - 12 * 3600000;
     const al = await alertes(depuis);
     S.absentDepuis = null; save();
