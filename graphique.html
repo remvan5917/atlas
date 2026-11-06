@@ -235,7 +235,7 @@
     </div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v18</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v19</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -334,19 +334,22 @@ async function api(chemin, corps) {
 
 /* ---------- un graphique (un « pane ») ---------- */
 class Pane {
-  constructor(el, ut) { this.el = el; this.ut = ut; this.d = null; this.n = 120; this.fin = 0; this.y = null; this.souris = null; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.ecoute(); }
+  constructor(el, ut) { this.el = el; this.ut = ut; this.d = null; this.n = 120; this.fin = -6; this.y = null; this.souris = null; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.ecoute(); }
   async charge() {
     const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
-    try { const kc = `${code}|${this.ut}`, cc = CACHE_D[kc];
-      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (!this.fin) this.fin = 0; if (ch) ch.style.display = 'none'; this.dessine(); return true; }
+    try { const kc = `${code}|${this.ut}`, cc = CACHE_D[kc];  /* (fin : la position est gardée d'un rechargement à l'autre) */
+      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); return true; }
     catch (e) { if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
   }
-  taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; this.W = r.width; this.H = r.height; this.cv.width = r.width * dpr; this.cv.height = r.height * dpr; this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    if (r.width !== this.W || r.height !== this.H || dpr !== this._dpr) { this.W = r.width; this.H = r.height; this._dpr = dpr; this.cv.width = Math.round(r.width * dpr); this.cv.height = Math.round(r.height * dpr); }
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
   // les bougies visibles : les n dernières, décalées de « fin » vers le passé
   // (en glissant vers la gauche, on voit l'espace à droite du dernier cours, comme sur TradingView : la mise en page garde la place,
   //  mais on ne dessine que les bougies qui existent — avant, chercher une bougie « du futur » arrêtait tout le dessin : écran blanc)
   vis() { const B = (this.d && this.d.bougies) || []; const jj = Math.max(0, B.length - Math.round(this.fin)); const i = Math.max(0, Math.min(B.length - 1, jj - Math.round(this.n))); return { B, i, j: Math.min(jj, B.length) }; }
-  dessine() {
+  dessine() { if (this._raf) return; this._raf = requestAnimationFrame(() => { this._raf = 0; this.dessineMaintenant(); }); }
+  dessineMaintenant() {
     try { this._dessine(); } catch (e) {
       try { const c = this.ctx; c.fillStyle = '#b00020'; c.font = '600 13px Inter, sans-serif'; c.fillText('Erreur de dessin : ' + (e && e.message || e), 12, 130); c.fillText(String((e && e.stack || '').split('\n')[1] || '').trim().slice(0, 160), 12, 150); } catch (er) { /* rien */ }
       console.error(e);
@@ -356,10 +359,14 @@ class Pane {
     if (!this.d) return; this.taille();
     if (this.W < 120 || this.H < 80) { requestAnimationFrame(() => setTimeout(() => this.dessine(), 120)); return; }
     const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
-    const pw = W - AX, ph = H - BT, volH = opt.vol ? ph * .16 : 0, dec = this.d.dec;
-    let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2])); const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
+    const pw = W - AX, ph = H - BT, BN = opt.news ? 22 : 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 96 : 54, BASP = ph - BN - volH - 8;
+    let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2])); const pad = (hi - lo) * .05 || 1; lo -= pad; hi += pad;
+    const cle = code + '|' + this.ut;
     if (this.y) { lo = this.y[0]; hi = this.y[1]; }
-    const n = Math.max(this.n, 10), bw = pw / n, X = k => (k - i + .5) * bw, Y = p => 8 + (hi - p) / (hi - lo) * (ph - 8 - volH - 6);
+    else if (this._auto && this._auto.cle === cle) { const a = this._auto, nlo = a.lo + (lo - a.lo) * .28, nhi = a.hi + (hi - a.hi) * .28;  // (l'échelle rejoint sa cible en douceur)
+      if (Math.abs(nlo - lo) + Math.abs(nhi - hi) > (hi - lo) * .0015) { lo = nlo; hi = nhi; this.dessine(); } }
+    this._auto = { cle, lo, hi };
+    const n = Math.max(this.n, 10), bw = pw / n, X = k => (k - i + .5) * bw, Y = p => HAUT + (hi - p) / (hi - lo) * (BASP - HAUT);
     const T = t => { // un instant → une abscisse (au-delà de la dernière bougie : on prolonge)
       const last = B.length - 1, dt = DUREE[this.ut];
       if (t >= B[last][0]) return X(last + (t - B[last][0]) / dt);
@@ -367,13 +374,13 @@ class Pane {
       let a = 0, z = last; while (z - a > 1) { const m = (a + z) >> 1; if (B[m][0] <= t) a = m; else z = m; } return X(a + (t - B[a][0]) / Math.max(1, B[z][0] - B[a][0]));
     };
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
-    const iY = y => hi - (y - 8) / (ph - 8 - volH - 6) * (hi - lo);
+    const iY = y => hi - (y - HAUT) / (BASP - HAUT) * (hi - lo);
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
     c.clearRect(0, 0, W, H); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
     // la grille pointillée
     c.strokeStyle = '#d6d6d6'; c.lineWidth = 1; c.setLineDash([2, 3]); c.font = '11px Inter, sans-serif'; c.fillStyle = '#131722';
     const pas = niceStep((hi - lo) / Math.max(3, Math.floor(ph / 70)));
-    for (let p = Math.ceil(lo / pas) * pas; p <= hi; p += pas) { const y = Y(p); if (y > ph - volH) continue; c.beginPath(); c.moveTo(0, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); c.fillText(nb(p, dec), pw + 6, y + 4); }
+    for (let p = Math.ceil(lo / pas) * pas; p <= hi; p += pas) { const y = Y(p); if (y > ph - BN - volH - 2) continue; c.beginPath(); c.moveTo(0, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); c.fillText(nb(p, dec), pw + 6, y + 4); }
     let dernierLab = -999;
     for (let k = i; k < j; k++) { const t = new Date(B[k][0] * 1000), tp = k > 0 ? new Date(B[k - 1][0] * 1000) : null; let lab = '';
       if (this.ut === 'M' || this.ut === 'W') { if (!tp || t.getFullYear() !== tp.getFullYear()) lab = String(t.getFullYear()); }
@@ -391,7 +398,7 @@ class Pane {
     });  // (sans étiquettes : son graphique reste épuré ; le prix des zones se lit au survol, sur l'axe)
     // le volume (fines barres noires en bas)
     if (opt.vol) { const vm = Math.max(...v.map(b => b[5] || 0)) || 1, lv = opt.bougies ? Math.max(1, bw * .6) : Math.max(1, bw * .24);
-      for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? '#9e9e9e' : '#000') : 'rgba(0,0,0,.85)'; c.fillRect(Math.round(X(k) - lv / 2), ph - h, lv, h); } }
+      for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? '#9e9e9e' : '#000') : 'rgba(0,0,0,.85)'; c.fillRect(Math.round(X(k) - lv / 2), ph - BN - h, lv, h); } }
     // les barres OHLC, noires (son style)
     if (opt.bougies) {
       const cw = Math.max(1, bw * .62);
@@ -455,6 +462,7 @@ class Pane {
     // le dernier cours (boîte noire sur l'axe)
     const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
     c.fillStyle = '#000'; c.fillRect(pw, yd - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(der, dec), pw + 6, yd + 4);
+    if (BN) { c.fillStyle = '#f7f8fa'; c.fillRect(0, ph - BN, pw, BN); c.strokeStyle = '#e6e8ec'; c.beginPath(); c.moveTo(0, ph - BN + .5); c.lineTo(pw, ph - BN + .5); c.stroke(); }
     // les nouvelles : de petits repères au-dessus de l'axe du temps, à la minute exacte (empilés quand elles se suivent)
     this.marques = [];
     if (opt.news && NOUV[code]) {
@@ -462,7 +470,7 @@ class Pane {
       for (const n of NOUV[code]) {
         if (REPLAY && n.at > REPLAY.t) continue;  // (en replay : seulement les nouvelles déjà tombées)
         const x = T(n.at); if (x < 4 || x > pw - 4) continue;
-        const k = Math.round(x / 10), etage = pile[k] = (pile[k] || 0) + 1, y = ph - 9 - (etage - 1) * 13;
+        const k = Math.round(x / 10), etage = pile[k] = (pile[k] || 0) + 1, y = ph - 11 - (etage - 1) * 13;
         if (n.genre === 'annonce') { c.strokeStyle = 'rgba(139,147,163,.45)'; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(Math.round(x) + .5, 0); c.lineTo(Math.round(x) + .5, ph); c.stroke(); c.setLineDash([]); }
         c.fillStyle = COUL[n.genre] || '#8b93a3'; c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath();
         if (n.genre === 'mouvement') { c.moveTo(x, y - 6); c.lineTo(x + 6, y); c.lineTo(x, y + 6); c.lineTo(x - 6, y); c.closePath(); }
@@ -562,14 +570,15 @@ class Pane {
         const n0 = this.n, n1 = Math.min(1500, Math.max(15, n0 * f)), k = this.pw ? x / this.pw : 1;
         // le zoom continu : quand les bougies deviennent trop fines ou trop larges, on passe tout seul à l'unité voisine (le même instant reste sous la souris)
         if (opt.zoomc && !this._bascule && !REPLAY && this.T) { const iu = ORDRE_UT.indexOf(this.ut);
-          if (n1 > 380 && f > 1 && iu < ORDRE_UT.length - 1) { basculeUT(this, ORDRE_UT[iu + 1], x); return; }
-          if (n1 < 24 && f < 1 && iu > 0) { basculeUT(this, ORDRE_UT[iu - 1], x); return; } }
+          const dep = (n1 > 420 && f > 1 && iu < ORDRE_UT.length - 1) ? 1 : (n1 < 22 && f < 1 && iu > 0) ? -1 : 0;
+          if (dep) { this._insiste = (this._insiste && Math.sign(this._insiste) === dep ? this._insiste : 0) + dep; if (Math.abs(this._insiste) >= 4) { this._insiste = 0; basculeUT(this, ORDRE_UT[iu + dep], x); } else { this.flash = { txt: dep > 0 ? `${LIB[ORDRE_UT[iu + 1]]} ›` : `‹ ${LIB[ORDRE_UT[iu - 1]]}`, t0: performance.now() - 500 }; this.dessine(); } return; }
+          this._insiste = 0; }
         this.fin = Math.max(-n1 * .8, this.fin + (n0 - n1) * (1 - k)); this.n = n1; }
       this.dessine(); }, { passive: false });
     cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev);
       if (zone(x, y) === 'graphe' && this.T) { const pv = pivotProche(this, x, y);
         if (pv) { const l = { id: idNeuf(), genre: 'horizontale', t1: pv[0], p1: pv[1], alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`${pv[2] === 'h' ? 'Résistance' : 'Support'} posé sur le ${pv[2] === 'h' ? 'sommet' : 'creux'} du zigzag : ${nb(pv[1], this.d.dec)} · alerte active`); return; } }
-      if (zone(x, y) === 'prix') this.y = null; else { this.n = 120; this.fin = 0; this.y = null; } this.dessine(); });
+      if (zone(x, y) === 'prix') this.y = null; else { this.n = 120; this.fin = -6; this.y = null; } this.dessine(); });
   }
 }
 function niceStep(r) { const p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
@@ -632,10 +641,10 @@ function construit() {
 function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif)); majBoutonsUT(); }
 function majBoutonsUT() { const u = vue === 'trois' ? (utsTrois[actif] || '') : utSeul; document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', b.dataset.ut === u)); }
 function choisirUT(ut) {
-  if (vue === 'trois') { utsTrois[actif] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = 0; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
+  if (vue === 'trois') { utsTrois[actif] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = -6; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
   else { utSeul = ut; ecrit(K('g-ut'), ut); construit(); }
 }
-function toutDessine() { panes.forEach(p => p.dessine()); majBarreLigne(); }
+function toutDessine() { panes.forEach(p => p.dessine()); requestAnimationFrame(() => requestAnimationFrame(majBarreLigne)); }
 async function chargeTout() {
   const ok = (await Promise.all(panes.map(p => p.charge()))).some(Boolean);
   $('#pt').className = 'pt ' + (ok ? 'ok' : 'ko'); $('#etat').textContent = ok ? 'en direct' : 'hors liaison';
@@ -1097,10 +1106,13 @@ async function chargeEtude() {
   } catch (er) { $('#etude-etat').textContent = 'la maison ne répond pas'; }
 }
 function dessineEtude() {
-  const cv = $('#etude-cv'), r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1; cv.width = r.width * dpr; cv.height = r.height * dpr; const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cv = $('#etude-cv'), r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1; if (cv.width !== Math.round(r.width * dpr) || cv.height !== Math.round(r.height * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   const W = r.width, H = r.height, G = 56, D = 20, Hh = 18, B = 30; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); if (!ETUDE || !ETUDE.courbes.length) { c.fillStyle = '#888'; c.font = '13px Inter'; c.fillText('Pas encore de données pour cette annonce.', 20, 30); return; }
   const tous = ETUDE.courbes.flatMap(x => x.points), x0 = Math.min(...tous.map(p => p[0])), x1 = Math.max(...tous.map(p => p[0]));
-  let y0 = Math.min(0, ...tous.map(p => p[1])), y1 = Math.max(0, ...tous.map(p => p[1])); const pd = (y1 - y0) * .08 || 5; y0 -= pd; y1 += pd;
+  // l'échelle : 90 % des points (une seule annonce extrême n'écrase plus les autres), plus la plus récente et la médiane en entier
+  const vs = tous.map(p => p[1]).sort((a, b) => a - b), q = f => vs[Math.min(vs.length - 1, Math.max(0, Math.round(f * (vs.length - 1))))];
+  const garde = [...ETUDE.courbes[ETUDE.courbes.length - 1].points.map(p => p[1]), ...ETUDE.mediane.map(p => p[1]), ...(etudeSel >= 0 ? ETUDE.courbes[etudeSel].points.map(p => p[1]) : [])];
+  let y0 = Math.min(0, q(.05), ...garde), y1 = Math.max(0, q(.95), ...garde); const pd = (y1 - y0) * .1 || 5; y0 -= pd; y1 += pd;
   const X = v => G + (v - x0) / (x1 - x0) * (W - G - D), Y = v => Hh + (y1 - v) / (y1 - y0) * (H - Hh - B);
   c.font = '11px Inter'; c.fillStyle = '#555'; c.strokeStyle = '#e4e4e4'; c.lineWidth = 1; const st = niceStep((y1 - y0) / 7);
   for (let v = Math.ceil(y0 / st) * st; v <= y1; v += st) { c.beginPath(); c.moveTo(G, Y(v)); c.lineTo(W - D, Y(v)); c.stroke(); c.fillText((v > 0 ? '+' : '') + Math.round(v), 8, Y(v) + 4); }
@@ -1108,10 +1120,12 @@ function dessineEtude() {
   c.strokeStyle = '#000'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(G, Y(0)); c.lineTo(W - D, Y(0)); c.stroke();
   c.strokeStyle = '#f23645'; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(X(0), Hh); c.lineTo(X(0), H - B); c.stroke(); c.setLineDash([]); c.fillStyle = '#f23645'; c.font = '700 11px Inter'; c.fillText('ANNONCE', X(0) + 6, Hh + 10);
   const der = ETUDE.courbes.length - 1, trace = (pts, col, ep, dash) => { c.strokeStyle = col; c.lineWidth = ep; c.setLineDash(dash || []); c.beginPath(); pts.forEach((p, k) => k ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke(); c.setLineDash([]); };
+  c.save(); c.beginPath(); c.rect(G, Hh, W - G - D, H - Hh - B); c.clip();  // (ce qui dépasse est coupé proprement)
   ETUDE.courbes.forEach((x, k) => { if (k !== etudeSel && k !== der) trace(x.points, 'rgba(60,70,90,.28)', 1.2); });
   if (ETUDE.mediane.length > 2) trace(ETUDE.mediane, 'rgba(124,77,255,.9)', 2.6, [7, 4]);
   trace(ETUDE.courbes[der].points, '#2962ff', 2.4);
   if (etudeSel >= 0) trace(ETUDE.courbes[etudeSel].points, '#ff9800', 3);
+  c.restore();
   c.font = '600 11px Inter'; c.fillStyle = '#2962ff'; c.fillText(`— la plus récente (${new Date(ETUDE.courbes[der].at * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })})`, G + 8, H - B - 26); c.fillStyle = '#7c4dff'; c.fillText('- - la médiane', G + 8, H - B - 10);
 }
 $('#b-etude').onclick = ouvreEtude; $('#etude-x').onclick = ouvreEtude; $('#etude-cle').onchange = chargeEtude; $('#etude-code').onchange = chargeEtude;
