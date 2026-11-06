@@ -91,8 +91,49 @@
   .toast { background: #0b0e14; color: #fff; border: 1px solid #2c3445; padding: 9px 16px; border-radius: 10px; font-weight: 500; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: toast 2.6s ease forwards; }
   @keyframes toast { 0% { opacity: 0; transform: translateY(10px); } 10%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
   .masque-mobile { }
+  /* ---- la salle de marché : copilote, mémoire, journal, pouls, état ---- */
+  .salle .ico.vivant { color: #fff; background: linear-gradient(135deg, #2962ff, #7c4dff); box-shadow: 0 0 14px rgba(124, 77, 255, .55); }
+  .tilt { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 9px; background: var(--cadre3); border: 1px solid var(--ligne); font: 600 12px 'Inter'; white-space: nowrap; cursor: default; }
+  .tilt i { width: 8px; height: 8px; border-radius: 50%; background: var(--vert); box-shadow: 0 0 8px var(--vert); }
+  .tilt.vigilance i { background: var(--ambre); box-shadow: 0 0 8px var(--ambre); } .tilt.alerte { border-color: rgba(242, 54, 69, .6); animation: battre 1.2s infinite; }
+  .tilt.alerte i { background: var(--rouge); box-shadow: 0 0 10px var(--rouge); } .tilt small { color: var(--doux); font-weight: 500; }
+  @keyframes battre { 50% { box-shadow: 0 0 0 4px rgba(242, 54, 69, .18); } }
+  .copi { position: fixed; left: 62px; bottom: 18px; z-index: 45; width: min(460px, 46vw); background: rgba(15, 19, 28, .94); backdrop-filter: blur(10px); border: 1px solid #2f3850;
+    border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45), 0 0 0 1px rgba(124, 77, 255, .12); color: var(--texte); display: none; overflow: hidden; }
+  .copi.on { display: block; animation: monte .25s ease-out; } @keyframes monte { from { transform: translateY(14px); opacity: 0; } }
+  .copi-t { display: flex; align-items: center; gap: 10px; padding: 11px 12px 6px 14px; } .copi-t b { font: 700 12px 'Inter'; letter-spacing: .1em; text-transform: uppercase; flex: 1; color: #b9c3ff; }
+  .copi-t button { background: none; border: 0; color: var(--doux); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 6px; } .copi-t button:hover { color: var(--texte); background: var(--cadre3); }
+  .onde { display: flex; align-items: center; gap: 2px; height: 16px; } .onde i { width: 3px; height: 4px; border-radius: 2px; background: linear-gradient(#7c4dff, #2962ff); }
+  .copi.pense .onde i, .copi.parle .onde i { animation: onde .9s ease-in-out infinite; } .onde i:nth-child(2) { animation-delay: .12s !important; } .onde i:nth-child(3) { animation-delay: .24s !important; } .onde i:nth-child(4) { animation-delay: .36s !important; } .onde i:nth-child(5) { animation-delay: .48s !important; }
+  @keyframes onde { 50% { height: 15px; } }
+  #copi-q-txt { padding: 0 14px; color: var(--doux); font-size: 12px; font-style: italic; } #copi-q-txt:empty { display: none; }
+  #copi-txt { padding: 6px 14px 12px; font: 400 14.5px/1.55 'Inter'; } .copi.pense #copi-txt { color: var(--doux); }
+  .copi-pied { display: flex; gap: 8px; padding: 0 12px 12px; } .copi-pied button { flex: 1; padding: 8px; border-radius: 9px; border: 1px solid var(--ligne); background: var(--cadre3); color: var(--texte); font: 600 12px 'Inter'; }
+  .copi-pied button:hover { border-color: #3a4256; } .copi-pied kbd { font: 600 10.5px 'Inter'; color: var(--doux); margin-left: 4px; }
+  .micro { position: fixed; left: 50%; top: 66px; transform: translateX(-50%); z-index: 70; display: none; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 30px;
+    background: #f23645; color: #fff; font: 700 13px 'Inter'; box-shadow: 0 10px 30px rgba(242, 54, 69, .4); } .micro.on { display: flex; } .micro i { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: clign 1s infinite; }
+  @keyframes clign { 50% { opacity: .2; } }
+  .mem { position: fixed; top: 64px; right: 326px; z-index: 44; width: 330px; max-height: calc(100vh - 90px); overflow-y: auto; background: rgba(15, 19, 28, .95); backdrop-filter: blur(10px); border: 1px solid #2f3850; border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); display: none; }
+  .mem.on { display: block; animation: monte .25s ease-out; }
+  .mem .tete2 { display: flex; align-items: center; gap: 8px; padding: 12px 12px 4px 14px; } .mem .tete2 b { flex: 1; font: 700 12px 'Inter'; letter-spacing: .1em; color: #b9c3ff; }
+  .mem .tete2 button { background: none; border: 0; color: var(--doux); font-size: 18px; } .mem p { margin: 0; padding: 4px 14px 10px; color: var(--doux); font-size: 12px; line-height: 1.5; }
+  .analogue { display: grid; grid-template-columns: 1fr 96px; gap: 8px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--ligne); cursor: default; }
+  .analogue:hover, .analogue.sel { background: rgba(41, 98, 255, .1); } .analogue b { font: 600 12.5px 'Inter'; display: block; } .analogue small { color: var(--doux); font-size: 11px; }
+  .analogue svg { width: 96px; height: 34px; } .analogue .jauge { height: 3px; border-radius: 2px; background: var(--cadre3); margin-top: 5px; } .analogue .jauge i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #2962ff, #7c4dff); }
+  .tiroir { position: fixed; top: 52px; right: 0; bottom: 0; width: 400px; z-index: 46; background: var(--cadre); border-left: 1px solid #2f3850; box-shadow: -20px 0 50px rgba(0, 0, 0, .4); transform: translateX(105%); transition: transform .25s ease; display: flex; flex-direction: column; }
+  .tiroir.on { transform: none; } .tiroir .tete2 { display: flex; align-items: center; gap: 8px; padding: 14px; border-bottom: 1px solid var(--ligne); } .tiroir .tete2 b { flex: 1; font: 700 12px 'Inter'; letter-spacing: .12em; }
+  .tiroir .tete2 button { background: var(--cadre3); border: 1px solid var(--ligne); color: var(--texte); border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; } .tiroir .tete2 .x { background: none; border: 0; font-size: 18px; color: var(--doux); }
+  .tiroir .corps { overflow-y: auto; padding: 6px 0 20px; flex: 1; }
+  .note { padding: 10px 14px; border-bottom: 1px solid var(--ligne); } .note .q { display: flex; justify-content: space-between; color: var(--tres-doux); font-size: 11px; margin-bottom: 4px; }
+  .note .t { font-size: 13px; line-height: 1.5; } .note .res { font: 700 11px 'Inter'; padding: 1px 6px; border-radius: 4px; } .note .res.g { background: rgba(10, 163, 127, .15); color: var(--vert); } .note .res.p { background: rgba(242, 54, 69, .15); color: var(--rouge); }
+  .bilan { margin: 12px 14px; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, rgba(41, 98, 255, .12), rgba(124, 77, 255, .1)); border: 1px solid rgba(124, 77, 255, .3); font-size: 13px; line-height: 1.55; }
+  .bilan .c { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .08); } .bilan .c b { display: block; } .bilan .c small { color: var(--doux); display: block; } .bilan .c em { color: #b9c3ff; font-style: normal; display: block; margin-top: 3px; }
+  .pouls { position: fixed; right: 326px; bottom: 18px; z-index: 44; width: 176px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid #2f3850; box-shadow: 0 12px 30px rgba(0, 0, 0, .45); display: none; }
+  .pouls.on { display: block; } .pouls video { width: 100%; display: block; transform: scaleX(-1); opacity: .85; } .pouls canvas { position: absolute; inset: 0; width: 100%; height: calc(100% - 30px); transform: scaleX(-1); }
+  .pouls .bas2 { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--cadre); font: 600 12px 'Inter'; } .pouls .bas2 b { font-size: 17px; color: #ff6b81; }
+  .pouls .bas2 b::before { content: '♥ '; font-size: 13px; animation: clign 1s infinite; } .pouls .bas2 small { color: var(--tres-doux); font-size: 10px; }
   @media (max-width: 1200px) { .sym { min-width: 0; } .sym .px { display: none; } }
-  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none !important; } }
+  @media (max-width: 900px) { .mem, .pouls { right: 12px; } .tiroir { width: 100%; } .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none !important; } }
 </style>
 </head>
 <body>
@@ -112,6 +153,14 @@
       <button class="ico" id="t-pos" data-tip="Ta position en direct : entrée, stop, limite du jour, MLL"><svg viewBox="0 0 24 24"><path d="M3 9h18M3 15h18"/><path d="M8 9v6" stroke-dasharray="2 2"/><circle cx="17" cy="9" r="2"/></svg></button>
       <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
     </div>
+    <div class="grp salle masque-mobile">
+      <button class="ico" id="b-copilote" data-tip="Copilote : qu'est-ce qui se passe ? (E) · maintiens Q pour lui parler"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M9.5 21h5M9 11h.01M15 11h.01M10 14c1.2.8 2.8.8 4 0"/></svg></button>
+      <button class="ico" id="b-memoire" data-tip="Mémoire du marché (M) : les moments passés qui ressemblent à celui-ci"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></button>
+      <button class="ico" id="b-journal" data-tip="Journal vocal : maintiens V pendant un trade pour parler"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="ico" id="b-pouls" data-tip="Ton pouls par la webcam (estimation, rien ne quitte ton PC)"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 3 10 2-5h7"/></svg></button>
+      <button class="ico" id="b-son" data-tip="La voix d'Atlas"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+    </div>
+    <span class="tilt masque-mobile" id="tilt" data-tip="Ton état : comportement, pouls, voix"><i></i><b>Lucide</b><small id="tilt-bpm"></small></span>
     <div class="espace"></div>
     <div class="grp masque-mobile" style="border:0">
       <button class="ico" id="photo" data-tip="Capture du graphique (PNG)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
@@ -119,7 +168,7 @@
       <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
     </div>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v9</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v10</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -154,6 +203,13 @@
 </div>
 <div class="voile" id="voile"><div class="recherche"><input id="q" placeholder="Chercher un marché : or, argent, MNQ, pétrole, euro…" autocomplete="off"><div class="resultats" id="resultats"></div><div class="pied">↑ ↓ pour choisir · Entrée pour ouvrir · Échap pour fermer</div></div></div>
 <div class="toasts" id="toasts"></div>
+<div class="copi" id="copi"><div class="copi-t"><span class="onde"><i></i><i></i><i></i><i></i><i></i></span><b id="copi-titre">Copilote</b><button id="copi-x" aria-label="Fermer">×</button></div>
+  <div id="copi-q-txt"></div><div id="copi-txt"></div>
+  <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
+<div class="micro" id="micro"><i></i><span id="micro-txt">J'écoute…</span></div>
+<div class="mem" id="mem"></div>
+<div class="tiroir" id="tiroir"><div class="tete2"><b>JOURNAL VOCAL</b><button id="t-bilan">Bilan de la semaine</button><button class="x" id="t-x">×</button></div><div class="corps" id="t-corps"></div></div>
+<div class="pouls" id="pouls"><video id="pouls-v" muted playsinline></video><canvas id="pouls-c"></canvas><div class="bas2"><b id="bpm">--</b><small>estimation · local</small></div></div>
 <div class="bulle" id="bulle"></div>
 <script>
 'use strict';
@@ -270,6 +326,16 @@ class Pane {
       if (l.alerte === false) { /* (sans alerte : rien de plus) */ } };
     lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
     lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l.couleur || '#000'; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
+    // la mémoire du marché : l'éventail de ce qui a suivi les moments les plus ressemblants (des statistiques, pas une prévision)
+    if (MEM && MEM.code === code && MEM.ut === this.ut && (MEM.eventail || []).length) {
+      const x0 = T(MEM.t0), y0 = Y(MEM.dernier), a = MEM.atr_ticks * MEM.pas, ev = MEM.eventail;
+      c.beginPath(); c.moveTo(x0, y0); ev.forEach(e => c.lineTo(T(e.t), Y(e.p90))); [...ev].reverse().forEach(e => c.lineTo(T(e.t), Y(e.p10))); c.closePath();
+      const gr = c.createLinearGradient(x0, 0, T(ev[ev.length - 1].t), 0); gr.addColorStop(0, 'rgba(41,98,255,.16)'); gr.addColorStop(1, 'rgba(124,77,255,.05)'); c.fillStyle = gr; c.fill();
+      MEM.analogues.forEach((g, k) => { const sel = k === memSel; c.strokeStyle = sel ? 'rgba(124,77,255,.95)' : 'rgba(70,80,105,.30)'; c.lineWidth = sel ? 2.2 : 1;
+        c.beginPath(); c.moveTo(x0, y0); g.apres.forEach((v, s2) => c.lineTo(T(MEM.t0 + (s2 + 1) * MEM.duree), Y(MEM.dernier + v * a))); c.stroke(); });
+      c.setLineDash([5, 4]); c.strokeStyle = 'rgba(41,98,255,.75)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(x0, y0); ev.forEach(e => c.lineTo(T(e.t), Y(e.p50))); c.stroke(); c.setLineDash([]);
+      c.font = '600 10.5px Inter, sans-serif'; c.fillStyle = 'rgba(80,60,200,.85)'; c.fillText(`MÉMOIRE · ${MEM.analogues.length} moments ressemblants · pas une prévision`, Math.min(x0 + 8, pw - 300), Math.max(14, Y(Math.max(...ev.map(e => e.p90))) - 8));
+    }
     // sa position en direct (TopstepX, lecture seule) : l'entrée et le gain/perte latent, le stop, la limite du jour, la MLL
     // (hors de l'écran : une étiquette au bord, avec une flèche, pour savoir où c'est sans dézoomer)
     const posi = opt.pos ? (DIRECT.positions || []).filter(p => String(p.instr || '').toUpperCase() === code && p.prix_moyen != null && p.pas && p.valeur && p.taille) : [];
@@ -541,6 +607,183 @@ async function chargeDirect() {
     if (JSON.stringify(DIRECT) !== avant && !brouillon) toutDessine(); } catch (e) { /* hors liaison */ }
 }
 chargeDirect(); setInterval(chargeDirect, 4000);
+
+/* ================= la salle de marché ================= */
+/* --- la voix d'Atlas (fabriquée par l'ordinateur de la maison, rendue robot ici, comme dans Atlas) --- */
+let SON = lit('g-son', '1') === '1', actx = null, voixEnCours = null;
+$('#b-son').classList.toggle('on', SON);
+$('#b-son').onclick = () => { SON = !SON; ecrit('g-son', SON ? '1' : '0'); $('#b-son').classList.toggle('on', SON); if (!SON) taisToi(); toast(SON ? "La voix d'Atlas est allumée" : "La voix d'Atlas est coupée"); };
+function taisToi() { try { voixEnCours && voixEnCours.stop(); } catch (e) { /* rien */ } voixEnCours = null; try { speechSynthesis.cancel(); } catch (e) { /* rien */ } $('#copi').classList.remove('parle'); }
+async function dire(texte) {
+  if (!SON || !texte) return; taisToi(); $('#copi').classList.add('parle');
+  try {
+    const r = await fetch(`${ROOT}/shadow/voix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texte.slice(0, 600), voix: 'pierre', vitesse: 0.92 }) });
+    if (!r.ok) throw new Error('voix ' + r.status);
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') await actx.resume();
+    const buf = await actx.decodeAudioData(await r.arrayBuffer()), src = actx.createBufferSource(); src.buffer = buf; src.playbackRate.value = 0.93;
+    const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 90;
+    const ring = actx.createGain(), osc = actx.createOscillator(), og = actx.createGain(); osc.frequency.value = 30; og.gain.value = 0.07; osc.connect(og); og.connect(ring.gain); osc.start();
+    const sat = actx.createWaveShaper(), cv = new Float32Array(1024); for (let k = 0; k < 1024; k++) { const x = k / 512 - 1; cv[k] = Math.tanh(1.15 * x) / Math.tanh(1.15); } sat.curve = cv;
+    const pres = actx.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 3400; pres.Q.value = 1; pres.gain.value = 2.5;
+    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 9500;
+    const dl = actx.createDelay(), fb = actx.createGain(), mx = actx.createGain(), out = actx.createGain(); dl.delayTime.value = 0.0016; fb.gain.value = 0.25; mx.gain.value = 0.16; out.gain.value = 0.9;
+    src.connect(hp); hp.connect(ring); ring.connect(sat); sat.connect(pres); pres.connect(lp); lp.connect(out); lp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(mx); mx.connect(out); out.connect(actx.destination);
+    src.onended = () => { try { osc.stop(); } catch (e) { /* rien */ } if (voixEnCours === src) { voixEnCours = null; $('#copi').classList.remove('parle'); } };
+    voixEnCours = src; src.start();
+  } catch (e) {  // (la maison ne répond pas : la voix du navigateur)
+    try { const u = new SpeechSynthesisUtterance(texte); u.lang = 'fr-FR'; u.rate = 1.05; u.onend = () => $('#copi').classList.remove('parle'); speechSynthesis.speak(u); } catch (er) { $('#copi').classList.remove('parle'); }
+  }
+}
+/* --- le copilote : il regarde le graphique actif et dit ce qui se passe --- */
+let copiOccupe = false;
+function ouvreCopi(titre, txt, question, pense) { const k = $('#copi'); k.classList.add('on'); k.classList.toggle('pense', !!pense); $('#copi-titre').textContent = titre || 'Copilote'; $('#copi-txt').textContent = txt || ''; $('#copi-q-txt').textContent = question ? `« ${question} »` : ''; }
+async function copilote(question = '') {
+  if (copiOccupe) return; copiOccupe = true; taisToi();
+  const p = panes[actif] || panes[0]; ouvreCopi('Copilote', 'Je regarde ton graphique…', question, true);
+  let image = ''; try { image = p.cv.toDataURL('image/jpeg', 0.8); } catch (e) { /* rien */ }
+  try {
+    const r = await api('/maison/copilote', { action: 'explique', code, ut: p ? p.ut : 'H1', question, image });
+    if (!r || r.ok === false) throw new Error((r && r.raison) || 'erreur');
+    ouvreCopi(r.titre || 'Copilote', r.texte, question, false); dire(r.texte);
+  } catch (e) { ouvreCopi('Copilote', "Je n'arrive pas à joindre la maison pour l'instant.", question, false); }
+  copiOccupe = false;
+}
+$('#b-copilote').onclick = () => copilote();
+$('#copi-encore').onclick = () => copilote();
+$('#copi-x').onclick = () => { taisToi(); $('#copi').classList.remove('on'); };
+/* --- le micro : Q maintenu = une question au copilote ; V maintenu = une note dans le journal --- */
+let rec = null;
+async function demarreMicro(mode) {
+  if (rec) return; taisToi();
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    const mt = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+    const mr = new MediaRecorder(st, mt ? { mimeType: mt } : undefined), morceaux = [];
+    mr.ondataavailable = e => e.data.size && morceaux.push(e.data);
+    rec = { mr, st, mode, t0: performance.now(), morceaux }; mr.start(250);
+    $('#micro-txt').textContent = mode === 'q' ? 'Je t’écoute… (relâche Q)' : 'Journal : je note… (relâche V)'; $('#micro').classList.add('on');
+  } catch (e) { toast("Le micro n'est pas autorisé pour cette page"); }
+}
+async function arreteMicro() {
+  if (!rec) return; const r = rec; rec = null; $('#micro').classList.remove('on');
+  await new Promise(res => { r.mr.onstop = res; try { r.mr.stop(); } catch (e) { res(); } }); r.st.getTracks().forEach(t => t.stop());
+  const duree = (performance.now() - r.t0) / 1000; if (duree < 0.7) { toast('Maintiens la touche pendant que tu parles'); return; }
+  const blob = new Blob(r.morceaux, { type: 'audio/webm' });
+  if (r.mode === 'q') ouvreCopi('Copilote', 'Je t’ai entendu, je regarde…', '', true);
+  let texte = ''; try { texte = await transcrit(blob); } catch (e) { /* rien */ }
+  if (!texte) { toast("Je n'ai rien compris, réessaie"); if (r.mode === 'q') $('#copi').classList.remove('on'); return; }
+  if (r.mode === 'q') copilote(texte); else noteVocale(texte, duree);
+}
+async function transcrit(blob) {
+  const fd = new FormData(); fd.append('file', blob, 'voix.webm'); fd.append('language', 'fr'); fd.append('temperature', '0'); fd.append('response_format', 'json');
+  fd.append('prompt', 'Un trader de futures parle pendant sa séance : ticks, stop, zigzag, canal, support, argent, or, Nasdaq, pétrole, euro-dollar.');
+  const r = await fetch(`${ROOT}/shadow/oreilles`, { method: 'POST', body: fd }); if (!r.ok) throw new Error('oreilles ' + r.status);
+  const j = await r.json(); return String(j.text || '').replace(/\[[^\]]*\]/g, '').trim();
+}
+$('#copi-parle').addEventListener('pointerdown', () => demarreMicro('q')); $('#copi-parle').addEventListener('pointerup', arreteMicro); $('#copi-parle').addEventListener('pointerleave', arreteMicro);
+/* --- le journal vocal --- */
+async function noteVocale(texte, duree) {
+  const mots = texte.split(/\s+/).filter(Boolean).length, x = L.find(y => y.code === code) || {};
+  try { await api('/maison/copilote', { action: 'note', texte, code, prix: x.dernier, duree: Math.round(duree * 10) / 10, debit: Math.round(mots / duree * 10) / 10, pouls: bpmMedian() });
+    toast(`Noté : « ${texte.length > 70 ? texte.slice(0, 70) + '…' : texte} »`); if ($('#tiroir').classList.contains('on')) chargeJournal();
+  } catch (e) { toast("La note n'a pas pu être rangée"); }
+}
+async function chargeJournal() {
+  const c = $('#t-corps'); c.innerHTML = '<div class="note"><div class="t" style="color:var(--doux)">Chargement…</div></div>';
+  try { const r = await api('/maison/copilote', { action: 'notes', jours: 14 }), l = r.notes || [];
+    c.innerHTML = (l.length ? '' : '<div class="note"><div class="t" style="color:var(--doux)">Aucune note pour l’instant. Pendant un trade, maintiens <b>V</b> et dis ce que tu penses : « je rentre parce que… », « je sens que… ». Atlas relie chaque note à ton trade et trouve tes habitudes.</div></div>')
+      + l.map(n => { const t = n.trade, pnl = t && t.pnl != null ? t.pnl : null;
+        return `<div class="note"><div class="q"><span>${new Date(n.at * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} · ${esc(n.code)}${n.pouls ? ` · ♥ ${n.pouls}` : ''}${n.debit ? ` · ${n.debit} mots/s` : ''}</span>${t ? (pnl != null ? `<span class="res ${pnl >= 0 ? 'g' : 'p'}">${sg(pnl)} $</span>` : '<span class="res">en cours</span>') : '<span>hors trade</span>'}</div><div class="t">${esc(n.texte)}</div></div>`; }).join('');
+  } catch (e) { c.innerHTML = '<div class="note"><div class="t">La maison ne répond pas.</div></div>'; }
+}
+$('#b-journal').onclick = () => { const t = $('#tiroir'), on = !t.classList.contains('on'); t.classList.toggle('on', on); $('#b-journal').classList.toggle('on', on); if (on) chargeJournal(); };
+$('#t-x').onclick = () => { $('#tiroir').classList.remove('on'); $('#b-journal').classList.remove('on'); };
+$('#t-bilan').onclick = async () => {
+  const c = $('#t-corps'); c.insertAdjacentHTML('afterbegin', '<div class="bilan" id="bilan-en-cours">Atlas relit ta semaine…</div>');
+  try { const r = await api('/maison/copilote', { action: 'bilan', jours: 7 }), b = $('#bilan-en-cours');
+    b.innerHTML = `<b>Ta semaine</b><br>${esc(r.texte)}` + (r.constats || []).map(k => `<div class="c"><b>${esc(k.constat)}</b><small>${esc(k.chiffres || '')}</small><em>${esc(k.regle || '')}</em></div>`).join('');
+    b.removeAttribute('id'); dire(r.texte);
+  } catch (e) { $('#bilan-en-cours').textContent = 'Le bilan n’a pas pu être fait.'; }
+};
+/* --- la mémoire du marché --- */
+let MEM = null, memSel = -1;
+const fmtDate = t => new Date(t * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit' }).replace(':00', 'h');
+function sparkMem(g) {
+  const v = [...g.avant, ...g.apres], lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1, n = v.length, X = k => k * 96 / (n - 1), Yy = x => 31 - (x - lo) / r * 28, k0 = g.avant.length - 1;
+  return `<svg viewBox="0 0 96 34"><polyline points="${g.avant.map((x, k) => `${X(k).toFixed(1)},${Yy(x).toFixed(1)}`).join(' ')}" fill="none" stroke="#8b93a3" stroke-width="1.3"/>`
+    + `<polyline points="${[g.avant[k0], ...g.apres].map((x, k) => `${X(k0 + k).toFixed(1)},${Yy(x).toFixed(1)}`).join(' ')}" fill="none" stroke="#7c4dff" stroke-width="1.6"/><line x1="${X(k0)}" x2="${X(k0)}" y1="0" y2="34" stroke="#3a4256" stroke-dasharray="2 2"/></svg>`;
+}
+async function memoire() {
+  const p = panes[actif] || panes[0], ut = ['H1', '15m', 'H4', 'D1'].includes(p.ut) ? p.ut : 'H1';
+  if (MEM && MEM.code === code && $('#mem').classList.contains('on')) { MEM = null; memSel = -1; $('#mem').classList.remove('on'); $('#b-memoire').classList.remove('on'); toutDessine(); return; }
+  $('#b-memoire').classList.add('on'); toast(`La mémoire cherche, sur deux ans, les moments qui ressemblent à celui-ci (${LIB[ut]})…`);
+  try { const r = await api(`/maison/graphique?memoire=1&code=${code}&ut=${ut}`); if (!r.ok) throw new Error();
+    MEM = r; memSel = -1;
+    if (!panes.some(q => q.ut === ut)) toast(`La mémoire est calculée en ${LIB[ut]} : affiche cette unité pour la voir sur le graphique`);
+    panes.filter(q => q.ut === ut).forEach(q => { q.fin = Math.min(q.fin, -Math.round(r.suite * 1.3)); });
+    $('#mem').innerHTML = `<div class="tete2"><b>MÉMOIRE · ${esc(r.code)} ${esc(LIB[ut])}</b><button id="mem-x">×</button></div><p>${esc(r.phrase)}</p>`
+      + r.analogues.map((g, k) => `<div class="analogue" data-k="${k}"><div><b>${esc(fmtDate(g.t))}</b><small>suite : ${sg(g.fin_ticks)} ticks · de ${sg(g.bas_ticks)} à ${sg(g.haut_ticks)}</small><div class="jauge"><i style="width:${g.ressemblance}%"></i></div></div>${sparkMem(g)}</div>`).join('');
+    $('#mem').classList.add('on'); $('#mem-x').onclick = () => memoire(); toutDessine();
+  } catch (e) { $('#b-memoire').classList.remove('on'); toast("La mémoire n'a pas pu chercher (maison injoignable ?)"); }
+}
+$('#b-memoire').onclick = memoire;
+$('#mem').addEventListener('mouseover', ev => { const a = ev.target.closest('.analogue'); const k = a ? +a.dataset.k : -1; if (k !== memSel) { memSel = k; document.querySelectorAll('.analogue').forEach(e => e.classList.toggle('sel', +e.dataset.k === k)); toutDessine(); } });
+$('#mem').addEventListener('mouseleave', () => { memSel = -1; document.querySelectorAll('.analogue').forEach(e => e.classList.remove('sel')); toutDessine(); });
+/* --- le pouls par la webcam (rPPG : la couleur de la peau bouge à chaque battement) — l'image ne quitte jamais l'ordinateur --- */
+let POULS = null; const bpms = [];
+function bpmMedian() { const v = bpms.filter(b => b.t > Date.now() - 60000).map(b => b.v).sort((a, b) => a - b); return v.length ? Math.round(v[v.length >> 1]) : null; }
+async function poulsOn() {
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 30 } }), v = $('#pouls-v'); v.srcObject = st; await v.play();
+    const tmp = document.createElement('canvas'), tc = tmp.getContext('2d', { willReadFrequently: true }); tmp.width = 160; tmp.height = 120;
+    const fd = 'FaceDetector' in window ? new FaceDetector({ fastMode: true, maxDetectedFaces: 1 }) : null;
+    POULS = { st, sig: [], roi: [0.4, 0.14, 0.2, 0.13], vu: 0, tmp, tc, fd };
+    $('#pouls').classList.add('on'); $('#b-pouls').classList.add('on'); toast('Pouls : garde ton front dans le cadre, face à la lumière. Rien ne quitte ton ordinateur.');
+    boucleP();
+  } catch (e) { toast("La webcam n'est pas autorisée pour cette page"); }
+}
+function poulsOff() { if (!POULS) return; POULS.st.getTracks().forEach(t => t.stop()); POULS = null; $('#pouls').classList.remove('on'); $('#b-pouls').classList.remove('on'); $('#tilt-bpm').textContent = ''; }
+$('#b-pouls').onclick = () => POULS ? poulsOff() : poulsOn();
+async function boucleP() {
+  if (!POULS) return; const P = POULS, v = $('#pouls-v'), now = performance.now();
+  P.tc.drawImage(v, 0, 0, 160, 120);
+  if (P.fd && now - P.vu > 1000) { P.vu = now; try { const f = (await P.fd.detect(P.tmp))[0]; if (f) { const b = f.boundingBox; P.roi = [(b.x + b.width * .3) / 160, (b.y + b.height * .08) / 120, b.width * .4 / 160, b.height * .17 / 120]; } } catch (e) { P.fd = null; } }
+  const [rx, ry, rw, rh] = P.roi, d = P.tc.getImageData(Math.round(rx * 160), Math.round(ry * 120), Math.max(2, Math.round(rw * 160)), Math.max(2, Math.round(rh * 120))).data;
+  let r = 0, g = 0, b = 0, n = d.length / 4; for (let k = 0; k < d.length; k += 4) { r += d[k]; g += d[k + 1]; b += d[k + 2]; }
+  P.sig.push([now / 1000, r / n, g / n, b / n]); while (P.sig.length && P.sig[0][0] < now / 1000 - 12) P.sig.shift();
+  const cv = $('#pouls-c'), cc = cv.getContext('2d'); cv.width = 160; cv.height = 120; cc.strokeStyle = '#ff6b81'; cc.lineWidth = 1.5; cc.strokeRect(rx * 160, ry * 120, rw * 160, rh * 120);
+  if (!P.der || now - P.der > 1000) { P.der = now; const bpm = calculeBpm(P.sig); if (bpm) { bpms.push({ t: Date.now(), v: bpm }); while (bpms.length > 200) bpms.shift(); } const m = bpmMedian(); $('#bpm').textContent = m || '--'; $('#tilt-bpm').textContent = m ? `♥ ${m}` : ''; }
+  requestAnimationFrame(boucleP);
+}
+function calculeBpm(s) {  // l'algorithme POS (Wang et al., 2017), puis la fréquence dominante entre 45 et 180 battements par minute
+  if (s.length < 150 || s[s.length - 1][0] - s[0][0] < 8) return null;
+  const moy = k => s.reduce((a, x) => a + x[k], 0) / s.length, mr = moy(1), mg = moy(2), mb = moy(3);
+  const s1 = s.map(x => x[2] / mg - x[3] / mb), s2 = s.map(x => x[2] / mg + x[3] / mb - 2 * x[1] / mr), sd = a => { const m = a.reduce((p, q) => p + q, 0) / a.length; return Math.sqrt(a.reduce((p, q) => p + (q - m) ** 2, 0) / a.length) || 1e-9; };
+  const al = sd(s1) / sd(s2); let h = s1.map((x, k) => x + al * s2[k]);
+  const w = 15; h = h.map((x, k) => { let a = 0, c = 0; for (let j = Math.max(0, k - w); j <= Math.min(h.length - 1, k + w); j++) { a += h[j]; c++; } return x - a / c; });
+  let best = 0, bf = 0, tot = 0, nb2 = 0;
+  for (let f = 0.75; f <= 3.0; f += 1 / 120) { let c1 = 0, c2 = 0; s.forEach((x, k) => { const a = 2 * Math.PI * f * x[0]; c1 += h[k] * Math.cos(a); c2 += h[k] * Math.sin(a); }); const pw = c1 * c1 + c2 * c2; tot += pw; nb2++; if (pw > best) { best = pw; bf = f; } }
+  return best / (tot / nb2) > 9 ? Math.round(bf * 60) : null;  // (un pic net, sinon pas de mesure : le bruit seul monte à 8)
+}
+/* --- son état : lucide, vigilance, alerte --- */
+let niveauAvant = 'lucide';
+async function chargeEtat() {
+  if (document.hidden || !ROOT) return;
+  try { const r = await api('/maison/copilote', { action: 'etat', bpm: bpmMedian() }), t = $('#tilt');
+    t.className = 'tilt masque-mobile ' + r.niveau; t.querySelector('b').textContent = { lucide: 'Lucide', vigilance: 'Vigilance', alerte: 'Pause ?' }[r.niveau];
+    t.dataset.tip = r.raisons && r.raisons.length ? 'Ton état : ' + r.raisons.join(' · ') : `Ton état : rien d'anormal (${r.trades_jour} trade${r.trades_jour > 1 ? 's' : ''} aujourd'hui)`;
+    if (r.niveau === 'alerte' && niveauAvant !== 'alerte') { toast('Attention : ' + r.raisons.join(', ')); dire(`Attention : ${r.raisons.join(', ')}. Une pause de cinq minutes ?`); }
+    niveauAvant = r.niveau;
+  } catch (e) { /* hors liaison */ }
+}
+chargeEtat(); setInterval(chargeEtat, 30000);
+/* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
+document.addEventListener('keydown', ev => {
+  if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
+  if (k === 'e' && !ev.repeat) copilote(); else if (k === 'm' && !ev.repeat) memoire();
+  else if ((k === 'q' || k === 'v') && !ev.repeat) demarreMicro(k === 'q' ? 'q' : 'v');
+});
+document.addEventListener('keyup', ev => { const k = ev.key.toLowerCase(); if ((k === 'q' || k === 'v') && rec && rec.mode === k) arreteMicro(); });
 versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
 (async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; } await chargeLignes(); construit(); chargeListe(); })();
 </script>
