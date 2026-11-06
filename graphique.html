@@ -156,7 +156,6 @@
       <button class="ico" id="t-zz" data-tip="Zigzag (5, 10)"><svg viewBox="0 0 24 24"><path d="M3 17l5-9 4 6 4-8 5 9"/></svg></button>
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
-      <button class="ico" id="t-pos" data-tip="Ta position en direct : entrée, stop, limite du jour, MLL"><svg viewBox="0 0 24 24"><path d="M3 9h18M3 15h18"/><path d="M8 9v6" stroke-dasharray="2 2"/><circle cx="17" cy="9" r="2"/></svg></button>
       <button class="ico" id="t-cot" data-tip="Positionnement des gros acteurs (rapport COT de la CFTC)"><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/></svg></button>
       <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
     </div>
@@ -175,7 +174,7 @@
       <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
     </div>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v12</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v13</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -242,7 +241,6 @@ let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'n
 if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
 let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1' };
 let COTD = {};
-let DIRECT = { positions: [] };
 const sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + nb(Math.abs(v), d);
 let lignes = [], choisie = null, brouillon = null, actif = 0;
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -345,34 +343,6 @@ class Pane {
         c.beginPath(); c.moveTo(x0, y0); g.apres.forEach((v, s2) => c.lineTo(T(MEM.t0 + (s2 + 1) * MEM.duree), Y(MEM.dernier + v * a))); c.stroke(); });
       c.setLineDash([5, 4]); c.strokeStyle = 'rgba(41,98,255,.75)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(x0, y0); ev.forEach(e => c.lineTo(T(e.t), Y(e.p50))); c.stroke(); c.setLineDash([]);
       c.font = '600 10.5px Inter, sans-serif'; c.fillStyle = 'rgba(80,60,200,.85)'; c.fillText(`MÉMOIRE · ${MEM.analogues.length} moments ressemblants · pas une prévision`, Math.min(x0 + 8, pw - 300), Math.max(14, Y(Math.max(...ev.map(e => e.p90))) - 8));
-    }
-    // sa position en direct (TopstepX, lecture seule) : l'entrée et le gain/perte latent, le stop, la limite du jour, la MLL
-    // (hors de l'écran : une étiquette au bord, avec une flèche, pour savoir où c'est sans dézoomer)
-    const posi = opt.pos ? (DIRECT.positions || []).filter(p => String(p.instr || '').toUpperCase() === code && p.prix_moyen != null && p.pas && p.valeur && p.taille) : [];
-    if (posi.length) {
-      const yMax = ph - volH - 4; let hautPris = 108, basPris = yMax - 14;  // (le haut à gauche est pris par le titre)
-      posi.forEach(p => {
-        const dir = p.sens === 'long' ? 1 : -1, px = p.dernier != null ? p.dernier : B[B.length - 1][4], usdDe = tk => tk * p.valeur * p.taille, auTick = x => Math.round(x / p.pas) * p.pas;
-        const tk = Math.round((px - p.prix_moyen) / p.pas * dir), usd = usdDe(tk), col = usd >= 0 ? '#089981' : '#f23645';
-        const ye = Y(p.prix_moyen), yp = Y(px);
-        c.fillStyle = usd >= 0 ? 'rgba(8,153,129,.07)' : 'rgba(242,54,69,.07)'; c.fillRect(0, Math.min(ye, yp), pw, Math.abs(yp - ye));
-        const niv = [{ prix: p.prix_moyen, coul: col, tirets: [], ep: 1.6, plein: true, txt: `${p.sens === 'long' ? 'LONG' : 'SHORT'} ${p.taille}   ${sg(tk)} ticks   ${sg(usd)} $${p.stop == null ? '   ·   aucun stop' : ''}` }];
-        if (p.stop != null) { const ts = Math.round((p.stop - p.prix_moyen) / p.pas * dir); niv.push({ prix: p.stop, coul: '#f23645', tirets: [6, 4], ep: 1.3, txt: `STOP   ${sg(ts)} ticks   ${sg(usdDe(ts))} $` }); }
-        const reste = DIRECT.dll ? DIRECT.dll + (DIRECT.pnl_jour || 0) : 0;  // la limite du jour se compte depuis le solde de la veille : ses gains clôturés du jour l'éloignent
-        if (reste > 0) niv.push({ prix: auTick(p.prix_moyen - dir * reste / (p.valeur * p.taille) * p.pas), coul: '#8a0f1c', tirets: [2, 3], ep: 1.3, txt: `LIMITE DU JOUR   −${nb(reste, 0)} $` });
-        if (DIRECT.marge_mll > 0) niv.push({ prix: auTick(p.prix_moyen - dir * DIRECT.marge_mll / (p.valeur * p.taille) * p.pas), coul: '#131722', tirets: [2, 3], ep: 1.3, txt: `MLL : compte perdu   −${nb(DIRECT.marge_mll, 0)} $` });
-        niv.forEach(n => {
-          const y = Y(n.prix), dedans = y >= 0 && y <= yMax;
-          if (dedans) { c.strokeStyle = n.coul; c.lineWidth = n.ep; c.setLineDash(n.tirets); c.beginPath(); c.moveTo(0, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); c.setLineDash([]);
-            c.fillStyle = n.coul; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(n.prix, dec), pw + 6, y + 4); }
-          let yt; if (dedans) yt = Math.max(12, Math.min(yMax - 12, y)); else if (y < 0) { yt = hautPris; hautPris += 26; } else { yt = basPris; basPris -= 26; }
-          c.font = '600 11px Inter, sans-serif'; const t = (dedans ? '' : y < 0 ? '▲  ' : '▼  ') + n.txt + (dedans ? '' : `   à ${nb(n.prix, dec)}`), w = c.measureText(t).width + 18;
-          let xt = 10; if (dedans && yt < 100) { xt = pw - w - 12; yt = Math.max(yt, opt.cot && COTD[code] && COTD[code].ok ? 112 : 70); }  // sous le titre : l'étiquette passe à droite (sous la jauge COT)
-          c.fillStyle = n.plein ? n.coul : 'rgba(255,255,255,.94)'; c.beginPath(); c.roundRect(xt, yt - 11, w, 22, 5); c.fill();
-          if (!n.plein) { c.strokeStyle = n.coul; c.lineWidth = 1; c.stroke(); }
-          c.fillStyle = n.plein ? '#fff' : n.coul; c.fillText(t, xt + 9, yt + 4);
-        });
-      });
     }
     // l'unité de temps, en grand (comme sur son TradingView)
     c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 14, 48); c.textAlign = 'left';
@@ -517,7 +487,7 @@ function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAl
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
-[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-pos', 'pos'], ['#t-cot', 'cot']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
+[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-cot', 'cot']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
 async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
@@ -529,10 +499,9 @@ function spark(v, up) {
 }
 function majListe(fams) {
   FAMS = fams && fams.length ? fams : FAMS.length ? FAMS : [...new Set(L.map(x => x.famille))];
-  const enPos = c => POS.some(p => String(p.instr || '').toUpperCase().startsWith(c));
   $('#liste').innerHTML = FAMS.map(f => `<div class="fam ${fermees.has(f) ? 'ferme' : ''}" data-f="${esc(f)}">${esc(f.toUpperCase())}<i>▾</i></div>` + (fermees.has(f) ? '' : L.filter(x => x.famille === f).map(x => {
     const fl = avantPx[x.code] != null && avantPx[x.code] !== x.dernier ? (x.dernier > avantPx[x.code] ? 'flash-h' : 'flash-r') : '';
-    return `<div class="ligne-s ${x.code === code ? 'sel' : ''}" data-c="${esc(x.code)}"><div class="c"><b>${esc(x.code)}${enPos(x.code) ? '<span class="pos">POSITION</span>' : ''}</b><small>${esc(x.nom)}</small></div>${spark(x.spark, x.pct >= 0)}
+    return `<div class="ligne-s ${x.code === code ? 'sel' : ''}" data-c="${esc(x.code)}"><div class="c"><b>${esc(x.code)}</b><small>${esc(x.nom)}</small></div>${spark(x.spark, x.pct >= 0)}
       <div class="v"><div class="${fl}">${nb(x.dernier, x.dec)}</div><small class="${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</small></div></div>`; }).join(''))).join('');
   L.forEach(x => { avantPx[x.code] = x.dernier; });
   setTimeout(() => document.querySelectorAll('.flash-h, .flash-r').forEach(e => e.classList.remove('flash-h', 'flash-r')), 50);
@@ -622,12 +591,6 @@ async function versionPage() {
   try { const t = await (await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })).text(), e = t.length + ':' + t.slice(-400);
     if (!empreinte) empreinte = e; else if (e !== empreinte && !brouillon && !choisie) location.reload(); } catch (er) { /* hors ligne */ }
 }
-async function chargeDirect() {
-  if (document.hidden || !ROOT) return;
-  try { const r = await api('/maison/graphique?direct=1'), avant = JSON.stringify(DIRECT); DIRECT = r && r.positions ? r : { positions: [] };
-    if (JSON.stringify(DIRECT) !== avant && !brouillon) toutDessine(); } catch (e) { /* hors liaison */ }
-}
-chargeDirect(); setInterval(chargeDirect, 4000);
 
 /* ================= la salle de marché ================= */
 /* --- la voix d'Atlas : sa voix ElevenLabs (par la maison) ; en secours, la voix de la maison rendue robot --- */
@@ -877,7 +840,7 @@ async function chargeCommandes() {
   } catch (e) { /* hors liaison */ }
 }
 setInterval(chargeCommandes, 2000); chargeCommandes();
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { chargeLiens(); chargeEtat(); chargeDirect(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { chargeLiens(); chargeEtat(); } });
 /* --- « installe ma salle de marché » : une fenêtre par écran (le graphique ici, le radar, et ton deuxième marché) --- */
 async function installeSalle() {
   let ecrans = null;
