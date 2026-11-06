@@ -176,6 +176,24 @@
   @keyframes halo-v { 50% { box-shadow: inset 0 0 0 3px rgba(124, 77, 255, .9), inset 0 0 70px rgba(124, 77, 255, .4); } }
   body.focus .app { grid-template-rows: 0 1fr; grid-template-columns: 0 1fr 0; } body.focus .haut, body.focus .outils, body.focus .liste { visibility: hidden; overflow: hidden; }
   body.focus .graphes { grid-column: 1 / 4; } .focus-aide { position: fixed; right: 14px; top: 10px; z-index: 30; font: 600 11px 'Inter'; color: #9aa1ad; background: rgba(255, 255, 255, .85); padding: 4px 9px; border-radius: 8px; display: none; } body.focus .focus-aide { display: block; }
+  .lien.presente { background: linear-gradient(135deg, #2962ff, #7c4dff); border-color: transparent; color: #fff; box-shadow: 0 4px 18px rgba(124, 77, 255, .45); cursor: pointer; }
+  .lien.presente:hover { filter: brightness(1.1); }
+  .tv { position: fixed; inset: 0; z-index: 90; pointer-events: none; display: none; } .tv.on { display: block; }
+  .tv .bande { position: absolute; left: 0; right: 0; height: 0; background: #000; transition: height .9s cubic-bezier(.7, 0, .2, 1); } .tv .bande.h { top: 0; } .tv .bande.b { bottom: 0; } .tv.on.ouvert .bande { height: 8vh; }
+  .tv .gen { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, #1b2140 0%, #05070d 70%); display: grid; place-items: center; opacity: 0; transition: opacity .8s; }
+  .tv .gen.on { opacity: 1; } .tv .gen .t { text-align: center; color: #fff; } .tv .gen small { display: block; font: 700 13px 'Inter'; letter-spacing: .5em; color: #8f9bff; margin-bottom: 18px; }
+  .tv .gen h1 { margin: 0; font: 800 clamp(34px, 6vw, 84px)/1 'Inter'; letter-spacing: -.02em; background: linear-gradient(100deg, #fff 30%, #b9c3ff 50%, #fff 70%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brille 2.4s linear infinite; }
+  @keyframes brille { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+  .tv .gen .date { margin-top: 16px; font: 500 15px 'Inter'; color: #aab2c5; } .tv .gen .trait { width: 0; height: 2px; margin: 26px auto 0; background: linear-gradient(90deg, transparent, #7c4dff, transparent); animation: trait 1.6s ease-in-out infinite alternate; } @keyframes trait { to { width: 360px; } }
+  .tv .gen .prep { margin-top: 18px; font: 500 13px 'Inter'; color: #6f7891; }
+  .tv .tiers { position: absolute; left: 4vw; bottom: calc(8vh + 92px); opacity: 0; transform: translateX(-30px); transition: all .7s cubic-bezier(.2, .8, .2, 1); }
+  .tv .tiers.on { opacity: 1; transform: none; } .tv .tiers .n { display: inline-block; padding: 6px 14px; background: #fff; color: #0f131c; font: 800 22px 'Inter'; letter-spacing: -.01em; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+  .tv .tiers .s { display: inline-block; margin-top: 4px; padding: 5px 12px; background: linear-gradient(135deg, #2962ff, #7c4dff); color: #fff; font: 700 13px 'Inter'; letter-spacing: .06em; text-transform: uppercase; }
+  .tv .stt { position: absolute; left: 50%; bottom: calc(8vh + 18px); transform: translateX(-50%); width: min(980px, 86vw); text-align: center; font: 600 clamp(17px, 1.6vw, 24px)/1.45 'Inter'; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .9), 0 0 2px #000; }
+  .tv .stt span { opacity: .18; transition: opacity .25s; } .tv .stt span.dit { opacity: 1; }
+  .tv .prog { position: absolute; top: calc(8vh - 14px); left: 4vw; right: 4vw; display: flex; gap: 6px; } .tv .prog i { flex: 1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .22); overflow: hidden; } .tv .prog i b { display: block; height: 100%; width: 0; background: #fff; }
+  .tv .aide2 { position: absolute; right: 4vw; top: calc(8vh + 12px); font: 600 11.5px 'Inter'; color: rgba(255, 255, 255, .85); background: rgba(0, 0, 0, .55); padding: 5px 10px; border-radius: 8px; }
+  .tv .num { position: absolute; left: 4vw; top: calc(8vh + 12px); font: 800 12px 'Inter'; letter-spacing: .3em; color: #fff; background: rgba(0, 0, 0, .55); padding: 5px 10px; border-radius: 8px; }
   @media (max-width: 1200px) { .sym { min-width: 0; } .sym .px { display: none; } }
   @media (max-width: 900px) { .mem, .pouls { right: 12px; } .tiroir { width: 100%; } .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none !important; } }
 </style>
@@ -215,8 +233,9 @@
       <button class="ico" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
     </div>
+    <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v16</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v18</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -235,7 +254,8 @@
     <div id="liste"></div>
     <div class="aide">
       <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. Clique sur une ligne : sa petite barre (alerte, couleur, style, effacer).<br>
-      <b>Souris</b> : glisser = déplacer · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
+      <b>Le graphique</b> : la molette passe toute seule d'une unité à l'autre (du mensuel à la minute) · <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
+      <b>Souris</b> : glisser = déplacer (avec élan) · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
       <b>La salle</b> : <kbd>/</kbd> écris ce que tu veux (un marché, une commande, une question) · <kbd>E</kbd> copilote · <kbd>Q</kbd> maintenu : lui parler · <kbd>V</kbd> maintenu : journal · <kbd>D</kbd> structure de Dow · <kbd>A</kbd> étude d'annonce · <kbd>R</kbd> replay · <kbd>M</kbd> mémoire · <kbd>Z</kbd> focus · survole un repère de nouvelle (clic = explication)<br>
       <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
@@ -258,6 +278,9 @@
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
 <div class="bulle" id="bulle"></div>
+<div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
+  <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
+  <div class="tiers" id="tv-tiers"><div class="n" id="tv-nom"></div><br><div class="s" id="tv-titre"></div></div><div class="stt" id="tv-stt"></div></div>
 <div class="halo" id="halo"></div><div class="focus-aide">Mode focus · Z pour sortir</div>
 <div class="dow" id="etude"><button class="x" id="etude-x">Fermer · Échap</button><h2>ÉTUDE D'ANNONCE</h2>
   <div class="etude-tete"><select id="etude-cle"></select><select id="etude-code"></select><div class="seg" id="etude-mode"><button data-m="minute" class="on">À la minute</button><button data-m="heure">À l'heure · 2 ans</button></div><span id="etude-etat" style="color:var(--doux)"></span></div>
@@ -292,11 +315,11 @@ const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
 let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
 if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
-let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1', news: lit('g-news', '1') === '1' };
+let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1', news: lit('g-news', '1') === '1', zoomc: lit('g-zoomc', '1') === '1' };
 let NOUV = {};
 let COTD = {};
 const sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + nb(Math.abs(v), d);
-let lignes = [], choisie = null, brouillon = null, actif = 0, INSTANT = null;
+let lignes = [], choisie = null, brouillon = null, actif = 0, INSTANT = null; const CACHE_D = {};
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const UTS = () => vue === 'trois' ? utsTrois : [utSeul];
 const DUREE = { '5m': 300, '15m': 900, '30m': 1800, H1: 3600, H4: 14400, D1: 86400, W: 604800, M: 2629800 };
@@ -314,7 +337,8 @@ class Pane {
   constructor(el, ut) { this.el = el; this.ut = ut; this.d = null; this.n = 120; this.fin = 0; this.y = null; this.souris = null; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.ecoute(); }
   async charge() {
     const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
-    try { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (!this.fin) this.fin = 0; if (ch) ch.style.display = 'none'; this.dessine(); return true; }
+    try { const kc = `${code}|${this.ut}`, cc = CACHE_D[kc];
+      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (!this.fin) this.fin = 0; if (ch) ch.style.display = 'none'; this.dessine(); return true; }
     catch (e) { if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
   }
   taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; this.W = r.width; this.H = r.height; this.cv.width = r.width * dpr; this.cv.height = r.height * dpr; this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
@@ -403,6 +427,19 @@ class Pane {
     }
     if (REPLAY) { c.font = '800 11px Inter, sans-serif'; const tx = `● REPLAY · ${new Date(REPLAY.t * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`, tw = c.measureText(tx).width + 20;
       c.fillStyle = 'rgba(242,54,69,.92)'; c.beginPath(); c.roundRect(pw / 2 - tw / 2, 44, tw, 22, 11); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(tx, pw / 2, 59); c.textAlign = 'left'; }
+    // « Atlas présente » : ce dont il parle s'allume (sa ligne, la nouvelle, le pivot)
+    if (PRES && PRES.scene && PRES.scene.code === code) {
+      const ph2 = (performance.now() % 1600) / 1600, pulse = .5 + .5 * Math.sin(ph2 * Math.PI * 2);
+      for (const m of PRES.scene.marques || []) {
+        if (m.genre === 'ligne') { const x1 = T(m.t1), y1 = Y(m.p1); let x2 = m.horizontale ? pw : T(m.t2), y2 = m.horizontale ? y1 : Y(m.p2); if (!m.horizontale && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); }
+          c.save(); c.shadowColor = 'rgba(255,176,32,.9)'; c.shadowBlur = 14 + 10 * pulse; c.strokeStyle = `rgba(255,176,32,${.65 + .35 * pulse})`; c.lineWidth = 4; c.beginPath(); c.moveTo(m.horizontale ? 0 : x1, y1); c.lineTo(x2, y2); c.stroke(); c.restore(); }
+        if (m.genre === 'nouvelle') { const x = T(m.at); if (x < 0 || x > pw) continue; const gr = c.createLinearGradient(x - 26, 0, x + 26, 0); gr.addColorStop(0, 'rgba(242,54,69,0)'); gr.addColorStop(.5, `rgba(242,54,69,${.12 + .1 * pulse})`); gr.addColorStop(1, 'rgba(242,54,69,0)');
+          c.fillStyle = gr; c.fillRect(x - 26, 0, 52, ph); c.strokeStyle = 'rgba(242,54,69,.9)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, ph); c.stroke();
+          c.font = '700 12px Inter, sans-serif'; const tx = String(m.titre || '').slice(0, 60), tw = c.measureText(tx).width + 18, xx = Math.min(pw - tw - 8, Math.max(8, x - tw / 2)); c.fillStyle = 'rgba(242,54,69,.95)'; c.beginPath(); c.roundRect(xx, 92, tw, 24, 12); c.fill(); c.fillStyle = '#fff'; c.fillText(tx, xx + 9, 108); }
+        if (m.genre === 'pivot') { const x = T(m.t), y = Y(m.p); if (x < 0 || x > pw) continue; for (const r0 of [10, 22]) { c.strokeStyle = `rgba(124,77,255,${(1 - ph2) * (r0 === 10 ? .9 : .5)})`; c.lineWidth = 2.5; c.beginPath(); c.arc(x, y, r0 + 16 * ph2, 0, 7); c.stroke(); }
+          c.fillStyle = '#7c4dff'; c.beginPath(); c.arc(x, y, 5, 0, 7); c.fill(); }
+      }
+    }
     // l'unité de temps, en grand (comme sur son TradingView)
     c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 14, 48); c.textAlign = 'left';
     // la jauge du COT : où en sont les fonds spéculatifs sur 3 ans (0 = jamais aussi vendeurs, 100 = jamais aussi acheteurs)
@@ -442,9 +479,24 @@ class Pane {
     // le réticule temporel : l'instant survolé dans un autre graphique, retrouvé ici (D1, H4, H1… le même moment)
     if (INSTANT && INSTANT.p !== this && !this.souris) { const xi = T(INSTANT.t); if (xi >= 0 && xi <= pw) { c.strokeStyle = 'rgba(124,77,255,.75)'; c.lineWidth = 1.2; c.setLineDash([5, 4]); c.beginPath(); c.moveTo(Math.round(xi) + .5, 0); c.lineTo(Math.round(xi) + .5, ph); c.stroke(); c.setLineDash([]);
       const tt = new Date(INSTANT.t * 1000), lab = tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); c.fillStyle = '#7c4dff'; c.fillRect(xi - 52, ph + 1, 104, BT - 2); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '11px Inter, sans-serif'; c.fillText(lab, xi, ph + 16); c.textAlign = 'left'; } }
+    // la règle
+    if (this.regle) { const r = this.regle, x1 = T(r.t1), y1 = Y(r.p1), x2 = T(r.t2), y2 = Y(r.p2), haut = r.p2 >= r.p1, tk = this.d.tick || 1;
+      c.fillStyle = haut ? 'rgba(41,98,255,.12)' : 'rgba(242,54,69,.12)'; c.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+      c.strokeStyle = haut ? '#2962ff' : '#f23645'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+      const ticks = Math.round((r.p2 - r.p1) / tk), usd = VAL_TICK[code] != null ? ticks * VAL_TICK[code] : null, nbar = Math.round((r.t2 - r.t1) / (DUREE[this.ut] || 3600)), dur = Math.abs(r.t2 - r.t1);
+      const txt = `${sg(ticks)} ticks${usd != null ? ` · ${sg(usd)} $ / contrat` : ''} · ${Math.abs(nbar)} barres · ${dur >= 86400 ? Math.round(dur / 86400) + ' j' : dur >= 3600 ? Math.floor(dur / 3600) + ' h ' + String(Math.round(dur % 3600 / 60)).padStart(2, '0') : Math.round(dur / 60) + ' min'}`;
+      c.font = '700 12px Inter, sans-serif'; const tw = c.measureText(txt).width + 18, bx = Math.min(pw - tw - 6, Math.max(6, x2 - tw / 2)), by = haut ? Math.max(6, y2 - 32) : Math.min(ph - 30, y2 + 8);
+      c.fillStyle = haut ? '#2962ff' : '#f23645'; c.beginPath(); c.roundRect(bx, by, tw, 24, 7); c.fill(); c.fillStyle = '#fff'; c.fillText(txt, bx + 9, by + 16); }
+    // le pivot du zigzag sous la souris s'offre : double-clic = support / résistance
+    if (this.souris && outil === 'curseur' && !brouillon) { const pv = pivotProche(this, this.souris[0], this.souris[1]);
+      if (pv) { const xp = T(pv[0]), yp = Y(pv[1]); c.strokeStyle = '#ff9800'; c.lineWidth = 2; c.beginPath(); c.arc(xp, yp, 8, 0, 7); c.stroke(); c.setLineDash([3, 3]); c.beginPath(); c.moveTo(xp, yp); c.lineTo(pw, yp); c.stroke(); c.setLineDash([]);
+        c.font = '600 11px Inter, sans-serif'; const tt = `double-clic : ${pv[2] === 'h' ? 'résistance' : 'support'} ${nb(pv[1], dec)}`, tw = c.measureText(tt).width + 14; c.fillStyle = '#ff9800'; c.beginPath(); c.roundRect(xp + 12, yp + (pv[2] === 'h' ? -28 : 8), tw, 20, 6); c.fill(); c.fillStyle = '#fff'; c.fillText(tt, xp + 19, yp + (pv[2] === 'h' ? -14 : 22)); } }
+    // le changement d'unité (zoom continu, coup d'œil) : un grand libellé qui s'efface
+    if (this.flash) { const a = 1 - (performance.now() - this.flash.t0) / 900; if (a > 0) { c.globalAlpha = a; c.fillStyle = 'rgba(15,19,28,.82)'; c.font = '800 46px Inter, sans-serif'; const tw = c.measureText(this.flash.txt).width + 50; c.beginPath(); c.roundRect(pw / 2 - tw / 2, ph / 2 - 40, tw, 80, 18); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(this.flash.txt, pw / 2, ph / 2 + 16); c.textAlign = 'left'; c.globalAlpha = 1; requestAnimationFrame(() => this.dessine()); } else this.flash = null; }
     // le réticule
     if (this.souris) { const [mx, my] = this.souris; c.setLineDash([4, 4]); c.strokeStyle = '#888'; c.beginPath(); c.moveTo(mx, 0); c.lineTo(mx, ph); c.moveTo(0, my); c.lineTo(pw, my); c.stroke(); c.setLineDash([]);
       c.fillStyle = '#131722'; c.fillRect(pw, my - 10, AX, 20); c.fillStyle = '#fff'; c.fillText(nb(iY(my), dec), pw + 6, my + 4);
+      { const et = Math.round((iY(my) - B[B.length - 1][4]) / (this.d.tick || 1)); if (et) { c.font = '700 10.5px Inter, sans-serif'; const tt = `${sg(et)} t`, tw = c.measureText(tt).width + 12; c.fillStyle = et > 0 ? 'rgba(8,153,129,.92)' : 'rgba(242,54,69,.92)'; c.beginPath(); c.roundRect(pw - tw - 4, my - 9, tw, 18, 9); c.fill(); c.fillStyle = '#fff'; c.fillText(tt, pw - tw + 2, my + 4); c.font = '11px Inter, sans-serif'; } }
       const tt = new Date(iT(mx) * 1000), lab = ['D1', 'W', 'M'].includes(this.ut) ? tt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
       c.fillStyle = '#131722'; c.fillRect(mx - 52, ph + 1, 104, BT - 2); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
@@ -460,6 +512,12 @@ class Pane {
     cv.addEventListener('pointerdown', ev => { actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
       const z = zone(x, y);
       if (REPLAY && REPLAY.choix && this.T) { demarreReplay(this.iT(x)); return; }
+      this.inertie = null;
+      // le dessin direct : Maj + glisser = une ligne de tendance (aimantée aux deux bouts) ; Alt + clic = une horizontale
+      if (z === 'graphe' && this.T && ev.shiftKey) { const [t, pr] = aimant(this, x, y); brouillon = { id: idNeuf(), genre: 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: this, etape: 1, alerte: true, direct: true }; return; }
+      if (z === 'graphe' && this.T && ev.altKey) { const [t, pr] = aimant(this, x, y), l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`Horizontale à ${nb(pr, this.d.dec)} · alerte active`); return; }
+      // la règle : Ctrl + glisser (ou le bouton du milieu) = ticks, dollars, barres, durée
+      if (z === 'graphe' && this.T && (ev.ctrlKey || ev.metaKey || ev.button === 1)) { ev.preventDefault(); const t = this.iT(x), pr = this.iY(y); this.regle = { t1: t, p1: pr, t2: t, p2: pr }; glisse = { mode: 'regle' }; return; }
       if (this.survol && outil === 'curseur') { const n = this.survol; copilote(`Explique-moi la nouvelle « ${n.titre} » de ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} et comment le marché a réagi.`); return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
       if (z === 'graphe') {
@@ -472,6 +530,8 @@ class Pane {
       if (!glisse) { const m = (this.marques || []).find(k => Math.hypot(k.x - x, k.y - y) < 9), n = m ? m.n : null; if (n !== this.survol) { this.survol = n; montreBulle(n, ev.clientX, ev.clientY); } else if (n) placeBulle(ev.clientX, ev.clientY); }
       cv.style.cursor = glisse ? (glisse.mode === 'prix' ? 'ns-resize' : glisse.mode === 'temps' ? 'ew-resize' : 'grabbing') : zone(x, y) === 'prix' ? 'ns-resize' : zone(x, y) === 'temps' ? 'ew-resize' : outil === 'curseur' ? 'default' : 'crosshair';
       if (brouillon && brouillon.pane === this) majBrouillon(this, x, y);
+      if (glisse && glisse.mode === 'regle') { this.regle.t2 = this.iT(x); this.regle.p2 = this.iY(y); this.dessine(); return; }
+      if (glisse && glisse.mode === 'graphe' && !glisse.ligne) { const mt = performance.now(); if (glisse.lt) glisse.v = .6 * (glisse.v || 0) + .4 * (x - glisse.lx) / Math.max(1, mt - glisse.lt); glisse.lx = x; glisse.lt = mt; }
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
         l.t1 = o.t1 + (l.genre === 'horizontale' ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; toutDessine(); return; }
       if (glisse && !glisse.ligne && this.bw > 0) {
@@ -487,15 +547,29 @@ class Pane {
         }
       }
       this.dessine(); });
-    cv.addEventListener('pointerup', () => { if (glisse && glisse.ligne) sauve(); glisse = null; });
+    cv.addEventListener('pointerup', ev => { const [x, y] = pos(ev);
+      if (brouillon && brouillon.direct && brouillon.pane === this) { if (Math.abs(this.T(brouillon.t2) - this.T(brouillon.t1)) < 6) { brouillon = null; toutDessine(); } else cliqueDessin(this, x, y); glisse = null; return; }
+      if (glisse && glisse.mode === 'regle') { glisse = null; const r = this.regle; setTimeout(() => { if (this.regle === r) { this.regle = null; this.dessine(); } }, 5000); return; }
+      if (glisse && glisse.mode === 'graphe' && !glisse.ligne && Math.abs(glisse.v || 0) > .25 && performance.now() - (glisse.lt || 0) < 80) {  // l'élan : le graphique continue de glisser, puis ralentit
+        let v = glisse.v; const nbB = ((this.d && this.d.bougies) || []).length, jeton = this.inertie = {};
+        const roule = () => { if (this.inertie !== jeton || Math.abs(v) < .02 || !this.bw) return; this.fin = Math.min(Math.max(0, nbB - 10), Math.max(-this.n * .8, this.fin + v * 16 / this.bw)); v *= .93; this.dessine(); requestAnimationFrame(roule); }; roule();
+      }
+      if (glisse && glisse.ligne) sauve(); glisse = null; });
     cv.addEventListener('pointerleave', () => { this.souris = null; if (INSTANT && INSTANT.p === this) { INSTANT = null; panes.forEach(q => { if (q !== this) q.dessine(); }); } if (this.survol) { this.survol = null; montreBulle(null); } this.dessine(); });
     cv.addEventListener('wheel', ev => { ev.preventDefault(); const [x, y] = pos(ev), f = ev.deltaY > 0 ? 1.12 : 1 / 1.12;
       if (zone(x, y) === 'prix') { const lo = this.lo, hi = this.hi, mid = (lo + hi) / 2; this.y = [mid - (hi - lo) / 2 * f, mid + (hi - lo) / 2 * f]; }
       else { // zoomer dans le temps autour de la bougie pointée (elle reste sous la souris)
         const n0 = this.n, n1 = Math.min(1500, Math.max(15, n0 * f)), k = this.pw ? x / this.pw : 1;
+        // le zoom continu : quand les bougies deviennent trop fines ou trop larges, on passe tout seul à l'unité voisine (le même instant reste sous la souris)
+        if (opt.zoomc && !this._bascule && !REPLAY && this.T) { const iu = ORDRE_UT.indexOf(this.ut);
+          if (n1 > 380 && f > 1 && iu < ORDRE_UT.length - 1) { basculeUT(this, ORDRE_UT[iu + 1], x); return; }
+          if (n1 < 24 && f < 1 && iu > 0) { basculeUT(this, ORDRE_UT[iu - 1], x); return; } }
         this.fin = Math.max(-n1 * .8, this.fin + (n0 - n1) * (1 - k)); this.n = n1; }
       this.dessine(); }, { passive: false });
-    cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev); if (zone(x, y) === 'prix') this.y = null; else { this.n = 120; this.fin = 0; this.y = null; } this.dessine(); });
+    cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev);
+      if (zone(x, y) === 'graphe' && this.T) { const pv = pivotProche(this, x, y);
+        if (pv) { const l = { id: idNeuf(), genre: 'horizontale', t1: pv[0], p1: pv[1], alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`${pv[2] === 'h' ? 'Résistance' : 'Support'} posé sur le ${pv[2] === 'h' ? 'sommet' : 'creux'} du zigzag : ${nb(pv[1], this.d.dec)} · alerte active`); return; } }
+      if (zone(x, y) === 'prix') this.y = null; else { this.n = 120; this.fin = 0; this.y = null; } this.dessine(); });
   }
 }
 function niceStep(r) { const p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
@@ -656,7 +730,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'escape') { brouillon = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l') choisieOutil('ligne'); else if (k === 'h') choisieOutil('horizontale'); else if (k === 'c') choisieOutil('canal');
   else if (k === 'delete' || k === 'backspace') efface();
-  else if (/^[1-8]$/.test(k)) choisirUT(['5m', '15m', '30m', 'H1', 'H4', 'D1', 'W', 'M'][+k - 1]);
+  else if (/^[1-8]$/.test(k)) { if (ev.repeat) return; const p0 = panes[actif] || panes[0]; coupDoeil = { k: ev.key, t: performance.now(), avant: p0 ? p0.ut : utSeul }; choisirUT(ORDRE_UT[+k - 1]); }
 });
 window.addEventListener('resize', toutDessine);
 $('#nouvelle').onclick = () => {
@@ -885,6 +959,7 @@ const VOIX_UT = [[/\b(5|cinq) ?(minutes?|min|m)\b/, '5m'], [/\b(15|quinze) ?(min
 async function commandeGraphique(texte) {
   const n = ' ' + sansAcc(texte) + ' ';
   if (/\binstalle (ma|la) salle\b/.test(n)) { installeSalle(); return 'Salle de marché'; }
+  if (/\b(presente|presentes|raconte)(-| )?(moi )?(le|les|mes) marches?\b|\batlas presente\b|\bjournal des marches\b/.test(n)) { presente(); return 'Atlas présente'; }
   if (/\b(trois|3) graphiques\b/.test(n)) { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); return 'Trois graphiques'; }
   if (/\b(un seul|1) graphique\b/.test(n)) { vue = 'un'; ecrit(K('g-vue'), vue); construit(); return 'Un graphique'; }
   if (/\b(trace|dessine|mets?|pose) (moi )?(une )?(ligne )?horizontale\b/.test(n)) {
@@ -1059,9 +1134,109 @@ async function guetteHalo() {
 guetteHalo(); setInterval(guetteHalo, 30000);
 /* --- le mode focus : rien que le graphique --- */
 function focus() { document.body.classList.toggle('focus'); setTimeout(toutDessine, 60); }
+
+/* ================= « Atlas présente » : le journal télévisé de tes marchés ================= */
+let PRES = null;
+function voixPreparee(texte) {  // la voix d'Atlas (ElevenLabs), fabriquée d'avance pour enchaîner sans attendre
+  return fetch(`${ROOT}/maison/voix-atlas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texte.slice(0, 900) }) })
+    .then(r => { if (!r.ok) throw new Error('voix'); return r.arrayBuffer(); }).then(b => { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); return actx.decodeAudioData(b); }).catch(() => null);
+}
+function joueVoix(buf) {
+  return new Promise(res => {
+    if (!buf || !SON) { setTimeout(res, 4500); return; }
+    const src = actx.createBufferSource(); src.buffer = buf; const G = v => { const g = actx.createGain(); g.gain.value = v; return g; };
+    const hp = actx.createBiquadFilter(), pres = actx.createBiquadFilter(), d = actx.createDelay(0.05), fb = G(.18), wet = G(.09), sum = G(1), out = G(.95), lim = actx.createDynamicsCompressor();
+    hp.type = 'highpass'; hp.frequency.value = 75; pres.type = 'peaking'; pres.frequency.value = 3200; pres.Q.value = .9; pres.gain.value = 1.5; d.delayTime.value = .0012; lim.threshold.value = -3; lim.ratio.value = 20;
+    src.connect(hp); hp.connect(pres); pres.connect(sum); pres.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(sum); sum.connect(out); out.connect(lim); lim.connect(actx.destination);
+    src.onended = () => { if (PRES) PRES.src = null; res(); }; if (PRES) PRES.src = src; src.start();
+  });
+}
+function jingle() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime; [[523.25, 0], [659.25, .13], [783.99, .26], [1046.5, .42]].forEach(([f, d]) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(.16, t + d + .02); g.gain.exponentialRampToValueAtTime(.001, t + d + .9); o.connect(g); g.connect(actx.destination); o.start(t + d); o.stop(t + d + 1); }); } catch (e) { /* rien */ } }
+const attends = ms => new Promise(r => setTimeout(r, ms));
+async function attendsSiPause() { while (PRES && PRES.pause) await attends(150); }
+function sousTitre(texte, duree) {  // les mots s'allument au rythme de la voix
+  const mots = texte.split(/\s+/), el = $('#tv-stt'); el.innerHTML = mots.map(m => `<span>${esc(m)} </span>`).join(''); const sp = [...el.children], t0 = performance.now(); let pause = 0, depuis = null;
+  const tic = () => { if (!PRES) return; if (PRES.pause) { if (depuis == null) depuis = performance.now(); requestAnimationFrame(tic); return; } if (depuis != null) { pause += performance.now() - depuis; depuis = null; }
+    const k = Math.floor((performance.now() - t0 - pause) / (duree * 1000) * sp.length * 1.04); sp.forEach((s2, i) => s2.classList.toggle('dit', i <= k)); if (k < sp.length) requestAnimationFrame(tic); };
+  tic();
+}
+const doux = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+async function camera(sc) {  // la caméra glisse jusqu'au bon cadrage, puis s'approche doucement pendant qu'il parle
+  const p = panes[0]; for (let k = 0; k < 60 && !(p.dReel && p.d && (p.d.bougies || []).length); k++) await attends(100);
+  const B = (p.d && p.d.bougies) || []; if (!B.length) return;
+  let i0 = B.findIndex(b => b[0] >= sc.t0); if (i0 < 0) i0 = Math.max(0, B.length - 60);
+  const n1 = Math.max(30, B.length - i0 + 6), f1 = -6, vis = B.slice(i0);
+  const prix = [...vis.map(b => b[2]), ...vis.map(b => b[3]), ...(sc.marques || []).flatMap(m => m.genre === 'ligne' ? [m.p1] : m.genre === 'pivot' ? [m.p] : [])];
+  let lo = Math.min(...prix), hi = Math.max(...prix); const pd = (hi - lo) * .12; lo -= pd; hi += pd;
+  const n0 = p.n, fi0 = p.fin, y0 = p.y || [p.lo, p.hi], t0 = performance.now(), D = 1400;
+  await new Promise(res => { const pas_ = () => { const a = Math.min(1, (performance.now() - t0) / D), e = doux(a); p.n = n0 + (n1 - n0) * e; p.fin = fi0 + (f1 - fi0) * e; if (y0[0] != null) p.y = [y0[0] + (lo - y0[0]) * e, y0[1] + (hi - y0[1]) * e]; else p.y = [lo, hi]; if (a < 1) requestAnimationFrame(pas_); else res(); }; pas_(); });
+  PRES.derive = { n: n1, t: performance.now() };
+}
+function boucleTV() { if (!PRES) return; const p = panes[0]; if (p && PRES.derive && !PRES.pause) p.n = Math.max(25, PRES.derive.n * (1 - Math.min(.1, (performance.now() - PRES.derive.t) / 120000))); toutDessine(); requestAnimationFrame(boucleTV); }
+async function presente() {
+  if (PRES) { arretePresente(); return; }
+  if (!ROOT) return;
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') await actx.resume(); } catch (e) { /* rien */ }
+  PRES = { avant: { code, vue, utSeul, focus: document.body.classList.contains('focus') }, pause: false, scene: null, src: null, saute: false };
+  const tv = $('#tv'); tv.classList.add('on'); $('#tv-gen').classList.add('on'); $('#tv-tiers').classList.remove('on'); $('#tv-stt').innerHTML = ''; $('#tv-prog').innerHTML = ''; $('#tv-num').textContent = '';
+  $('#tv-date').textContent = new Date().toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); $('#tv-prep').textContent = "Atlas regarde tes marchés et prépare l'émission…";
+  jingle(); taisToi(); $('#copi').classList.remove('on');
+  let E; try { E = await api('/maison/graphique?emission=1'); } catch (e) { E = null; }
+  if (!PRES) return;
+  if (!E || !E.ok || !(E.scenes || []).length) { $('#tv-prep').textContent = "La maison ne répond pas : l'émission n'a pas pu être préparée."; await attends(2500); arretePresente(); return; }
+  // toutes les voix fabriquées d'avance (elles arrivent pendant le générique)
+  const voix = [voixPreparee(E.intro || ''), ...E.scenes.map(sc => voixPreparee(sc.texte)), voixPreparee(E.fin || '')];
+  $('#tv-prog').innerHTML = E.scenes.map(() => '<i><b></b></i>').join('');
+  // l'ouverture
+  const vIntro = await voix[0]; if (!PRES) return; $('#tv-prep').textContent = '';
+  sousTitre(E.intro || '', vIntro ? vIntro.duration : 4); await joueVoix(vIntro); await attendsSiPause();
+  document.body.classList.add('focus'); vue = 'un'; tv.classList.add('ouvert'); boucleTV();
+  for (let k = 0; k < E.scenes.length && PRES; k++) {
+    const sc = E.scenes[k]; PRES.scene = sc; PRES.saute = false; PRES.idx = k;
+    $('#tv-num').textContent = `${k + 1} / ${E.scenes.length}`; $('#tv-stt').innerHTML = ''; $('#tv-tiers').classList.remove('on');
+    utSeul = sc.ut || 'H1'; if (code !== sc.code) await changeCode(sc.code); else construit();
+    $('#tv-gen').classList.remove('on'); await camera(sc); if (!PRES) return;
+    $('#tv-nom').textContent = sc.nom; $('#tv-titre').textContent = sc.titre; $('#tv-tiers').classList.add('on');
+    const v = await voix[k + 1]; if (!PRES) return; const du = v ? v.duration : 6;
+    const barre = $('#tv-prog').children[k].firstElementChild; barre.style.transition = `width ${du}s linear`; requestAnimationFrame(() => { barre.style.width = '100%'; });
+    sousTitre(sc.texte, du); await joueVoix(v); await attendsSiPause(); if (!PRES) return; await attends(500);
+  }
+  if (!PRES) return;
+  // la fin
+  PRES.scene = null; $('#tv-tiers').classList.remove('on'); $('#tv-num').textContent = ''; $('#tv-gen').classList.add('on'); $('#tv-prep').textContent = '';
+  const vf = await voix[voix.length - 1]; if (!PRES) return; sousTitre(E.fin || '', vf ? vf.duration : 4); await joueVoix(vf); await attends(1200);
+  arretePresente();
+}
+function arretePresente() {
+  if (!PRES) return; const av = PRES.avant; try { PRES.src && PRES.src.stop(); } catch (e) { /* rien */ } try { if (actx && actx.state === 'suspended') actx.resume(); } catch (e) { /* rien */ }
+  PRES = null; const tv = $('#tv'); tv.classList.remove('ouvert'); $('#tv-gen').classList.remove('on'); setTimeout(() => tv.classList.remove('on'), 800);
+  document.body.classList.toggle('focus', av.focus); vue = av.vue; utSeul = av.utSeul; if (code !== av.code) changeCode(av.code); else construit();
+}
+function pausePresente() { if (!PRES) return; PRES.pause = !PRES.pause; try { if (PRES.pause) actx.suspend(); else actx.resume(); } catch (e) { /* rien */ } }
+function suivantPresente() { if (PRES && PRES.src) { try { PRES.src.stop(); } catch (e) { /* rien */ } } }
+$('#b-presente').onclick = presente;
+
+/* ================= le graphique lui-même : zoom continu, dessin direct, règle, coup d'œil ================= */
+const ORDRE_UT = ['5m', '15m', '30m', 'H1', 'H4', 'D1', 'W', 'M'];
+const VAL_TICK = { MCL: 1, CL: 10, ZL: 6, MYM: .5, MNQ: .5, NQ: 5, MES: 1.25, M6E: 1.25, MBT: .5, SIL: 5, MGC: 1, GC: 10 };  // dollars par tick et par contrat
+function pivotProche(p, x, y) { if (!p.d || !p.T) return null; let best = null, dm = 15; (p.d.zigzag || []).forEach(z => { if (z[2] === 'dernier') return; const d = Math.hypot(p.T(z[0]) - x, p.Y(z[1]) - y); if (d < dm) { dm = d; best = z; } }); return best; }
+async function basculeUT(p, ut, x) {
+  p._bascule = true; const tc = p.iT(x), span = p.n * (DUREE[p.ut] || 3600), k = p.pw ? x / p.pw : .5, avant = p.ut;
+  p.ut = ut; if (vue === 'trois') { utsTrois[panes.indexOf(p)] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); } else { utSeul = ut; ecrit(K('g-ut'), ut); } majBoutonsUT();
+  await p.charge();
+  const B = (p.d && p.d.bougies) || [];
+  if (B.length) { const n = Math.min(1500, Math.max(25, span / (DUREE[ut] || 3600))), kidx = Math.max(0, B.filter(b => b[0] <= tc).length - 1); p.n = n; p.fin = B.length - kidx - n * (1 - k) - .5; p.y = null; }
+  p.flash = { txt: `${LIB[avant] || avant} → ${LIB[ut] || ut}`, t0: performance.now() }; p.dessine();
+  setTimeout(() => { p._bascule = false; }, 450);
+}
+// le coup d'œil : maintenir un chiffre = voir cette unité le temps de le tenir ; un appui bref = la garder
+let coupDoeil = null;
+document.addEventListener('keyup', ev => { if (coupDoeil && ev.key === coupDoeil.k) { const c0 = coupDoeil; coupDoeil = null; if (performance.now() - c0.t > 450 && c0.avant) { choisirUT(c0.avant); const p = panes[actif] || panes[0]; if (p) { p.flash = { txt: `← ${LIB[c0.avant] || c0.avant}`, t0: performance.now() }; p.dessine(); } } } });
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
+  if (PRES) { if (k === 'escape' || k === 'b') { arretePresente(); return; } if (k === ' ') { ev.preventDefault(); pausePresente(); return; } if (k === 'arrowright') { suivantPresente(); return; } return; }
+  if (k === 'b' && !ev.repeat) { presente(); return; }
   if (k === 'escape' && $('#dow').classList.contains('on')) { ouvreDow(); return; }
   if (k === 'escape' && $('#etude').classList.contains('on')) { ouvreEtude(); return; }
   if (REPLAY && !REPLAY.choix) { if (k === ' ') { ev.preventDefault(); joue(!REPLAY.jeu); return; } if (k === 'arrowright') { avance(1); return; } if (k === 'arrowleft') { avance(-1); return; } if (k === 'escape') { quitteReplay(); return; } }
