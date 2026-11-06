@@ -10,6 +10,30 @@
 'use strict';
 
 const SECURITE = (() => {
+  // le son de salle de marché : le micro de la « squawk box » qui s'ouvre (un souffle bref), puis le carillon des dépêches ;
+  // critique : trois bips secs et aigus, comme un terminal ; sinon : un ding-dong de cloche électronique
+  function squawk(critique) {
+    if (!S.settings.sound) return;
+    try {
+      const c = fx.audio(), t0 = c.currentTime + 0.02, out = c.createGain(); out.gain.value = 0.9; out.connect(c.destination);
+      const bruit = c.createBuffer(1, c.sampleRate * 0.12, c.sampleRate), d = bruit.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      const src = c.createBufferSource(); src.buffer = bruit; const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 1.2;
+      const gb = c.createGain(); gb.gain.value = 0.05; src.connect(bp); bp.connect(gb); gb.connect(out); src.start(t0);
+      const cloche = (f, debut, duree, vol) => [[f, 1], [f * 2.01, 0.35], [f * 3.02, 0.12]].forEach(([fr, k]) => {
+        const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = fr;
+        g.gain.setValueAtTime(0.0001, t0 + debut); g.gain.exponentialRampToValueAtTime(vol * k, t0 + debut + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + debut + duree);
+        o.connect(g); g.connect(out); o.start(t0 + debut); o.stop(t0 + debut + duree + 0.02);
+      });
+      const bip = (f, debut, duree, vol) => {
+        const o = c.createOscillator(), g = c.createGain(), lp = c.createBiquadFilter(); o.type = 'square'; o.frequency.value = f; lp.type = 'lowpass'; lp.frequency.value = 3200;
+        g.gain.setValueAtTime(0.0001, t0 + debut); g.gain.exponentialRampToValueAtTime(vol, t0 + debut + 0.005); g.gain.setValueAtTime(vol, t0 + debut + duree - 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + debut + duree);
+        o.connect(lp); lp.connect(g); g.connect(out); o.start(t0 + debut); o.stop(t0 + debut + duree + 0.02);
+      };
+      if (critique) { [0.16, 0.30, 0.44].forEach(d0 => bip(1568, d0, 0.085, 0.05)); cloche(1318.5, 0.66, 0.7, 0.07); cloche(987.8, 0.86, 0.9, 0.06); }
+      else { cloche(1318.5, 0.16, 0.75, 0.065); cloche(987.8, 0.42, 0.95, 0.055); }
+    } catch (e) { /* pas de son */ }
+  }
   const root = () => VOIXMAISON.root();
   async function appel(chemin, corps, ms = 95000) {
     const r0 = root(); if (!r0) throw new Error('pas de maison');
@@ -186,9 +210,12 @@ const SECURITE = (() => {
     l.filter(a => a.genre === 'accueil').forEach(a => { if (typeof DUO !== 'undefined') PROACTIF.annonce(`alerte-${a.id}`, () => DUO.depuisMaison(a), { urgent: true, expire: Date.now() + 5 * 60000 }); if (typeof ANTICIPE !== 'undefined') ANTICIPE.retour(a).catch(() => {}); }); // puis ce qu'il anticipe (le repas, le goûter)
     // le vendredi 22 h 30 : le bilan de la boîte noire du trader
     l.filter(a => a.genre === 'boite-noire').forEach(a => { if (typeof TRADING !== 'undefined') PROACTIF.annonce(`alerte-${a.id}`, async () => { await TRADING.bilanNoire(); return ''; }, { urgent: true, expire: Date.now() + 2 * 3600000 }); });
-    l.filter(a => a.gravite === 'annonce' && a.genre !== 'accueil' && a.genre !== 'boite-noire').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
+    // le radar des marchés : le son d'une salle de marché (le micro qui s'ouvre, puis le carillon de dépêche), et la nouvelle
+    l.filter(a => a.genre === 'radar').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { squawk(a.gravite === 'attention' || a.gravite === 'urgent'); await wait(a.gravite === 'attention' ? 1500 : 1100); return a.texte; },
+      { urgent: true, expire: Math.min(Date.now() + 20 * 60000, quandA(a) + 20 * 60000), lumiere: 'marche' }));
+    l.filter(a => a.gravite === 'annonce' && a.genre !== 'accueil' && a.genre !== 'boite-noire' && a.genre !== 'radar').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
     l.filter(a => a.genre === 'lien' && a.gravite === 'attention').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { lueurLien(); fx.tone([[659, 0.15], [880, 0.15], [1319, 0.35]]); await wait(700); return a.texte; }, { urgent: true, expire: Date.now() + 6 * 3600000 }));
-    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && a.genre !== 'lien' && a.genre !== 'accueil' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent' || (a.genre === 'marche' && typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur'), expire: Math.min(Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000), quandA(a) + 20 * 60000), lumiere: a.genre === 'marche' ? 'marche' : a.gravite === 'urgent' || /^(camera|ezviz|defense|visiteurs|reseau)$/.test(a.genre) ? 'alerte' : '' }));
+    l.filter(a => a.gravite !== 'info' && a.gravite !== 'annonce' && a.genre !== 'reveil' && a.genre !== 'hologramme' && a.genre !== 'lien' && a.genre !== 'accueil' && a.genre !== 'radar' && !(res.length > 1 && res.includes(a))).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { await photoAlerte(a); return `${a.gravite === 'urgent' ? 'Alerte. ' : ''}${a.texte}`; }, { urgent: a.gravite === 'urgent' || (a.genre === 'marche' && typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'ordinateur'), expire: Math.min(Date.now() + (a.gravite === 'urgent' ? 30 * 60000 : 6 * 3600000), quandA(a) + 20 * 60000), lumiere: a.genre === 'marche' ? 'marche' : a.gravite === 'urgent' || /^(camera|ezviz|defense|visiteurs|reseau)$/.test(a.genre) ? 'alerte' : '' }));
   }
   setInterval(releveAlertes, 20000); setTimeout(releveAlertes, 9000);
   async function rapport(n) {

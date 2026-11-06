@@ -324,7 +324,7 @@ const SCIFI = (() => {
     }
     L.push(['Passages (personne vue)', `${pass.length}`, pass.length ? 'attente' : 'ok'], ['Mouvements détectés', `${det}`, 'ok']);
     // les alertes qui comptaient
-    const vraies = al.filter(a => (a.gravite === 'attention' || a.gravite === 'urgent') && !['presence', 'reveil', 'coucher', 'marche'].includes(a.genre) && a.genre !== 'ezviz' || (a.genre === 'ezviz' && a.gravite === 'urgent'));
+    const vraies = al.filter(a => (a.gravite === 'attention' || a.gravite === 'urgent') && !['presence', 'reveil', 'coucher', 'marche', 'radar'].includes(a.genre) && a.genre !== 'ezviz' || (a.genre === 'ezviz' && a.gravite === 'urgent'));
     parts.push(vraies.length ? `${vraies.length} alerte${vraies.length > 1 ? 's' : ''} : ${vraies.slice(-2).map(a => `${h(a.at)}, ${a.texte.replace(/\.$/, '')}`).join('. ')}` : 'Aucune alerte de sécurité');
     L.push(['Alertes', vraies.length ? `${vraies.length}` : 'aucune', vraies.length ? 'alerte' : 'ok']);
     // les routines de la journée
@@ -715,7 +715,7 @@ const SCIFI = (() => {
     const prives = pers.filter(x => !/facade|rue/.test(N(x.camera)));
     const bruits = al.filter(a => a.genre === 'camera' && /bruit/i.test(a.texte));
     const urgentes = al.filter(a => a.gravite === 'urgent');
-    const autres = al.filter(a => a.gravite === 'attention' && !['reveil', 'coucher', 'presence', 'marche', 'veille', 'hologramme'].includes(a.genre) && a.genre !== 'ezviz');
+    const autres = al.filter(a => a.gravite === 'attention' && !['reveil', 'coucher', 'presence', 'marche', 'radar', 'veille', 'hologramme'].includes(a.genre) && a.genre !== 'ezviz');
     const mouv = al.filter(a => a.genre === 'ezviz' && /^Détection/.test(a.texte)).length;
     const parts = [];
     if (urgentes.length) parts.push(`attention, ${urgentes.length} alerte${urgentes.length > 1 ? 's' : ''} urgente${urgentes.length > 1 ? 's' : ''} : ${urgentes.slice(-2).map(a => `${h(a.at)}, ${a.texte.replace(/\.$/, '')}`).join(' ; ')}`);
