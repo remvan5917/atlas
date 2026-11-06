@@ -496,6 +496,7 @@
   .indic-b .al .vide { display: block; cursor: default; color: var(--tres-doux); font-size: 12px; } .indic-b .al .j { display: block; cursor: default; font-size: 12px; color: var(--doux); }
   .indic-b .al .j em { font-style: normal; color: var(--ambre); font: 600 11px var(--mono, 'Inter'); margin-right: 8px; }
   .titre .alt { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; font-size: 10.5px; color: var(--ambre); opacity: .85; }
+  .nb-al { margin-left: 6px; min-width: 16px; padding: 0 5px; border-radius: 9px; background: var(--ambre); color: #120c00; font: 800 10px 'Inter'; line-height: 16px; text-align: center; }
   .titre .alt svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 2.2; }
 </style>
 </head>
@@ -527,8 +528,9 @@
     <div class="horloges" id="horloges"></div>
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
+    <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v45</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v46</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -2091,7 +2093,7 @@ document.querySelectorAll('#passe-p .ex span').forEach(e => e.onclick = () => { 
 var ALERTES = [], alerteVue = Math.floor(Date.now() / 1000), JOURNAL_AL = [];
 const quand = t => { const d = new Date(t * 1000), auj = new Date().toDateString() === d.toDateString(); return (auj ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ') + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); };
 function ouvreAlertes(q) { const p = $('#alerte-p'), on = q != null || !p.classList.contains('on'); p.classList.toggle('on', on); if (on) { majAlertes(); chargeAlertes(); if (q) { $('#alerte-q').value = q; creeAlerte(); } setTimeout(() => $('#alerte-q').focus(), 30); } }
-$('#b-alertes').onclick = () => ouvreAlertes(); $('#alerte-p').addEventListener('click', ev => { if (ev.target.id === 'alerte-p') ouvreAlertes(); });
+$('#b-alertes').onclick = () => ouvreAlertes(); $('#b-alertes-h').onclick = () => ouvreAlertes(); $('#alerte-p').addEventListener('click', ev => { if (ev.target.id === 'alerte-p') ouvreAlertes(); });
 document.querySelectorAll('#alerte-p .ex span').forEach(e => e.onclick = () => { $('#alerte-q').value = e.textContent; creeAlerte(); });
 $('#alerte-go').onclick = () => creeAlerte(); $('#alerte-q').addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') creeAlerte(); if (ev.key === 'Escape') ouvreAlertes(); });
 function majAlertes() {
@@ -2115,7 +2117,7 @@ async function creeAlerte() {
 }
 async function chargeAlertes() {
   if (!ROOT) return;
-  try { const r = await api('/maison/graphique?alertes=1'); ALERTES = r.alertes || []; JOURNAL_AL = r.journal || [];
+  try { const r = await api('/maison/graphique?alertes=1'); ALERTES = r.alertes || []; JOURNAL_AL = r.journal || []; const na = ALERTES.filter(a => a.actif).length; $('#nb-al').textContent = na || ''; $('#nb-al').hidden = !na;
     const n = JOURNAL_AL.filter(j => j.at > alerteVue);
     if (n.length) { alerteVue = Math.max(...n.map(j => j.at)); halo('ambre'); if (QUI_SONNE) sonne('ligne'); n.slice(0, 3).forEach(j => toast(`🔔 ${j.texte}`)); }
     if ($('#alerte-p').classList.contains('on')) majAlertes(); toutDessine(); }
