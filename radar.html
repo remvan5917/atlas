@@ -186,8 +186,9 @@ function dessine() {
   $('#positions').innerHTML = pos.length ? pos.map(p => `<div class="ligne"><span>${esc(p.compte || '')}</span><span>${esc(p.instr)} ${esc(p.sens || '')} ×${esc(p.taille)}</span></div>`).join('') : '<div class="ligne"><span>Aucune position ouverte</span><span></span></div>';
   // le bilan : après une nouvelle, le marché a-t-il bougé (au-delà d'un seuil, en 15 min) ?
   const bl = (donnees.bilan || {}).critique || {}, bi = (donnees.bilan || {}).importante || {};
-  const lb = MK.filter(m => bl[m] || bi[m]).map(m => `<div class="ligne"><span>${m}</span><span>${bl[m] ? `critique : ${bl[m].bouge} % (${bl[m].n})` : ''}${bl[m] && bi[m] ? ' · ' : ''}${bi[m] ? `imp. : ${bi[m].bouge} % (${bi[m].n})` : ''}</span></div>`);
-  $('#bilan').innerHTML = (lb.length ? lb.join('') + `<div class="ligne"><span>% de nouvelles suivies d'un vrai mouvement en 15 min</span><span></span></div>` : '<div class="ligne"><span>Les mesures arrivent au fil des nouvelles</span><span></span></div>')
+  const cel = x => x ? `${x.bouge} % <small style="color:var(--doux)">/${x.n}</small>` : '<small style="color:var(--doux)">—</small>';
+  const lb = MK.filter(m => bl[m] || bi[m]).map(m => `<div class="ligne"><span>${m}</span><span>crit. ${cel(bl[m])} · imp. ${cel(bi[m])}</span></div>`);
+  $('#bilan').innerHTML = (lb.length ? `<div class="ligne" style="font-size:10.5px"><span>part des nouvelles suivies d'un vrai mouvement en 15 min</span><span></span></div>` + lb.join('') : '<div class="ligne"><span>Les mesures arrivent au fil des nouvelles</span><span></span></div>')
     + `<div class="ligne"><span>Tes avis</span><span>👍 ${(donnees.avis || {}).utile || 0} · 👎 ${(donnees.avis || {}).bruit || 0}</span></div>`;
   $('#sys').innerHTML = `<div class="ligne"><span>Sources suivies</span><span>${donnees.sources || '—'}</span></div><div class="ligne"><span>FinancialJuice</span><span>toutes les ${donnees.rythme_fj || '—'} s</span></div>`
     + `<div class="ligne"><span>Notifications ntfy</span><span>${donnees.ntfy ? 'actives' : 'non réglées'}</span></div><div class="ligne"><span>Cours</span><span>${Object.values(tab)[0] ? (Object.values(tab)[0].source === 'topstepx' ? 'TopstepX, en direct' : 'différés') : '—'}</span></div>`;
