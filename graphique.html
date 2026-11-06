@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#06080c">
 <title>Atlas · Salle de marché</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg viewBox='0 0 64 64' aria-hidden='true'%3E%3Cdefs%3E%3ClinearGradient id='LGA' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ffc94d'/%3E%3Cstop offset='1' stop-color='%23ff6a00'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='14' r='8' fill='none' stroke='url(%23LGA)' stroke-width='3'/%3E%3Cpath d='M24.5 14h15M32 6.2c-3.4 3.6-3.4 12 0 15.6' fill='none' stroke='url(%23LGA)' stroke-width='1.6' opacity='.85'/%3E%3Cpath d='M9 56 19.5 37 25 43.5 32 26.5 55 56' fill='none' stroke='url(%23LGA)' stroke-width='4.6' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cpath d='M11 47.5h42' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -342,11 +341,10 @@
   @media (max-width: 900px) { .app { grid-template-rows: 58px 30px 1fr 32px; } .horloges, .compte { display: none; } }
 
   /* ================= SIGNATURE — le logo, le démarrage, les chiffres qui roulent, la lumière, le mouvement ================= */
-  .marque i { display: none; } .marque .logo { width: 34px; height: 34px; filter: drop-shadow(0 4px 14px rgba(255, 140, 0, .45)); }
   .boot { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: radial-gradient(900px 500px at 50% 40%, rgba(255, 140, 0, .14), transparent 65%), #040507; transition: opacity .6s ease, transform .6s ease; }
   .boot.fin { opacity: 0; transform: scale(1.04); pointer-events: none; }
   .boot-c { text-align: center; width: 360px; } .boot-logo { width: 96px; height: 96px; margin: 0 auto 24px; position: relative; }
-  .boot-logo .logo { width: 100%; height: 100%; filter: drop-shadow(0 0 28px rgba(255, 140, 0, .55)); }
+  .boot-logo { width: 74px; height: 74px; animation: arrive 1s cubic-bezier(.2, .9, .2, 1) both; } .boot-logo i { position: absolute; inset: 0; border-radius: 16px; background: var(--grad); transform: rotate(45deg) scale(.78); box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 0 60px rgba(255, 140, 0, .55); } .boot-logo i::after { content: ''; position: absolute; inset: 19px; border-radius: 5px; background: #040507; }
   .boot-logo .logo circle, .boot-logo .logo path { stroke-dasharray: 160; stroke-dashoffset: 160; animation: trace 1.1s cubic-bezier(.6, 0, .2, 1) forwards; } .boot-logo .logo path:nth-of-type(2) { animation-delay: .35s; } .boot-logo .logo path:nth-of-type(3) { animation-delay: .6s; }
   @keyframes trace { to { stroke-dashoffset: 0; } }
   .boot-logo::after { content: ''; position: absolute; inset: -16px; border-radius: 50%; border: 1px solid rgba(255, 171, 26, .35); animation: onde-b 1.8s ease-out infinite; }
@@ -375,11 +373,11 @@
 </style>
 </head>
 <body>
-<div class="boot" id="boot"><div class="boot-c"><div class="boot-logo"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="LGB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc94d"/><stop offset="1" stop-color="#ff6a00"/></linearGradient></defs><circle cx="32" cy="14" r="8" fill="none" stroke="url(#LGB)" stroke-width="3"/><path d="M24.5 14h15M32 6.2c-3.4 3.6-3.4 12 0 15.6" fill="none" stroke="url(#LGB)" stroke-width="1.6" opacity=".85"/><path d="M9 56 19.5 37 25 43.5 32 26.5 55 56" fill="none" stroke="url(#LGB)" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M11 47.5h42" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></div><h1>ATLAS</h1><p>SALLE DE MARCHÉ</p>
+<div class="boot" id="boot"><div class="boot-c"><div class="boot-logo"><i></i></div><h1>ATLAS</h1><p>SALLE DE MARCHÉ</p>
   <ul><li data-k="maison">Maison</li><li data-k="cours">Cotations TopstepX</li><li data-k="graph">Graphiques</li><li data-k="radar">Radar · dépêches</li></ul><div class="boot-bar"><b id="boot-b"></b></div></div></div>
 <div class="app">
   <div class="haut">
-    <div class="marque" aria-hidden="true"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="LGA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc94d"/><stop offset="1" stop-color="#ff6a00"/></linearGradient></defs><circle cx="32" cy="14" r="8" fill="none" stroke="url(#LGA)" stroke-width="3"/><path d="M24.5 14h15M32 6.2c-3.4 3.6-3.4 12 0 15.6" fill="none" stroke="url(#LGA)" stroke-width="1.6" opacity=".85"/><path d="M9 56 19.5 37 25 43.5 32 26.5 55 56" fill="none" stroke="url(#LGA)" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M11 47.5h42" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>ATLAS<small>MARCHÉS</small></span></div>
+    <div class="marque" aria-hidden="true"><i></i><span>ATLAS<small>MARCHÉS</small></span></div>
     <button class="sym" id="sym" data-tip="Changer de marché ( / )"><span class="ic" id="sym-ic">SIL</span><span><b id="sym-code">SIL</b><small id="sym-nom">Micro argent</small></span><span class="px num" id="sym-px"></span></button>
     <div class="seg" id="seg-ut"><button data-ut="5m">5m</button><button data-ut="15m">15m</button><button data-ut="30m">30m</button><button data-ut="H1">1h</button><button data-ut="H4">4h</button><button data-ut="D1">D</button><button data-ut="W">W</button><button data-ut="M">M</button></div>
     <div class="grp">
@@ -401,7 +399,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v24</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v25</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
