@@ -399,7 +399,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v25</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v26</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -542,7 +542,7 @@ class Pane {
     if (!this.d) return; this.taille();
     if (this.W < 120 || this.H < 80) { requestAnimationFrame(() => setTimeout(() => this.dessine(), 120)); return; }
     const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
-    const pw = W - AX, ph = H - BT, BN = opt.news ? 22 : 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 92 : 76, BASP = ph - BN - volH - 8;
+    const pw = W - AX, ph = H - BT, BN = 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 92 : 76, BASP = ph - BN - volH - 8;
     let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2])); const pad = (hi - lo) * .05 || 1; lo -= pad; hi += pad;
     const cle = code + '|' + this.ut; const HAUTr = HAUT;
     if (this.y) { lo = this.y[0]; hi = this.y[1]; }
@@ -646,26 +646,22 @@ class Pane {
     const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
     c.fillStyle = '#0b0e15'; c.beginPath(); c.moveTo(pw - 5, yd); c.lineTo(pw + 1, yd - 11); c.lineTo(pw + AX - 4, yd - 11); c.quadraticCurveTo(pw + AX, yd - 11, pw + AX, yd - 7); c.lineTo(pw + AX, yd + 7); c.quadraticCurveTo(pw + AX, yd + 11, pw + AX - 4, yd + 11); c.lineTo(pw + 1, yd + 11); c.closePath(); c.fill();
     c.fillStyle = '#fff'; c.font = '700 11px "JetBrains Mono", monospace'; c.fillText(nb(der, dec), pw + 6, yd + 4);
-    if (BN) { c.fillStyle = '#f7f8fa'; c.fillRect(0, ph - BN, pw, BN); c.strokeStyle = '#e6e8ec'; c.beginPath(); c.moveTo(0, ph - BN + .5); c.lineTo(pw, ph - BN + .5); c.stroke(); }
-    // les nouvelles : de petits repères au-dessus de l'axe du temps, à la minute exacte (empilés quand elles se suivent)
-    this.marques = [];
-    if (opt.news && NOUV[code]) {
-      const COUL = { critique: '#f23645', importante: '#ffb020', chiffre: '#2962ff', mouvement: '#7c4dff', annonce: '#8b93a3' }, pile = {};
-      for (const n of NOUV[code]) {
-        if (REPLAY && n.at > REPLAY.t) continue;  // (en replay : seulement les nouvelles déjà tombées)
-        const x = T(n.at); if (x < 4 || x > pw - 4) continue;
-        const k = Math.round(x / 10), etage = pile[k] = (pile[k] || 0) + 1, y = ph - 11 - (etage - 1) * 13;
-        if (n.genre === 'annonce') { c.strokeStyle = 'rgba(139,147,163,.45)'; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(Math.round(x) + .5, 0); c.lineTo(Math.round(x) + .5, ph); c.stroke(); c.setLineDash([]); }
-        c.fillStyle = COUL[n.genre] || '#8b93a3'; c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath();
-        if (n.genre === 'mouvement') { c.moveTo(x, y - 6); c.lineTo(x + 6, y); c.lineTo(x, y + 6); c.lineTo(x - 6, y); c.closePath(); }
-        else if (n.genre === 'annonce') c.rect(x - 4.5, y - 4.5, 9, 9); else c.arc(x, y, n === this.survol ? 7 : 5.5, 0, 7);
-        c.fill(); c.stroke();
-        if (n.genre === 'critique') { c.strokeStyle = 'rgba(242,54,69,.35)'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 9, 0, 7); c.stroke(); }
-        this.marques.push({ x, y, n });
-      }
-    }
     // l'axe
     c.strokeStyle = '#e3e6ec'; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
+    // les nouvelles, gravées dans l'axe du temps : de fines encoches de couleur à la minute exacte (le code-barres de l'actualité) ;
+    // rien ne se pose sur les bougies ni sur le volume — on survole l'encoche pour la bulle et le projecteur
+    this.marques = [];
+    if (opt.news && NOUV[code]) {
+      const COUL = { critique: '#f0435a', importante: '#ffab1a', chiffre: '#3d7bff', mouvement: '#8b5cff', annonce: '#9aa1ad' }, RANG = { annonce: 0, chiffre: 1, mouvement: 2, importante: 3, critique: 4 };
+      const l = NOUV[code].filter(n => !(REPLAY && n.at > REPLAY.t)).map(n => ({ n, x: T(n.at) })).filter(o => o.x >= 2 && o.x <= pw - 2).sort((a, b2) => (RANG[a.n.genre] || 0) - (RANG[b2.n.genre] || 0));
+      for (const { n, x } of l) {
+        const sel = n === this.survol, crit = n.genre === 'critique', w = sel ? 5 : crit ? 3.5 : 2.5, h = sel ? 11 : crit ? 9 : 7;
+        if (crit || sel) { c.fillStyle = COUL[n.genre] || '#9aa1ad'; c.fillRect(x - 7, ph - .5, 14, 2); }  // (sur la ligne de l'axe : un trait de couleur, sans toucher au volume)
+        if (n.genre === 'annonce') { c.strokeStyle = COUL.annonce; c.lineWidth = 1.2; c.strokeRect(x - w / 2, ph + 2.5, w, h - 1); }
+        else { c.fillStyle = COUL[n.genre] || '#9aa1ad'; c.beginPath(); c.roundRect(x - w / 2, ph + 2, w, h, 1.5); c.fill(); }
+        this.marques.push({ x, y: ph + 7, n });
+      }
+    }
     // l'aimant : un petit rond là où la ligne va se poser
     if (this.souris && outil !== 'curseur' && outil !== 'efface' && opt.aimant) { const [ta, pa] = aimant(this, this.souris[0], this.souris[1]); c.strokeStyle = '#2962ff'; c.lineWidth = 1.5; c.beginPath(); c.arc(T(ta), Y(pa), 5, 0, 7); c.stroke(); }
     // le réticule temporel : l'instant survolé dans un autre graphique, retrouvé ici (D1, H4, H1… le même moment)
