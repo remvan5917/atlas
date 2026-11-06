@@ -391,6 +391,10 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
       let r; try { r = await appel(`/maison/radar?rattrapage=${m}`, null, 20000); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas le radar."); }
       return say(r.texte || "Rien à signaler sur tes marchés.");
     };
+    if (/\b(ouvre|affiche|montre)\b.*\b(mon|mes|le) (graphique atlas|graphiques?( atlas)?)\b|\bgraphique atlas\b/.test(n) && !/\b(de l or|de l argent|du petrole|du nasdaq)\b/.test(n)) return () => {
+      try { window.open(`graphique.html${S.settings && S.settings.localUrl ? '#maison=' + encodeURIComponent(S.settings.localUrl.replace(/\/+$/, '').replace(/\/v1$/, '')) : ''}`, 'graphique'); } catch (e) { /* bloqué */ }
+      return say("J'ouvre ton graphique : D1, H4 et H1 avec le zigzag, les zones S/R H4 et tes lignes. Je te préviens quand le prix touche ou casse une de tes lignes.");
+    };
     if (/\b(affiche|ouvre|montre|mets)\b.*\b(le |l )?(ecran )?radar\b|\bmode radar\b/.test(n)) return () => { ouvreRadar(); return say("J'ouvre l'écran du radar : les dépêches de tes marchés en direct, avec leurs incidences. Laisse-le ouvert à côté du graphique."); };
     if (/\b(le radar|mon radar|radar (de risque|des marches|trading)|quoi de neuf sur (les|mes) marches|les (nouvelles|depeches|news) (des|de mes|sur mes) marches|ce qui (est tombe|vient de tomber) sur (les|mes) marches)\b/.test(n)) return radar;
     if (/\b(mon trading|mon journal de trading|mes (stats|statistiques) de trading|statistiques de trading|tableau de bord (du )?trading|mes comptes (de trading|financés|finances|topstep)|mes objectifs de trading)\b/.test(n)) return monTrading;

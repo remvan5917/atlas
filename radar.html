@@ -176,6 +176,7 @@
   <div class="espace"></div>
   <div class="segment" id="vue"><button data-v="tout">Tout</button><button data-v="critique">Critiques</button><button data-v="miens">Mes positions</button><button data-v="infos">+ Infos</button></div>
   <div class="cherche" id="cherche"><input id="q" type="search" placeholder="Rechercher une nouvelle…" autocomplete="off"></div>
+  <a class="rond" id="b-graphique" href="graphique.html" target="graphique" title="Le graphique (D1 · H4 · H1, tes lignes)" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></a>
   <button class="rond" id="b-cherche" title="Rechercher ( / )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
   <button class="rond" id="b-son" title="Son ( M )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path id="ondes" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
   <div class="liaison"><span class="point" id="point"></span><span id="liaison">connexion…</span></div>
@@ -214,6 +215,7 @@ let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } cat
 if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
 if (location.pathname.startsWith('/salle/')) ROOT = location.origin;
+if (ROOT && !location.pathname.startsWith('/salle/')) document.getElementById('b-graphique').href = 'graphique.html#maison=' + encodeURIComponent(ROOT);
 const MK = ['M6E', 'MNQ', 'MYM', 'MGC', 'SIL', 'MCL'];
 const NOMS = { M6E: 'Euro-dollar', MNQ: 'Nasdaq 100', MYM: 'Dow Jones', MGC: 'Or', SIL: 'Argent', MCL: 'Pétrole WTI' };
 const DEC = { M6E: 5, MNQ: 2, MYM: 0, MGC: 1, SIL: 3, MCL: 2 };

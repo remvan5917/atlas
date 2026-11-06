@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#131722">
+<title>Graphique Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --cadre: #131722; --cadre2: #1e222d; --ligne: #2a2e39; --texte: #d1d4dc; --doux: #868993; --bleu: #2962ff; --vert: #089981; --rouge: #f23645; color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--cadre); color: var(--texte); font: 400 13px/1.35 'Inter', system-ui, sans-serif; overflow: hidden; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .app { display: grid; grid-template-rows: 46px 1fr; grid-template-columns: 44px 1fr 300px; height: 100vh; }
+  /* la barre du haut */
+  .haut { grid-column: 1 / 4; display: flex; align-items: center; gap: 4px; padding: 0 8px; border-bottom: 1px solid var(--ligne); background: var(--cadre); }
+  .sym { font: 700 14px 'Inter'; padding: 6px 10px; border-radius: 6px; background: var(--cadre2); margin-right: 8px; min-width: 70px; }
+  .sep { width: 1px; height: 22px; background: var(--ligne); margin: 0 6px; }
+  .b { background: none; border: 0; padding: 6px 9px; border-radius: 6px; color: var(--texte); font-weight: 500; }
+  .b:hover { background: var(--cadre2); } .b.on { color: #fff; background: #2a2e39; } .b.bleu { color: var(--bleu); }
+  .espace { flex: 1; }
+  .etat { font-size: 11.5px; color: var(--doux); display: flex; align-items: center; gap: 6px; } .pt { width: 7px; height: 7px; border-radius: 50%; background: var(--doux); } .pt.ok { background: var(--vert); } .pt.ko { background: var(--rouge); }
+  /* les outils à gauche */
+  .outils { border-right: 1px solid var(--ligne); display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 8px; }
+  .outil { width: 34px; height: 34px; border-radius: 6px; background: none; border: 0; display: grid; place-items: center; color: var(--texte); }
+  .outil:hover { background: var(--cadre2); } .outil.on { background: rgba(41, 98, 255, .2); color: #7aa2ff; }
+  .outil svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+  /* les graphiques */
+  .graphes { display: grid; gap: 1px; background: var(--ligne); min-height: 0; }
+  .graphes.un { grid-template-columns: 1fr; } .graphes.trois { grid-template-columns: 1fr 1fr 1fr; }
+  .pane { position: relative; background: #fff; min-width: 0; min-height: 0; overflow: hidden; }
+  .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  .pane .titre { position: absolute; left: 8px; top: 6px; font: 500 12.5px 'Inter'; color: #131722; pointer-events: none; z-index: 2; white-space: nowrap; }
+  .pane .titre b { font-weight: 600; } .pane .titre .ohlc { color: #555; font-variant-numeric: tabular-nums; }
+  .pane .titre .h { color: var(--vert); } .pane .titre .r { color: var(--rouge); }
+  .pane.actif { box-shadow: inset 0 0 0 2px var(--bleu); }
+  /* la liste de suivi */
+  .liste { border-left: 1px solid var(--ligne); overflow-y: auto; }
+  .liste .tete { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font: 700 13px 'Inter'; letter-spacing: .04em; }
+  .liste table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .liste th { text-align: right; font: 500 11.5px 'Inter'; color: var(--doux); padding: 4px 10px; } .liste th:first-child { text-align: left; }
+  .liste td { padding: 6px 10px; text-align: right; white-space: nowrap; } .liste td:first-child { text-align: left; font-weight: 600; }
+  .liste tr.fam td { font: 600 10.5px 'Inter'; letter-spacing: .1em; color: var(--doux); text-align: left; padding-top: 12px; }
+  .liste tr.l { cursor: pointer; } .liste tr.l:hover td { background: var(--cadre2); } .liste tr.l.sel td { background: rgba(41, 98, 255, .14); }
+  .liste .h { color: var(--vert); } .liste .r { color: var(--rouge); } .liste small { display: block; color: var(--doux); font-weight: 400; font-size: 10.5px; }
+  .aide { padding: 12px; color: var(--doux); font-size: 11.5px; line-height: 1.6; border-top: 1px solid var(--ligne); }
+  .aide kbd { background: var(--cadre2); border: 1px solid var(--ligne); border-radius: 4px; padding: 0 5px; font-size: 10.5px; }
+  .bulle { position: fixed; z-index: 20; background: #131722; color: #fff; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; display: none; box-shadow: 0 8px 24px rgba(0, 0, 0, .4); }
+  @media (max-width: 900px) { .app { grid-template-columns: 0 1fr 0; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="haut">
+    <span class="sym" id="sym">SIL</span>
+    <button class="b" data-ut="D1">D1</button><button class="b" data-ut="H4">H4</button><button class="b" data-ut="H1">H1</button>
+    <span class="sep"></span>
+    <button class="b" id="vue-un" title="Un graphique">1 graphique</button><button class="b" id="vue-trois" title="D1 · H4 · H1 côte à côte">D1 · H4 · H1</button>
+    <span class="sep masque-mobile"></span>
+    <button class="b masque-mobile" id="t-bougies">Bougies</button><button class="b masque-mobile" id="t-zz">Zigzag</button><button class="b masque-mobile" id="t-zones">Zones S/R H4</button><button class="b masque-mobile" id="t-vol">Volume</button>
+    <div class="espace"></div>
+    <a class="b bleu masque-mobile" id="lien-radar" href="radar.html" target="radar" style="text-decoration:none">Radar</a>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span></span>
+  </div>
+  <div class="outils">
+    <button class="outil on" data-o="curseur" title="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
+    <button class="outil" data-o="ligne" title="Ligne de tendance (L) : deux clics"><svg viewBox="0 0 24 24"><path d="M4 19L20 5"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/></svg></button>
+    <button class="outil" data-o="horizontale" title="Ligne horizontale (H) : un clic"><svg viewBox="0 0 24 24"><path d="M3 12h18"/></svg></button>
+    <button class="outil" data-o="canal" title="Canal parallèle (C) : deux clics, puis un troisième pour la largeur"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
+    <button class="outil" data-o="efface" title="Effacer la ligne choisie (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
+  </div>
+  <div class="graphes un" id="graphes"></div>
+  <div class="liste">
+    <div class="tete"><span>LISTE DE SUIVI</span><span style="color:var(--doux);font-weight:500;font-size:11px">cours TopstepX</span></div>
+    <table><thead><tr><th>Symbole</th><th>Dernier</th><th>Chg</th><th>Chg%</th></tr></thead><tbody id="liste"></tbody></table>
+    <div class="aide">
+      <b>Tes lignes</b> sont gardées sur l'ordinateur de la maison et apparaissent sur tous tes écrans. Atlas te prévient quand le prix <b>touche</b> ou <b>casse</b> une ligne (voix et ntfy).<br>
+      Glisser : déplacer · molette : zoom · double-clic : recadrer<br>
+      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> D1 / H4 / H1 · <kbd>Échap</kbd> curseur
+    </div>
+  </div>
+</div>
+<div class="bulle" id="bulle"></div>
+<script>
+'use strict';
+/* Le graphique d'Atlas, dans son style TradingView : fond blanc, barres OHLC noires, zigzag (5, 10) épais, volume en bas, l'unité de temps
+   en grand ; D1 / H4 / H1 (un ou trois côte à côte), les zones S/R H4, ses lignes tracées à la main (et leurs alertes, sur l'ordinateur de la
+   maison), sa liste de suivi. Les cours viennent de TopstepX (en direct). Jamais un signal ni un conseil : le dessin est à lui. */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
+let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
+if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
+if (location.pathname.startsWith('/salle/')) ROOT = location.origin;
+if (ROOT && !location.pathname.startsWith('/salle/')) $('#lien-radar').href = 'radar.html#maison=' + encodeURIComponent(ROOT);
+const lit = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+const ecrit = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } };
+let code = diese.get('code') || lit('g-code', 'SIL'), vue = lit('g-vue', 'trois'), utSeul = lit('g-ut', 'D1'), outil = 'curseur';
+let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1' };
+let lignes = [], choisie = null, brouillon = null, actif = 0;
+const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const UTS = () => vue === 'trois' ? ['D1', 'H4', 'H1'] : [utSeul];
+const DUREE = { D1: 86400, H4: 14400, H1: 3600 };
+const MOIS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+
+async function api(chemin, corps) {
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000);
+  try { const r = await fetch(`${ROOT}${chemin}`, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl.signal });
+    if (!r.ok) throw new Error(r.status); return r.json(); } finally { clearTimeout(tm); }
+}
+
+/* ---------- un graphique (un « pane ») ---------- */
+class Pane {
+  constructor(el, ut) { this.el = el; this.ut = ut; this.d = null; this.n = 120; this.fin = 0; this.y = null; this.souris = null; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.ecoute(); }
+  async charge() {
+    try { this.d = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); if (!this.fin) this.fin = 0; this.dessine(); return true; }
+    catch (e) { return false; }
+  }
+  taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; this.W = r.width; this.H = r.height; this.cv.width = r.width * dpr; this.cv.height = r.height * dpr; this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  // les bougies visibles : les n dernières, décalées de « fin » vers le passé
+  vis() { const B = (this.d && this.d.bougies) || []; const j = Math.max(0, B.length - Math.round(this.fin)); const i = Math.max(0, j - Math.round(this.n)); return { B, i, j }; }
+  dessine() {
+    if (!this.d) return; this.taille();
+    const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
+    const pw = W - AX, ph = H - BT, volH = opt.vol ? ph * .16 : 0, dec = this.d.dec;
+    let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2])); const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
+    if (this.y) { lo = this.y[0]; hi = this.y[1]; }
+    const n = Math.max(this.n, 10), bw = pw / n, X = k => (k - i + .5) * bw, Y = p => 8 + (hi - p) / (hi - lo) * (ph - 8 - volH - 6);
+    const T = t => { // un instant → une abscisse (au-delà de la dernière bougie : on prolonge)
+      const last = B.length - 1, dt = DUREE[this.ut];
+      if (t >= B[last][0]) return X(last + (t - B[last][0]) / dt);
+      if (t <= B[0][0]) return X((t - B[0][0]) / dt);
+      let a = 0, z = last; while (z - a > 1) { const m = (a + z) >> 1; if (B[m][0] <= t) a = m; else z = m; } return X(a + (t - B[a][0]) / Math.max(1, B[z][0] - B[a][0]));
+    };
+    const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
+    const iY = y => hi - (y - 8) / (ph - 8 - volH - 6) * (hi - lo);
+    Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
+    c.clearRect(0, 0, W, H); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
+    // la grille pointillée
+    c.strokeStyle = '#d6d6d6'; c.lineWidth = 1; c.setLineDash([2, 3]); c.font = '11px Inter, sans-serif'; c.fillStyle = '#131722';
+    const pas = niceStep((hi - lo) / Math.max(3, Math.floor(ph / 70)));
+    for (let p = Math.ceil(lo / pas) * pas; p <= hi; p += pas) { const y = Y(p); if (y > ph - volH) continue; c.beginPath(); c.moveTo(0, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); c.fillText(nb(p, dec), pw + 6, y + 4); }
+    let dernierLab = -999;
+    for (let k = i; k < j; k++) { const t = new Date(B[k][0] * 1000), tp = k > 0 ? new Date(B[k - 1][0] * 1000) : null; let lab = '';
+      if (this.ut === 'D1') { if (!tp || t.getMonth() !== tp.getMonth()) lab = t.getMonth() === 0 ? String(t.getFullYear()) : MOIS[t.getMonth()]; }
+      else if (!tp || t.getDate() !== tp.getDate()) lab = `${t.getDate()} ${MOIS[t.getMonth()]}`;
+      if (lab && X(k) - dernierLab > 60) { c.beginPath(); c.moveTo(Math.round(X(k)) + .5, 0); c.lineTo(Math.round(X(k)) + .5, ph); c.stroke(); c.textAlign = 'center'; c.fillText(lab, X(k), H - 7); c.textAlign = 'left'; dernierLab = X(k); } }
+    c.setLineDash([]);
+    // les zones S/R H4 (grises, discrètes, prolongées à droite)
+    if (opt.zones) (this.d.zones || []).forEach(z => { const x0 = Math.max(0, T(z.t)), y0 = Y(z.haut), y1 = Y(z.bas);
+      c.fillStyle = 'rgba(120,120,120,.13)'; c.fillRect(x0, y0, pw - x0, Math.max(1, y1 - y0)); c.strokeStyle = 'rgba(90,90,90,.55)'; c.lineWidth = 1; c.strokeRect(x0 + .5, y0 + .5, pw - x0, Math.max(1, y1 - y0));
+    });  // (sans étiquettes : son graphique reste épuré ; le prix des zones se lit au survol, sur l'axe)
+    // le volume (fines barres noires en bas)
+    if (opt.vol) { const vm = Math.max(...v.map(b => b[5] || 0)) || 1, lv = opt.bougies ? Math.max(1, bw * .6) : Math.max(1, bw * .24);
+      for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? '#9e9e9e' : '#000') : 'rgba(0,0,0,.85)'; c.fillRect(Math.round(X(k) - lv / 2), ph - h, lv, h); } }
+    // les barres OHLC, noires (son style)
+    if (opt.bougies) {
+      const cw = Math.max(1, bw * .62);
+      for (let k = i; k < j; k++) { const b = B[k], x = Math.round(X(k)) + .5, up = b[4] >= b[1], yo = Y(b[1]), yc = Y(b[4]);
+        c.strokeStyle = up ? '#7a7a7a' : '#000'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, Y(b[2])); c.lineTo(x, Y(b[3])); c.stroke();
+        c.fillStyle = up ? '#9e9e9e' : '#000'; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); }
+    } else {
+      c.strokeStyle = '#000'; c.lineWidth = Math.min(2, Math.max(1, bw * .12));
+      for (let k = i; k < j; k++) { const b = B[k], x = Math.round(X(k)) + .5, w = Math.max(1.5, bw * .35); c.beginPath(); c.moveTo(x, Y(b[2])); c.lineTo(x, Y(b[3])); c.moveTo(x - w, Y(b[1])); c.lineTo(x, Y(b[1])); c.moveTo(x, Y(b[4])); c.lineTo(x + w, Y(b[4])); c.stroke(); }
+    }
+    // le zigzag (5, 10) : épais, la dernière jambe en tirets
+    if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = '#000'; c.lineWidth = 2.4; c.lineJoin = 'round';
+      for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [6, 5] : []); c.beginPath(); c.moveTo(T(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(T(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]); }
+    // ses lignes
+    const tracer = (l, sel) => { c.strokeStyle = sel ? '#2962ff' : '#000'; c.lineWidth = sel ? 2 : 1;
+      const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
+      if (l.genre === 'horizontale') { const y = Y(l.p1); c.beginPath(); c.moveTo(0, y); c.lineTo(pw, y); c.stroke(); }
+      else { seg(l.t1, l.p1, l.t2, l.p2); if (l.genre === 'canal' && l.ecart != null) seg(l.t1, l.p1 + l.ecart, l.t2, l.p2 + l.ecart); }
+      if (sel && l.genre !== 'horizontale') { c.fillStyle = '#2962ff'; [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.beginPath(); c.arc(T(t), Y(p), 4, 0, 7); c.fill(); }); } };
+    lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
+    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l === choisie ? '#2962ff' : '#000'; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
+    // l'unité de temps, en grand (comme sur son TradingView)
+    c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(this.ut, pw - 14, 48); c.textAlign = 'left';
+    // le dernier cours (boîte noire sur l'axe)
+    const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#000'; c.fillRect(pw, yd - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(der, dec), pw + 6, yd + 4);
+    // l'axe
+    c.strokeStyle = '#c8c8c8'; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
+    // le réticule
+    if (this.souris) { const [mx, my] = this.souris; c.setLineDash([4, 4]); c.strokeStyle = '#888'; c.beginPath(); c.moveTo(mx, 0); c.lineTo(mx, ph); c.moveTo(0, my); c.lineTo(pw, my); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#131722'; c.fillRect(pw, my - 10, AX, 20); c.fillStyle = '#fff'; c.fillText(nb(iY(my), dec), pw + 6, my + 4);
+      const tt = new Date(iT(mx) * 1000), lab = this.ut === 'D1' ? tt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      c.fillStyle = '#131722'; c.fillRect(mx - 52, ph + 1, 104, BT - 2); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
+    // le titre (OHLC de la bougie survolée, ou de la dernière)
+    const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(this.ut)}</b> <span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span><br><span style="color:#555">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R H4' : ''}</span>`;
+  }
+  ecoute() {
+    const cv = this.cv; let glisse = null;
+    const pos = ev => { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
+    cv.addEventListener('pointerdown', ev => { actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
+      if (outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
+      const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { glisse = { ligne: l, x, y, orig: { ...l } }; return; } }
+      else if (choisie) { choisie = null; toutDessine(); }
+      glisse = { x, y, fin: this.fin, y0: this.y ? [...this.y] : null }; });
+    cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev); this.souris = [x, y];
+      if (brouillon && brouillon.pane === this) majBrouillon(this, x, y);
+      if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
+        l.t1 = o.t1 + (l.genre === 'horizontale' ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; toutDessine(); return; }
+      if (glisse && !glisse.ligne) { this.fin = Math.max(-this.n * .8, glisse.fin + (x - glisse.x) / this.bw); if (glisse.y0 && this.y) { const dy = (y - glisse.y) / (this.ph) * (glisse.y0[1] - glisse.y0[0]); this.y = [glisse.y0[0] + dy, glisse.y0[1] + dy]; } }
+      this.dessine(); });
+    cv.addEventListener('pointerup', () => { if (glisse && glisse.ligne) sauve(); glisse = null; });
+    cv.addEventListener('pointerleave', () => { this.souris = null; this.dessine(); });
+    cv.addEventListener('wheel', ev => { ev.preventDefault(); const f = ev.deltaY > 0 ? 1.12 : 1 / 1.12; this.n = Math.min(1500, Math.max(20, this.n * f)); this.y = null; this.dessine(); }, { passive: false });
+    cv.addEventListener('dblclick', () => { this.n = 120; this.fin = 0; this.y = null; this.dessine(); });
+  }
+}
+function niceStep(r) { const p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+
+/* ---------- ses lignes : tracer, choisir, déplacer, effacer, garder ---------- */
+function cliqueDessin(p, x, y) {
+  const t = p.iT(x), pr = p.iY(y);
+  if (outil === 'horizontale') { lignes.push({ id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }); sauve(); choisieOutil('curseur'); return; }
+  if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: true }; return; }
+  if (brouillon.genre === 'canal' && brouillon.etape === 1) { brouillon.etape = 2; brouillon.ecart = 0; return; }
+  const l = { ...brouillon }; delete l.pane; delete l.etape; lignes.push(l); brouillon = null; sauve(); choisieOutil('curseur');
+}
+function majBrouillon(p, x, y) {
+  if (brouillon.etape === 1) { brouillon.t2 = p.iT(x); brouillon.p2 = p.iY(y); }
+  else if (brouillon.etape === 2) { const t = p.iT(x), base = brouillon.p1 + (brouillon.p2 - brouillon.p1) * (t - brouillon.t1) / ((brouillon.t2 - brouillon.t1) || 1); brouillon.ecart = p.iY(y) - base; }
+  toutDessine();
+}
+function proche(p, x, y) {
+  if (!p.T) return null; let mieux = null, dmin = 7;
+  lignes.forEach(l => { let d;
+    if (l.genre === 'horizontale') d = Math.abs(p.Y(l.p1) - y);
+    else { const x1 = p.T(l.t1), y1 = p.Y(l.p1), x2 = p.T(l.t2), y2 = p.Y(l.p2), k = (y2 - y1) / ((x2 - x1) || 1);
+      d = x >= Math.min(x1, x2) - 4 ? Math.abs(y1 + k * (x - x1) - y) : 99; if (l.genre === 'canal' && l.ecart != null) d = Math.min(d, Math.abs(y1 + k * (x - x1) + (p.Y(l.p1 + l.ecart) - y1) - y)); }
+    if (d < dmin) { dmin = d; mieux = l; } });
+  return mieux;
+}
+function efface() { if (!choisie) return; lignes = lignes.filter(l => l !== choisie); choisie = null; sauve(); toutDessine(); }
+const idNeuf = () => Math.random().toString(36).slice(2, 10);
+let tSauve = 0;
+function sauve() { toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
+  // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
+  const env = []; lignes.forEach(l => { env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : 'ta ligne de tendance', alerte: true, ecart: l.ecart, canal: l.genre === 'canal' });
+    if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: true, double: l.id }); });
+  try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
+async function chargeLignes() {
+  try { const r = await api(`/maison/graphique?lignes=1&code=${code}`); const l = r.lignes || [];
+    lignes = l.filter(x => !x.double).map(x => x.canal ? { ...x, genre: 'canal' } : x); } catch (e) { lignes = []; }
+}
+
+/* ---------- les panneaux, la liste, les touches ---------- */
+let panes = [];
+function construit() {
+  const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un');
+  g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas></div>`).join('');
+  panes = [...g.querySelectorAll('.pane')].map((el, k) => new Pane(el, UTS()[k])); actif = Math.min(actif, panes.length - 1); majActif();
+  document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', vue === 'un' && b.dataset.ut === utSeul));
+  $('#vue-un').classList.toggle('on', vue === 'un'); $('#vue-trois').classList.toggle('on', vue === 'trois');
+  $('#sym').textContent = code; chargeTout();
+}
+function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif)); }
+function toutDessine() { panes.forEach(p => p.dessine()); }
+async function chargeTout() {
+  const ok = (await Promise.all(panes.map(p => p.charge()))).some(Boolean);
+  $('#pt').className = 'pt ' + (ok ? 'ok' : 'ko'); $('#etat').textContent = ok ? 'en direct' : 'hors liaison';
+}
+function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAll('[data-o]').forEach(b => b.classList.toggle('on', b.dataset.o === o)); panes.forEach(p => p.cv.style.cursor = o === 'curseur' ? 'default' : 'crosshair'); }
+document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
+document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => { utSeul = b.dataset.ut; vue = 'un'; ecrit('g-ut', utSeul); ecrit('g-vue', vue); construit(); }));
+$('#vue-un').onclick = () => { vue = 'un'; ecrit('g-vue', vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit('g-vue', vue); construit(); };
+[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit('g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
+async function changeCode(c) { code = c; ecrit('g-code', c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); }
+let L = [];
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; majListe(r.familles || []); } catch (e) { /* hors liaison */ } }
+function majListe(fams) {
+  fams = fams && fams.length ? fams : [...new Set(L.map(x => x.famille))];
+  $('#liste').innerHTML = fams.map(f => `<tr class="fam"><td colspan="4">${esc(f.toUpperCase())}</td></tr>` + L.filter(x => x.famille === f).map(x => `<tr class="l ${x.code === code ? 'sel' : ''}" data-c="${esc(x.code)}"><td>${esc(x.code)}<small>${esc(x.nom)}</small></td><td>${nb(x.dernier, x.dec)}</td><td class="${x.chg >= 0 ? 'h' : 'r'}">${x.chg > 0 ? '+' : ''}${nb(x.chg, x.dec)}</td><td class="${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</td></tr>`).join('')).join('');
+}
+$('#liste').addEventListener('click', ev => { const t = ev.target.closest('tr.l'); if (t) changeCode(t.dataset.c); });
+document.addEventListener('keydown', ev => {
+  if (ev.target.tagName === 'INPUT') return; const k = ev.key.toLowerCase();
+  if (k === 'escape') { brouillon = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
+  else if (k === 'l') choisieOutil('ligne'); else if (k === 'h') choisieOutil('horizontale'); else if (k === 'c') choisieOutil('canal');
+  else if (k === 'delete' || k === 'backspace') efface();
+  else if (['1', '2', '3'].includes(k)) { utSeul = ['D1', 'H4', 'H1'][+k - 1]; vue = 'un'; ecrit('g-ut', utSeul); ecrit('g-vue', vue); construit(); }
+});
+window.addEventListener('resize', toutDessine);
+setInterval(chargeTout, 20000); setInterval(chargeListe, 30000);
+(async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; } await chargeLignes(); construit(); chargeListe(); })();
+</script>
+</body>
+</html>
