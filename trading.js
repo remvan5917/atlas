@@ -391,6 +391,14 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
       let r; try { r = await appel(`/maison/radar?rattrapage=${m}`, null, 20000); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas le radar."); }
       return say(r.texte || "Rien à signaler sur tes marchés.");
     };
+    // le graphique à la voix : « l'or en H4 », « trace une horizontale sur le dernier creux », « mets l'alerte sur ma ligne », « installe ma salle de marché »
+    // (Atlas transmet à la maison ; le graphique ouvert, celui qu'il a touché en dernier, l'exécute)
+    if ((/\b(l or|l argent|le petrole|le nasdaq|le dow|l euro dollar|l euro|le dollar|le vix|le bitcoin|le s ?(et|&) ?p|le soja)\b/.test(n) && /\ben (h ?1|h ?4|d ?1|daily|journalier|hebdo|hebdomadaire|mensuel|(une|1|4|quatre) heures?|(5|15|30|cinq|quinze|trente) minutes?)\b/.test(n))
+      || /\b(trace|dessine|mets?|pose) (moi )?(une )?(ligne )?horizontale\b/.test(n) || /\b(mets|active|remets|coupe|enleve|retire) l alerte (sur|de) (ma|la|cette) ligne\b/.test(n)
+      || /\binstalle (ma|la) salle( de marche)?\b/.test(n) || /\b(efface|supprime) (ma|la|cette) (derniere )?ligne\b/.test(n) || /\b(trois|3) graphiques\b/.test(n)) return async () => {
+      try { await appel('/maison/copilote', { action: 'commande', texte: t }); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas pu toucher au graphique."); }
+      return say(/\binstalle\b/.test(n) ? "J'installe ta salle de marché : regarde ton graphique." : "C'est envoyé à ton graphique.");
+    };
     if (/\b(ouvre|affiche|montre)\b.*\b(mon|mes|le) (graphique atlas|graphiques?( atlas)?)\b|\bgraphique atlas\b/.test(n) && !/\b(de l or|de l argent|du petrole|du nasdaq)\b/.test(n)) return () => {
       try { window.open(`graphique.html${S.settings && S.settings.localUrl ? '#maison=' + encodeURIComponent(S.settings.localUrl.replace(/\/+$/, '').replace(/\/v1$/, '')) : ''}`, 'graphique'); } catch (e) { /* bloqué */ }
       return say("J'ouvre ton graphique : D1, H4 et H1 avec le zigzag, les zones S/R H4 et tes lignes. Je te préviens quand le prix touche ou casse une de tes lignes.");

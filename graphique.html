@@ -132,6 +132,12 @@
   .pouls.on { display: block; } .pouls video { width: 100%; display: block; transform: scaleX(-1); opacity: .85; } .pouls canvas { position: absolute; inset: 0; width: 100%; height: calc(100% - 30px); transform: scaleX(-1); }
   .pouls .bas2 { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--cadre); font: 600 12px 'Inter'; } .pouls .bas2 b { font-size: 17px; color: #ff6b81; }
   .pouls .bas2 b::before { content: '♥ '; font-size: 13px; animation: clign 1s infinite; } .pouls .bas2 small { color: var(--tres-doux); font-size: 10px; }
+  .liens { padding: 4px 0 6px; border-bottom: 1px solid var(--ligne); }
+  .lien-m { display: grid; grid-template-columns: 8px 1fr auto; gap: 8px; align-items: center; padding: 5px 14px; font-size: 12px; }
+  .lien-m i { width: 7px; height: 7px; border-radius: 50%; background: var(--vert); } .lien-m.relache i { background: var(--tres-doux); } .lien-m.inhabituel i { background: var(--ambre); box-shadow: 0 0 8px var(--ambre); }
+  .lien-m small { color: var(--tres-doux); font: 600 10.5px 'Inter'; } .lien-m.inhabituel { background: rgba(255, 176, 32, .08); }
+  .lien-m .ph { grid-column: 2 / 4; color: #ffd37a; font-size: 11.5px; line-height: 1.4; }
+  .salle-btn { display: block; width: calc(100% - 28px); margin: 10px 14px 12px; padding: 10px; border-radius: 10px; border: 0; color: #fff; font: 700 13px 'Inter'; background: linear-gradient(135deg, #2962ff, #7c4dff); box-shadow: 0 6px 20px rgba(124, 77, 255, .4); }
   @media (max-width: 1200px) { .sym { min-width: 0; } .sym .px { display: none; } }
   @media (max-width: 900px) { .mem, .pouls { right: 12px; } .tiroir { width: 100%; } .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none !important; } }
 </style>
@@ -151,6 +157,7 @@
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
       <button class="ico" id="t-pos" data-tip="Ta position en direct : entrée, stop, limite du jour, MLL"><svg viewBox="0 0 24 24"><path d="M3 9h18M3 15h18"/><path d="M8 9v6" stroke-dasharray="2 2"/><circle cx="17" cy="9" r="2"/></svg></button>
+      <button class="ico" id="t-cot" data-tip="Positionnement des gros acteurs (rapport COT de la CFTC)"><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/></svg></button>
       <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
     </div>
     <div class="grp salle masque-mobile">
@@ -168,7 +175,7 @@
       <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
     </div>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v11</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v12</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -182,6 +189,8 @@
   <div class="graphes un" id="graphes"></div>
   <div class="liste">
     <div class="tete"><b>LISTE DE SUIVI</b><span>cours TopstepX en direct</span></div>
+    <div class="fam" style="cursor:default">LIENS ENTRE MARCHÉS<i title="vert : lien normal · gris : lien relâché ces jours-ci · ambre : ils se séparent">?</i></div>
+    <div class="liens" id="liens"><div class="lien-m relache"><i></i><span>chargement…</span></div></div>
     <div id="liste"></div>
     <div class="aide">
       <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. Clique sur une ligne : sa petite barre (alerte, couleur, style, effacer).<br>
@@ -231,7 +240,8 @@ const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
 let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
 if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
-let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1' };
+let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1' };
+let COTD = {};
 let DIRECT = { positions: [] };
 const sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + nb(Math.abs(v), d);
 let lignes = [], choisie = null, brouillon = null, actif = 0;
@@ -357,7 +367,7 @@ class Pane {
             c.fillStyle = n.coul; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(n.prix, dec), pw + 6, y + 4); }
           let yt; if (dedans) yt = Math.max(12, Math.min(yMax - 12, y)); else if (y < 0) { yt = hautPris; hautPris += 26; } else { yt = basPris; basPris -= 26; }
           c.font = '600 11px Inter, sans-serif'; const t = (dedans ? '' : y < 0 ? '▲  ' : '▼  ') + n.txt + (dedans ? '' : `   à ${nb(n.prix, dec)}`), w = c.measureText(t).width + 18;
-          let xt = 10; if (dedans && yt < 100) { xt = pw - w - 12; yt = Math.max(yt, 70); }  // sous le titre : l'étiquette passe à droite
+          let xt = 10; if (dedans && yt < 100) { xt = pw - w - 12; yt = Math.max(yt, opt.cot && COTD[code] && COTD[code].ok ? 112 : 70); }  // sous le titre : l'étiquette passe à droite (sous la jauge COT)
           c.fillStyle = n.plein ? n.coul : 'rgba(255,255,255,.94)'; c.beginPath(); c.roundRect(xt, yt - 11, w, 22, 5); c.fill();
           if (!n.plein) { c.strokeStyle = n.coul; c.lineWidth = 1; c.stroke(); }
           c.fillStyle = n.plein ? '#fff' : n.coul; c.fillText(t, xt + 9, yt + 4);
@@ -366,6 +376,16 @@ class Pane {
     }
     // l'unité de temps, en grand (comme sur son TradingView)
     c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 14, 48); c.textAlign = 'left';
+    // la jauge du COT : où en sont les fonds spéculatifs sur 3 ans (0 = jamais aussi vendeurs, 100 = jamais aussi acheteurs)
+    const cd = COTD[code];
+    if (opt.cot && cd && cd.ok && pw > 260) {
+      const f = cd.fonds, w = 128, x1 = pw - 14 - w, y1 = 62;
+      c.font = '700 9.5px Inter, sans-serif'; c.fillStyle = '#5d6576'; c.textAlign = 'right'; c.fillText(`COT · FONDS · ${f.net > 0 ? 'ACHETEURS' : 'VENDEURS'} ${nb(Math.abs(f.net), 0)}`, pw - 14, y1); c.textAlign = 'left';
+      const gr = c.createLinearGradient(x1, 0, x1 + w, 0); gr.addColorStop(0, '#f23645'); gr.addColorStop(.5, '#d6d6d6'); gr.addColorStop(1, '#089981');
+      c.fillStyle = gr; c.beginPath(); c.roundRect(x1, y1 + 6, w, 5, 3); c.fill();
+      const xm = x1 + w * f.indice / 100; c.fillStyle = '#131722'; c.beginPath(); c.moveTo(xm, y1 + 4); c.lineTo(xm - 4, y1 - 1); c.lineTo(xm + 4, y1 - 1); c.closePath(); c.fill(); c.fillRect(xm - 1, y1 + 4, 2, 9);
+      c.font = '600 9.5px Inter, sans-serif'; c.fillStyle = cd.extreme ? '#b8001f' : '#5d6576'; c.textAlign = 'right'; c.fillText(`${f.indice}/100 sur 3 ans${cd.extreme ? ' · extrême' : ''} · ${new Date(cd.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}`, pw - 14, y1 + 25); c.textAlign = 'left';
+    }
     // le dernier cours (boîte noire sur l'axe)
     const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
     c.fillStyle = '#000'; c.fillRect(pw, yd - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(der, dec), pw + 6, yd + 4);
@@ -497,8 +517,9 @@ function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAl
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
-[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-pos', 'pos']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
-async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); }
+[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-pos', 'pos'], ['#t-cot', 'cot']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
+async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); }
+async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
 async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
@@ -685,7 +706,8 @@ async function arreteMicro() {
   if (r.mode === 'q') ouvreCopi('Copilote', 'Je t’ai entendu, je regarde…', '', true);
   let texte = ''; try { texte = await transcrit(blob); } catch (e) { /* rien */ }
   if (!texte) { toast("Je n'ai rien compris, réessaie"); if (r.mode === 'q') $('#copi').classList.remove('on'); return; }
-  if (r.mode === 'q') copilote(texte); else noteVocale(texte, duree);
+  if (r.mode === 'q') { const fait = await commandeGraphique(texte).catch(() => null); if (fait) { $('#copi').classList.remove('on'); toast(`✓ ${fait}`); } else copilote(texte); }
+  else noteVocale(texte, duree);
 }
 async function transcrit(blob) {
   const fd = new FormData(); fd.append('file', blob, 'voix.webm'); fd.append('language', 'fr'); fd.append('temperature', '0'); fd.append('response_format', 'json');
@@ -790,6 +812,91 @@ async function chargeEtat() {
   } catch (e) { /* hors liaison */ }
 }
 chargeEtat(); setInterval(chargeEtat, 30000);
+
+/* --- les liens entre les marchés --- */
+const NOMC = { MGC: 'Or', SIL: 'Argent', DXY: 'Dollar', TAUX: 'Taux US', MNQ: 'Nasdaq', MYM: 'Dow', M6E: 'Euro', MCL: 'Pétrole', CAD: 'Dollar CAD', VIX: 'VIX' };
+async function chargeLiens() {
+  if (document.hidden || !ROOT) return;
+  try { const r = await api('/maison/copilote', { action: 'liens' }), l = r.liens || [];
+    $('#liens').innerHTML = l.map(x => `<div class="lien-m ${x.etat}" title="corrélation sur 5 jours : ${x.corr > 0 ? '+' : ''}${nb(x.corr, 2)} · depuis 1 h : ${x.za > 0 ? '+' : ''}${nb(x.za, 1)} / ${x.zb > 0 ? '+' : ''}${nb(x.zb, 1)} écarts-types"><i></i><span>${NOMC[x.a] || x.a} ${x.attendu > 0 ? '⇄' : '⇅'} ${NOMC[x.b] || x.b}</span><small>${x.etat === 'inhabituel' ? 'SE SÉPARENT' : x.etat === 'relache' ? 'lien relâché' : (x.attendu > 0 ? 'ensemble' : 'en miroir')}</small>${x.phrase ? `<div class="ph">${esc(x.phrase)}</div>` : ''}</div>`).join('') || '<div class="lien-m relache"><i></i><span>pas encore de données</span></div>';
+  } catch (e) { /* hors liaison */ }
+}
+chargeLiens(); setInterval(chargeLiens, 60000); chargeCot();
+/* --- la veille : ce qu'Atlas a dit seul (il le dit à voix haute dans Atlas ; ici, la carte) --- */
+let veilleVue = Math.floor(Date.now() / 1000);
+async function chargeVeille() {
+  if (document.hidden || !ROOT) return;
+  try { const r = await api('/maison/copilote', { action: 'veille' }), n = (r.veille || []).filter(v => v.at > veilleVue);
+    if (n.length) { veilleVue = Math.max(...n.map(v => v.at)); if (!copiOccupe) ouvreCopi('Veille · ' + new Date(n[0].at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), n[0].texte, '', false); }
+  } catch (e) { /* hors liaison */ }
+}
+setInterval(chargeVeille, 20000);
+/* --- le graphique à la voix --- */
+const sansAcc = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’'`]/g, ' ').replace(/\s+/g, ' ');
+const VOIX_MARCHES = [[/\b(l ?or|gold)\b/, 'MGC'], [/\bargent|silver\b/, 'SIL'], [/\bpetrole|brut|wti\b/, 'MCL'], [/\bnasdaq\b/, 'MNQ'], [/\bdow\b/, 'MYM'], [/\beuro\b/, 'M6E'], [/\bdollar index|dxy|le dollar\b/, 'DXY'], [/\bvix\b/, 'VIX'], [/\bbitcoin\b/, 'MBT'], [/\bs ?(et|&|and)? ?p\b|\bsp 500\b/, 'MES'], [/\bsoja\b/, 'ZL']];
+const VOIX_UT = [[/\b(5|cinq) ?(minutes?|min|m)\b/, '5m'], [/\b(15|quinze) ?(minutes?|min|m)\b/, '15m'], [/\b(30|trente) ?(minutes?|min|m)\b/, '30m'], [/\bh ?4\b|\b(4|quatre) ?heures?\b/, 'H4'], [/\bh ?1\b|\b(une|1) ?heure\b|\bhoraire\b/, 'H1'], [/\bd ?1\b|\bdaily\b|\bjournalier\b|\ben jour\b/, 'D1'], [/\bhebdo|weekly|semaine\b/, 'W'], [/\bmensuel|monthly|en mois\b/, 'M']];
+async function commandeGraphique(texte) {
+  const n = ' ' + sansAcc(texte) + ' ';
+  if (/\binstalle (ma|la) salle\b/.test(n)) { installeSalle(); return 'Salle de marché'; }
+  if (/\b(trois|3) graphiques\b/.test(n)) { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); return 'Trois graphiques'; }
+  if (/\b(un seul|1) graphique\b/.test(n)) { vue = 'un'; ecrit(K('g-vue'), vue); construit(); return 'Un graphique'; }
+  if (/\b(trace|dessine|mets?|pose) (moi )?(une )?(ligne )?horizontale\b/.test(n)) {
+    const p = panes[actif] || panes[0]; if (!p || !p.d) return null;
+    const nbr = /\ba (\d+(?:[ ,.]\d+)*)/.exec(n); let prix = null, t = (p.d.bougies || []).slice(-1)[0][0], quoi = '';
+    if (/\b(dernier |le )?(creux|plus bas|bas)\b/.test(n) || /\b(dernier |le )?(sommet|plus haut|haut)\b/.test(n)) {
+      const g = /creux|plus bas|\bbas\b/.test(n) ? 'l' : 'h', z = (p.d.zigzag || []).filter(x => x[2] === g); if (!z.length) return null;
+      const pv = z[z.length - 1]; prix = pv[1]; t = pv[0]; quoi = g === 'l' ? 'sur le dernier creux' : 'sur le dernier sommet';
+    } else if (nbr) { prix = parseFloat(nbr[1].replace(/ /g, '').replace(',', '.')); quoi = 'à ' + nb(prix, p.d.dec); }
+    if (prix == null || !isFinite(prix)) return null;
+    const l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: prix, alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine();
+    return `Horizontale ${quoi} (${nb(prix, p.d.dec)}) · alerte active`;
+  }
+  if (/\b(mets|active|remets|coupe|enleve|retire) l alerte\b/.test(n)) {
+    const l = choisie || lignes[lignes.length - 1]; if (!l) return null; l.alerte = !/\b(coupe|enleve|retire)\b/.test(n); sauve(); toutDessine(); return l.alerte ? 'Alerte activée sur ta ligne' : 'Alerte coupée sur ta ligne';
+  }
+  if (/\b(efface|supprime) (ma|la|cette) (derniere )?ligne\b/.test(n)) { const l = choisie || lignes[lignes.length - 1]; if (!l) return null; choisie = l; efface(); return 'Ligne effacée'; }
+  if (/\bmemoire\b/.test(n)) { memoire(); return 'Mémoire du marché'; }
+  if (/\b(pourquoi|comment|qu est|que se|quoi|est ce|explique|raconte|combien)\b/.test(n)) return null;  // (une question : c'est pour le copilote)
+  const m = VOIX_MARCHES.find(([r]) => r.test(n)), u = VOIX_UT.find(([r]) => r.test(n));
+  if ((m && (u || /\b(montre|affiche|passe|mets|ouvre|va sur|bascule|change)\b/.test(n))) || (u && /\b(passe|mets|affiche|montre|en)\b/.test(n))) {
+    if (m && m[1] !== code) await changeCode(m[1]);
+    if (u) choisirUT(u[1]);
+    return `${m ? m[1] : code}${u ? ' en ' + (LIB[u[1]] || u[1]) : ''}`;
+  }
+  return null;
+}
+// la fenêtre qui obéit : celle qu'il a touchée en dernier (avec plusieurs écrans, une seule change)
+const toucheFen = () => ecrit('g-derniere-fen', FEN);
+document.addEventListener('pointerdown', toucheFen, true); document.addEventListener('keydown', toucheFen, true); window.addEventListener('focus', toucheFen);
+let cmdDepuis = 0;
+async function chargeCommandes() {
+  if (!ROOT) return;
+  try { const r = await api('/maison/copilote', { action: 'commandes', depuis: cmdDepuis });
+    if (!cmdDepuis) { cmdDepuis = r.maintenant; return; }
+    for (const c of r.commandes || []) { cmdDepuis = Math.max(cmdDepuis, c.id); if (lit('g-derniere-fen', '1') !== FEN) continue; const ok = await commandeGraphique(c.texte); toast(ok ? `✓ ${ok}` : `Je n'ai pas compris : « ${c.texte} »`); }
+  } catch (e) { /* hors liaison */ }
+}
+setInterval(chargeCommandes, 2000); chargeCommandes();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { chargeLiens(); chargeEtat(); chargeDirect(); } });
+/* --- « installe ma salle de marché » : une fenêtre par écran (le graphique ici, le radar, et ton deuxième marché) --- */
+async function installeSalle() {
+  let ecrans = null;
+  try { if ('getScreenDetails' in window) ecrans = (await window.getScreenDetails()).screens; } catch (e) { /* refusé */ }
+  if (!ecrans || ecrans.length < 2) { toast(ecrans ? 'Un seul écran détecté : la salle tient ici.' : 'Ton navigateur ne me laisse pas voir tes écrans : autorise « gestion des fenêtres » pour ce site.'); return; }
+  const ici = ecrans.find(e => window.screenLeft >= e.left && window.screenLeft < e.left + e.width) || ecrans[0], autres = ecrans.filter(e => e !== ici);
+  const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : '';
+  const deuxieme = code === 'MGC' ? 'SIL' : 'MGC', plan = [['radar.html' + (m ? '#' + m.slice(1) : ''), 'radar'], [null, 'graphique-2']];
+  let bloque = false;
+  autres.slice(0, 2).forEach((e, k) => {
+    let url = plan[k][0];
+    if (!url) { const n = '2'; ecrit(`g-code-${n}`, deuxieme); ecrit(`g-vue-${n}`, 'trois'); url = `${location.pathname}#f=${n}${m}`; }
+    const w = window.open(url, plan[k][1], `popup,left=${e.availLeft},top=${e.availTop},width=${e.availWidth},height=${e.availHeight}`); if (!w) bloque = true;
+  });
+  vue = 'trois'; ecrit(K('g-vue'), vue); construit();
+  if (bloque) { ouvreCopi('Salle de marché', "Ton navigateur a bloqué l'ouverture des fenêtres. Clique sur le bouton ci-dessous (ou autorise les fenêtres pop-up pour ce site).", '', false);
+    $('#copi-txt').insertAdjacentHTML('beforeend', '<button class="salle-btn" id="salle-go">Installer ma salle de marché</button>'); $('#salle-go').onclick = () => { $('#copi').classList.remove('on'); installeSalle(); }; }
+  else toast(`Salle installée sur ${Math.min(3, ecrans.length)} écrans`);
+}
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
