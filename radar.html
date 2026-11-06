@@ -78,7 +78,10 @@
   .tuile .var { font: 500 12px var(--mono); }
   .tuile svg.spark { display: block; width: 100%; height: 34px; margin-top: 6px; }
   .tuile .pos { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; font: 600 11.5px var(--mono); padding: 5px 8px; border-radius: 8px; background: rgba(255, 176, 32, .1); color: var(--ambre); }
-  .tuile.enpos { border-color: rgba(255, 176, 32, .5); } .tuile .pos { flex-wrap: wrap; }
+  .tuile.enpos { border-color: rgba(255, 176, 32, .5); }
+  .tuile .gbtn { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 11.5px var(--ui); color: var(--cyan); border: 1px solid rgba(76, 201, 240, .3); border-radius: 8px; padding: 5px 0; background: rgba(76, 201, 240, .06); }
+  .tuile .gbtn svg { width: 14px; height: 14px; } .tuile:hover .gbtn { background: rgba(76, 201, 240, .14); }
+  .titre-section { font: 700 11px var(--ui); letter-spacing: .2em; color: var(--tres-doux); margin: 0 0 8px; display: flex; justify-content: space-between; } .titre-section span:last-child { letter-spacing: 0; font-weight: 500; font-size: 11.5px; } .tuile .pos { flex-wrap: wrap; }
   .tuile .marque { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--rouge); box-shadow: 0 0 10px var(--rouge); animation: clig 1.2s steps(2) infinite; }
   .tuile.bouge { animation: bouge 1.6s ease-in-out infinite; } @keyframes bouge { 50% { box-shadow: 0 0 0 1px var(--ambre) inset, 0 0 24px rgba(255, 176, 32, .25); } }
 
@@ -180,6 +183,7 @@
 
 <section class="rattrapage" id="rattrapage"><div><div class="eti">PENDANT TON ABSENCE</div><p id="ratt-txt"></p></div><button id="ratt-ok">J’ai vu</button></section>
 <section class="moment" id="moment"><div class="eti">CHARGEMENT</div></section>
+<div class="titre-section"><span>TES MARCHÉS</span><span>appuie sur un marché pour voir son graphique avec les nouvelles</span></div>
 <section class="tuiles" id="tuiles"></section>
 <section class="climat" id="climat"></section>
 
@@ -323,6 +327,7 @@ function tuiles() {
       <div class="var ${x ? cl(x.var_ticks) : ''}">${x ? `${sg(x.var_ticks)} t · ${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %` : '&nbsp;'}</div>
       ${courbe(x && x.heure)}
       ${p ? `<div class="pos"><span>${esc((p.sens || '').toUpperCase())} ×${esc(p.taille)}</span>${lat}</div>` : ''}
+      <div class="gbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg>Graphique et nouvelles</div>
     </button>`;
   }).join('');
 }
