@@ -59,11 +59,11 @@
     <span class="sep"></span>
     <button class="b" id="vue-un" title="Un seul graphique">1 graphique</button><button class="b" id="vue-trois" title="Trois graphiques côte à côte : clique sur un graphique puis sur une unité de temps pour le changer">3 graphiques</button>
     <span class="sep masque-mobile"></span>
-    <button class="b masque-mobile" id="t-bougies">Bougies</button><button class="b masque-mobile" id="t-zz">Zigzag</button><button class="b masque-mobile" id="t-zones">Zones S/R H4</button><button class="b masque-mobile" id="t-vol">Volume</button><button class="b masque-mobile" id="t-aimant" title="Aimant : tes lignes se collent sur les rebonds du zigzag (sinon sur le haut, le bas, l'ouverture ou la clôture d'une bougie)">Aimant</button>
+    <button class="b masque-mobile" id="t-bougies">Bougies</button><button class="b masque-mobile" id="t-zz">Zigzag</button><button class="b masque-mobile" id="t-zones">Zones S/R D1</button><button class="b masque-mobile" id="t-vol">Volume</button><button class="b masque-mobile" id="t-aimant" title="Aimant : tes lignes se collent sur les rebonds du zigzag (sinon sur le haut, le bas, l'ouverture ou la clôture d'une bougie)">Aimant</button>
     <div class="espace"></div>
  <button class="b masque-mobile" id="nouvelle" title="Une fenêtre de plus, à glisser sur un autre écran">+ Fenêtre</button>
     <a class="b bleu masque-mobile" id="lien-radar" href="radar.html" target="radar" style="text-decoration:none">Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.6">· v5</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.6">· v6</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" title="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -104,7 +104,7 @@ const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
 let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
 if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
-let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones2', '0') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1' };
+let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1' };
 let lignes = [], choisie = null, brouillon = null, actif = 0;
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const UTS = () => vue === 'trois' ? utsTrois : [utSeul];
@@ -208,7 +208,7 @@ class Pane {
       c.fillStyle = '#131722'; c.fillRect(mx - 52, ph + 1, 104, BT - 2); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b> <span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span><br><span style="color:#555">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R H4' : ''}${opt.aimant ? ' · aimant' : ''}</span>`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b> <span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span><br><span style="color:#555">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>`;
   }
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
@@ -324,7 +324,7 @@ function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAl
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
-[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones2' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
+[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
 async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); }
 let L = [];
 async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; majListe(r.familles || []); } catch (e) { /* hors liaison */ } }
