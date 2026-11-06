@@ -78,15 +78,32 @@ if (location.pathname.startsWith('/salle/')) ROOT = location.origin; // servie p
 let filtre = 'tout', infos = false, son = false, vus = new Set(), premier = true, dernierOk = 0, donnees = null;
 try { son = localStorage.getItem('radar-son') === '1'; filtre = localStorage.getItem('radar-filtre') || 'tout'; infos = localStorage.getItem('radar-infos') === '1'; } catch (e) { /* rien */ }
 const hm = s => { const d = new Date(s * 1000); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
-function bip(fort) {
+function bip(fort) {  // les mêmes sons qu'Atlas : « flash info » pour une critique, « terminal » sinon
   if (!son) return;
-  try {
-    const ac = bip.ac || (bip.ac = new (window.AudioContext || window.webkitAudioContext)());
-    [0, .18].concat(fort ? [.36] : []).forEach(t0 => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = fort ? 880 : 660; o.connect(g); g.connect(ac.destination);
-      g.gain.setValueAtTime(.0001, ac.currentTime + t0); g.gain.exponentialRampToValueAtTime(.25, ac.currentTime + t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + t0 + .14);
-      o.start(ac.currentTime + t0); o.stop(ac.currentTime + t0 + .16); });
-  } catch (e) { /* pas de son */ }
+  try { const c = bip.ac || (bip.ac = new (window.AudioContext || window.webkitAudioContext)()); if (c.state === 'suspended') c.resume(); const out = c.createGain(); out.gain.value = 1; out.connect(c.destination); sonRadar(c, out, c.currentTime + 0.02, fort); } catch (e) { /* pas de son */ }
 }
+function sonRadar(c, out, t0, critique) {
+  // une note de terminal (synthèse FM : une porteuse modulée, attaque nette, déclin rapide)
+  const fm = (f, debut, duree, vol, ratio = 2, indice = 2.5, declin = 6) => {
+    const car = c.createOscillator(), mod = c.createOscillator(), gm = c.createGain(), g = c.createGain(), t = t0 + debut;
+    car.frequency.value = f; mod.frequency.value = f * ratio;
+    gm.gain.setValueAtTime(indice * f * ratio, t); gm.gain.exponentialRampToValueAtTime(Math.max(1, indice * f * ratio * Math.exp(-declin * 1.5 * duree)), t + duree);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + duree);
+    mod.connect(gm); gm.connect(car.frequency); car.connect(g); g.connect(out); mod.start(t); car.start(t); mod.stop(t + duree + 0.02); car.stop(t + duree + 0.02);
+  };
+  const sub = (f, debut, duree, vol) => { const o = c.createOscillator(), g = c.createGain(), t = t0 + debut; o.frequency.value = f;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + duree); o.connect(g); g.connect(out); o.start(t); o.stop(t + duree + 0.02); };
+  if (critique) { // le « flash info » : un balayage qui monte, un accord franc, trois bips aigus
+    const o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(300, t0); o.frequency.exponentialRampToValueAtTime(2400, t0 + 0.35);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.06, t0 + 0.34); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.37);
+    o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + 0.4);
+    [523.3, 659.3, 784, 1046.5].forEach(f => fm(f, 0.36, 1.2, 0.05, 1, 1.6, 3.2)); sub(130.8, 0.36, 0.4, 0.12);
+    [0.95, 1.07, 1.19].forEach(d => fm(1568, d, 0.1, 0.06, 3, 1, 25));
+  } else { // le « terminal » : trois notes nettes (la, mi, la aigu) et un coup sourd
+    sub(110, 0.01, 0.25, 0.09); [[880, 0.02], [659.3, 0.13], [1318.5, 0.24]].forEach(([f, d]) => fm(f, d, 0.5, 0.11));
+  }
+}
+
 function majBoutons() {
   document.querySelectorAll('#filtres button[data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === 'infos' ? infos : b.dataset.f === filtre));
   $('#son').classList.toggle('on', son); $('#son').textContent = son ? 'Son : oui' : 'Son : non';

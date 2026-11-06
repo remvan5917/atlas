@@ -10,29 +10,32 @@
 'use strict';
 
 const SECURITE = (() => {
-  // le son de salle de marché : le micro de la « squawk box » qui s'ouvre (un souffle bref), puis le carillon des dépêches ;
-  // critique : trois bips secs et aigus, comme un terminal ; sinon : un ding-dong de cloche électronique
+  // le son de salle de marché, dans l'esprit d'un terminal Bloomberg (fabriqué sur place, aucun fichier) :
+  // une nouvelle critique : le « flash info » ; un chiffre, une annonce, un briefing : le « terminal », plus court
   function squawk(critique) {
     if (!S.settings.sound) return;
-    try {
-      const c = fx.audio(), t0 = c.currentTime + 0.02, out = c.createGain(); out.gain.value = 0.9; out.connect(c.destination);
-      const bruit = c.createBuffer(1, c.sampleRate * 0.12, c.sampleRate), d = bruit.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-      const src = c.createBufferSource(); src.buffer = bruit; const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 1.2;
-      const gb = c.createGain(); gb.gain.value = 0.05; src.connect(bp); bp.connect(gb); gb.connect(out); src.start(t0);
-      const cloche = (f, debut, duree, vol) => [[f, 1], [f * 2.01, 0.35], [f * 3.02, 0.12]].forEach(([fr, k]) => {
-        const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = fr;
-        g.gain.setValueAtTime(0.0001, t0 + debut); g.gain.exponentialRampToValueAtTime(vol * k, t0 + debut + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + debut + duree);
-        o.connect(g); g.connect(out); o.start(t0 + debut); o.stop(t0 + debut + duree + 0.02);
-      });
-      const bip = (f, debut, duree, vol) => {
-        const o = c.createOscillator(), g = c.createGain(), lp = c.createBiquadFilter(); o.type = 'square'; o.frequency.value = f; lp.type = 'lowpass'; lp.frequency.value = 3200;
-        g.gain.setValueAtTime(0.0001, t0 + debut); g.gain.exponentialRampToValueAtTime(vol, t0 + debut + 0.005); g.gain.setValueAtTime(vol, t0 + debut + duree - 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + debut + duree);
-        o.connect(lp); lp.connect(g); g.connect(out); o.start(t0 + debut); o.stop(t0 + debut + duree + 0.02);
-      };
-      if (critique) { [0.16, 0.30, 0.44].forEach(d0 => bip(1568, d0, 0.085, 0.05)); cloche(1318.5, 0.66, 0.7, 0.07); cloche(987.8, 0.86, 0.9, 0.06); }
-      else { cloche(1318.5, 0.16, 0.75, 0.065); cloche(987.8, 0.42, 0.95, 0.055); }
-    } catch (e) { /* pas de son */ }
+    try { const c = fx.audio(), out = c.createGain(); out.gain.value = 1; out.connect(c.destination); sonRadar(c, out, c.currentTime + 0.02, critique); } catch (e) { /* pas de son */ }
+  }
+  function sonRadar(c, out, t0, critique) {
+    // une note de terminal (synthèse FM : une porteuse modulée, attaque nette, déclin rapide)
+    const fm = (f, debut, duree, vol, ratio = 2, indice = 2.5, declin = 6) => {
+      const car = c.createOscillator(), mod = c.createOscillator(), gm = c.createGain(), g = c.createGain(), t = t0 + debut;
+      car.frequency.value = f; mod.frequency.value = f * ratio;
+      gm.gain.setValueAtTime(indice * f * ratio, t); gm.gain.exponentialRampToValueAtTime(Math.max(1, indice * f * ratio * Math.exp(-declin * 1.5 * duree)), t + duree);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + duree);
+      mod.connect(gm); gm.connect(car.frequency); car.connect(g); g.connect(out); mod.start(t); car.start(t); mod.stop(t + duree + 0.02); car.stop(t + duree + 0.02);
+    };
+    const sub = (f, debut, duree, vol) => { const o = c.createOscillator(), g = c.createGain(), t = t0 + debut; o.frequency.value = f;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + duree); o.connect(g); g.connect(out); o.start(t); o.stop(t + duree + 0.02); };
+    if (critique) { // le « flash info » : un balayage qui monte, un accord franc, trois bips aigus
+      const o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(300, t0); o.frequency.exponentialRampToValueAtTime(2400, t0 + 0.35);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.06, t0 + 0.34); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.37);
+      o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + 0.4);
+      [523.3, 659.3, 784, 1046.5].forEach(f => fm(f, 0.36, 1.2, 0.05, 1, 1.6, 3.2)); sub(130.8, 0.36, 0.4, 0.12);
+      [0.95, 1.07, 1.19].forEach(d => fm(1568, d, 0.1, 0.06, 3, 1, 25));
+    } else { // le « terminal » : trois notes nettes (la, mi, la aigu) et un coup sourd
+      sub(110, 0.01, 0.25, 0.09); [[880, 0.02], [659.3, 0.13], [1318.5, 0.24]].forEach(([f, d]) => fm(f, d, 0.5, 0.11));
+    }
   }
   const root = () => VOIXMAISON.root();
   async function appel(chemin, corps, ms = 95000) {
