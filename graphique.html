@@ -391,6 +391,31 @@
     .graphes { grid-column: 1 !important; margin: 6px !important; } .outils, .liste { display: none !important; }
     .horloges, .compte, .marque, .tilt { display: none !important; } .graphes.trois { grid-template-columns: 1fr !important; }
   }
+
+  /* la lumière qui suit la séance */
+  .amb { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 4s ease; }
+  .amb.on { opacity: 1; } .amb.asie { background: radial-gradient(1300px 620px at 50% -15%, rgba(70, 92, 170, .20), transparent 62%); }
+  .amb.londres { background: radial-gradient(1300px 620px at 50% -15%, rgba(80, 150, 215, .17), transparent 62%); } .amb.ny { background: radial-gradient(1300px 620px at 50% -15%, rgba(255, 140, 0, .16), transparent 62%); }
+  body.nuitg .pane { background: #14171e; }
+  /* le mur de salle : pour un autre écran, lisible de loin */
+  .mur { display: none; position: fixed; inset: 0; z-index: 10; padding: 2.4vh 2.4vw 0; flex-direction: column; gap: 2vh; }
+  body.mode-mur .mur { display: flex; } .mur-g { flex: 1; } .mur-f { margin-top: auto; flex: none; } body.mode-mur .app { display: none; }
+  .mur-h { display: flex; align-items: flex-end; gap: 3vw; border-bottom: 1px solid var(--bord); padding-bottom: 1.6vh; }
+  .mur-h .hl { display: flex; flex-direction: column; } .mur-h .hl b { font: 700 4.6vh var(--mono); color: #fff; letter-spacing: .02em; } .mur-h .hl.ici b { font-size: 8.4vh; color: var(--ambre); line-height: 1; }
+  .mur-h .hl small { font: 800 1.35vh 'Inter'; letter-spacing: .3em; color: var(--tres-doux); display: flex; align-items: center; gap: .6vh; margin-top: .6vh; } .mur-h .hl small i { width: 1vh; height: 1vh; border-radius: 50%; background: #3a4152; } .mur-h .hl small i.ouv { background: var(--vert); box-shadow: 0 0 1vh var(--vert); }
+  .mur-h .esp { flex: 1; } .mur-h .titre-m { font: 800 1.6vh 'Inter'; letter-spacing: .5em; color: var(--ambre); align-self: flex-start; }
+  .mur-c { display: flex; align-items: center; gap: 2vw; padding: 1.4vh 2vw; border: 1px solid rgba(255, 61, 90, .35); border-radius: 1.2vh; background: rgba(255, 61, 90, .07); } .mur-c:empty { display: none; }
+  .mur-c small { font: 800 1.5vh 'Inter'; letter-spacing: .3em; color: #ff8fa1; } .mur-c b { font: 800 5.6vh var(--mono); color: #fff; } .mur-c span { font: 600 2.2vh 'Inter'; color: #e8ebf0; flex: 1; }
+  .mur-c.proche { animation: alarme 1s ease-in-out infinite; }
+  .mur-g { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 1.6vh 1.2vw; min-height: 0; }
+  .tuile { position: relative; border: 1px solid var(--bord); border-radius: 1.4vh; background: linear-gradient(180deg, #0d1018, #090b10); padding: 2vh 1.6vw; display: flex; flex-direction: column; overflow: hidden; }
+  .tuile::after { content: ''; position: absolute; left: 1.6vw; right: 1.6vw; top: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 171, 26, .5), transparent); }
+  .tuile .c { display: flex; justify-content: space-between; align-items: baseline; } .tuile .c b { font: 800 3.2vh var(--mono); color: var(--ambre); letter-spacing: .04em; } .tuile .c small { font: 600 1.6vh 'Inter'; color: var(--doux); }
+  .tuile .px { font: 700 6.6vh var(--mono); color: #fff; letter-spacing: -.02em; margin-top: 1vh; line-height: 1.05; }
+  .tuile .vr { font: 800 2.6vh var(--mono); margin-top: .4vh; } .tuile .vr.h { color: var(--vert); } .tuile .vr.r { color: var(--rouge); }
+  .tuile svg { margin-top: auto; width: 100%; height: 7vh; }
+  .mur-f { display: flex; align-items: center; height: 6vh; margin: 0 -2.4vw; border-top: 1px solid var(--bord); background: #07090d; overflow: hidden; }
+  .mur-f .fil-t { font-size: 1.5vh; padding: 0 2vw; } .mur-f .fil-v { flex: 1; overflow: hidden; position: relative; height: 100%; } .mur-f .dp { font-size: 2.3vh; padding: 0 3vw; } .mur-f .dp time { font-size: 2.1vh; }
 </style>
 </head>
 <body>
@@ -410,6 +435,7 @@
       <button class="ico" id="t-zz" data-tip="Zigzag (5, 10)"><svg viewBox="0 0 24 24"><path d="M3 17l5-9 4 6 4-8 5 9"/></svg></button>
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
+      <button class="ico" id="t-nuit" data-tip="Mode nuit des graphiques : automatique le soir"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
       <button class="ico" id="t-news" data-tip="Les nouvelles du radar sur l'axe du temps (survole, clique pour l'explication)"><svg viewBox="0 0 24 24"><path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 9h4v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/></svg></button>
       <button class="ico" id="t-cot" data-tip="Positionnement des gros acteurs (rapport COT de la CFTC)"><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/></svg></button>
       <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
@@ -420,7 +446,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v32</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v33</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -444,6 +470,8 @@
     <span class="ressort"></span>
       <button class="ico outil-d" id="photo" data-tip="Capture du graphique (PNG)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <button class="ico outil-d" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="ico outil-d" id="b-mur" data-tip="Le mur de salle : pour un autre écran, lisible de loin"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h3M7 12h6M14 9h3"/></svg></button>
+      <button class="ico outil-d" id="b-sons" data-tip="Les sons de la salle (ligne touchée, nouvelle critique, ligne posée)"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button>
       <button class="ico outil-d" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
   </div>
   <div class="graphes un" id="graphes"></div>
@@ -479,6 +507,9 @@
 <div class="copi" id="copi"><div class="copi-t"><span class="onde"><i></i><i></i><i></i><i></i><i></i></span><b id="copi-titre">Copilote</b><button id="copi-x" aria-label="Fermer">×</button></div>
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
+<div class="amb asie" id="amb-asie"></div><div class="amb londres" id="amb-londres"></div><div class="amb ny" id="amb-ny"></div>
+<div class="mur" id="mur"><div class="mur-h" id="mur-h"></div><div class="mur-c" id="mur-c"></div><div class="mur-g" id="mur-g"></div>
+  <div class="mur-f"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="mur-piste"></div></div></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
@@ -580,9 +611,10 @@ class Pane {
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
     const iY = y => hi - (y - HAUT) / (BASP - HAUT) * (hi - lo);
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
-    c.clearRect(0, 0, W, H); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
+    const TH = theme(), coul = x => (!x || x === '#000' || x === '#000000' || x === '#0b0e15') ? TH.fg : x;
+    c.clearRect(0, 0, W, H); c.fillStyle = TH.bg; c.fillRect(0, 0, W, H);
     // la grille pointillée
-    c.strokeStyle = '#eef0f4'; c.lineWidth = 1; c.setLineDash([]); c.font = '500 10.5px "JetBrains Mono", monospace'; c.fillStyle = '#7a8190';
+    c.strokeStyle = TH.grid; c.lineWidth = 1; c.setLineDash([]); c.font = '500 10.5px "JetBrains Mono", monospace'; c.fillStyle = TH.txt;
     const pas = niceStep((hi - lo) / Math.max(3, Math.floor(ph / 70)));
     for (let p = Math.ceil(lo / pas) * pas; p <= hi; p += pas) { const y = Y(p); if (y > ph - BN - volH - 2) continue; c.beginPath(); c.moveTo(0, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); c.fillText(nb(p, dec), pw + 6, y + 4); }
     let dernierLab = -999;
@@ -598,38 +630,38 @@ class Pane {
       c.fillStyle = 'rgba(41,98,255,.10)'; c.fillRect(xa, 0, xb - xa, ph); c.strokeStyle = 'rgba(41,98,255,.6)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(Math.round(xa) + .5, 0); c.lineTo(Math.round(xa) + .5, ph); c.stroke(); c.setLineDash([]); }
     // les zones S/R H4 (grises, discrètes, prolongées à droite)
     if (opt.zones) (this.d.zones || []).forEach(z => { const x0 = Math.max(0, T(z.t)), y0 = Y(z.haut), y1 = Y(z.bas);
-      c.fillStyle = 'rgba(120,120,120,.13)'; c.fillRect(x0, y0, pw - x0, Math.max(1, y1 - y0)); c.strokeStyle = 'rgba(90,90,90,.55)'; c.lineWidth = 1; c.strokeRect(x0 + .5, y0 + .5, pw - x0, Math.max(1, y1 - y0));
+      c.fillStyle = TH.zone; c.fillRect(x0, y0, pw - x0, Math.max(1, y1 - y0)); c.strokeStyle = TH.zoneB; c.lineWidth = 1; c.strokeRect(x0 + .5, y0 + .5, pw - x0, Math.max(1, y1 - y0));
     });  // (sans étiquettes : son graphique reste épuré ; le prix des zones se lit au survol, sur l'axe)
     // le volume (fines barres noires en bas)
     if (opt.vol) { const vm = Math.max(...v.map(b => b[5] || 0)) || 1, lv = opt.bougies ? Math.max(1, bw * .6) : Math.max(1, bw * .24);
-      for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? '#9e9e9e' : '#000') : 'rgba(0,0,0,.85)'; c.fillRect(Math.round(X(k) - lv / 2), ph - BN - h, lv, h); } }
+      for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? TH.hausse : TH.fg) : TH.vol; c.fillRect(Math.round(X(k) - lv / 2), ph - BN - h, lv, h); } }
     const dureeUT = DUREE[this.ut] || 3600, finBarre = B.length ? B[B.length - 1][0] + dureeUT : 0, enCours = false, aCompte = !REPLAY && Date.now() / 1000 < finBarre && ['5m', '15m', '30m', 'H1', 'H4'].includes(this.ut);  // (la bougie reste dessinée normalement ; seul le compte à rebours)
     // les barres OHLC, noires (son style)
     if (opt.bougies) {
       const cw = Math.max(1, bw * .62);
       for (let k = i; k < j; k++) { const b = B[k], x = Math.round(X(k)) + .5, up = b[4] >= b[1], yo = Y(b[1]), yc = Y(b[4]), cours = k === B.length - 1 && enCours;
-        c.strokeStyle = cours ? '#8a91a0' : up ? '#7a7a7a' : '#000'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, Y(b[2])); c.lineTo(x, Y(b[3])); c.stroke();
+        c.strokeStyle = cours ? '#8a91a0' : up ? TH.mecheH : TH.fg; c.lineWidth = 1; c.beginPath(); c.moveTo(x, Y(b[2])); c.lineTo(x, Y(b[3])); c.stroke();
         if (cours) { c.fillStyle = '#fff'; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); c.setLineDash([2, 2]); c.strokeRect(Math.round(x - cw / 2) + .5, Math.min(yo, yc) + .5, Math.max(1, Math.round(cw)) - 1, Math.max(1, Math.abs(yc - yo)) - 1); c.setLineDash([]); continue; }
-        c.fillStyle = up ? '#9e9e9e' : '#000'; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); }
+        c.fillStyle = up ? TH.hausse : TH.fg; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); }
     } else {
       c.lineWidth = Math.min(2, Math.max(1, bw * .12));
       for (let k = i; k < j; k++) { const b = B[k], x = Math.round(X(k)) + .5, w = Math.max(1.5, bw * .35), cours = k === B.length - 1 && enCours;
-        c.strokeStyle = cours ? '#8a91a0' : '#000'; if (cours) c.setLineDash([2, 2]);
+        c.strokeStyle = cours ? '#8a91a0' : TH.fg; if (cours) c.setLineDash([2, 2]);
         c.beginPath(); c.moveTo(x, Y(b[2])); c.lineTo(x, Y(b[3])); c.moveTo(x - w, Y(b[1])); c.lineTo(x, Y(b[1])); c.moveTo(x, Y(b[4])); c.lineTo(x + w, Y(b[4])); c.stroke(); if (cours) c.setLineDash([]); }
     }
     // le zigzag (5, 10) : épais, la dernière jambe en tirets
-    if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = '#000'; c.lineWidth = 2.4; c.lineJoin = 'round';
+    if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = TH.fg; c.lineWidth = 2.4; c.lineJoin = 'round';
       for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [6, 5] : []); c.beginPath(); c.moveTo(T(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(T(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]); }
     // ses lignes
-    const tracer = (l, sel) => { c.strokeStyle = l.couleur || '#000'; c.lineWidth = sel ? 2.2 : 1.2; c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
+    const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : 1.2; c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
       const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
       if (l.genre === 'horizontale') { const y = Y(l.p1); c.beginPath(); c.moveTo(0, y); c.lineTo(pw, y); c.stroke(); }
       else { seg(l.t1, l.p1, l.t2, l.p2); if (l.genre === 'canal' && l.ecart != null) seg(l.t1, l.p1 + l.ecart, l.t2, l.p2 + l.ecart); }
       c.setLineDash([]);
-      if (sel && l.genre !== 'horizontale') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = '#fff'; c.strokeStyle = l.couleur || '#2962ff'; c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
+      if (sel && l.genre !== 'horizontale') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = TH.bg; c.strokeStyle = coul(l.couleur); c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
       if (l.alerte === false) { /* (sans alerte : rien de plus) */ } };
     lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
-    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l.couleur || '#000'; c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
+    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = coul(l.couleur); c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = TH.nuit ? TH.bg : '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
     // la mémoire du marché : l'éventail de ce qui a suivi les moments les plus ressemblants (des statistiques, pas une prévision)
     if (MEM && MEM.code === code && MEM.ut === this.ut && (MEM.eventail || []).length) {
       const x0 = T(MEM.t0), y0 = Y(MEM.dernier), a = MEM.atr_ticks * MEM.pas, ev = MEM.eventail;
@@ -656,7 +688,7 @@ class Pane {
       }
     }
     // l'unité de temps, en grand (comme sur son TradingView)
-    c.fillStyle = '#0b0e15'; c.font = '800 38px "Inter Tight", Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 16, 50); c.textAlign = 'left';
+    c.fillStyle = TH.fg; c.font = '800 38px "Inter Tight", Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 16, 50); c.textAlign = 'left';
     // la jauge du COT : où en sont les fonds spéculatifs sur 3 ans (0 = jamais aussi vendeurs, 100 = jamais aussi acheteurs)
     const cd = COTD[code];
     if (false && opt.cot && cd && cd.ok && pw > 260) {  // (la jauge est maintenant dans le bandeau du titre)
@@ -668,11 +700,11 @@ class Pane {
       c.font = '600 9.5px Inter, sans-serif'; c.fillStyle = cd.extreme ? '#b8001f' : '#5d6576'; c.textAlign = 'right'; c.fillText(`${f.indice}/100 sur 3 ans${cd.extreme ? ' · extrême' : ''} · ${new Date(cd.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}`, pw - 14, y1 + 25); c.textAlign = 'left';
     }
     // le dernier cours (boîte noire sur l'axe)
-    const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
-    c.fillStyle = '#0b0e15'; c.beginPath(); c.moveTo(pw - 5, yd); c.lineTo(pw + 1, yd - 11); c.lineTo(pw + AX - 4, yd - 11); c.quadraticCurveTo(pw + AX, yd - 11, pw + AX, yd - 7); c.lineTo(pw + AX, yd + 7); c.quadraticCurveTo(pw + AX, yd + 11, pw + AX - 4, yd + 11); c.lineTo(pw + 1, yd + 11); c.closePath(); c.fill();
-    c.fillStyle = '#fff'; c.font = '700 11px "JetBrains Mono", monospace'; c.fillText(nb(der, dec), pw + 6, yd + 4);
+    const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = TH.txt; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
+    c.fillStyle = TH.nuit ? '#ffab1a' : '#0b0e15'; c.beginPath(); c.moveTo(pw - 5, yd); c.lineTo(pw + 1, yd - 11); c.lineTo(pw + AX - 4, yd - 11); c.quadraticCurveTo(pw + AX, yd - 11, pw + AX, yd - 7); c.lineTo(pw + AX, yd + 7); c.quadraticCurveTo(pw + AX, yd + 11, pw + AX - 4, yd + 11); c.lineTo(pw + 1, yd + 11); c.closePath(); c.fill();
+    c.fillStyle = TH.nuit ? '#160d00' : '#fff'; c.font = '700 11px "JetBrains Mono", monospace'; c.fillText(nb(der, dec), pw + 6, yd + 4);
     // l'axe
-    c.strokeStyle = '#e3e6ec'; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
+    c.strokeStyle = TH.axe; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
     // tes niveaux sur l'échelle des prix : une encoche à leur hauteur ; hors de l'écran, une flèche collée au bord avec la distance en ticks
     { const tR = iT(pw), der2 = B[B.length - 1][4], tk = this.d.tick || 1, haut2 = [], bas2 = [];
       for (const l of lignes) { const vals = [l.genre === 'horizontale' ? l.p1 : (l.t2 != null && l.t2 !== l.t1 ? l.p1 + (l.p2 - l.p1) * (tR - l.t1) / (l.t2 - l.t1) : l.p1)];
@@ -839,7 +871,7 @@ function proche(p, x, y) {
 function efface() { if (!choisie) return; lignes = lignes.filter(l => l !== choisie); choisie = null; sauve(); toutDessine(); }
 const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
-function sauve() { toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
+function sauve() { if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
   const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
@@ -847,6 +879,7 @@ function sauve() { toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(asyn
 async function chargeLignes() {
   try { const r = await api(`/maison/graphique?lignes=1&code=${code}`); const l = r.lignes || [];
     lignes = l.filter(x => !x.double).map(x => x.canal ? { ...x, genre: 'canal' } : x); } catch (e) { lignes = []; }
+  try { nbLignesAvant = lignes.length; } catch (e) { /* rien */ }
 }
 
 /* ---------- les panneaux, la liste, les touches ---------- */
@@ -878,7 +911,7 @@ $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); 
 async function changeCode(c) { $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); try { majTicker(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); try { majTicker(); majTuiles(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
 function spark(v, up) {
   if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
@@ -1395,7 +1428,7 @@ let critiquesVues = null, liensVus = null;
 async function guetteHalo() {
   if (!ROOT) return;
   try { const r = await api(`/maison/graphique?nouvelles=1&code=${code}`), crit = (r.nouvelles || []).filter(n => n.genre === 'critique').map(n => n.id);
-    if (critiquesVues && crit.some(id => !critiquesVues.has(id))) halo('rouge'); critiquesVues = new Set(crit); NOUV[code] = r.nouvelles || NOUV[code];
+    if (critiquesVues && crit.some(id => !critiquesVues.has(id))) { halo('rouge'); sonne('critique'); } critiquesVues = new Set(crit); NOUV[code] = r.nouvelles || NOUV[code];
   } catch (e) { /* hors liaison */ }
   try { const r = await api('/maison/copilote', { action: 'liens' }), inh = (r.liens || []).filter(x => x.etat === 'inhabituel').map(x => x.a + x.b);
     if (liensVus && inh.some(k => !liensVus.has(k))) halo('violet'); liensVus = new Set(inh);
@@ -1536,6 +1569,7 @@ async function chargeFil() {
     AGENDA = (r.agenda || []).filter(a => a.fort); CLIMAT = r.climat || {}; majTicker();
     const h = l.map(i => `<span class="dp"><time>${new Date((i.publie || i.at) * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time>${i.urgence === 'critique' ? '<span class="fl">FLASH</span>' : i.urgence === 'importante' ? '<span class="im">IMPORTANT</span>' : ''}${esc(i.titre)}${(i.marches || []).length ? `<small>${esc(i.marches.join(' '))}</small>` : ''}</span>`).join('') || '<span class="dp">Aucune dépêche importante pour l’instant.</span>';
     const p = $('#piste2'); p.innerHTML = h + h; p.style.setProperty('--duree', `${Math.max(50, l.length * 9)}s`);
+    const pm = $('#mur-piste'); if (pm) { pm.innerHTML = h + h; pm.style.setProperty('--duree', `${Math.max(60, l.length * 11)}s`); }
     SANTE.radar = true; boot('radar', true); majSante();
   } catch (e) { SANTE.radar = false; boot('radar', false); majSante(); }
 }
@@ -1571,6 +1605,58 @@ function travail() { /* (l'interface qui s'efface : retirée) */ }
 // le compte à rebours avance chaque seconde (seulement la page visible)
 setInterval(() => { if (!document.hidden && panes.some(p => ['5m', '15m', '30m', 'H1', 'H4'].includes(p.ut))) panes.forEach(p => p.dessine()); }, 1000);
 
+
+/* ================= le mode nuit des graphiques ================= */
+let NUIT = lit('g-nuit', 'auto');  // auto (le soir, de 20 h à 7 h) · on · off
+function nuitActive() { if (NUIT === 'on') return true; if (NUIT === 'off') return false; const h = new Date().getHours(); return h >= 20 || h < 7; }
+function theme() {
+  return nuitActive() ? { nuit: true, bg: '#14171e', grid: '#1f2430', txt: '#7d8597', fg: '#e6e9ef', hausse: '#6b7383', mecheH: '#8a92a2', vol: 'rgba(230,233,239,.75)', zone: 'rgba(200,205,215,.07)', zoneB: 'rgba(200,205,215,.28)', axe: '#262c38' }
+    : { nuit: false, bg: '#fff', grid: '#eef0f4', txt: '#7a8190', fg: '#000', hausse: '#9e9e9e', mecheH: '#7a7a7a', vol: 'rgba(0,0,0,.85)', zone: 'rgba(120,120,120,.13)', zoneB: 'rgba(90,90,90,.55)', axe: '#e3e6ec' };
+}
+function majNuit() { const b = $('#t-nuit'); if (!b) return; b.classList.toggle('on', nuitActive()); b.dataset.tip = `Mode nuit des graphiques : ${NUIT === 'auto' ? 'automatique (20 h – 7 h)' : NUIT === 'on' ? 'toujours' : 'jamais'} · clic pour changer`; document.body.classList.toggle('nuitg', nuitActive()); }
+$('#t-nuit').onclick = () => { NUIT = NUIT === 'auto' ? 'on' : NUIT === 'on' ? 'off' : 'auto'; ecrit('g-nuit', NUIT); majNuit(); toast(`Mode nuit : ${NUIT === 'auto' ? 'automatique, de 20 h à 7 h' : NUIT === 'on' ? 'toujours' : 'jamais'}`); toutDessine(); };
+majNuit(); let nuitAvant = nuitActive(); setInterval(() => { const n = nuitActive(); if (n !== nuitAvant) { nuitAvant = n; majNuit(); toutDessine(); } }, 60000);
+/* ================= la lumière qui suit la séance ================= */
+function majAmbiance() { const se = seanceDe(Date.now() / 1000), k = !se ? '' : se.startsWith('rgba(255') ? 'ny' : se.startsWith('rgba(61') ? 'londres' : 'asie'; ['asie', 'londres', 'ny'].forEach(x => $('#amb-' + x).classList.toggle('on', x === k)); }
+majAmbiance(); setInterval(majAmbiance, 60000);
+/* ================= les sons de la salle ================= */
+let SONS = lit('g-sons', '1') === '1'; $('#b-sons').classList.toggle('on', SONS);
+$('#b-sons').onclick = () => { SONS = !SONS; ecrit('g-sons', SONS ? '1' : '0'); $('#b-sons').classList.toggle('on', SONS); toast(SONS ? 'Les sons de la salle sont allumés' : 'Les sons de la salle sont coupés'); if (SONS) sonne('pose'); };
+function sonne(genre) {
+  if (!SONS) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
+    const note = (f, d, dur, vol, type = 'sine') => { const o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(vol, t + d + .008); g.gain.exponentialRampToValueAtTime(.0008, t + d + dur); o.connect(g); g.connect(actx.destination); o.start(t + d); o.stop(t + d + dur + .05); };
+    if (genre === 'ligne') { note(1318.5, 0, 1.1, .09); note(1975.5, .0, .9, .035); }                  // un tintement clair : le prix touche ta ligne
+    else if (genre === 'critique') { note(880, 0, .22, .1, 'triangle'); note(659.3, .2, .35, .1, 'triangle'); note(880, .5, .22, .08, 'triangle'); }  // deux tons : nouvelle critique
+    else if (genre === 'pose') note(2400, 0, .06, .05, 'square');                                         // un clic net : ligne posée
+  } catch (e) { /* rien */ }
+}
+// le prix touche une de tes lignes (le marché affiché) : un tintement, une fois par ligne et par quart d'heure
+const tintes = {}; let derAvant = null;
+function guetteTouches() {
+  const x = L.find(z => z.code === code); if (!x || x.dernier == null) return; const d = x.dernier, tk = (panes[0] && panes[0].d && panes[0].d.tick) || 0, now = Date.now() / 1000;
+  if (derAvant != null && derAvant.code === code) for (const l of lignes) { const v = l.genre === 'horizontale' || l.t2 == null || l.t2 === l.t1 ? l.p1 : l.p1 + (l.p2 - l.p1) * (now - l.t1) / (l.t2 - l.t1);
+    const touche = (derAvant.v - v) * (d - v) <= 0 || Math.abs(d - v) <= tk; if (touche && now - (tintes[l.id] || 0) > 900) { tintes[l.id] = now; sonne('ligne'); halo('ambre'); toast(`${code} touche ta ligne à ${nb(v, x.dec)}`); break; } }
+  derAvant = { code, v: d };
+}
+let nbLignesAvant = null;
+/* ================= le mur de salle ================= */
+const MUR = diese.get('mur') === '1', MUR_CODES = ['SIL', 'MGC', 'MNQ', 'MYM', 'MCL', 'M6E', 'DXY', 'VIX'], murAvant = {};
+function majMur() {
+  if (!MUR) return;
+  $('#mur-h').innerHTML = PLACES.map(([n, tz, ici]) => { const h = heureLa(tz); return `<div class="hl${ici ? ' ici' : ''}"><b>${ici ? h.txt + `<span style="opacity:.5;font-size:.55em">:${h.s}</span>` : h.txt}</b><small><i class="${seanceOuverte(ici ? 'CME' : n) ? 'ouv' : ''}"></i>${ici ? 'PARIS · CME' : n}</small></div>`; }).join('') + '<div class="esp"></div><div class="titre-m">ATLAS · SALLE DE MARCHÉ</div>';
+  const now = Date.now() / 1000, a = AGENDA.filter(x => x.at > now - 60).sort((x, y) => x.at - y.at)[0];
+  if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60); $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
+  else $('#mur-c').innerHTML = '';
+}
+function majTuiles() {
+  if (!MUR) return;
+  $('#mur-g').innerHTML = MUR_CODES.map(c => { const x = L.find(z => z.code === c); if (!x) return '';
+    const v = x.spark || [], lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1, sv = v.length > 1 ? `<svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="${v.map((y, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(28 - (y - lo) / r * 26).toFixed(1)}`).join(' ')}" fill="none" stroke="${x.pct >= 0 ? '#19d38c' : '#ff3d5a'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>` : '';
+    const t = nb(x.dernier, x.dec), html = `<div class="tuile"><div class="c"><b>${esc(c)}</b><small>${esc(x.nom)}</small></div><div class="px">${odo(murAvant[c] || '', t, x.dernier >= (murAvant[c + 'v'] ?? x.dernier))}</div><div class="vr ${x.pct >= 0 ? 'h' : 'r'}">${x.pct >= 0 ? '▲' : '▼'} ${nb(Math.abs(x.pct), 2)} %</div>${sv}</div>`;
+    murAvant[c] = t; murAvant[c + 'v'] = x.dernier; return html; }).join('');
+}
+if (MUR) { document.body.classList.add('mode-mur'); document.title = 'Atlas · Mur de salle'; setInterval(majMur, 1000); majMur(); }
+$('#b-mur').onclick = () => { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`${location.pathname}#mur=1${m}`, 'atlas-mur', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le mur de salle s’ouvre : glisse-le sur ton autre écran (F11 pour le plein écran)'); };
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
@@ -1587,7 +1673,9 @@ document.addEventListener('keydown', ev => {
 document.addEventListener('keyup', ev => { const k = ev.key.toLowerCase(); if ((k === 'q' || k === 'v') && rec && rec.mode === k) arreteMicro(); });
 try { document.fonts.ready.then(() => setTimeout(toutDessine, 50)); } catch (e) { /* rien */ }
 versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
-(async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; } await chargeLignes(); construit(); chargeListe(); })();
+(async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; }
+  if (MUR) { try { const b = $('#boot'); if (b) b.remove(); } catch (e) { /* rien */ } chargeListe(); setInterval(chargeListe, 10000); return; }
+  await chargeLignes(); nbLignesAvant = lignes.length; construit(); chargeListe(); })();
 </script>
 </body>
 </html>
