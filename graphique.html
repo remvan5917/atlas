@@ -54,9 +54,9 @@
 <div class="app">
   <div class="haut">
     <span class="sym" id="sym">SIL</span>
-    <button class="b" data-ut="D1">D1</button><button class="b" data-ut="H4">H4</button><button class="b" data-ut="H1">H1</button>
+    <button class="b" data-ut="5m">5m</button><button class="b" data-ut="15m">15m</button><button class="b" data-ut="30m">30m</button><button class="b" data-ut="H1">1h</button><button class="b" data-ut="H4">4h</button><button class="b" data-ut="D1">D</button><button class="b" data-ut="W">W</button><button class="b" data-ut="M">M</button>
     <span class="sep"></span>
-    <button class="b" id="vue-un" title="Un graphique">1 graphique</button><button class="b" id="vue-trois" title="D1 · H4 · H1 côte à côte">D1 · H4 · H1</button>
+    <button class="b" id="vue-un" title="Un seul graphique">1 graphique</button><button class="b" id="vue-trois" title="Trois graphiques côte à côte : clique sur un graphique puis sur une unité de temps pour le changer">3 graphiques</button>
     <span class="sep masque-mobile"></span>
     <button class="b masque-mobile" id="t-bougies">Bougies</button><button class="b masque-mobile" id="t-zz">Zigzag</button><button class="b masque-mobile" id="t-zones">Zones S/R H4</button><button class="b masque-mobile" id="t-vol">Volume</button>
     <div class="espace"></div>
@@ -77,7 +77,7 @@
     <div class="aide">
       <b>Tes lignes</b> sont gardées sur l'ordinateur de la maison et apparaissent sur tous tes écrans. Atlas te prévient quand le prix <b>touche</b> ou <b>casse</b> une ligne (voix et ntfy).<br>
       Glisser : déplacer · molette : zoom · double-clic : recadrer<br>
-      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> D1 / H4 / H1 · <kbd>Échap</kbd> curseur
+      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M (en vue à 3 : clique d'abord sur un graphique) · <kbd>Échap</kbd> curseur
     </div>
   </div>
 </div>
@@ -98,11 +98,13 @@ if (ROOT && !location.pathname.startsWith('/salle/')) $('#lien-radar').href = 'r
 const lit = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
 const ecrit = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } };
 let code = diese.get('code') || lit('g-code', 'SIL'), vue = lit('g-vue', 'trois'), utSeul = lit('g-ut', 'D1'), outil = 'curseur';
+let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit('g-uts', 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
 let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1' };
 let lignes = [], choisie = null, brouillon = null, actif = 0;
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
-const UTS = () => vue === 'trois' ? ['D1', 'H4', 'H1'] : [utSeul];
-const DUREE = { D1: 86400, H4: 14400, H1: 3600 };
+const UTS = () => vue === 'trois' ? utsTrois : [utSeul];
+const DUREE = { '5m': 300, '15m': 900, '30m': 1800, H1: 3600, H4: 14400, D1: 86400, W: 604800, M: 2629800 };
+const LIB = { '5m': '5m', '15m': '15m', '30m': '30m', H1: 'H1', H4: 'H4', D1: 'D1', W: 'W1', M: 'MN' };
 const MOIS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
 
 async function api(chemin, corps) {
@@ -144,7 +146,9 @@ class Pane {
     for (let p = Math.ceil(lo / pas) * pas; p <= hi; p += pas) { const y = Y(p); if (y > ph - volH) continue; c.beginPath(); c.moveTo(0, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); c.fillText(nb(p, dec), pw + 6, y + 4); }
     let dernierLab = -999;
     for (let k = i; k < j; k++) { const t = new Date(B[k][0] * 1000), tp = k > 0 ? new Date(B[k - 1][0] * 1000) : null; let lab = '';
-      if (this.ut === 'D1') { if (!tp || t.getMonth() !== tp.getMonth()) lab = t.getMonth() === 0 ? String(t.getFullYear()) : MOIS[t.getMonth()]; }
+      if (this.ut === 'M' || this.ut === 'W') { if (!tp || t.getFullYear() !== tp.getFullYear()) lab = String(t.getFullYear()); }
+      else if (this.ut === 'D1') { if (!tp || t.getMonth() !== tp.getMonth()) lab = t.getMonth() === 0 ? String(t.getFullYear()) : MOIS[t.getMonth()]; }
+      else if (['5m', '15m'].includes(this.ut) && tp && t.getDate() === tp.getDate()) { if (t.getHours() !== tp.getHours() && t.getHours() % (this.ut === '5m' ? 2 : 4) === 0) lab = `${t.getHours()}:00`; }
       else if (!tp || t.getDate() !== tp.getDate()) lab = `${t.getDate()} ${MOIS[t.getMonth()]}`;
       if (lab && X(k) - dernierLab > 60) { c.beginPath(); c.moveTo(Math.round(X(k)) + .5, 0); c.lineTo(Math.round(X(k)) + .5, ph); c.stroke(); c.textAlign = 'center'; c.fillText(lab, X(k), H - 7); c.textAlign = 'left'; dernierLab = X(k); } }
     c.setLineDash([]);
@@ -177,7 +181,7 @@ class Pane {
     lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
     lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l === choisie ? '#2962ff' : '#000'; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
     // l'unité de temps, en grand (comme sur son TradingView)
-    c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(this.ut, pw - 14, 48); c.textAlign = 'left';
+    c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 14, 48); c.textAlign = 'left';
     // le dernier cours (boîte noire sur l'axe)
     const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
     c.fillStyle = '#000'; c.fillRect(pw, yd - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(der, dec), pw + 6, yd + 4);
@@ -186,11 +190,11 @@ class Pane {
     // le réticule
     if (this.souris) { const [mx, my] = this.souris; c.setLineDash([4, 4]); c.strokeStyle = '#888'; c.beginPath(); c.moveTo(mx, 0); c.lineTo(mx, ph); c.moveTo(0, my); c.lineTo(pw, my); c.stroke(); c.setLineDash([]);
       c.fillStyle = '#131722'; c.fillRect(pw, my - 10, AX, 20); c.fillStyle = '#fff'; c.fillText(nb(iY(my), dec), pw + 6, my + 4);
-      const tt = new Date(iT(mx) * 1000), lab = this.ut === 'D1' ? tt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const tt = new Date(iT(mx) * 1000), lab = ['D1', 'W', 'M'].includes(this.ut) ? tt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
       c.fillStyle = '#131722'; c.fillRect(mx - 52, ph + 1, 104, BT - 2); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(this.ut)}</b> <span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span><br><span style="color:#555">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R H4' : ''}</span>`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b> <span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span><br><span style="color:#555">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R H4' : ''}</span>`;
   }
   ecoute() {
     const cv = this.cv; let glisse = null;
@@ -255,11 +259,16 @@ function construit() {
   const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un');
   g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas></div>`).join('');
   panes = [...g.querySelectorAll('.pane')].map((el, k) => new Pane(el, UTS()[k])); actif = Math.min(actif, panes.length - 1); majActif();
-  document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', vue === 'un' && b.dataset.ut === utSeul));
+  majBoutonsUT();
   $('#vue-un').classList.toggle('on', vue === 'un'); $('#vue-trois').classList.toggle('on', vue === 'trois');
   $('#sym').textContent = code; chargeTout();
 }
-function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif)); }
+function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif)); majBoutonsUT(); }
+function majBoutonsUT() { const u = vue === 'trois' ? (utsTrois[actif] || '') : utSeul; document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', b.dataset.ut === u)); }
+function choisirUT(ut) {
+  if (vue === 'trois') { utsTrois[actif] = ut; ecrit('g-uts', JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = 0; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
+  else { utSeul = ut; ecrit('g-ut', ut); construit(); }
+}
 function toutDessine() { panes.forEach(p => p.dessine()); }
 async function chargeTout() {
   const ok = (await Promise.all(panes.map(p => p.charge()))).some(Boolean);
@@ -267,7 +276,7 @@ async function chargeTout() {
 }
 function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAll('[data-o]').forEach(b => b.classList.toggle('on', b.dataset.o === o)); panes.forEach(p => p.cv.style.cursor = o === 'curseur' ? 'default' : 'crosshair'); }
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
-document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => { utSeul = b.dataset.ut; vue = 'un'; ecrit('g-ut', utSeul); ecrit('g-vue', vue); construit(); }));
+document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit('g-vue', vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit('g-vue', vue); construit(); };
 [['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit('g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
 async function changeCode(c) { code = c; ecrit('g-code', c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); }
@@ -283,7 +292,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'escape') { brouillon = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l') choisieOutil('ligne'); else if (k === 'h') choisieOutil('horizontale'); else if (k === 'c') choisieOutil('canal');
   else if (k === 'delete' || k === 'backspace') efface();
-  else if (['1', '2', '3'].includes(k)) { utSeul = ['D1', 'H4', 'H1'][+k - 1]; vue = 'un'; ecrit('g-ut', utSeul); ecrit('g-vue', vue); construit(); }
+  else if (/^[1-8]$/.test(k)) choisirUT(['5m', '15m', '30m', 'H1', 'H4', 'D1', 'W', 'M'][+k - 1]);
 });
 window.addEventListener('resize', toutDessine);
 setInterval(chargeTout, 20000); setInterval(chargeListe, 30000);
