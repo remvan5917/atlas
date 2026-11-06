@@ -138,6 +138,44 @@
   .lien-m small { color: var(--tres-doux); font: 600 10.5px 'Inter'; } .lien-m.inhabituel { background: rgba(255, 176, 32, .08); }
   .lien-m .ph { grid-column: 2 / 4; color: #ffd37a; font-size: 11.5px; line-height: 1.4; }
   .salle-btn { display: block; width: calc(100% - 28px); margin: 10px 14px 12px; padding: 10px; border-radius: 10px; border: 0; color: #fff; font: 700 13px 'Inter'; background: linear-gradient(135deg, #2962ff, #7c4dff); box-shadow: 0 6px 20px rgba(124, 77, 255, .4); }
+  .bulle { position: fixed; z-index: 55; width: 330px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .97); border: 1px solid #2f3850; box-shadow: 0 16px 40px rgba(0, 0, 0, .45); color: var(--texte); pointer-events: none; display: none; }
+  .bulle.on { display: block; animation: monte .15s ease-out; } .bulle .g { font: 700 10px 'Inter'; letter-spacing: .12em; padding: 2px 7px; border-radius: 5px; } .bulle .q { display: flex; gap: 8px; align-items: center; color: var(--doux); font-size: 11px; margin-bottom: 6px; }
+  .bulle b { display: block; font: 600 13.5px/1.4 'Inter'; } .bulle p { margin: 6px 0 0; color: #c6ccd8; font-size: 12.5px; line-height: 1.5; } .bulle .inc { color: #b9c3ff; }
+  .bulle .reac { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; } .bulle .reac div { text-align: center; background: var(--cadre3); border-radius: 7px; padding: 5px 0; font: 700 12.5px 'Inter'; }
+  .bulle .reac small { display: block; color: var(--tres-doux); font: 600 10px 'Inter'; } .bulle .astuce { margin-top: 9px; color: var(--tres-doux); font-size: 10.5px; }
+  .dow { position: fixed; inset: 52px 0 0 48px; z-index: 50; background: rgba(10, 13, 20, .97); backdrop-filter: blur(8px); display: none; overflow: auto; padding: 22px 28px 40px; }
+  .dow.on { display: block; animation: monte .2s ease-out; }
+  .dow h2 { margin: 0; font: 800 15px 'Inter'; letter-spacing: .16em; } .dow .sous { color: var(--doux); font-size: 12.5px; margin: 6px 0 18px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .dow .sous i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; } .dow .x { position: absolute; right: 22px; top: 18px; background: var(--cadre3); border: 1px solid var(--ligne); color: var(--texte); border-radius: 9px; padding: 7px 12px; font: 600 12px 'Inter'; }
+  .grille { display: grid; grid-template-columns: 210px repeat(5, minmax(92px, 1fr)) 150px; gap: 6px; max-width: 1180px; }
+  .grille .th { font: 700 11px 'Inter'; letter-spacing: .14em; color: var(--tres-doux); text-align: center; padding: 6px 0; } .grille .th:first-child { text-align: left; }
+  .grille .fam2 { grid-column: 1 / -1; font: 700 10.5px 'Inter'; letter-spacing: .16em; color: var(--tres-doux); padding: 12px 0 2px; }
+  .grille .nom { display: flex; flex-direction: column; justify-content: center; padding: 0 6px; cursor: pointer; } .grille .nom b { font: 700 14px 'Inter'; } .grille .nom small { color: var(--tres-doux); font-size: 11px; }
+  .cel { position: relative; height: 54px; border-radius: 10px; display: grid; place-items: center; cursor: pointer; font: 800 18px 'Inter'; transition: transform .12s, box-shadow .2s; border: 1px solid transparent; }
+  .cel:hover { transform: scale(1.05); z-index: 2; } .cel small { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font: 700 9px 'Inter'; letter-spacing: .08em; opacity: .85; }
+  .cel.hausse { background: linear-gradient(160deg, rgba(10, 163, 127, .34), rgba(10, 163, 127, .14)); color: #3ee0b4; border-color: rgba(10, 163, 127, .35); }
+  .cel.baisse { background: linear-gradient(160deg, rgba(242, 54, 69, .34), rgba(242, 54, 69, .14)); color: #ff7482; border-color: rgba(242, 54, 69, .35); }
+  .cel.transition { background: var(--cadre2); color: var(--doux); border-color: var(--ligne); } .cel.vide { background: var(--cadre2); color: var(--tres-doux); font-size: 12px; }
+  .cel.recent { animation: lueur 1.6s ease-in-out infinite; } @keyframes lueur { 50% { box-shadow: 0 0 0 3px rgba(255, 176, 32, .55), 0 0 22px rgba(255, 176, 32, .45); } }
+  .cel.flash { animation: flashc 1s ease-out; } @keyframes flashc { from { box-shadow: 0 0 0 6px rgba(124, 77, 255, .8); } }
+  .alig { display: flex; align-items: center; gap: 8px; padding: 0 8px; font: 700 12.5px 'Inter'; } .alig .barres { display: flex; gap: 2px; } .alig .barres i { width: 7px; height: 20px; border-radius: 2px; background: var(--cadre3); }
+  .alig .barres i.h { background: #0aa37f; } .alig .barres i.b { background: #f23645; } .alig.fort { color: #ffd37a; }
+  .etude-tete { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 4px 0 14px; } .etude-tete select { background: var(--cadre3); color: var(--texte); border: 1px solid var(--ligne); border-radius: 9px; padding: 8px 10px; font: 600 13px 'Inter'; }
+  .etude-corps { display: grid; grid-template-columns: 1fr 300px; gap: 18px; height: calc(100vh - 230px); min-height: 380px; } #etude-cv { width: 100%; height: 100%; background: #fff; border-radius: 12px; }
+  .etude-l { overflow-y: auto; } .ev { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 8px; font-size: 12px; cursor: default; }
+  .ev:hover, .ev.sel { background: rgba(255, 176, 32, .12); } .ev b { font-weight: 600; } .ev span { font: 700 11.5px 'Inter'; min-width: 44px; text-align: right; }
+  .etude-stats { display: flex; gap: 10px; margin: 0 0 12px; flex-wrap: wrap; } .etude-stats div { background: var(--cadre2); border: 1px solid var(--ligne); border-radius: 10px; padding: 8px 12px; font-size: 11.5px; color: var(--doux); }
+  .etude-stats b { display: block; color: var(--texte); font: 700 15px 'Inter'; } .etude-note { color: var(--tres-doux); font-size: 11.5px; margin-top: 8px; }
+  .replay { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 47; display: none; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 14px; background: rgba(15, 19, 28, .96); border: 1px solid rgba(242, 54, 69, .5); box-shadow: 0 14px 40px rgba(0, 0, 0, .5), 0 0 24px rgba(242, 54, 69, .15); }
+  .replay.on { display: flex; animation: monte .2s ease-out; } .replay button { min-width: 36px; height: 34px; border-radius: 9px; border: 1px solid var(--ligne); background: var(--cadre3); color: var(--texte); font: 700 13px 'Inter'; padding: 0 10px; }
+  .replay button.on { background: var(--bleu); border-color: var(--bleu); } .replay .rec { color: #ff6b81; font: 800 11px 'Inter'; letter-spacing: .14em; padding: 0 8px; } .replay .quand { font: 700 13px 'Inter'; min-width: 150px; text-align: center; font-variant-numeric: tabular-nums; }
+  .halo { position: fixed; inset: 0; z-index: 80; pointer-events: none; border-radius: 0; }
+  .halo.ambre { animation: halo-a 1.4s ease-in-out 3; } .halo.rouge { animation: halo-r 1.1s ease-in-out 4; } .halo.violet { animation: halo-v 1.6s ease-in-out 2; }
+  @keyframes halo-a { 50% { box-shadow: inset 0 0 0 3px rgba(255, 176, 32, .9), inset 0 0 70px rgba(255, 176, 32, .45); } }
+  @keyframes halo-r { 50% { box-shadow: inset 0 0 0 4px rgba(242, 54, 69, .95), inset 0 0 90px rgba(242, 54, 69, .5); } }
+  @keyframes halo-v { 50% { box-shadow: inset 0 0 0 3px rgba(124, 77, 255, .9), inset 0 0 70px rgba(124, 77, 255, .4); } }
+  body.focus .app { grid-template-rows: 0 1fr; grid-template-columns: 0 1fr 0; } body.focus .haut, body.focus .outils, body.focus .liste { visibility: hidden; overflow: hidden; }
+  body.focus .graphes { grid-column: 1 / 4; } .focus-aide { position: fixed; right: 14px; top: 10px; z-index: 30; font: 600 11px 'Inter'; color: #9aa1ad; background: rgba(255, 255, 255, .85); padding: 4px 9px; border-radius: 8px; display: none; } body.focus .focus-aide { display: block; }
   @media (max-width: 1200px) { .sym { min-width: 0; } .sym .px { display: none; } }
   @media (max-width: 900px) { .mem, .pouls { right: 12px; } .tiroir { width: 100%; } .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none !important; } }
 </style>
@@ -156,11 +194,15 @@
       <button class="ico" id="t-zz" data-tip="Zigzag (5, 10)"><svg viewBox="0 0 24 24"><path d="M3 17l5-9 4 6 4-8 5 9"/></svg></button>
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
+      <button class="ico" id="t-news" data-tip="Les nouvelles du radar sur l'axe du temps (survole, clique pour l'explication)"><svg viewBox="0 0 24 24"><path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 9h4v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/></svg></button>
       <button class="ico" id="t-cot" data-tip="Positionnement des gros acteurs (rapport COT de la CFTC)"><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/></svg></button>
       <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
     </div>
     <div class="grp salle masque-mobile">
       <button class="ico" id="b-copilote" data-tip="Copilote : qu'est-ce qui se passe ? (E) · maintiens Q pour lui parler"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M9.5 21h5M9 11h.01M15 11h.01M10 14c1.2.8 2.8.8 4 0"/></svg></button>
+      <button class="ico" id="b-dow" data-tip="Structure de Dow : tous tes marchés, toutes les unités (D)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="5" rx="1"/><rect x="10" y="4" width="5" height="5" rx="1"/><rect x="17" y="4" width="4" height="5" rx="1"/><rect x="3" y="11" width="5" height="5" rx="1"/><rect x="10" y="11" width="5" height="5" rx="1"/><path d="M17 16l2-4 2 4M3 20h18"/></svg></button>
+      <button class="ico" id="b-etude" data-tip="Étude d'annonce : les dernières fois superposées (A)"><svg viewBox="0 0 24 24"><path d="M3 20h18M7 4v16"/><path d="M7 13c3-1 4-6 7-6s3 5 7 4M7 15c3 0 5 2 8 1s4-3 6-2" opacity=".6"/></svg></button>
+      <button class="ico" id="b-replay" data-tip="Replay : rejoue la séance bougie par bougie, nouvelles comprises (R)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6"/><path d="M4 4v4.6h4.6M10 9v6l5-3z"/></svg></button>
       <button class="ico" id="b-memoire" data-tip="Mémoire du marché (M) : les moments passés qui ressemblent à celui-ci"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></button>
       <button class="ico" id="b-journal" data-tip="Journal vocal : maintiens V pendant un trade pour parler"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       <button class="ico" id="b-pouls" data-tip="Ton pouls par la webcam (estimation, rien ne quitte ton PC)"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 3 10 2-5h7"/></svg></button>
@@ -174,7 +216,7 @@
       <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
     </div>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v13</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v16</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -194,7 +236,8 @@
     <div class="aide">
       <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. Clique sur une ligne : sa petite barre (alerte, couleur, style, effacer).<br>
       <b>Souris</b> : glisser = déplacer · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
-      <kbd>/</kbd> chercher un marché · <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
+      <b>La salle</b> : <kbd>/</kbd> écris ce que tu veux (un marché, une commande, une question) · <kbd>E</kbd> copilote · <kbd>Q</kbd> maintenu : lui parler · <kbd>V</kbd> maintenu : journal · <kbd>D</kbd> structure de Dow · <kbd>A</kbd> étude d'annonce · <kbd>R</kbd> replay · <kbd>M</kbd> mémoire · <kbd>Z</kbd> focus · survole un repère de nouvelle (clic = explication)<br>
+      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
   </div>
 </div>
@@ -209,16 +252,26 @@
   <button data-l="style" title="Plein / pointillés"><svg viewBox="0 0 24 24"><path d="M3 12h4M10 12h4M17 12h4"/></svg></button>
   <button data-l="efface" title="Effacer (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
 </div>
-<div class="voile" id="voile"><div class="recherche"><input id="q" placeholder="Chercher un marché : or, argent, MNQ, pétrole, euro…" autocomplete="off"><div class="resultats" id="resultats"></div><div class="pied">↑ ↓ pour choisir · Entrée pour ouvrir · Échap pour fermer</div></div></div>
+<div class="voile" id="voile"><div class="recherche"><input id="q" placeholder="Un marché, ou ce que tu veux : « l'or en H4 », « trace une horizontale sur le dernier creux », « pourquoi le pétrole monte ? »" autocomplete="off"><div class="resultats" id="resultats"></div><div class="pied">↑ ↓ pour choisir un marché · Entrée : ouvrir le marché, ou faire ce que tu as écrit (une commande, sinon une question au copilote) · Échap pour fermer</div></div></div>
 <div class="toasts" id="toasts"></div>
 <div class="copi" id="copi"><div class="copi-t"><span class="onde"><i></i><i></i><i></i><i></i><i></i></span><b id="copi-titre">Copilote</b><button id="copi-x" aria-label="Fermer">×</button></div>
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
+<div class="bulle" id="bulle"></div>
+<div class="halo" id="halo"></div><div class="focus-aide">Mode focus · Z pour sortir</div>
+<div class="dow" id="etude"><button class="x" id="etude-x">Fermer · Échap</button><h2>ÉTUDE D'ANNONCE</h2>
+  <div class="etude-tete"><select id="etude-cle"></select><select id="etude-code"></select><div class="seg" id="etude-mode"><button data-m="minute" class="on">À la minute</button><button data-m="heure">À l'heure · 2 ans</button></div><span id="etude-etat" style="color:var(--doux)"></span></div>
+  <div class="etude-stats" id="etude-stats"></div>
+  <div class="etude-corps"><canvas id="etude-cv"></canvas><div class="etude-l" id="etude-l"></div></div><div class="etude-note" id="etude-note"></div></div>
+<div class="replay" id="replay"><span class="rec">● REPLAY</span><button id="rp-arr" title="Reculer (←)">⏮</button><button id="rp-jouer" title="Lecture / pause (Espace)">▶</button><button id="rp-av" title="Avancer (→)">⏭</button>
+  <span class="quand" id="rp-quand"></span><button data-v="1" class="on">1×</button><button data-v="3">3×</button><button data-v="10">10×</button><button data-v="30">30×</button><button id="rp-x" title="Quitter (Échap)">✕</button></div>
+<div class="dow" id="dow"><button class="x" id="dow-x">Fermer · Échap</button><h2>STRUCTURE DE DOW</h2>
+  <div class="sous"><span>Zigzag (5, 10) de chaque unité · sommets et creux confirmés</span><span><i style="background:#0aa37f"></i>haussière</span><span><i style="background:#f23645"></i>baissière</span><span><i style="background:#2a3142"></i>transition</span><span><i style="background:#ffb020"></i>cassure récente</span><span id="dow-etat"></span></div>
+  <div class="grille" id="grille"></div></div>
 <div class="micro" id="micro"><i></i><span id="micro-txt">J'écoute…</span></div>
 <div class="mem" id="mem"></div>
 <div class="tiroir" id="tiroir"><div class="tete2"><b>JOURNAL VOCAL</b><button id="t-bilan">Bilan de la semaine</button><button class="x" id="t-x">×</button></div><div class="corps" id="t-corps"></div></div>
 <div class="pouls" id="pouls"><video id="pouls-v" muted playsinline></video><canvas id="pouls-c"></canvas><div class="bas2"><b id="bpm">--</b><small>estimation · local</small></div></div>
-<div class="bulle" id="bulle"></div>
 <script>
 'use strict';
 /* Le graphique d'Atlas, dans son style TradingView : fond blanc, barres OHLC noires, zigzag (5, 10) épais, volume en bas, l'unité de temps
@@ -239,10 +292,11 @@ const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
 let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
 if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
-let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1' };
+let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1', news: lit('g-news', '1') === '1' };
+let NOUV = {};
 let COTD = {};
 const sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + nb(Math.abs(v), d);
-let lignes = [], choisie = null, brouillon = null, actif = 0;
+let lignes = [], choisie = null, brouillon = null, actif = 0, INSTANT = null;
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const UTS = () => vue === 'trois' ? utsTrois : [utSeul];
 const DUREE = { '5m': 300, '15m': 900, '30m': 1800, H1: 3600, H4: 14400, D1: 86400, W: 604800, M: 2629800 };
@@ -260,7 +314,7 @@ class Pane {
   constructor(el, ut) { this.el = el; this.ut = ut; this.d = null; this.n = 120; this.fin = 0; this.y = null; this.souris = null; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.ecoute(); }
   async charge() {
     const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
-    try { this.d = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); if (!this.fin) this.fin = 0; if (ch) ch.style.display = 'none'; this.dessine(); return true; }
+    try { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (!this.fin) this.fin = 0; if (ch) ch.style.display = 'none'; this.dessine(); return true; }
     catch (e) { if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
   }
   taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; this.W = r.width; this.H = r.height; this.cv.width = r.width * dpr; this.cv.height = r.height * dpr; this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
@@ -304,6 +358,9 @@ class Pane {
       else if (!tp || t.getDate() !== tp.getDate()) lab = `${t.getDate()} ${MOIS[t.getMonth()]}`;
       if (lab && X(k) - dernierLab > 60) { c.beginPath(); c.moveTo(Math.round(X(k)) + .5, 0); c.lineTo(Math.round(X(k)) + .5, ph); c.stroke(); c.textAlign = 'center'; c.fillText(lab, X(k), H - 7); c.textAlign = 'left'; dernierLab = X(k); } }
     c.setLineDash([]);
+    // le projecteur : la nouvelle survolée éclaire les bougies de sa réaction (le quart d'heure qui suit)
+    if (this.survol && opt.news) { const xa = T(this.survol.at), xb = Math.max(xa + Math.max(3, bw), T(this.survol.at + 900));
+      c.fillStyle = 'rgba(41,98,255,.10)'; c.fillRect(xa, 0, xb - xa, ph); c.strokeStyle = 'rgba(41,98,255,.6)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(Math.round(xa) + .5, 0); c.lineTo(Math.round(xa) + .5, ph); c.stroke(); c.setLineDash([]); }
     // les zones S/R H4 (grises, discrètes, prolongées à droite)
     if (opt.zones) (this.d.zones || []).forEach(z => { const x0 = Math.max(0, T(z.t)), y0 = Y(z.haut), y1 = Y(z.bas);
       c.fillStyle = 'rgba(120,120,120,.13)'; c.fillRect(x0, y0, pw - x0, Math.max(1, y1 - y0)); c.strokeStyle = 'rgba(90,90,90,.55)'; c.lineWidth = 1; c.strokeRect(x0 + .5, y0 + .5, pw - x0, Math.max(1, y1 - y0));
@@ -344,6 +401,8 @@ class Pane {
       c.setLineDash([5, 4]); c.strokeStyle = 'rgba(41,98,255,.75)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(x0, y0); ev.forEach(e => c.lineTo(T(e.t), Y(e.p50))); c.stroke(); c.setLineDash([]);
       c.font = '600 10.5px Inter, sans-serif'; c.fillStyle = 'rgba(80,60,200,.85)'; c.fillText(`MÉMOIRE · ${MEM.analogues.length} moments ressemblants · pas une prévision`, Math.min(x0 + 8, pw - 300), Math.max(14, Y(Math.max(...ev.map(e => e.p90))) - 8));
     }
+    if (REPLAY) { c.font = '800 11px Inter, sans-serif'; const tx = `● REPLAY · ${new Date(REPLAY.t * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`, tw = c.measureText(tx).width + 20;
+      c.fillStyle = 'rgba(242,54,69,.92)'; c.beginPath(); c.roundRect(pw / 2 - tw / 2, 44, tw, 22, 11); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(tx, pw / 2, 59); c.textAlign = 'left'; }
     // l'unité de temps, en grand (comme sur son TradingView)
     c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 14, 48); c.textAlign = 'left';
     // la jauge du COT : où en sont les fonds spéculatifs sur 3 ans (0 = jamais aussi vendeurs, 100 = jamais aussi acheteurs)
@@ -359,10 +418,30 @@ class Pane {
     // le dernier cours (boîte noire sur l'axe)
     const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
     c.fillStyle = '#000'; c.fillRect(pw, yd - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(der, dec), pw + 6, yd + 4);
+    // les nouvelles : de petits repères au-dessus de l'axe du temps, à la minute exacte (empilés quand elles se suivent)
+    this.marques = [];
+    if (opt.news && NOUV[code]) {
+      const COUL = { critique: '#f23645', importante: '#ffb020', chiffre: '#2962ff', mouvement: '#7c4dff', annonce: '#8b93a3' }, pile = {};
+      for (const n of NOUV[code]) {
+        if (REPLAY && n.at > REPLAY.t) continue;  // (en replay : seulement les nouvelles déjà tombées)
+        const x = T(n.at); if (x < 4 || x > pw - 4) continue;
+        const k = Math.round(x / 10), etage = pile[k] = (pile[k] || 0) + 1, y = ph - 9 - (etage - 1) * 13;
+        if (n.genre === 'annonce') { c.strokeStyle = 'rgba(139,147,163,.45)'; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(Math.round(x) + .5, 0); c.lineTo(Math.round(x) + .5, ph); c.stroke(); c.setLineDash([]); }
+        c.fillStyle = COUL[n.genre] || '#8b93a3'; c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath();
+        if (n.genre === 'mouvement') { c.moveTo(x, y - 6); c.lineTo(x + 6, y); c.lineTo(x, y + 6); c.lineTo(x - 6, y); c.closePath(); }
+        else if (n.genre === 'annonce') c.rect(x - 4.5, y - 4.5, 9, 9); else c.arc(x, y, n === this.survol ? 7 : 5.5, 0, 7);
+        c.fill(); c.stroke();
+        if (n.genre === 'critique') { c.strokeStyle = 'rgba(242,54,69,.35)'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 9, 0, 7); c.stroke(); }
+        this.marques.push({ x, y, n });
+      }
+    }
     // l'axe
     c.strokeStyle = '#c8c8c8'; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
     // l'aimant : un petit rond là où la ligne va se poser
     if (this.souris && outil !== 'curseur' && outil !== 'efface' && opt.aimant) { const [ta, pa] = aimant(this, this.souris[0], this.souris[1]); c.strokeStyle = '#2962ff'; c.lineWidth = 1.5; c.beginPath(); c.arc(T(ta), Y(pa), 5, 0, 7); c.stroke(); }
+    // le réticule temporel : l'instant survolé dans un autre graphique, retrouvé ici (D1, H4, H1… le même moment)
+    if (INSTANT && INSTANT.p !== this && !this.souris) { const xi = T(INSTANT.t); if (xi >= 0 && xi <= pw) { c.strokeStyle = 'rgba(124,77,255,.75)'; c.lineWidth = 1.2; c.setLineDash([5, 4]); c.beginPath(); c.moveTo(Math.round(xi) + .5, 0); c.lineTo(Math.round(xi) + .5, ph); c.stroke(); c.setLineDash([]);
+      const tt = new Date(INSTANT.t * 1000), lab = tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); c.fillStyle = '#7c4dff'; c.fillRect(xi - 52, ph + 1, 104, BT - 2); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '11px Inter, sans-serif'; c.fillText(lab, xi, ph + 16); c.textAlign = 'left'; } }
     // le réticule
     if (this.souris) { const [mx, my] = this.souris; c.setLineDash([4, 4]); c.strokeStyle = '#888'; c.beginPath(); c.moveTo(mx, 0); c.lineTo(mx, ph); c.moveTo(0, my); c.lineTo(pw, my); c.stroke(); c.setLineDash([]);
       c.fillStyle = '#131722'; c.fillRect(pw, my - 10, AX, 20); c.fillStyle = '#fff'; c.fillText(nb(iY(my), dec), pw + 6, my + 4);
@@ -380,6 +459,8 @@ class Pane {
     const zone = (x, y) => (this.pw && x >= this.pw ? 'prix' : this.ph && y >= this.ph ? 'temps' : 'graphe');
     cv.addEventListener('pointerdown', ev => { actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
       const z = zone(x, y);
+      if (REPLAY && REPLAY.choix && this.T) { demarreReplay(this.iT(x)); return; }
+      if (this.survol && outil === 'curseur') { const n = this.survol; copilote(`Explique-moi la nouvelle « ${n.titre} » de ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} et comment le marché a réagi.`); return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
       if (z === 'graphe') {
         const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { glisse = { ligne: l, x, y, orig: { ...l } }; return; } }
@@ -387,6 +468,8 @@ class Pane {
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; });
     cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev); this.souris = [x, y];
+      if (this.iT && panes.length > 1) { INSTANT = { t: this.iT(x), p: this }; panes.forEach(q => { if (q !== this) q.dessine(); }); }
+      if (!glisse) { const m = (this.marques || []).find(k => Math.hypot(k.x - x, k.y - y) < 9), n = m ? m.n : null; if (n !== this.survol) { this.survol = n; montreBulle(n, ev.clientX, ev.clientY); } else if (n) placeBulle(ev.clientX, ev.clientY); }
       cv.style.cursor = glisse ? (glisse.mode === 'prix' ? 'ns-resize' : glisse.mode === 'temps' ? 'ew-resize' : 'grabbing') : zone(x, y) === 'prix' ? 'ns-resize' : zone(x, y) === 'temps' ? 'ew-resize' : outil === 'curseur' ? 'default' : 'crosshair';
       if (brouillon && brouillon.pane === this) majBrouillon(this, x, y);
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
@@ -405,7 +488,7 @@ class Pane {
       }
       this.dessine(); });
     cv.addEventListener('pointerup', () => { if (glisse && glisse.ligne) sauve(); glisse = null; });
-    cv.addEventListener('pointerleave', () => { this.souris = null; this.dessine(); });
+    cv.addEventListener('pointerleave', () => { this.souris = null; if (INSTANT && INSTANT.p === this) { INSTANT = null; panes.forEach(q => { if (q !== this) q.dessine(); }); } if (this.survol) { this.survol = null; montreBulle(null); } this.dessine(); });
     cv.addEventListener('wheel', ev => { ev.preventDefault(); const [x, y] = pos(ev), f = ev.deltaY > 0 ? 1.12 : 1 / 1.12;
       if (zone(x, y) === 'prix') { const lo = this.lo, hi = this.hi, mid = (lo + hi) / 2; this.y = [mid - (hi - lo) / 2 * f, mid + (hi - lo) / 2 * f]; }
       else { // zoomer dans le temps autour de la bougie pointée (elle reste sous la souris)
@@ -487,8 +570,8 @@ function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAl
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
-[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-cot', 'cot']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
-async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); }
+[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-cot', 'cot'], ['#t-news', 'news']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
+async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
 async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); } catch (e) { /* hors liaison */ } }
@@ -535,7 +618,8 @@ $('#q').addEventListener('keydown', ev => {
   const r = filtreRecherche();
   if (ev.key === 'ArrowDown') { selRes = Math.min(r.length - 1, selRes + 1); filtreRecherche(); ev.preventDefault(); }
   else if (ev.key === 'ArrowUp') { selRes = Math.max(0, selRes - 1); filtreRecherche(); ev.preventDefault(); }
-  else if (ev.key === 'Enter' && r[selRes]) { fermeRecherche(); changeCode(r[selRes].code); }
+  else if (ev.key === 'Enter' && r[selRes] && $('#q').value.trim().split(/\s+/).length <= 2) { fermeRecherche(); changeCode(r[selRes].code); }
+  else if (ev.key === 'Enter' && $('#q').value.trim()) { const q = $('#q').value.trim(); fermeRecherche(); commandeGraphique(q).then(ok => ok ? toast(`✓ ${ok}`) : copilote(q)).catch(() => copilote(q)); }
   else if (ev.key === 'Escape') fermeRecherche();
 });
 $('#resultats').addEventListener('click', ev => { const t = ev.target.closest('.res[data-c]'); if (t) { fermeRecherche(); changeCode(t.dataset.c); } });
@@ -790,7 +874,7 @@ let veilleVue = Math.floor(Date.now() / 1000);
 async function chargeVeille() {
   if (document.hidden || !ROOT) return;
   try { const r = await api('/maison/copilote', { action: 'veille' }), n = (r.veille || []).filter(v => v.at > veilleVue);
-    if (n.length) { veilleVue = Math.max(...n.map(v => v.at)); if (!copiOccupe) ouvreCopi('Veille · ' + new Date(n[0].at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), n[0].texte, '', false); }
+    if (n.length) { veilleVue = Math.max(...n.map(v => v.at)); halo('ambre'); if (!copiOccupe) ouvreCopi('Veille · ' + new Date(n[0].at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), n[0].texte, '', false); }
   } catch (e) { /* hors liaison */ }
 }
 setInterval(chargeVeille, 20000);
@@ -860,10 +944,130 @@ async function installeSalle() {
     $('#copi-txt').insertAdjacentHTML('beforeend', '<button class="salle-btn" id="salle-go">Installer ma salle de marché</button>'); $('#salle-go').onclick = () => { $('#copi').classList.remove('on'); installeSalle(); }; }
   else toast(`Salle installée sur ${Math.min(3, ecrans.length)} écrans`);
 }
+
+/* --- les nouvelles sur le graphique --- */
+async function chargeNouvelles() { const k = code; if (document.hidden && NOUV[k]) return; try { const r = await api(`/maison/graphique?nouvelles=1&code=${k}`); NOUV[k] = r.nouvelles || []; toutDessine(); } catch (e) { /* hors liaison */ } }
+const GENRES = { critique: ['CRITIQUE', '#f23645'], importante: ['IMPORTANTE', '#ffb020'], chiffre: ['CHIFFRE PUBLIÉ', '#2962ff'], mouvement: ['MOUVEMENT ANORMAL', '#7c4dff'], annonce: ['ANNONCE PRÉVUE', '#8b93a3'] };
+function montreBulle(n, x, y) {
+  const b = $('#bulle'); if (!n) { b.classList.remove('on'); toutDessine(); return; }
+  const [lib, col] = GENRES[n.genre] || ['', '#888'], r = n.reaction, rc = v => v == null ? '<div>—<small></small></div>' : '';
+  b.innerHTML = `<div class="q"><span class="g" style="background:${col}22;color:${col}">${lib}</span>${new Date(n.at * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${(n.sources || []).length ? ' · ' + esc(n.sources.slice(0, 2).join(', ')) : ''}</div>
+    <b>${esc(n.titre)}</b>${n.resume ? `<p>${esc(n.resume)}</p>` : ''}${n.incidence ? `<p class="inc">${esc(n.incidence)}</p>` : ''}
+    ${r ? `<div class="reac">${['+1', '+5', '+15', '+60'].map(k => `<div class="${r[k] > 0 ? 'h' : r[k] < 0 ? 'r' : ''}">${r[k] == null ? '…' : (r[k] > 0 ? '+' : '') + r[k]}<small>${k} min</small></div>`).join('')}</div>` : ''}
+    <div class="astuce">${r ? 'réaction en ticks · ' : ''}clic : le copilote t'explique</div>`;
+  b.classList.add('on'); placeBulle(x, y); toutDessine();
+}
+function placeBulle(x, y) { const b = $('#bulle'), w = 330, h = b.offsetHeight || 200; b.style.left = `${Math.min(innerWidth - w - 10, Math.max(10, x - w / 2))}px`; b.style.top = `${y - h - 16 > 60 ? y - h - 16 : y + 18}px`; }
+chargeNouvelles(); setInterval(chargeNouvelles, 60000);
+
+/* --- le tableau de structure de Dow --- */
+let dowAvant = {}, dowMinuterie = null;
+const FLECHE = { hausse: '▲', baisse: '▼', transition: '◆' };
+async function chargeDow() {
+  try { const r = await api('/maison/graphique?dow=1'), fams = [...new Set(r.lignes.map(l => l.famille))];
+    $('#dow-etat').textContent = r.complet < r.total ? `lecture en cours : ${r.complet}/${r.total}` : `à jour · ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    let h = `<div class="th">MARCHÉ</div>${r.uts.map(u => `<div class="th">${LIB[u] || u}</div>`).join('')}<div class="th">ALIGNEMENT</div>`;
+    for (const f of fams) {
+      h += `<div class="fam2">${esc(f.toUpperCase())}</div>`;
+      for (const l of r.lignes.filter(x => x.famille === f)) {
+        h += `<div class="nom" data-c="${esc(l.code)}"><b>${esc(l.code)}</b><small>${esc(l.nom)}</small></div>`;
+        for (const u of r.uts) { const c = l.cases[u], k = `${l.code}|${u}`, sig = c ? c.tendance + (c.casse ? c.casse.sens : '') : '', fl = dowAvant[k] && sig && dowAvant[k] !== sig ? ' flash' : ''; if (sig) dowAvant[k] = sig;
+          h += c ? `<div class="cel ${c.tendance}${c.casse && c.casse.recent ? ' recent' : ''}${fl}" data-c="${esc(l.code)}" data-u="${u}" title="dernier sommet ${c.sommet ?? '—'} · dernier creux ${c.creux ?? '—'}${c.casse ? ` · ${c.casse.sens === 'haut' ? 'sommet' : 'creux'} cassé à ${c.casse.prix}${c.casse.at ? ' le ' + new Date(c.casse.at * 1000).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}` : ''}">${FLECHE[c.tendance]}${c.casse ? `<small>${c.casse.sens === 'haut' ? 'SOMMET CASSÉ' : 'CREUX CASSÉ'}</small>` : ''}</div>`
+                 : `<div class="cel vide" data-c="${esc(l.code)}" data-u="${u}">…</div>`; }
+        const fort = l.alignement >= 4;
+        h += `<div class="alig${fort ? ' fort' : ''}"><span class="barres">${r.uts.map(u => { const c = l.cases[u]; return `<i class="${c && c.tendance === 'hausse' ? 'h' : c && c.tendance === 'baisse' ? 'b' : ''}"></i>`; }).join('')}</span>${fort ? `${l.alignement}/5 ${l.sens === 'hausse' ? '▲' : '▼'}` : l.sens === 'mixte' ? 'partagé' : `${l.alignement}/5`}</div>`;
+      }
+    }
+    $('#grille').innerHTML = h;
+  } catch (e) { $('#dow-etat').textContent = 'la maison ne répond pas'; }
+}
+function ouvreDow() { const d = $('#dow'), on = !d.classList.contains('on'); d.classList.toggle('on', on); $('#b-dow').classList.toggle('on', on); clearInterval(dowMinuterie); if (on) { chargeDow(); dowMinuterie = setInterval(chargeDow, 20000); } }
+$('#b-dow').onclick = ouvreDow; $('#dow-x').onclick = ouvreDow;
+$('#grille').addEventListener('click', async ev => { const t = ev.target.closest('[data-c]'); if (!t) return; ouvreDow(); if (t.dataset.c !== code) await changeCode(t.dataset.c); if (t.dataset.u) choisirUT(t.dataset.u); });
+
+/* --- le replay : la séance rejouée bougie par bougie, toutes les fenêtres synchronisées, les nouvelles qui tombent à leur heure --- */
+let REPLAY = null;
+function decoupe(d, ut, t) {
+  if (!d) return d; const du = DUREE[ut] || 3600, B = (d.bougies || []).filter(b => b[0] + du <= t + 1);
+  const zz = (d.zigzag || []).filter(z => z[2] !== 'dernier' && z[0] + 10 * du <= t); if (B.length && zz.length) zz.push([B[B.length - 1][0], B[B.length - 1][4], 'dernier']);
+  return { ...d, bougies: B, zigzag: zz, zones: [] };
+}
+function appliqueReplay() { panes.forEach(p => { if (p.dReel) p.d = REPLAY ? decoupe(p.dReel, p.ut, REPLAY.t) : p.dReel; p.fin = 0; }); toutDessine(); $('#rp-quand').textContent = REPLAY ? new Date(REPLAY.t * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
+function pasReplay() { return Math.min(...panes.map(p => DUREE[p.ut] || 3600)); }
+function choisirReplay() { if (REPLAY && !REPLAY.choix) { quitteReplay(); return; } REPLAY = { choix: true, t: Date.now() / 1000, v: 1, jeu: null }; $('#b-replay').classList.add('on'); toast('Replay : clique sur le graphique à l’endroit où tu veux recommencer la séance'); }
+function demarreReplay(t) { REPLAY = { t: Math.floor(t / pasReplay()) * pasReplay(), v: 1, jeu: null }; $('#replay').classList.add('on'); document.querySelectorAll('#replay [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === '1')); appliqueReplay(); toast('Espace : lecture / pause · ← → : bougie par bougie'); }
+function avance(sens = 1) { if (!REPLAY || REPLAY.choix) return; REPLAY.t += sens * pasReplay(); if (REPLAY.t >= Date.now() / 1000) { REPLAY.t = Date.now() / 1000; joue(false); } appliqueReplay(); }
+function joue(on) { if (!REPLAY) return; clearInterval(REPLAY.jeu); REPLAY.jeu = null; if (on) REPLAY.jeu = setInterval(() => avance(1), 1000 / REPLAY.v); $('#rp-jouer').textContent = on ? '⏸' : '▶'; $('#rp-jouer').classList.toggle('on', !!on); }
+function quitteReplay() { if (REPLAY) clearInterval(REPLAY.jeu); REPLAY = null; $('#replay').classList.remove('on'); $('#b-replay').classList.remove('on'); appliqueReplay(); }
+$('#b-replay').onclick = choisirReplay; $('#rp-x').onclick = quitteReplay; $('#rp-av').onclick = () => avance(1); $('#rp-arr').onclick = () => avance(-1); $('#rp-jouer').onclick = () => joue(!REPLAY.jeu);
+document.querySelectorAll('#replay [data-v]').forEach(b => b.onclick = () => { REPLAY.v = +b.dataset.v; document.querySelectorAll('#replay [data-v]').forEach(x => x.classList.toggle('on', x === b)); if (REPLAY.jeu) joue(true); });
+/* --- l'étude d'annonce : les dernières fois superposées --- */
+let ETUDE = null, etudeSel = -1, etudeMode = 'minute';
+async function ouvreEtude() {
+  const e = $('#etude'), on = !e.classList.contains('on'); e.classList.toggle('on', on); $('#b-etude').classList.toggle('on', on); if (!on) return;
+  $('#etude-code').innerHTML = L.map(x => `<option value="${esc(x.code)}" ${x.code === code ? 'selected' : ''}>${esc(x.code)} · ${esc(x.nom)}</option>`).join('');
+  try { const r = await api('/maison/graphique?etudes=1'); $('#etude-cle').innerHTML = (r.etudes || []).map(x => `<option value="${esc(x.cle)}">${esc(x.titre)} (${x.n})</option>`).join(''); } catch (er) { /* rien */ }
+  chargeEtude();
+}
+async function chargeEtude() {
+  $('#etude-etat').textContent = 'Atlas rassemble les dernières fois…';
+  try { ETUDE = await api(`/maison/graphique?etude=${encodeURIComponent($('#etude-cle').value || 'nfp')}&code=${$('#etude-code').value || code}&mode=${etudeMode}`); etudeSel = -1;
+    $('#etude-etat').textContent = `${ETUDE.courbes.length} fois · ${ETUDE.nom}`; $('#etude-note').textContent = ETUDE.note + ' Des faits passés, dans les deux sens : ce n’est pas une prévision.';
+    $('#etude-stats').innerHTML = Object.entries(ETUDE.stats).map(([k, v]) => `<div>${etudeMode === 'minute' ? k + ' min' : '+' + Math.round(parseInt(k) / 60) + ' h'}<b>${v.mediane_abs} ticks</b>médiane · max ${v.max_abs} · ${v.plus}↑ ${v.moins}↓</div>`).join('');
+    const col = etudeMode === 'minute' ? [5, 15, 60] : [60, 180, 480], val = (c, m) => { const v = c.points.filter(p => p[0] >= 0 && p[0] <= m); return v.length ? v[v.length - 1][1] : null; };
+    const meche = c => c.meches && c.meches.length ? c.meches.filter(m => m[0] <= 2) : [];
+    $('#etude-l').innerHTML = `<div class="ev" style="color:var(--tres-doux);font-size:10.5px"><b>DATE</b>${col.map(m => `<span>${etudeMode === 'minute' ? '+' + m + "'" : '+' + m / 60 + 'h'}</span>`).join('')}</div>` + ETUDE.courbes.map((c, k) => ({ c, k })).reverse().map(({ c, k }) => { const mh = meche(c);
+      return `<div class="ev" data-k="${k}"><b>${new Date(c.at * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' })}${mh.length ? `<br><small style="color:var(--tres-doux);font-weight:500">mèche 2 min : +${Math.max(...mh.map(m => m[1]))} / ${Math.min(...mh.map(m => m[2]))}</small>` : ''}</b>${col.map(m => { const v = val(c, m); return `<span class="${v > 0 ? 'h' : v < 0 ? 'r' : ''}">${v == null ? '—' : (v > 0 ? '+' : '') + v}</span>`; }).join('')}</div>`; }).join('');
+    dessineEtude();
+  } catch (er) { $('#etude-etat').textContent = 'la maison ne répond pas'; }
+}
+function dessineEtude() {
+  const cv = $('#etude-cv'), r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1; cv.width = r.width * dpr; cv.height = r.height * dpr; const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = r.width, H = r.height, G = 56, D = 20, Hh = 18, B = 30; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); if (!ETUDE || !ETUDE.courbes.length) { c.fillStyle = '#888'; c.font = '13px Inter'; c.fillText('Pas encore de données pour cette annonce.', 20, 30); return; }
+  const tous = ETUDE.courbes.flatMap(x => x.points), x0 = Math.min(...tous.map(p => p[0])), x1 = Math.max(...tous.map(p => p[0]));
+  let y0 = Math.min(0, ...tous.map(p => p[1])), y1 = Math.max(0, ...tous.map(p => p[1])); const pd = (y1 - y0) * .08 || 5; y0 -= pd; y1 += pd;
+  const X = v => G + (v - x0) / (x1 - x0) * (W - G - D), Y = v => Hh + (y1 - v) / (y1 - y0) * (H - Hh - B);
+  c.font = '11px Inter'; c.fillStyle = '#555'; c.strokeStyle = '#e4e4e4'; c.lineWidth = 1; const st = niceStep((y1 - y0) / 7);
+  for (let v = Math.ceil(y0 / st) * st; v <= y1; v += st) { c.beginPath(); c.moveTo(G, Y(v)); c.lineTo(W - D, Y(v)); c.stroke(); c.fillText((v > 0 ? '+' : '') + Math.round(v), 8, Y(v) + 4); }
+  const sx = etudeMode === 'minute' ? 15 : 60; for (let v = Math.ceil(x0 / sx) * sx; v <= x1; v += sx) { c.fillText(etudeMode === 'minute' ? `${v > 0 ? '+' : ''}${v}'` : `${v > 0 ? '+' : ''}${v / 60}h`, X(v) - 10, H - 10); }
+  c.strokeStyle = '#000'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(G, Y(0)); c.lineTo(W - D, Y(0)); c.stroke();
+  c.strokeStyle = '#f23645'; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(X(0), Hh); c.lineTo(X(0), H - B); c.stroke(); c.setLineDash([]); c.fillStyle = '#f23645'; c.font = '700 11px Inter'; c.fillText('ANNONCE', X(0) + 6, Hh + 10);
+  const der = ETUDE.courbes.length - 1, trace = (pts, col, ep, dash) => { c.strokeStyle = col; c.lineWidth = ep; c.setLineDash(dash || []); c.beginPath(); pts.forEach((p, k) => k ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke(); c.setLineDash([]); };
+  ETUDE.courbes.forEach((x, k) => { if (k !== etudeSel && k !== der) trace(x.points, 'rgba(60,70,90,.28)', 1.2); });
+  if (ETUDE.mediane.length > 2) trace(ETUDE.mediane, 'rgba(124,77,255,.9)', 2.6, [7, 4]);
+  trace(ETUDE.courbes[der].points, '#2962ff', 2.4);
+  if (etudeSel >= 0) trace(ETUDE.courbes[etudeSel].points, '#ff9800', 3);
+  c.font = '600 11px Inter'; c.fillStyle = '#2962ff'; c.fillText(`— la plus récente (${new Date(ETUDE.courbes[der].at * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })})`, G + 8, H - B - 26); c.fillStyle = '#7c4dff'; c.fillText('- - la médiane', G + 8, H - B - 10);
+}
+$('#b-etude').onclick = ouvreEtude; $('#etude-x').onclick = ouvreEtude; $('#etude-cle').onchange = chargeEtude; $('#etude-code').onchange = chargeEtude;
+document.querySelectorAll('#etude-mode button').forEach(b => b.onclick = () => { etudeMode = b.dataset.m; document.querySelectorAll('#etude-mode button').forEach(x => x.classList.toggle('on', x === b)); chargeEtude(); });
+$('#etude-l').addEventListener('mouseover', ev => { const t = ev.target.closest('.ev[data-k]'), k = t ? +t.dataset.k : -1; if (k !== etudeSel) { etudeSel = k; document.querySelectorAll('.ev').forEach(e => e.classList.toggle('sel', +e.dataset.k === k && k >= 0)); dessineEtude(); } });
+window.addEventListener('resize', () => { if ($('#etude').classList.contains('on')) dessineEtude(); });
+
+/* --- le halo : le bord de l'écran s'allume (vu du coin de l'œil, sans lire) --- */
+function halo(genre) { const h = $('#halo'); h.className = 'halo'; void h.offsetWidth; h.className = 'halo ' + genre; setTimeout(() => { h.className = 'halo'; }, 5000); }
+let critiquesVues = null, liensVus = null;
+async function guetteHalo() {
+  if (!ROOT) return;
+  try { const r = await api(`/maison/graphique?nouvelles=1&code=${code}`), crit = (r.nouvelles || []).filter(n => n.genre === 'critique').map(n => n.id);
+    if (critiquesVues && crit.some(id => !critiquesVues.has(id))) halo('rouge'); critiquesVues = new Set(crit); NOUV[code] = r.nouvelles || NOUV[code];
+  } catch (e) { /* hors liaison */ }
+  try { const r = await api('/maison/copilote', { action: 'liens' }), inh = (r.liens || []).filter(x => x.etat === 'inhabituel').map(x => x.a + x.b);
+    if (liensVus && inh.some(k => !liensVus.has(k))) halo('violet'); liensVus = new Set(inh);
+  } catch (e) { /* hors liaison */ }
+}
+guetteHalo(); setInterval(guetteHalo, 30000);
+/* --- le mode focus : rien que le graphique --- */
+function focus() { document.body.classList.toggle('focus'); setTimeout(toutDessine, 60); }
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
-  if (k === 'e' && !ev.repeat) copilote(); else if (k === 'm' && !ev.repeat) memoire();
+  if (k === 'escape' && $('#dow').classList.contains('on')) { ouvreDow(); return; }
+  if (k === 'escape' && $('#etude').classList.contains('on')) { ouvreEtude(); return; }
+  if (REPLAY && !REPLAY.choix) { if (k === ' ') { ev.preventDefault(); joue(!REPLAY.jeu); return; } if (k === 'arrowright') { avance(1); return; } if (k === 'arrowleft') { avance(-1); return; } if (k === 'escape') { quitteReplay(); return; } }
+  if (k === 'z' && !ev.repeat) { focus(); return; }
+  if (k === 'a' && !ev.repeat) { ouvreEtude(); return; } if (k === 'r' && !ev.repeat) { choisirReplay(); return; }
+  if (k === 'e' && !ev.repeat) copilote(); else if (k === 'm' && !ev.repeat) memoire(); else if (k === 'd' && !ev.repeat) ouvreDow();
   else if ((k === 'q' || k === 'v') && !ev.repeat) demarreMicro(k === 'q' ? 'q' : 'v');
 });
 document.addEventListener('keyup', ev => { const k = ev.key.toLowerCase(); if ((k === 'q' || k === 'v') && rec && rec.mode === k) arreteMicro(); });
