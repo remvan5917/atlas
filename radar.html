@@ -39,7 +39,7 @@
   .bloc h3 { margin: 0 0 6px; font: 600 10.5px ui-monospace, monospace; letter-spacing: .22em; color: var(--cyan); }
   .ag { display: grid; grid-template-columns: 78px 1fr; gap: 3px 8px; font: 12px ui-monospace, monospace; }
   .ag .q { color: var(--doux); } .ag .q.proche { color: var(--ambre); font-weight: 700; } .ag .x { color: #dbe5ef; } .ag .x small { color: var(--doux); display: block; font-size: 10.5px; }
-  .ag .passe { opacity: .38; } .ag .fort { border-left: 2px solid var(--alerte); padding-left: 5px; }
+  .ag .passe { opacity: .38; } .ag .x small.fiche { color: var(--ambre); opacity: .85; } .ag .fort { border-left: 2px solid var(--alerte); padding-left: 5px; }
   .ligne { display: flex; justify-content: space-between; gap: 8px; font: 12px ui-monospace, monospace; padding: 2px 0; color: #dbe5ef; } .ligne span:first-child { color: var(--doux); }
   /* le fil */
   .fil { display: flex; flex-direction: column; gap: 7px; }
@@ -51,7 +51,8 @@
   .t { font-size: 12px; color: var(--doux); min-width: 40px; }
   .badge { font-size: 9.5px; font-weight: 700; letter-spacing: .12em; padding: 2px 6px; border-radius: 3px; border: 1px solid; }
   .badge.critique { color: var(--alerte); border-color: var(--alerte); } .badge.importante { color: var(--cyan); border-color: var(--cyan); } .badge.info { color: var(--doux); border-color: rgba(190, 215, 235, .3); }
-  .badge.chiffre { color: var(--ambre); border-color: var(--ambre); } .badge.mk { color: #cfe3f5; border-color: rgba(190, 215, 235, .25); font-weight: 600; }
+  .badge.chiffre { color: var(--ambre); border-color: var(--ambre); } .badge.mvt { color: #111; background: var(--ambre); border-color: var(--ambre); }
+  .it.mv { border-left-color: var(--ambre); background: linear-gradient(90deg, rgba(255, 181, 71, .1), var(--carte) 45%); } .badge.mk { color: #cfe3f5; border-color: rgba(190, 215, 235, .25); font-weight: 600; }
   .titre { font-weight: 650; font-size: 15px; flex: 1 1 300px; }
   .resume { color: #c9d4df; font-size: 13.3px; margin: 3px 0 0 49px; line-height: 1.4; }
   .inc { margin: 5px 0 0 49px; display: grid; gap: 2px; } .inc div { font-size: 13px; line-height: 1.35; color: #dde6ef; }
@@ -180,7 +181,9 @@ function dessine() {
   const ag = (donnees.agenda || []).slice().sort((a, b) => a.at - b.at);
   $('#agenda').innerHTML = ag.length ? ag.map(a => {
     const dt = a.at - now, proche = dt > 0 && dt < 15 * 60, q = dt > 0 && dt < 3600 ? `dans ${Math.max(1, Math.ceil(dt / 60))} min` : hm(a.at);
-    return `<div class="q ${proche ? 'proche' : ''} ${dt < -600 ? 'passe' : ''}">${esc(q)}</div><div class="x ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}">${esc(a.pays)} ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}<small>${a.prevision ? `cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}</small></div>`;
+    const fi = (donnees.fiches || {})[`${a.at}-${a.titre}`];
+    const fl = fi ? Object.entries(fi.marches).map(([m, x]) => `${m} ${x.p5_med != null ? `${x.p5_med} t/5 min` : `${x.amp60_med} t/h`}`).join(' · ') : '';
+    return `<div class="q ${proche ? 'proche' : ''} ${dt < -600 ? 'passe' : ''}">${esc(q)}</div><div class="x ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}">${esc(a.pays)} ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}<small>${a.prevision ? `cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}</small>${fl ? `<small class="fiche" title="Amplitude habituelle, sur les ${fi.n} dernières fois : la taille du mouvement à attendre, pas son sens">d'habitude : ${esc(fl)}</small>` : ''}</div>`;
   }).join('') : '<div class="q">—</div><div class="x">Pas d’annonce importante aujourd’hui.</div>';
   // ses positions
   $('#positions').innerHTML = pos.length ? pos.map(p => `<div class="ligne"><span>${esc(p.compte || '')}</span><span>${esc(p.instr)} ${esc(p.sens || '')} ×${esc(p.taille)}</span></div>`).join('') : '<div class="ligne"><span>Aucune position ouverte</span><span></span></div>';
@@ -193,11 +196,14 @@ function dessine() {
   $('#sys').innerHTML = `<div class="ligne"><span>Sources suivies</span><span>${donnees.sources || '—'}</span></div><div class="ligne"><span>FinancialJuice</span><span>toutes les ${donnees.rythme_fj || '—'} s</span></div>`
     + `<div class="ligne"><span>Notifications ntfy</span><span>${donnees.ntfy ? 'actives' : 'non réglées'}</span></div><div class="ligne"><span>Cours</span><span>${Object.values(tab)[0] ? (Object.values(tab)[0].source === 'topstepx' ? 'TopstepX, en direct' : 'différés') : '—'}</span></div>`;
   // le fil
-  let l = donnees.items || [];
+  let l = (donnees.items || []).concat((donnees.mouvements || []).map(m => ({ ...m, mv: true, urgence: 'critique', marches: [m.code] }))).sort((a, b) => b.at - a.at);
   if (filtre === 'critique') l = l.filter(i => i.urgence === 'critique');
   else if (filtre === 'chiffre') l = l.filter(i => i.chiffre);
   else if (filtre !== 'tout') l = l.filter(i => (i.marches || []).includes(filtre));
   $('#fil').innerHTML = l.length ? l.map(i => {
+    if (i.mv) return `<div class="it mv ${vus.has(i.id) || premier ? '' : 'neuf'}" data-id="${esc(i.id)}"><div class="tete"><span class="t">${jourHm(i.at)}</span><span class="badge mvt">MOUVEMENT</span><span class="badge mk">${esc(i.code)}</span>
+      <span class="titre">${i.ticks > 0 ? '+' : ''}${i.ticks} ticks en ${i.minutes} min · ${String(i.fois).replace('.', ',')} × l'agitation habituelle</span></div>
+      <div class="resume">${i.explication ? `L'explication : <b>${esc(i.explication.titre)}</b>` : 'Pas de dépêche dans les 15 minutes : le prix a bougé avant (ou sans) la nouvelle.'}</div></div>`;
     const inc = Object.entries(i.incidences || {});
     const r = Object.entries(i.reaction || {}).map(([m, v]) => { const t = reaction(v); return t ? `${m} ${t}` : ''; }).filter(Boolean).join(' · ');
     return `<div class="it ${esc(i.urgence)} ${i.avis === 'bruit' ? 'bruit' : ''} ${vus.has(i.id) || premier ? '' : 'neuf'}" data-id="${esc(i.id)}">
@@ -208,8 +214,8 @@ function dessine() {
         <span class="avis"><button data-a="utile" class="utile ${i.avis === 'utile' ? 'on' : ''}" title="Utile">👍</button><button data-a="bruit" class="bruit ${i.avis === 'bruit' ? 'on' : ''}" title="Du bruit : ne pas me déranger pour ça">👎</button></span></div>
     </div>`;
   }).join('') : '<div class="vide">Rien pour l’instant avec ce filtre.</div>';
-  const nouveaux = (donnees.items || []).filter(i => !vus.has(i.id));
-  if (!premier && nouveaux.length) bip(nouveaux.some(i => i.urgence === 'critique'));
+  const nouveaux = (donnees.items || []).concat(donnees.mouvements || []).filter(i => !vus.has(i.id));
+  if (!premier && nouveaux.length) bip(nouveaux.some(i => i.urgence === 'critique' || i.code));
   nouveaux.forEach(i => vus.add(i.id)); premier = false;
 }
 async function charge() {

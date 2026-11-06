@@ -296,11 +296,15 @@ const TRADING = (() => {
     if (hs.length > 1) L.push(['Heure la plus dure', `${hs[hs.length - 1][0]} h (${hs[hs.length - 1][1].toFixed(0)} $)`, 'alerte']);
     L.push(['Stops dépassés', String(depasse), depasse ? 'alerte' : 'ok']);
     Object.entries(instr).forEach(([k, v]) => L.push([k, `${v > 0 ? '+' : ''}${v.toFixed(0)} $`, v < 0 ? 'alerte' : 'ok']));
+    // les nouvelles pendant ses trades (le radar) : ses plus grosses pertes ont-elles eu lieu pendant une annonce ?
+    let jn = null; try { jn = await appel('/maison/radar?journal=1&jours=7', null, 15000); } catch (er) { /* pas de radar */ }
+    if (jn && jn.constat) L.push(['Pertes et nouvelles', `${(jn.pertes || []).filter(x => (x.pendant || []).length).length} / ${(jn.pertes || []).length} des plus grosses pertes pendant une nouvelle`, (jn.pertes || []).some(x => (x.pendant || []).length) ? 'alerte' : 'ok']);
     try { SCIFI.hud('Boîte noire · 7 jours', L); } catch (er) { /* pas d'écran */ }
     const dits = [`Bilan de la boîte noire, sur sept jours : ${l.length} trade${l.length > 1 ? 's' : ''}, ${taux} % de gagnants, total ${signe(tot)}.`];
     if (g.length && p.length) dits.push(`Gain moyen ${dollars(gm)}, perte moyenne ${dollars(pm)} : un rapport de ${(gm / -pm).toFixed(2).replace('.', ',')}.`);
     if (hs.length > 1) dits.push(`Ta meilleure heure : ${hs[0][0]} heures. La plus dure : ${hs[hs.length - 1][0]} heures.`);
     dits.push(depasse ? `${depasse} trade${depasse > 1 ? 's ont' : ' a'} perdu plus que le stop prévu.` : 'Tous tes stops ont été respectés.');
+    if (jn && jn.constat) dits.push(jn.constat);
     return say(dits.join(' '));
   }
 
