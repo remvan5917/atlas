@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04060a">
+<title>Radar Atlas</title>
+<style>
+  :root { --bg: #04060a; --carte: rgba(10, 14, 20, .94); --ambre: #ffb547; --cyan: #5fd3ff; --texte: #eef3f8; --doux: rgba(190, 215, 235, .58);
+    --ligne: rgba(95, 211, 255, .16); --ok: #6ef0b8; --alerte: #ff6b4a; --hausse: #6ef0b8; --baisse: #ff8a6b; color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--texte); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { padding: 10px 14px 14px; min-height: 100vh; background: radial-gradient(55% 40% at 50% -5%, rgba(95, 211, 255, .08), transparent 70%), var(--bg); }
+  .mono { font-family: ui-monospace, 'DejaVu Sans Mono', 'Roboto Mono', monospace; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-bottom: 1px solid var(--ligne); padding-bottom: 8px; position: sticky; top: 0; background: var(--bg); z-index: 5; }
+  .marque { font: 600 12px ui-monospace, monospace; letter-spacing: .38em; color: var(--cyan); } .marque b { color: var(--ambre); font-weight: 600; }
+  .heure { font: 200 30px/1 ui-monospace, monospace; color: #fff; text-shadow: 0 0 16px rgba(95, 211, 255, .35); }
+  .etat { display: flex; align-items: center; gap: 7px; font: 11px ui-monospace, monospace; color: var(--doux); letter-spacing: .06em; }
+  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--doux); } .led.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); } .led.al { background: var(--alerte); box-shadow: 0 0 8px var(--alerte); animation: clig 1.2s steps(2) infinite; }
+  @keyframes clig { 50% { opacity: .25; } }
+  .filtres { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+  .filtres button { background: none; border: 1px solid var(--ligne); color: var(--doux); border-radius: 14px; padding: 4px 10px; font: 11px ui-monospace, monospace; letter-spacing: .05em; cursor: pointer; }
+  .filtres button.on { border-color: var(--cyan); color: var(--cyan); background: rgba(95, 211, 255, .08); }
+  .filtres button.son.on { border-color: var(--ambre); color: var(--ambre); }
+  .agenda { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; scrollbar-width: none; }
+  .agenda .ev { flex: 0 0 auto; border: 1px solid var(--ligne); border-radius: 6px; padding: 5px 9px; font: 11.5px ui-monospace, monospace; color: var(--doux); }
+  .agenda .ev b { color: var(--texte); font-weight: 600; } .agenda .ev.fort { border-color: rgba(255, 107, 74, .45); } .agenda .ev.proche { border-color: var(--ambre); color: var(--ambre); box-shadow: 0 0 12px rgba(255, 181, 71, .25); }
+  .agenda .ev.passe { opacity: .4; }
+  .fil { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .it { background: var(--carte); border: 1px solid var(--ligne); border-left: 3px solid var(--cyan); border-radius: 6px; padding: 9px 12px; }
+  .it.critique { border-left-color: var(--alerte); background: linear-gradient(90deg, rgba(255, 107, 74, .08), var(--carte) 40%); }
+  .it.info { border-left-color: rgba(190, 215, 235, .3); opacity: .82; }
+  .it.neuf { animation: neuf 2.4s ease-out; } @keyframes neuf { 0% { box-shadow: 0 0 0 2px var(--ambre); } 100% { box-shadow: none; } }
+  .tete { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .t { font: 12px ui-monospace, monospace; color: var(--doux); min-width: 42px; }
+  .badge { font: 600 10px ui-monospace, monospace; letter-spacing: .12em; padding: 2px 6px; border-radius: 3px; border: 1px solid; }
+  .badge.critique { color: var(--alerte); border-color: var(--alerte); } .badge.importante { color: var(--cyan); border-color: var(--cyan); } .badge.info { color: var(--doux); border-color: rgba(190, 215, 235, .35); }
+  .badge.chiffre { color: var(--ambre); border-color: var(--ambre); }
+  .titre { font-weight: 650; font-size: 15.5px; flex: 1 1 320px; }
+  .resume { color: #cfd9e4; font-size: 13.5px; margin: 4px 0 0 52px; line-height: 1.4; }
+  .inc { margin: 6px 0 0 52px; display: grid; gap: 3px; }
+  .inc div { font-size: 13px; line-height: 1.35; color: #dde6ef; } .inc b { display: inline-block; min-width: 44px; font: 600 11.5px ui-monospace, monospace; color: var(--ambre); }
+  .pied { margin: 6px 0 0 52px; display: flex; gap: 14px; flex-wrap: wrap; font: 11px ui-monospace, monospace; color: var(--doux); }
+  .reac b { font-weight: 600; } .h { color: var(--hausse); } .b { color: var(--baisse); }
+  .vide { color: var(--doux); font: 13px ui-monospace, monospace; padding: 30px 0; text-align: center; }
+  .perdue { display: none; position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 20; background: #2a0d08; border: 1px solid var(--alerte); color: #ffd2c6; padding: 8px 16px; border-radius: 6px; font: 13px ui-monospace, monospace; }
+  .perdue.on { display: block; }
+  .note { margin-top: 14px; font: 11px ui-monospace, monospace; color: var(--doux); text-align: center; }
+  @media (max-width: 640px) { .resume, .inc, .pied { margin-left: 0; } .heure { font-size: 24px; } }
+</style>
+</head>
+<body>
+<header>
+  <div><div class="marque">ATLAS · <b>RADAR</b></div><div class="heure mono" id="heure">--:--</div></div>
+  <div class="etat"><span class="led" id="led"></span><span id="etat">connexion…</span></div>
+  <div class="filtres" id="filtres">
+    <button data-f="tout" class="on">Tout</button><button data-f="critique">Critique</button><button data-f="chiffre">Chiffres</button>
+    <button data-f="M6E">M6E</button><button data-f="MNQ">MNQ</button><button data-f="MYM">MYM</button><button data-f="MGC">MGC</button><button data-f="SIL">SIL</button><button data-f="MCL">MCL</button>
+    <button data-f="infos">+ infos</button><button class="son" id="son">Son : non</button>
+  </div>
+</header>
+<div class="agenda" id="agenda"></div>
+<div class="fil" id="fil"><div class="vide">Chargement du radar…</div></div>
+<div class="note">Des faits et des mécanismes, jamais un conseil d'achat ou de vente. Réaction du prix en ticks, à +1, +5 et +15 minutes.</div>
+<div class="perdue" id="perdue">Liaison perdue avec l'ordinateur de la maison (Tailscale ?)</div>
+<script>
+'use strict';
+/* L'écran Radar : le fil en direct des dépêches qui comptent pour ses marchés (triées sur l'ordinateur de la maison), leurs incidences
+   marché par marché, l'agenda du jour avec compte à rebours, et la réaction du prix. À laisser ouvert à côté du graphique. */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
+const reglages = S.settings || {};
+let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
+if (!ROOT) ROOT = (reglages.localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
+if (location.pathname.startsWith('/salle/')) ROOT = location.origin; // servie par l'ordinateur de la maison lui-même
+let filtre = 'tout', infos = false, son = false, vus = new Set(), premier = true, dernierOk = 0, donnees = null;
+try { son = localStorage.getItem('radar-son') === '1'; filtre = localStorage.getItem('radar-filtre') || 'tout'; infos = localStorage.getItem('radar-infos') === '1'; } catch (e) { /* rien */ }
+const hm = s => { const d = new Date(s * 1000); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+function bip(fort) {
+  if (!son) return;
+  try {
+    const ac = bip.ac || (bip.ac = new (window.AudioContext || window.webkitAudioContext)());
+    [0, .18].concat(fort ? [.36] : []).forEach(t0 => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = fort ? 880 : 660; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(.0001, ac.currentTime + t0); g.gain.exponentialRampToValueAtTime(.25, ac.currentTime + t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + t0 + .14);
+      o.start(ac.currentTime + t0); o.stop(ac.currentTime + t0 + .16); });
+  } catch (e) { /* pas de son */ }
+}
+function majBoutons() {
+  document.querySelectorAll('#filtres button[data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === 'infos' ? infos : b.dataset.f === filtre));
+  $('#son').classList.toggle('on', son); $('#son').textContent = son ? 'Son : oui' : 'Son : non';
+}
+$('#filtres').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.id === 'son') { son = !son; bip(false); } else if (b.dataset.f === 'infos') { infos = !infos; charge(); } else filtre = b.dataset.f;
+  try { localStorage.setItem('radar-son', son ? '1' : '0'); localStorage.setItem('radar-filtre', filtre); localStorage.setItem('radar-infos', infos ? '1' : '0'); } catch (e) { /* rien */ }
+  majBoutons(); dessine();
+});
+function reaction(r) {
+  const parts = ['+1', '+5', '+15'].filter(k => r[k] != null).map(k => `<span class="reac">${k} <b class="${r[k] > 0 ? 'h' : r[k] < 0 ? 'b' : ''}">${r[k] > 0 ? '+' : ''}${r[k]}</b></span>`);
+  return parts.join(' ');
+}
+function dessine() {
+  if (!donnees) return;
+  const now = Date.now() / 1000;
+  // l'agenda du jour : le prochain en évidence
+  const ag = (donnees.agenda || []).slice().sort((a, b) => a.at - b.at);
+  $('#agenda').innerHTML = ag.length ? ag.map(a => {
+    const dt = a.at - now, proche = dt > 0 && dt < 15 * 60;
+    const quand = dt > 0 ? (dt < 3600 ? `dans ${Math.ceil(dt / 60)} min` : hm(a.at)) : hm(a.at);
+    return `<div class="ev ${a.fort ? 'fort' : ''} ${proche ? 'proche' : ''} ${dt < -300 ? 'passe' : ''}"><b>${esc(quand)}</b> · ${esc(a.pays)} ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}${a.prevision ? ` · cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}</div>`;
+  }).join('') : '<div class="ev">Pas d’annonce importante aujourd’hui (États-Unis, zone euro).</div>';
+  let l = donnees.items || [];
+  if (filtre === 'critique') l = l.filter(i => i.urgence === 'critique');
+  else if (filtre === 'chiffre') l = l.filter(i => i.chiffre);
+  else if (filtre !== 'tout') l = l.filter(i => (i.marches || []).includes(filtre));
+  $('#fil').innerHTML = l.length ? l.map(i => {
+    const inc = Object.entries(i.incidences || {});
+    const r = Object.entries(i.reaction || {}).map(([m, v]) => { const t = reaction(v); return t ? `${m} ${t}` : ''; }).filter(Boolean).join(' · ');
+    return `<div class="it ${esc(i.urgence)} ${vus.has(i.id) || premier ? '' : 'neuf'}">
+      <div class="tete"><span class="t">${hm(i.at)}</span><span class="badge ${esc(i.urgence)}">${i.urgence === 'critique' ? 'CRITIQUE' : i.urgence === 'importante' ? 'IMPORTANT' : 'INFO'}</span>${i.chiffre ? '<span class="badge chiffre">CHIFFRE</span>' : ''}<span class="titre">${esc(i.titre)}</span></div>
+      ${i.resume ? `<div class="resume">${esc(i.resume)}</div>` : ''}
+      ${inc.length ? `<div class="inc">${inc.map(([m, v]) => `<div><b>${esc(m)}</b> ${esc(v)}</div>`).join('')}</div>` : (i.pourquoi ? `<div class="inc"><div>${esc(i.pourquoi)}</div></div>` : '')}
+      <div class="pied"><span>${esc((i.sources || []).join(' · '))}</span>${r ? `<span>réaction (ticks) : ${r}</span>` : ''}${i.dit ? '<span style="color:var(--ambre)">dit par Atlas</span>' : ''}</div>
+    </div>`;
+  }).join('') : '<div class="vide">Rien pour l’instant avec ce filtre.</div>';
+  const nouveaux = (donnees.items || []).filter(i => !vus.has(i.id));
+  if (!premier && nouveaux.length) bip(nouveaux.some(i => i.urgence === 'critique'));
+  nouveaux.forEach(i => vus.add(i.id)); premier = false;
+}
+async function charge() {
+  if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre ce lien depuis Atlas'; $('#led').className = 'led al'; return; }
+  try {
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 12000);
+    const r = await fetch(`${ROOT}/maison/radar${infos ? '?tout=1' : ''}`, { cache: 'no-store', signal: ctl.signal }); clearTimeout(tm);
+    if (!r.ok) throw new Error(r.status);
+    donnees = await r.json(); dernierOk = Date.now();
+    $('#led').className = 'led ok'; $('#etat').textContent = `en direct · mis à jour ${hm(donnees.maj || Date.now() / 1000)}`; $('#perdue').classList.remove('on');
+    dessine();
+  } catch (e) {
+    $('#led').className = 'led al'; $('#etat').textContent = 'hors liaison';
+    if (Date.now() - dernierOk > 45000) $('#perdue').classList.add('on');
+  }
+}
+setInterval(() => { const d = new Date(); $('#heure').textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`; }, 1000);
+setInterval(charge, 15000); setInterval(dessine, 30000); // (l'agenda : le compte à rebours)
+majBoutons(); charge();
+</script>
+</body>
+</html>

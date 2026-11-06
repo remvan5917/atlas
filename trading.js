@@ -370,6 +370,7 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
   }
   document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-td]'); if (!b) return; if (b.dataset.td === 'per') { S.tdPeriode = b.dataset.id; save(); ecranTrading(); } });
   function route(t, n) {
+    if (/\b(affiche|ouvre|montre|mets)\b.*\b(le |l )?(ecran )?radar\b/.test(n)) return () => { try { window.open(`radar.html${S.settings && S.settings.localUrl ? '#maison=' + encodeURIComponent(S.settings.localUrl.replace(/\/+$/, '').replace(/\/v1$/, '')) : ''}`, 'radar'); } catch (e) { /* bloqué */ } return say("J'ouvre l'écran du radar : les dépêches de tes marchés en direct, avec leurs incidences. Laisse-le ouvert à côté du graphique."); };
     if (/\b(le radar|mon radar|radar (de risque|des marches|trading)|quoi de neuf sur (les|mes) marches|les (nouvelles|depeches|news) (des|de mes|sur mes) marches|ce qui (est tombe|vient de tomber) sur (les|mes) marches)\b/.test(n)) return radar;
     if (/\b(mon trading|mon journal de trading|mes (stats|statistiques) de trading|statistiques de trading|tableau de bord (du )?trading|mes comptes (de trading|financés|finances|topstep)|mes objectifs de trading)\b/.test(n)) return monTrading;
     if (/\b(fin (de (la |ma )?)?(session|trading)|j arrete (de trader|le trading|ma session|la session)|je coupe (le trading|ma session)|session terminee|je termine (ma session|le trading)|fin du mode trading)\b/.test(n)) return fin;
