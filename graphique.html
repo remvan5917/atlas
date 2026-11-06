@@ -63,7 +63,7 @@
     <div class="espace"></div>
  <button class="b masque-mobile" id="nouvelle" title="Une fenêtre de plus, à glisser sur un autre écran">+ Fenêtre</button>
     <a class="b bleu masque-mobile" id="lien-radar" href="radar.html" target="radar" style="text-decoration:none">Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.6">· v4</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" title="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -129,6 +129,12 @@ class Pane {
   // les bougies visibles : les n dernières, décalées de « fin » vers le passé
   vis() { const B = (this.d && this.d.bougies) || []; const j = Math.max(0, B.length - Math.round(this.fin)); const i = Math.max(0, j - Math.round(this.n)); return { B, i, j }; }
   dessine() {
+    try { this._dessine(); } catch (e) {
+      try { const c = this.ctx; c.fillStyle = '#b00020'; c.font = '600 13px Inter, sans-serif'; c.fillText('Erreur de dessin : ' + (e && e.message || e), 12, 130); c.fillText(String((e && e.stack || '').split('\n')[1] || '').trim().slice(0, 160), 12, 150); } catch (er) { /* rien */ }
+      console.error(e);
+    }
+  }
+  _dessine() {
     if (!this.d) return; this.taille();
     if (this.W < 120 || this.H < 80) { requestAnimationFrame(() => setTimeout(() => this.dessine(), 120)); return; }
     const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
