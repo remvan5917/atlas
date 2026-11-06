@@ -112,7 +112,9 @@ const SCIFI = (() => {
   /* ---------- départ, retour ---------- */
   async function depart() {
     let l = []; try { l = (await appel('/maison/appareils', null, 15000)).appareils || []; } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
-    const eteindre = l.filter(a => a.allume && !chambre(a) && (a.type === 'lampe' || /\b(tele|television|tv|musique)\b/.test(N(a.nom))));
+    // les chambres aussi (papa l'a demandé) — sauf si son fils est à la maison : on ne lui éteint pas la lumière
+    let enfantLa = false; try { enfantLa = !!((await appel('/atlas/presences', null, 8000)) || {}).enfant; } catch (e) { /* inconnu : on éteint */ }
+    const eteindre = l.filter(a => a.allume && (!chambre(a) || !enfantLa) && (a.type === 'lampe' || /\b(tele|television|tv|musique)\b/.test(N(a.nom))));
     sfx('scan');
     await Promise.all([
       eteindre.length ? regle(eteindre.map(a => a.id), false).catch(() => {}) : null,
@@ -122,7 +124,7 @@ const SCIFI = (() => {
     S.absentDepuis = Date.now(); save();
     const cams = await cameras();
     const muettes = cams.filter(c => !c.en_ligne).map(c => c.nom);
-    hud('Protocole départ', [['Lumières', eteindre.length ? `${eteindre.length} éteinte${eteindre.length > 1 ? 's' : ''}` : 'déjà éteintes', 'ok'], ['Chambres', 'non touchées', 'ok'],
+    hud('Protocole départ', [['Lumières', eteindre.length ? `${eteindre.length} éteinte${eteindre.length > 1 ? 's' : ''}` : 'déjà éteintes', 'ok'], ['Chambres', enfantLa ? 'non touchées (ton fils est là)' : 'éteintes', 'ok'],
       ['Sentinelle', 'mode absent', 'ok'], ['Caméras', `${cams.length - muettes.length} / ${cams.length} en ligne`, muettes.length ? 'alerte' : 'ok'], ['Ordinateur', 'verrouillé', 'ok']], []);
     fx.ok();
     await say(`Protocole départ. ${eteindre.length ? 'Les lumières sont éteintes, ' : ''}l'ordinateur se verrouille, et la sentinelle passe en mode absent : je surveille tout, et je te préviens au moindre doute. ${cams.length ? `${cams.length - muettes.length} caméra${cams.length - muettes.length > 1 ? 's' : ''} sur ${cams.length} veillent${muettes.length ? ` ; ${liste(muettes)} ne répond${muettes.length > 1 ? 'ent' : ''} pas` : ''}.` : ''} Bonne route.`);
