@@ -493,7 +493,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v41</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v42</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -502,6 +502,10 @@
     <button class="outil" data-o="ligne" data-tip="Ligne de tendance (L) : deux clics"><svg viewBox="0 0 24 24"><path d="M4 19L20 5"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/></svg></button>
     <button class="outil" data-o="horizontale" data-tip="Ligne horizontale (H) : un clic"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="1.6"/></svg></button>
     <button class="outil" data-o="canal" data-tip="Canal parallèle (C) : trois clics"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
+    <button class="outil" data-o="fibo" data-tip="Retracement de Fibonacci : du départ du mouvement à son arrivée (deux clics)"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 9.5h18M3 13h18M3 19h18" opacity=".9"/><path d="M5 19L19 5" stroke-dasharray="2 2"/></svg></button>
+    <button class="outil" data-o="rect" data-tip="Zone de prix (rectangle) : deux coins · alerte quand le prix y entre ou en sort"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="1.5"/></svg></button>
+    <button class="outil" data-o="fleche" data-tip="Flèche : deux clics"><svg viewBox="0 0 24 24"><path d="M5 19L19 5M11 5h8v8"/></svg></button>
+    <button class="outil" data-o="texte" data-tip="Texte : un clic, puis écris (double-clic sur un texte pour le changer)"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg></button>
     <span class="sep2"></span>
     <span class="sep2"></span>
     <button class="outil" data-o="efface" data-tip="Effacer la ligne choisie (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
@@ -739,10 +743,23 @@ class Pane {
     // ses lignes
     const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : 1.2; c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
       const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
+      const rgba = (hex, a) => { const h = String(hex).replace('#', ''); if (h.length !== 6) return `rgba(128,128,128,${a})`; return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`; };
       if (l.genre === 'horizontale') { const y = Y(l.p1); c.beginPath(); c.moveTo(0, y); c.lineTo(pw, y); c.stroke(); }
+      else if (l.genre === 'fibo') {  // du départ (100 %) à l'arrivée (0 %), prolongé à droite, la zone 38,2 – 61,8 % teintée
+        const col = l.couleur ? coul(l.couleur) : '#ff8a00', x0 = Math.min(T(l.t1), T(l.t2)), N = [0, .236, .382, .5, .618, .786, 1, 1.272, 1.618], P = r => l.p2 + (l.p1 - l.p2) * r;
+        c.fillStyle = rgba(col.startsWith('#') ? col : '#ff8a00', .07); c.fillRect(x0, Math.min(Y(P(.382)), Y(P(.618))), pw - x0, Math.abs(Y(P(.618)) - Y(P(.382))));
+        N.forEach(r => { const y = Y(P(r)); if (y < -20 || y > ph + 20) return; c.strokeStyle = col; c.globalAlpha = r === .618 || r === 0 || r === 1 ? .95 : .55; c.lineWidth = r === .618 ? 1.8 : 1; c.setLineDash(r > 1 ? [5, 4] : []);
+          c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); c.globalAlpha = 1; c.setLineDash([]); c.font = '600 10px "JetBrains Mono", monospace'; c.fillStyle = col; c.textAlign = 'right'; c.fillText(`${(r * 100).toFixed(r * 100 % 1 ? 1 : 0).replace('.', ',')} %  ${nb(P(r), dec)}`, pw - 6, y - 3); c.textAlign = 'left'; });
+        c.strokeStyle = col; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(T(l.t1), Y(l.p1)); c.lineTo(T(l.t2), Y(l.p2)); c.stroke(); c.setLineDash([]); }
+      else if (l.genre === 'rect') { const col = l.couleur ? coul(l.couleur) : '#3d7bff', x1 = T(l.t1), x2 = T(l.t2), y1 = Y(l.p1), y2 = Y(l.p2);
+        c.fillStyle = rgba(col.startsWith('#') ? col : '#3d7bff', .12); c.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); c.strokeStyle = col; c.strokeRect(Math.min(x1, x2) + .5, Math.min(y1, y2) + .5, Math.abs(x2 - x1), Math.abs(y2 - y1)); }
+      else if (l.genre === 'fleche') { const x1 = T(l.t1), y1 = Y(l.p1), x2 = T(l.t2), y2 = Y(l.p2), a = Math.atan2(y2 - y1, x2 - x1), L = 11; c.lineWidth = sel ? 2.4 : 2;
+        c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.fillStyle = coul(l.couleur); c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - L * Math.cos(a - .45), y2 - L * Math.sin(a - .45)); c.lineTo(x2 - L * Math.cos(a + .45), y2 - L * Math.sin(a + .45)); c.closePath(); c.fill(); }
+      else if (l.genre === 'texte') { const x = T(l.t1), y = Y(l.p1); c.font = '700 13px Inter, sans-serif'; c.lineWidth = 4; c.strokeStyle = TH.bg; c.strokeText(l.texte || '', x, y); c.fillStyle = coul(l.couleur); c.fillText(l.texte || '', x, y);
+        if (sel) { const w = c.measureText(l.texte || '').width; c.strokeStyle = '#ffab1a'; c.lineWidth = 1; c.setLineDash([3, 3]); c.strokeRect(x - 4, y - 15, w + 8, 21); c.setLineDash([]); } }
       else { seg(l.t1, l.p1, l.t2, l.p2); if (l.genre === 'canal' && l.ecart != null) seg(l.t1, l.p1 + l.ecart, l.t2, l.p2 + l.ecart); }
       c.setLineDash([]);
-      if (sel && l.genre !== 'horizontale') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = TH.bg; c.strokeStyle = coul(l.couleur); c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
+      if (sel && l.genre !== 'horizontale' && l.genre !== 'texte') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = TH.bg; c.strokeStyle = coul(l.couleur); c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
       if (l.alerte === false) { /* (sans alerte : rien de plus) */ } };
     lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
     lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = coul(l.couleur); c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = TH.nuit ? TH.bg : '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
@@ -791,7 +808,7 @@ class Pane {
     c.strokeStyle = TH.axe; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
     // tes niveaux sur l'échelle des prix : une encoche à leur hauteur ; hors de l'écran, une flèche collée au bord avec la distance en ticks
     { const tR = iT(pw), der2 = B[B.length - 1][4], tk = this.d.tick || 1, haut2 = [], bas2 = [];
-      for (const l of lignes) { const vals = [l.genre === 'horizontale' ? l.p1 : (l.t2 != null && l.t2 !== l.t1 ? l.p1 + (l.p2 - l.p1) * (tR - l.t1) / (l.t2 - l.t1) : l.p1)];
+      for (const l of lignes.filter(z => ['horizontale', 'droite', 'canal'].includes(z.genre))) { const vals = [l.genre === 'horizontale' ? l.p1 : (l.t2 != null && l.t2 !== l.t1 ? l.p1 + (l.p2 - l.p1) * (tR - l.t1) / (l.t2 - l.t1) : l.p1)];
         if (l.genre === 'canal' && l.ecart != null) vals.push(vals[0] + l.ecart);
         for (const v of vals) { const y = Y(v), col = l.couleur || '#0b0e15', d = Math.round((v - der2) / tk);
           if (y >= 2 && y <= ph - 2) { c.fillStyle = col; c.fillRect(pw + 1, y - 5, 4, 10); }
@@ -913,6 +930,7 @@ class Pane {
         this.fin = Math.max(-n1 * .8, this.fin + (n0 - n1) * (1 - k)); this.n = n1; }
       this.dessine(); }, { passive: false });
     cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev);
+      { const lt = this.T && proche(this, x, y); if (lt && lt.genre === 'texte') { const tx = prompt('Ton texte :', lt.texte || ''); if (tx != null) { lt.texte = tx.trim().slice(0, 80); if (!lt.texte) { choisie = lt; efface(); } else sauve(); } return; } }
       if (zone(x, y) === 'graphe' && this.T) { const pv = pivotProche(this, x, y);
         if (pv) { const l = { id: idNeuf(), genre: 'horizontale', t1: pv[0], p1: pv[1], alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`${pv[2] === 'h' ? 'Résistance' : 'Support'} posé sur le ${pv[2] === 'h' ? 'sommet' : 'creux'} du zigzag : ${nb(pv[1], this.d.dec)} · alerte active`); return; } }
       if (zone(x, y) === 'prix') this.y = null; else { this.n = 120; this.fin = -6; this.y = null; } this.dessine(); });
@@ -934,9 +952,10 @@ function aimant(p, x, y) {
 function cliqueDessin(p, x, y) { travail(true); setTimeout(() => { if (!brouillon) travail(false); }, 0);
   const [t, pr] = aimant(p, x, y);
   if (outil === 'horizontale') { const l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(`Ligne posée à ${nb(pr, p.d.dec)} · alerte active`); return; }
-  if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: true }; return; }
+  if (outil === 'texte') { const tx = prompt('Ton texte :', ''); if (tx && tx.trim()) { const l = { id: idNeuf(), genre: 'texte', t1: t, p1: pr, texte: tx.trim().slice(0, 80), alerte: false }; lignes.push(l); choisie = l; sauve(); } choisieOutil('curseur'); toutDessine(); return; }
+  if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : ['fibo', 'rect', 'fleche'].includes(outil) ? outil : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: outil !== 'fibo' && outil !== 'fleche' }; return; }
   if (brouillon.genre === 'canal' && brouillon.etape === 1) { brouillon.etape = 2; brouillon.ecart = 0; return; }
-  const l = { ...brouillon }; delete l.pane; delete l.etape; lignes.push(l); brouillon = null; choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(l.genre === 'canal' ? 'Canal tracé · alerte active sur ses deux bords' : 'Ligne tracée · alerte active');
+  const l = { ...brouillon }; delete l.pane; delete l.etape; lignes.push(l); brouillon = null; choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast({ canal: 'Canal tracé · alerte active sur ses deux bords', fibo: 'Fibonacci tracé', rect: 'Zone tracée · alerte quand le prix y entre ou en sort', fleche: 'Flèche posée' }[l.genre] || 'Ligne tracée · alerte active');
 }
 function majBrouillon(p, x, y) {
   if (brouillon.etape === 1) { const [t, pr] = aimant(p, x, y); brouillon.t2 = t; brouillon.p2 = pr; }
@@ -945,8 +964,13 @@ function majBrouillon(p, x, y) {
 }
 function proche(p, x, y) {
   if (!p.T) return null; let mieux = null, dmin = 7;
+  const segD = (x1, y1, x2, y2) => { const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2)); return Math.hypot(x - (x1 + u * dx), y - (y1 + u * dy)); };
   lignes.forEach(l => { let d;
-    if (l.genre === 'horizontale') d = Math.abs(p.Y(l.p1) - y);
+    if (l.genre === 'fibo') { const x0 = Math.min(p.T(l.t1), p.T(l.t2)); d = x >= x0 - 4 ? Math.min(...[0, .236, .382, .5, .618, .786, 1, 1.272, 1.618].map(r => Math.abs(p.Y(l.p2 + (l.p1 - l.p2) * r) - y))) : 99; }
+    else if (l.genre === 'rect') { const xa = Math.min(p.T(l.t1), p.T(l.t2)), xb = Math.max(p.T(l.t1), p.T(l.t2)), ya = Math.min(p.Y(l.p1), p.Y(l.p2)), yb = Math.max(p.Y(l.p1), p.Y(l.p2)); d = x >= xa && x <= xb && y >= ya && y <= yb ? 3 : 99; }
+    else if (l.genre === 'fleche') d = segD(p.T(l.t1), p.Y(l.p1), p.T(l.t2), p.Y(l.p2));
+    else if (l.genre === 'texte') { const xa = p.T(l.t1), ya = p.Y(l.p1); d = x >= xa - 4 && x <= xa + 8 * (l.texte || '').length + 8 && y >= ya - 16 && y <= ya + 6 ? 2 : 99; }
+    else if (l.genre === 'horizontale') d = Math.abs(p.Y(l.p1) - y);
     else { const x1 = p.T(l.t1), y1 = p.Y(l.p1), x2 = p.T(l.t2), y2 = p.Y(l.p2), k = (y2 - y1) / ((x2 - x1) || 1);
       d = x >= Math.min(x1, x2) - 4 ? Math.abs(y1 + k * (x - x1) - y) : 99; if (l.genre === 'canal' && l.ecart != null) d = Math.min(d, Math.abs(y1 + k * (x - x1) + (p.Y(l.p1 + l.ecart) - y1) - y)); }
     if (d < dmin) { dmin = d; mieux = l; } });
@@ -957,7 +981,7 @@ const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
 function sauve() { if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
-  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
+  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
   try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
 async function chargeLignes() {
@@ -1065,7 +1089,7 @@ function majBarreLigne() {
   const bl = $('#barre-ligne'), p = panes[actif] || panes[0];
   if (!choisie || !p || !p.T) { bl.classList.remove('on'); return; }
   const r = p.cv.getBoundingClientRect();
-  let x, y; if (choisie.genre === 'horizontale') { x = r.left + p.pw - 270; y = r.top + p.Y(choisie.p1); } else { x = r.left + Math.min(p.pw - 270, Math.max(10, p.T(choisie.t2))); y = r.top + p.Y(choisie.p2); }
+  let x, y; if (choisie.genre === 'horizontale') { x = r.left + p.pw - 270; y = r.top + p.Y(choisie.p1); } else { const t2 = choisie.t2 != null ? choisie.t2 : choisie.t1, p2 = choisie.p2 != null ? choisie.p2 : choisie.p1; x = r.left + Math.min(p.pw - 270, Math.max(10, p.T(t2))); y = r.top + p.Y(p2); }
   bl.style.left = `${Math.max(r.left + 8, x)}px`; bl.style.top = `${Math.min(r.bottom - 50, Math.max(r.top + 8, y - 52))}px`; bl.classList.add('on');
   bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false);
   bl.querySelector('[data-l="style"]').classList.toggle('on', choisie.style === 'tirets');
@@ -1740,7 +1764,7 @@ function sonne(genre) {
 const tintes = {}; let derAvant = null;
 function guetteTouches() {
   const x = L.find(z => z.code === code); if (!x || x.dernier == null) return; const d = x.dernier, tk = (panes[0] && panes[0].d && panes[0].d.tick) || 0, now = Date.now() / 1000;
-  if (derAvant != null && derAvant.code === code) for (const l of lignes) { const v = l.genre === 'horizontale' || l.t2 == null || l.t2 === l.t1 ? l.p1 : l.p1 + (l.p2 - l.p1) * (now - l.t1) / (l.t2 - l.t1);
+  if (derAvant != null && derAvant.code === code) for (const l of lignes.filter(z => ['horizontale', 'droite', 'canal'].includes(z.genre))) { const v = l.genre === 'horizontale' || l.t2 == null || l.t2 === l.t1 ? l.p1 : l.p1 + (l.p2 - l.p1) * (now - l.t1) / (l.t2 - l.t1);
     const touche = (derAvant.v - v) * (d - v) <= 0 || Math.abs(d - v) <= tk; if (touche && now - (tintes[l.id] || 0) > 900) { tintes[l.id] = now; sonne('ligne'); halo('ambre'); toast(`${code} touche ta ligne à ${nb(v, x.dec)}`); break; } }
   derAvant = { code, v: d };
 }
