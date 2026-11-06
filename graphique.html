@@ -265,7 +265,7 @@
     <a class="lien masque-mobile" id="b-carte" data-tip="La Carte : tous tes marchés dans un espace, vivants (G)" style="cursor:pointer"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.2"/><circle cx="18" cy="5" r="2.2"/><circle cx="12" cy="13" r="2.6"/><circle cx="6" cy="19" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7 7l3.4 4.4M16.2 6.4l-2.6 4.6M10.4 15l-3 2.6M14.3 14.6l3 2"/></svg>Carte</a>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v20</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v21</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -284,7 +284,7 @@
     <div id="liste"></div>
     <div class="aide">
       <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. Clique sur une ligne : sa petite barre (alerte, couleur, style, effacer).<br>
-      <b>Le graphique</b> : la molette passe toute seule d'une unité à l'autre (du mensuel à la minute) · <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
+      <b>Le graphique</b> : <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
       <b>Souris</b> : glisser = déplacer (avec élan) · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
       <b>La salle</b> : <kbd>/</kbd> écris ce que tu veux (un marché, une commande, une question) · <kbd>E</kbd> copilote · <kbd>Q</kbd> maintenu : lui parler · <kbd>V</kbd> maintenu : journal · <kbd>D</kbd> structure de Dow · <kbd>A</kbd> étude d'annonce · <kbd>R</kbd> replay · <kbd>M</kbd> mémoire · <kbd>Z</kbd> focus · survole un repère de nouvelle (clic = explication)<br>
       <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
@@ -349,7 +349,7 @@ const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
 let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
 if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
-let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1', news: lit('g-news', '1') === '1', zoomc: lit('g-zoomc', '1') === '1' };
+let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1', news: lit('g-news', '1') === '1', zoomc: false };  // (le passage automatique d'unité à la molette : retiré, pas pratique)
 let NOUV = {};
 let COTD = {};
 const sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + nb(Math.abs(v), d);
