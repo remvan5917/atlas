@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#131722">
+<meta name="theme-color" content="#06080c">
 <title>Graphique Atlas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root { --cadre: #0f131c; --cadre2: #171c27; --cadre3: #1f2532; --ligne: #262c3a; --texte: #dfe3ea; --doux: #8b93a3; --tres-doux: #5d6576; --bleu: #2962ff; --bleu2: #5b8bff;
     --vert: #0aa37f; --rouge: #f23645; --ambre: #ffb020; color-scheme: dark; }
@@ -194,42 +194,88 @@
   .tv .prog { position: absolute; top: calc(8vh - 14px); left: 4vw; right: 4vw; display: flex; gap: 6px; } .tv .prog i { flex: 1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .22); overflow: hidden; } .tv .prog i b { display: block; height: 100%; width: 0; background: #fff; }
   .tv .aide2 { position: absolute; right: 4vw; top: calc(8vh + 12px); font: 600 11.5px 'Inter'; color: rgba(255, 255, 255, .85); background: rgba(0, 0, 0, .55); padding: 5px 10px; border-radius: 8px; }
   .tv .num { position: absolute; left: 4vw; top: calc(8vh + 12px); font: 800 12px 'Inter'; letter-spacing: .3em; color: #fff; background: rgba(0, 0, 0, .55); padding: 5px 10px; border-radius: 8px; }
-  /* ---- la Carte : la salle de marché spatiale ---- */
-  .carte { position: fixed; inset: 0; z-index: 85; background: radial-gradient(ellipse at 50% 45%, #141a2e 0%, #080b13 65%, #05070c 100%); overflow: hidden; display: none; opacity: 0; transition: opacity .45s ease; cursor: grab; user-select: none; }
-  .carte.on { display: block; } .carte.visible { opacity: 1; } .carte.glisse { cursor: grabbing; }
-  .carte-fond { position: absolute; inset: 0; background-image: radial-gradient(rgba(150, 165, 210, .16) 1px, transparent 1.4px); background-size: 34px 34px; pointer-events: none; }
-  .monde { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
-  .fils { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
-  .fils path { fill: none; stroke-linecap: round; } .fils .vibre { stroke-dasharray: 10 8; animation: vibre .8s linear infinite; } @keyframes vibre { to { stroke-dashoffset: -36; } }
-  .fils text { font: 700 13px 'Inter'; fill: #ffb020; paint-order: stroke; stroke: #080b13; stroke-width: 5px; }
-  .famille-t { position: absolute; transform: translate(-50%, -50%); font: 800 46px 'Inter'; letter-spacing: .3em; color: rgba(185, 195, 255, .07); white-space: nowrap; pointer-events: none; }
-  .mc { position: absolute; width: 270px; transition: left .6s cubic-bezier(.2, .8, .2, 1), top .6s cubic-bezier(.2, .8, .2, 1), box-shadow .3s, transform .25s; border-radius: 18px; background: #fff; color: #0f131c; box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .06); transform-origin: 50% 50%; transition: box-shadow .3s, transform .25s cubic-bezier(.2, .8, .2, 1); cursor: pointer; }
-  .mc:hover { box-shadow: 0 30px 70px rgba(0, 0, 0, .6), 0 0 0 2px #7c4dff; }
-  .mc .t { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 14px 4px; } .mc .t b { font: 800 19px 'Inter'; letter-spacing: -.01em; } .mc .t small { display: block; color: #6b7280; font: 500 11.5px 'Inter'; }
-  .mc .t .px { text-align: right; font: 700 15px 'Inter'; font-variant-numeric: tabular-nums; } .mc .t .px small { font: 700 12px 'Inter'; } .mc .h { color: #089981; } .mc .r { color: #f23645; }
-  .mc canvas { display: block; width: 100%; height: 92px; }
-  .mc .p { display: flex; align-items: center; gap: 8px; padding: 6px 14px 12px; } .mc .dw2 { display: flex; gap: 3px; } .mc .dw2 i { width: 15px; height: 15px; border-radius: 4px; background: #e8eaee; font: 800 7.5px/15px 'Inter'; color: #fff; text-align: center; font-style: normal; }
-  .mc .dw2 i.hausse { background: #089981; } .mc .dw2 i.baisse { background: #f23645; } .mc .dw2 i.transition { background: #b6bcc8; } .mc .dw2 i.casse { box-shadow: 0 0 0 2px #ffb020; }
-  .mc .cotm { flex: 1; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #f23645, #d6d6d6, #089981); position: relative; } .mc .cotm b { position: absolute; top: -3px; width: 3px; height: 11px; background: #0f131c; border-radius: 1px; }
-  .mc .nv { font: 800 11px 'Inter'; color: #fff; background: #ffb020; border-radius: 10px; padding: 2px 7px; } .mc .nv.crit { background: #f23645; }
-  .mc .pq { margin: -4px 14px 10px; font: 600 12px/1.45 'Inter'; color: #0f131c; } .mc .pq b { color: #7c4dff; } .mc.calme { opacity: .55; } .mc.calme:hover { opacity: 1; }
-  .mc .score { position: absolute; top: -10px; left: -10px; width: 28px; height: 28px; border-radius: 50%; background: #7c4dff; color: #fff; font: 800 13px/28px 'Inter'; text-align: center; box-shadow: 0 4px 14px rgba(124, 77, 255, .6); }
-  .mc .veil { margin: 0 14px 12px; padding: 7px 10px; border-radius: 10px; background: #fff5e0; color: #7a4b00; font: 600 11.5px/1.4 'Inter'; }
-  .mc.alerte { animation: pouls-a 1.6s ease-in-out infinite; } @keyframes pouls-a { 50% { box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 0 4px rgba(255, 176, 32, .9), 0 0 50px rgba(255, 176, 32, .6); } }
-  .mc.crit { box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 0 3px rgba(242, 54, 69, .85); } .mc.casse { box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 0 3px rgba(124, 77, 255, .85), 0 0 40px rgba(124, 77, 255, .35); }
-  .mc.choisi { z-index: 3; }
-  .carte-hud { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 14px; padding: 18px 24px; pointer-events: none; }
-  .carte-hud > * { pointer-events: auto; } .carte-hud .tt b { display: block; font: 800 15px 'Inter'; letter-spacing: .3em; color: #fff; } .carte-hud .tt span { color: #8b93a3; font: 500 12.5px 'Inter'; }
-  .carte-hud .esp { flex: 1; } .carte-hud button { background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); color: #dfe3ea; border-radius: 10px; padding: 9px 13px; font: 600 12.5px 'Inter'; backdrop-filter: blur(6px); }
-  .carte-hud button:hover { background: rgba(255, 255, 255, .12); } .carte-hud button.on { background: rgba(124, 77, 255, .25); border-color: rgba(124, 77, 255, .6); } .carte-hud button.vif { background: linear-gradient(135deg, #2962ff, #7c4dff); border: 0; color: #fff; }
-  .carte-leg { position: absolute; left: 24px; bottom: 20px; display: flex; gap: 16px; color: #8b93a3; font: 500 12px 'Inter'; pointer-events: none; flex-wrap: wrap; } .carte-leg i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }
   @media (max-width: 1200px) { .sym { min-width: 0; } .sym .px { display: none; } }
   @media (max-width: 900px) { .mem, .pouls { right: 12px; } .tiroir { width: 100%; } .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none !important; } }
+
+  /* ================= ATLAS NOIR — le design ================= */
+  :root { --fond: #06080c; --verre: rgba(17, 21, 31, .72); --verre-fort: rgba(13, 16, 24, .92); --bord: rgba(255, 255, 255, .075); --bord2: rgba(255, 255, 255, .12);
+    --texte: #e9ecf2; --doux: #8f98aa; --tres-doux: #5e6679; --a1: #3d7bff; --a2: #8b5cff; --grad: linear-gradient(135deg, #3d7bff 0%, #8b5cff 100%);
+    --vert: #14b887; --rouge: #f0435a; --cadre: #0b0e15; --cadre2: rgba(255, 255, 255, .035); --cadre3: rgba(255, 255, 255, .06); --ligne: rgba(255, 255, 255, .07);
+    --mono: 'JetBrains Mono', ui-monospace, monospace; --titre: 'Inter Tight', 'Inter', sans-serif; }
+  html, body { background: radial-gradient(1100px 620px at 12% -12%, rgba(61, 123, 255, .13), transparent 62%), radial-gradient(900px 560px at 105% -8%, rgba(139, 92, 255, .11), transparent 60%), radial-gradient(700px 500px at 50% 120%, rgba(61, 123, 255, .05), transparent 70%), var(--fond); }
+  body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5; background-image: radial-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px); background-size: 3px 3px; mix-blend-mode: overlay; }
+  .app { position: relative; z-index: 1; grid-template-rows: 66px 1fr; grid-template-columns: 70px 1fr 318px; gap: 0 12px; padding: 0 12px 12px 0; }
+  /* la barre du haut : légère, flottante */
+  .haut { background: none; border: 0; padding: 0 2px 0 14px; gap: 12px; }
+  .marque { display: flex; align-items: center; gap: 10px; margin-right: 4px; user-select: none; }
+  .marque i { width: 30px; height: 30px; border-radius: 9px; background: var(--grad); box-shadow: 0 0 0 1px rgba(255, 255, 255, .18) inset, 0 8px 26px rgba(91, 108, 255, .55); position: relative; transform: rotate(45deg) scale(.82); }
+  .marque i::after { content: ''; position: absolute; inset: 8px; border-radius: 3px; background: #0b0e15; }
+  .marque span { font: 800 14px/1 var(--titre); letter-spacing: .26em; color: #fff; } .marque small { display: block; font: 600 8.5px/1 'Inter'; letter-spacing: .42em; color: var(--doux); margin-top: 5px; }
+  .sym { min-width: 236px; padding: 7px 14px 7px 8px; border-radius: 14px; background: var(--verre); border: 1px solid var(--bord); backdrop-filter: blur(18px); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); transition: border-color .2s, transform .2s; }
+  .sym:hover { border-color: var(--bord2); transform: translateY(-1px); }
+  .sym .ic { width: 36px; height: 36px; border-radius: 11px; font: 800 10.5px var(--titre); background: var(--grad); box-shadow: 0 6px 18px rgba(91, 108, 255, .45); }
+  .sym b { font: 800 17px/1.05 var(--titre); letter-spacing: -.01em; } .sym small { font-size: 11px; color: var(--doux); }
+  .sym .px { font: 700 14px var(--mono); letter-spacing: -.02em; } .sym .px small { display: block; font: 700 11px var(--mono); margin-top: 2px; }
+  .seg { background: var(--verre); border: 1px solid var(--bord); border-radius: 13px; padding: 4px; gap: 1px; backdrop-filter: blur(18px); }
+  .seg button { padding: 7px 11px; border-radius: 9px; font: 600 12.5px 'Inter'; color: var(--doux); }
+  .seg button.on { background: var(--grad); color: #fff; box-shadow: 0 6px 18px rgba(91, 108, 255, .45), inset 0 0 0 1px rgba(255, 255, 255, .15); }
+  .grp { border: 1px solid var(--bord); border-radius: 13px; padding: 3px; gap: 1px; background: var(--verre); backdrop-filter: blur(18px); }
+  .haut .ico { width: 34px; height: 34px; border-radius: 9px; } .ico:hover { background: rgba(255, 255, 255, .07); }
+  .ico.on { color: #fff; background: rgba(91, 108, 255, .22); border-color: rgba(139, 92, 255, .4); box-shadow: 0 0 16px rgba(91, 108, 255, .25); }
+  .lien { border-radius: 12px; background: var(--verre); border: 1px solid var(--bord); padding: 9px 14px; backdrop-filter: blur(18px); transition: transform .2s, border-color .2s; } .lien:hover { border-color: var(--bord2); transform: translateY(-1px); }
+  .lien.presente { background: var(--grad); border: 0; box-shadow: 0 10px 28px rgba(91, 108, 255, .5), inset 0 0 0 1px rgba(255, 255, 255, .18); }
+  .tilt { border-radius: 12px; background: var(--verre); border: 1px solid var(--bord); padding: 9px 13px; backdrop-filter: blur(18px); }
+  .etat { padding-left: 4px; } .etat #etat { font-weight: 600; color: var(--doux); }
+  .pt.ok { animation: vie 2.4s ease-in-out infinite; } @keyframes vie { 50% { box-shadow: 0 0 0 5px rgba(20, 184, 135, 0), 0 0 14px var(--vert); } }
+  /* le dock de gauche : flottant, en verre */
+  .outils { grid-row: 2; margin: 0 0 0 12px; padding: 10px 0; gap: 3px; border: 1px solid var(--bord); border-radius: 20px; background: var(--verre); backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0, 0, 0, .35); overflow-y: auto; overflow-x: visible; }
+  .outils::-webkit-scrollbar { width: 0; }
+  .outil, .outil-d { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; color: var(--doux); background: none; border: 1px solid transparent; transition: background .15s, color .15s, transform .15s; }
+  .outil:hover, .outil-d:hover { background: rgba(255, 255, 255, .07); color: #fff; transform: scale(1.06); }
+  .outil.on { background: var(--grad); color: #fff; border-color: transparent; box-shadow: 0 6px 18px rgba(91, 108, 255, .5); }
+  .outil-d.on { color: #fff; background: rgba(91, 108, 255, .22); border-color: rgba(139, 92, 255, .4); }
+  .outils .sep2 { width: 26px; margin: 5px 0; background: var(--bord2); flex: none; }
+  .sec-d { font: 700 8px 'Inter'; letter-spacing: .3em; color: var(--tres-doux); margin: 8px 0 3px; padding-left: .3em; flex: none; }
+  .ressort { flex: 1 0 8px; }
+  .outils svg, .outil-d svg { width: 20px; height: 20px; }
+  [data-tip]:hover::after { background: rgba(10, 13, 20, .97); border: 1px solid var(--bord2); border-radius: 9px; padding: 7px 10px; font: 600 11.5px 'Inter'; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); color: #fff; }
+  .outils [data-tip]:hover::after { left: calc(100% + 14px); }
+  .outils { position: relative; z-index: 6; }
+  /* les graphiques : des feuilles blanches qui flottent */
+  .graphes { background: none; gap: 12px; }
+  .pane { border-radius: 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 255, 255, .06); }
+  .pane.actif::after { border: 0; border-radius: 18px; box-shadow: inset 0 0 0 2px rgba(91, 108, 255, .9); }
+  .pane .titre { left: 12px; top: 10px; padding: 7px 11px 6px; border-radius: 11px; background: rgba(255, 255, 255, .86); backdrop-filter: blur(8px); box-shadow: 0 2px 12px rgba(15, 19, 28, .08), 0 0 0 1px rgba(15, 19, 28, .05); font: 500 12px 'Inter'; line-height: 1.45; }
+  .pane .titre b { font: 800 13.5px var(--titre); letter-spacing: -.01em; } .pane .titre .ohlc { font: 500 11.5px var(--mono); letter-spacing: -.02em; color: #4b5260; }
+  .pane .titre .cotl { display: flex; align-items: center; gap: 7px; margin: 3px 0 2px; font: 600 10.5px 'Inter'; color: #6b7280; } .pane .titre .cotl i { position: relative; width: 70px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #f0435a, #d9dce3, #14b887); }
+  .pane .titre .cotl i b { position: absolute; top: -3px; width: 3px; height: 10px; margin-left: -1px; border-radius: 1px; background: #0b0e15; } .pane .titre .cotl .ext { color: #c81e3a; font-weight: 700; }
+  .pane .titre .h { color: #0e9f74; } .pane .titre .r { color: #e2364e; }
+  /* la liste de suivi : un panneau de verre */
+  .liste { border: 1px solid var(--bord); border-radius: 20px; background: var(--verre); backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0, 0, 0, .35); }
+  .liste .tete { background: linear-gradient(var(--verre-fort) 70%, transparent); padding: 16px 16px 10px; border-radius: 20px 20px 0 0; }
+  .liste .tete b { font: 800 12px var(--titre); letter-spacing: .24em; color: #fff; }
+  .fam { padding: 12px 16px 6px; letter-spacing: .22em; font-size: 9.5px; }
+  .ligne-s { margin: 1px 8px; padding: 8px 10px; border-radius: 12px; border-left: 0; position: relative; }
+  .ligne-s:hover { background: rgba(255, 255, 255, .045); }
+  .ligne-s.sel { background: linear-gradient(90deg, rgba(61, 123, 255, .2), rgba(139, 92, 255, .06)); box-shadow: inset 0 0 0 1px rgba(91, 108, 255, .35); }
+  .ligne-s.sel::before { content: ''; position: absolute; left: -8px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--grad); }
+  .ligne-s .c b { font: 800 13.5px var(--titre); } .ligne-s .v div { font: 600 13px var(--mono); letter-spacing: -.02em; } .ligne-s .v small { font: 700 10.5px var(--mono); }
+  .liens { border-bottom: 0; margin: 0 8px; padding: 4px; border-radius: 12px; background: rgba(255, 255, 255, .025); }
+  .aide { border-radius: 14px; border-color: var(--bord); background: rgba(255, 255, 255, .025); }
+  /* les panneaux et fenêtres flottantes : le même verre */
+  .copi, .mem, .bulle, .recherche { background: var(--verre-fort); backdrop-filter: blur(22px); border: 1px solid var(--bord2); border-radius: 18px; box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 0 1px rgba(91, 108, 255, .08); }
+  .tiroir { background: var(--verre-fort); backdrop-filter: blur(22px); border-left: 1px solid var(--bord2); }
+  .dow { background: rgba(6, 8, 12, .94); backdrop-filter: blur(16px); }
+  .toast { background: var(--verre-fort); backdrop-filter: blur(18px); border: 1px solid var(--bord2); border-radius: 14px; padding: 11px 18px; font-weight: 600; }
+  .barre-ligne { border-radius: 14px; box-shadow: 0 16px 40px rgba(15, 19, 28, .28); }
+  .copi { left: 96px; }
+  @media (max-width: 900px) { .app { padding: 0 8px 8px; gap: 0; } .marque { display: none; } .pane { border-radius: 14px; } }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="haut">
+    <div class="marque" aria-hidden="true"><i></i><span>ATLAS<small>MARCHÉS</small></span></div>
     <button class="sym" id="sym" data-tip="Changer de marché ( / )"><span class="ic" id="sym-ic">SIL</span><span><b id="sym-code">SIL</b><small id="sym-nom">Micro argent</small></span><span class="px num" id="sym-px"></span></button>
     <div class="seg" id="seg-ut"><button data-ut="5m">5m</button><button data-ut="15m">15m</button><button data-ut="30m">30m</button><button data-ut="H1">1h</button><button data-ut="H4">4h</button><button data-ut="D1">D</button><button data-ut="W">W</button><button data-ut="M">M</button></div>
     <div class="grp">
@@ -245,27 +291,11 @@
       <button class="ico" id="t-cot" data-tip="Positionnement des gros acteurs (rapport COT de la CFTC)"><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/></svg></button>
       <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
     </div>
-    <div class="grp salle masque-mobile">
-      <button class="ico" id="b-copilote" data-tip="Copilote : qu'est-ce qui se passe ? (E) · maintiens Q pour lui parler"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M9.5 21h5M9 11h.01M15 11h.01M10 14c1.2.8 2.8.8 4 0"/></svg></button>
-      <button class="ico" id="b-dow" data-tip="Structure de Dow : tous tes marchés, toutes les unités (D)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="5" rx="1"/><rect x="10" y="4" width="5" height="5" rx="1"/><rect x="17" y="4" width="4" height="5" rx="1"/><rect x="3" y="11" width="5" height="5" rx="1"/><rect x="10" y="11" width="5" height="5" rx="1"/><path d="M17 16l2-4 2 4M3 20h18"/></svg></button>
-      <button class="ico" id="b-etude" data-tip="Étude d'annonce : les dernières fois superposées (A)"><svg viewBox="0 0 24 24"><path d="M3 20h18M7 4v16"/><path d="M7 13c3-1 4-6 7-6s3 5 7 4M7 15c3 0 5 2 8 1s4-3 6-2" opacity=".6"/></svg></button>
-      <button class="ico" id="b-replay" data-tip="Replay : rejoue la séance bougie par bougie, nouvelles comprises (R)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6"/><path d="M4 4v4.6h4.6M10 9v6l5-3z"/></svg></button>
-      <button class="ico" id="b-memoire" data-tip="Mémoire du marché (M) : les moments passés qui ressemblent à celui-ci"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></button>
-      <button class="ico" id="b-journal" data-tip="Journal vocal : maintiens V pendant un trade pour parler"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-      <button class="ico" id="b-pouls" data-tip="Ton pouls par la webcam (estimation, rien ne quitte ton PC)"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 3 10 2-5h7"/></svg></button>
-      <button class="ico" id="b-son" data-tip="La voix d'Atlas"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
-    </div>
     <span class="tilt masque-mobile" id="tilt" data-tip="Ton état : comportement, pouls, voix"><i></i><b>Lucide</b><small id="tilt-bpm"></small></span>
     <div class="espace"></div>
-    <div class="grp masque-mobile" style="border:0">
-      <button class="ico" id="photo" data-tip="Capture du graphique (PNG)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
-      <button class="ico" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-      <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
-    </div>
-    <a class="lien masque-mobile" id="b-carte" data-tip="La Carte : tous tes marchés dans un espace, vivants (G)" style="cursor:pointer"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.2"/><circle cx="18" cy="5" r="2.2"/><circle cx="12" cy="13" r="2.6"/><circle cx="6" cy="19" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7 7l3.4 4.4M16.2 6.4l-2.6 4.6M10.4 15l-3 2.6M14.3 14.6l3 2"/></svg>Carte</a>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v21</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v22</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -274,7 +304,21 @@
     <button class="outil" data-o="horizontale" data-tip="Ligne horizontale (H) : un clic"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="1.6"/></svg></button>
     <button class="outil" data-o="canal" data-tip="Canal parallèle (C) : trois clics"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
     <span class="sep2"></span>
+    <span class="sep2"></span>
     <button class="outil" data-o="efface" data-tip="Effacer la ligne choisie (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
+    <span class="sec-d">SALLE</span>
+      <button class="ico outil-d" id="b-copilote" data-tip="Copilote : qu'est-ce qui se passe ? (E) · maintiens Q pour lui parler"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M9.5 21h5M9 11h.01M15 11h.01M10 14c1.2.8 2.8.8 4 0"/></svg></button>
+      <button class="ico outil-d" id="b-dow" data-tip="Structure de Dow : tous tes marchés, toutes les unités (D)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="5" rx="1"/><rect x="10" y="4" width="5" height="5" rx="1"/><rect x="17" y="4" width="4" height="5" rx="1"/><rect x="3" y="11" width="5" height="5" rx="1"/><rect x="10" y="11" width="5" height="5" rx="1"/><path d="M17 16l2-4 2 4M3 20h18"/></svg></button>
+      <button class="ico outil-d" id="b-etude" data-tip="Étude d'annonce : les dernières fois superposées (A)"><svg viewBox="0 0 24 24"><path d="M3 20h18M7 4v16"/><path d="M7 13c3-1 4-6 7-6s3 5 7 4M7 15c3 0 5 2 8 1s4-3 6-2" opacity=".6"/></svg></button>
+      <button class="ico outil-d" id="b-replay" data-tip="Replay : rejoue la séance bougie par bougie, nouvelles comprises (R)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6"/><path d="M4 4v4.6h4.6M10 9v6l5-3z"/></svg></button>
+      <button class="ico outil-d" id="b-memoire" data-tip="Mémoire du marché (M) : les moments passés qui ressemblent à celui-ci"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></button>
+      <button class="ico outil-d" id="b-journal" data-tip="Journal vocal : maintiens V pendant un trade pour parler"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="ico outil-d" id="b-pouls" data-tip="Ton pouls par la webcam (estimation, rien ne quitte ton PC)"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 3 10 2-5h7"/></svg></button>
+      <button class="ico outil-d" id="b-son" data-tip="La voix d'Atlas"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+    <span class="ressort"></span>
+      <button class="ico outil-d" id="photo" data-tip="Capture du graphique (PNG)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+      <button class="ico outil-d" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="ico outil-d" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
   </div>
   <div class="graphes un" id="graphes"></div>
   <div class="liste">
@@ -308,10 +352,6 @@
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
 <div class="bulle" id="bulle"></div>
-<div class="carte" id="carte"><div class="carte-fond" id="carte-fond"></div><div class="monde" id="monde"><svg class="fils" id="fils"></svg><div id="cartes"></div></div>
-  <div class="carte-hud"><div class="tt"><b>TES MARCHÉS</b><span id="carte-heure"></span></div><div class="esp"></div>
-    <button id="carte-ordre" class="on" title="Par priorité : les marchés qui demandent ton attention d'abord · ou par famille">Par priorité</button><button id="carte-taille" class="on" title="La taille de chaque marché suit sa nervosité de ces dernières heures">Taille = nervosité</button><button id="carte-vue">Tout voir</button><button id="carte-range">Ranger</button><button class="vif" id="carte-pres">▶ Atlas présente</button><button id="carte-sortir">Graphique ›</button></div>
-  <div class="carte-leg"><span><i style="background:#0aa37f"></i>vont ensemble</span><span><i style="background:#2962ff"></i>en miroir</span><span><i style="background:#ffb020"></i>se séparent</span><span>contour ambre : la veille vient de parler · rouge : nouvelle critique · violet : sommet ou creux cassé</span><span>glisser : se déplacer · molette : zoomer · zoome sur un marché pour y plonger · G : sortir</span></div></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
   <div class="tiers" id="tv-tiers"><div class="n" id="tv-nom"></div><br><div class="s" id="tv-titre"></div></div><div class="stt" id="tv-stt"></div></div>
@@ -393,9 +433,9 @@ class Pane {
     if (!this.d) return; this.taille();
     if (this.W < 120 || this.H < 80) { requestAnimationFrame(() => setTimeout(() => this.dessine(), 120)); return; }
     const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
-    const pw = W - AX, ph = H - BT, BN = opt.news ? 22 : 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 96 : 54, BASP = ph - BN - volH - 8;
+    const pw = W - AX, ph = H - BT, BN = opt.news ? 22 : 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 92 : 76, BASP = ph - BN - volH - 8;
     let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2])); const pad = (hi - lo) * .05 || 1; lo -= pad; hi += pad;
-    const cle = code + '|' + this.ut;
+    const cle = code + '|' + this.ut; const HAUTr = HAUT;
     if (this.y) { lo = this.y[0]; hi = this.y[1]; }
     else if (this._auto && this._auto.cle === cle) { const a = this._auto, nlo = a.lo + (lo - a.lo) * .28, nhi = a.hi + (hi - a.hi) * .28;  // (l'échelle rejoint sa cible en douceur)
       if (Math.abs(nlo - lo) + Math.abs(nhi - hi) > (hi - lo) * .0015) { lo = nlo; hi = nhi; this.dessine(); } }
@@ -412,7 +452,7 @@ class Pane {
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
     c.clearRect(0, 0, W, H); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
     // la grille pointillée
-    c.strokeStyle = '#d6d6d6'; c.lineWidth = 1; c.setLineDash([2, 3]); c.font = '11px Inter, sans-serif'; c.fillStyle = '#131722';
+    c.strokeStyle = '#eef0f4'; c.lineWidth = 1; c.setLineDash([]); c.font = '500 10.5px "JetBrains Mono", monospace'; c.fillStyle = '#7a8190';
     const pas = niceStep((hi - lo) / Math.max(3, Math.floor(ph / 70)));
     for (let p = Math.ceil(lo / pas) * pas; p <= hi; p += pas) { const y = Y(p); if (y > ph - BN - volH - 2) continue; c.beginPath(); c.moveTo(0, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); c.fillText(nb(p, dec), pw + 6, y + 4); }
     let dernierLab = -999;
@@ -421,7 +461,7 @@ class Pane {
       else if (this.ut === 'D1') { if (!tp || t.getMonth() !== tp.getMonth()) lab = t.getMonth() === 0 ? String(t.getFullYear()) : MOIS[t.getMonth()]; }
       else if (['5m', '15m'].includes(this.ut) && tp && t.getDate() === tp.getDate()) { if (t.getHours() !== tp.getHours() && t.getHours() % (this.ut === '5m' ? 2 : 4) === 0) lab = `${t.getHours()}:00`; }
       else if (!tp || t.getDate() !== tp.getDate()) lab = `${t.getDate()} ${MOIS[t.getMonth()]}`;
-      if (lab && X(k) - dernierLab > 60) { c.beginPath(); c.moveTo(Math.round(X(k)) + .5, 0); c.lineTo(Math.round(X(k)) + .5, ph); c.stroke(); c.textAlign = 'center'; c.fillText(lab, X(k), H - 7); c.textAlign = 'left'; dernierLab = X(k); } }
+      if (lab && X(k) - dernierLab > 60) { c.beginPath(); c.moveTo(Math.round(X(k)) + .5, 0); c.lineTo(Math.round(X(k)) + .5, ph); c.stroke(); c.textAlign = 'center'; c.font = '500 10.5px Inter, sans-serif'; c.fillText(lab, X(k), H - 7); c.font = '500 10.5px "JetBrains Mono", monospace'; c.textAlign = 'left'; dernierLab = X(k); } }
     c.setLineDash([]);
     // le projecteur : la nouvelle survolée éclaire les bougies de sa réaction (le quart d'heure qui suit)
     if (this.survol && opt.news) { const xa = T(this.survol.at), xb = Math.max(xa + Math.max(3, bw), T(this.survol.at + 900));
@@ -455,7 +495,7 @@ class Pane {
       if (sel && l.genre !== 'horizontale') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = '#fff'; c.strokeStyle = l.couleur || '#2962ff'; c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
       if (l.alerte === false) { /* (sans alerte : rien de plus) */ } };
     lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
-    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l.couleur || '#000'; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
+    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l.couleur || '#000'; c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
     // la mémoire du marché : l'éventail de ce qui a suivi les moments les plus ressemblants (des statistiques, pas une prévision)
     if (MEM && MEM.code === code && MEM.ut === this.ut && (MEM.eventail || []).length) {
       const x0 = T(MEM.t0), y0 = Y(MEM.dernier), a = MEM.atr_ticks * MEM.pas, ev = MEM.eventail;
@@ -482,10 +522,10 @@ class Pane {
       }
     }
     // l'unité de temps, en grand (comme sur son TradingView)
-    c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 14, 48); c.textAlign = 'left';
+    c.fillStyle = '#0b0e15'; c.font = '800 38px "Inter Tight", Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 16, 50); c.textAlign = 'left';
     // la jauge du COT : où en sont les fonds spéculatifs sur 3 ans (0 = jamais aussi vendeurs, 100 = jamais aussi acheteurs)
     const cd = COTD[code];
-    if (opt.cot && cd && cd.ok && pw > 260) {
+    if (false && opt.cot && cd && cd.ok && pw > 260) {  // (la jauge est maintenant dans le bandeau du titre)
       const f = cd.fonds, w = 128, x1 = pw - 14 - w, y1 = 62;
       c.font = '700 9.5px Inter, sans-serif'; c.fillStyle = '#5d6576'; c.textAlign = 'right'; c.fillText(`COT · FONDS · ${f.net > 0 ? 'ACHETEURS' : 'VENDEURS'} ${nb(Math.abs(f.net), 0)}`, pw - 14, y1); c.textAlign = 'left';
       const gr = c.createLinearGradient(x1, 0, x1 + w, 0); gr.addColorStop(0, '#f23645'); gr.addColorStop(.5, '#d6d6d6'); gr.addColorStop(1, '#089981');
@@ -495,7 +535,8 @@ class Pane {
     }
     // le dernier cours (boîte noire sur l'axe)
     const der = B[B.length - 1][4], yd = Y(der); c.setLineDash([2, 3]); c.strokeStyle = '#555'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yd); c.lineTo(pw, yd); c.stroke(); c.setLineDash([]);
-    c.fillStyle = '#000'; c.fillRect(pw, yd - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(der, dec), pw + 6, yd + 4);
+    c.fillStyle = '#0b0e15'; c.beginPath(); c.moveTo(pw - 5, yd); c.lineTo(pw + 1, yd - 11); c.lineTo(pw + AX - 4, yd - 11); c.quadraticCurveTo(pw + AX, yd - 11, pw + AX, yd - 7); c.lineTo(pw + AX, yd + 7); c.quadraticCurveTo(pw + AX, yd + 11, pw + AX - 4, yd + 11); c.lineTo(pw + 1, yd + 11); c.closePath(); c.fill();
+    c.fillStyle = '#fff'; c.font = '700 11px "JetBrains Mono", monospace'; c.fillText(nb(der, dec), pw + 6, yd + 4);
     if (BN) { c.fillStyle = '#f7f8fa'; c.fillRect(0, ph - BN, pw, BN); c.strokeStyle = '#e6e8ec'; c.beginPath(); c.moveTo(0, ph - BN + .5); c.lineTo(pw, ph - BN + .5); c.stroke(); }
     // les nouvelles : de petits repères au-dessus de l'axe du temps, à la minute exacte (empilés quand elles se suivent)
     this.marques = [];
@@ -515,7 +556,7 @@ class Pane {
       }
     }
     // l'axe
-    c.strokeStyle = '#c8c8c8'; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
+    c.strokeStyle = '#e3e6ec'; c.beginPath(); c.moveTo(pw + .5, 0); c.lineTo(pw + .5, H); c.moveTo(0, ph + .5); c.lineTo(W, ph + .5); c.stroke();
     // l'aimant : un petit rond là où la ligne va se poser
     if (this.souris && outil !== 'curseur' && outil !== 'efface' && opt.aimant) { const [ta, pa] = aimant(this, this.souris[0], this.souris[1]); c.strokeStyle = '#2962ff'; c.lineWidth = 1.5; c.beginPath(); c.arc(T(ta), Y(pa), 5, 0, 7); c.stroke(); }
     // le réticule temporel : l'instant survolé dans un autre graphique, retrouvé ici (D1, H4, H1… le même moment)
@@ -537,13 +578,13 @@ class Pane {
     if (this.flash) { const a = 1 - (performance.now() - this.flash.t0) / 900; if (a > 0) { c.globalAlpha = a; c.fillStyle = 'rgba(15,19,28,.82)'; c.font = '800 46px Inter, sans-serif'; const tw = c.measureText(this.flash.txt).width + 50; c.beginPath(); c.roundRect(pw / 2 - tw / 2, ph / 2 - 40, tw, 80, 18); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(this.flash.txt, pw / 2, ph / 2 + 16); c.textAlign = 'left'; c.globalAlpha = 1; requestAnimationFrame(() => this.dessine()); } else this.flash = null; }
     // le réticule
     if (this.souris) { const [mx, my] = this.souris; c.setLineDash([4, 4]); c.strokeStyle = '#888'; c.beginPath(); c.moveTo(mx, 0); c.lineTo(mx, ph); c.moveTo(0, my); c.lineTo(pw, my); c.stroke(); c.setLineDash([]);
-      c.fillStyle = '#131722'; c.fillRect(pw, my - 10, AX, 20); c.fillStyle = '#fff'; c.fillText(nb(iY(my), dec), pw + 6, my + 4);
+      c.fillStyle = '#3d4a66'; c.beginPath(); c.roundRect(pw + 1, my - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = '#fff'; c.font = '600 10.5px "JetBrains Mono", monospace'; c.fillText(nb(iY(my), dec), pw + 6, my + 4); c.font = '11px Inter, sans-serif';
       { const et = Math.round((iY(my) - B[B.length - 1][4]) / (this.d.tick || 1)); if (et) { c.font = '700 10.5px Inter, sans-serif'; const tt = `${sg(et)} t`, tw = c.measureText(tt).width + 12; c.fillStyle = et > 0 ? 'rgba(8,153,129,.92)' : 'rgba(242,54,69,.92)'; c.beginPath(); c.roundRect(pw - tw - 4, my - 9, tw, 18, 9); c.fill(); c.fillStyle = '#fff'; c.fillText(tt, pw - tw + 2, my + 4); c.font = '11px Inter, sans-serif'; } }
       const tt = new Date(iT(mx) * 1000), lab = ['D1', 'W', 'M'].includes(this.ut) ? tt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-      c.fillStyle = '#131722'; c.fillRect(mx - 52, ph + 1, 104, BT - 2); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
+      c.fillStyle = '#3d4a66'; c.beginPath(); c.roundRect(mx - 54, ph + 2, 108, BT - 4, 5); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '600 10.5px Inter, sans-serif'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b> <span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span><br><span style="color:#555">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>`;
   }
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
@@ -1281,128 +1322,9 @@ async function basculeUT(p, ut, x) {
 let coupDoeil = null;
 document.addEventListener('keyup', ev => { if (coupDoeil && ev.key === coupDoeil.k) { const c0 = coupDoeil; coupDoeil = null; if (performance.now() - c0.t > 450 && c0.avant) { choisirUT(c0.avant); const p = panes[actif] || panes[0]; if (p) { p.flash = { txt: `← ${LIB[c0.avant] || c0.avant}`, t0: performance.now() }; p.dessine(); } } } });
 
-/* ================= la Carte : la salle de marché spatiale ================= */
-const CARTE = { ordre: lit('g-carte-ordre', 'priorite'), cam: { x: 0, y: 0, s: .6 }, but: null, data: null, cartes: {}, pos: JSON.parse(lit('g-carte-pos', '{}')), taille: lit('g-carte-taille', '1') === '1', ouverte: false, glisse: null, v: { x: 0, y: 0 } };
-const FAM_ORDRE = ['Pierres précieuses', 'Indices', 'Devises', 'Énergie', 'Risque', 'Crypto'];
-
-// ce qui rend un marché « à regarder », en clair (des faits : ta ligne, la structure, les nouvelles, la veille)
-function priorite(m) {
-  const b = m.barres || [], atr = b.length > 14 ? b.slice(-14).reduce((a, x) => a + x[2] - x[3], 0) / 14 : null, pas = (L.find(z => z.code === m.code) || {}).tick || null;
-  let sc = 0; const pq = [];
-  if (m.veille) { sc += 4; }
-  if (m.critique) { sc += 3; pq.push('nouvelle critique'); } else if (m.nouvelles) { sc += 1; pq.push(`${m.nouvelles} nouvelle${m.nouvelles > 1 ? 's' : ''}`); }
-  const l = (m.lignes || [])[0];
-  if (l && atr && m.barres.length) { const d = Math.abs(l.prix - m.barres[m.barres.length - 1][4]) / atr; if (d < .6) { sc += d < .25 ? 4 : 2; pq.unshift(`à ${Math.abs(l.ticks)} ticks de ta ligne`); } }
-  const ca = ['H4', 'H1', 'D1'].find(u => m.dow[u] && m.dow[u][1]); if (ca) { sc += ca === 'H1' ? 1.5 : 3; pq.push(`cassure ${LIB[ca] || ca}`); }
-  const t = ['D1', 'H4', 'H1'].map(u => (m.dow[u] || [])[0]); if (t[0] && t.every(x => x === t[0]) && t[0] !== 'transition') { sc += 1; pq.push(`D1-H4-H1 alignés ${t[0] === 'hausse' ? '▲' : '▼'}`); }
-  if (m.nervosite && m.nervosite > 1.4) { sc += 1; pq.push(`nerveux ×${nb(m.nervosite, 1)}`); }
-  if (m.cot && m.cot.extreme) pq.push(`COT extrême (${m.cot.indice})`);
-  return { sc, pq };
-}
-function carteDispo() {
-  if (CARTE.ordre === 'priorite') {  // les marchés à regarder d'abord : en haut à gauche, en grand ; les calmes ensuite
-    const l = [...CARTE.data.marches].sort((a, b) => priorite(b).sc - priorite(a).sc), out = {}, cols = 5;
-    l.forEach((m, k) => { const c = k % cols, r = Math.floor(k / cols); out[m.code] = [(c - (cols - 1) / 2) * 340, r * 300 - 300]; });
-    return { pos: out, centres: {} };
-  }  // les familles en couronne, les marchés groupés autour de leur famille
-  const fams = FAM_ORDRE.filter(f => CARTE.data.marches.some(m => m.famille === f)), out = {}, centres = {};
-  fams.forEach((f, k) => { const a = -Math.PI / 2 + k / fams.length * Math.PI * 2; centres[f] = [Math.cos(a) * 980, Math.sin(a) * 600]; });
-  fams.forEach(f => { const l = CARTE.data.marches.filter(m => m.famille === f), cols = Math.ceil(Math.sqrt(l.length)), [cx, cy] = centres[f];
-    l.forEach((m, k) => { const c = k % cols, r = Math.floor(k / cols), rows = Math.ceil(l.length / cols); out[m.code] = [cx + (c - (cols - 1) / 2) * 330, cy + (r - (rows - 1) / 2) * 260]; }); });
-  return { pos: out, centres };
-}
-function echelleCarte(m) { if (CARTE.ordre === 'priorite') { const sc = priorite(m).sc; return CARTE.taille ? (sc >= 4 ? 1.18 : sc >= 2 ? 1.04 : .9) : 1; } return CARTE.taille && m.nervosite ? Math.min(1.45, Math.max(.82, .82 + .45 * (m.nervosite - .8))) : 1; }
-function dessineMini(cv, m) {
-  const dpr = (devicePixelRatio || 1) * 2.5, W = 270, H = 92; if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
-  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H); const b = m.barres || []; if (b.length < 3) { c.fillStyle = '#9aa1ad'; c.font = '12px Inter'; c.fillText('lecture en cours…', 14, 50); return; }
-  const prix = [...b.map(x => x[2]), ...b.map(x => x[3])]; let lo = Math.min(...prix), hi = Math.max(...prix); const pd = (hi - lo) * .08; lo -= pd; hi += pd;
-  const L = 14, R = 14, w = (W - L - R) / b.length, Y = v => 4 + (hi - v) / (hi - lo) * (H - 8), X = k => L + (k + .5) * w, t0 = b[0][0], t1 = b[b.length - 1][0], XT = t => L + (t - t0) / ((t1 - t0) || 1) * (W - L - R - w) + w / 2;
-  (m.lignes || []).forEach(l => { const y = Y(l.prix); if (y < 0 || y > H) return; c.strokeStyle = l.couleur || '#000'; c.globalAlpha = .55; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(L, y); c.lineTo(W - R, y); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; });
-  b.forEach((x, k) => { const xx = Math.round(X(k)) + .5; c.strokeStyle = x[4] >= x[1] ? '#8a8a8a' : '#000'; c.lineWidth = 1; c.beginPath(); c.moveTo(xx, Y(x[2])); c.lineTo(xx, Y(x[3])); c.moveTo(xx - w * .35, Y(x[1])); c.lineTo(xx, Y(x[1])); c.moveTo(xx, Y(x[4])); c.lineTo(xx + w * .35, Y(x[4])); c.stroke(); });
-  const zz = m.zigzag || []; c.strokeStyle = '#000'; c.lineWidth = 2; c.lineJoin = 'round'; for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [4, 3] : []); c.beginPath(); c.moveTo(XT(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(XT(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]);
-  const der = b[b.length - 1][4]; c.fillStyle = '#2962ff'; c.beginPath(); c.arc(X(b.length - 1), Y(der), 3.5, 0, 7); c.fill();
-}
-function carteHTML(m) {
-  const dw = ['M', 'W', 'D1', 'H4', 'H1'].map(u => { const [t, ca] = m.dow[u] || []; return `<i class="${t || ''}${ca ? ' casse' : ''}" title="${LIB[u] || u} : ${t || '…'}">${(LIB[u] || u).replace('MN', 'M').replace('W1', 'W')}</i>`; }).join('');
-  return `<div class="t"><div><b>${esc(m.code)}</b><small>${esc(m.nom)}</small></div><div class="px">${m.prix != null ? nb(m.prix, m.dec) : '—'}<small class="${m.pct >= 0 ? 'h' : 'r'}">${m.pct != null ? (m.pct > 0 ? '+' : '') + nb(m.pct, 2) + ' %' : ''}</small></div></div><canvas></canvas>
-    <div class="p"><span class="dw2">${dw}</span>${m.cot ? `<span class="cotm" title="COT des fonds : ${m.cot.indice}/100 sur 3 ans"><b style="left:${m.cot.indice}%"></b></span>` : '<span style="flex:1"></span>'}${m.nouvelles ? `<span class="nv${m.critique ? ' crit' : ''}" title="nouvelles des 6 dernières heures">${m.nouvelles}</span>` : ''}</div>${m.veille ? `<div class="veil">${esc(m.veille)}</div>` : ''}`;
-}
-function construitCarte() {
-  const D = carteDispo(), box = $('#cartes'); CARTE.dispo = D;
-  box.innerHTML = Object.entries(D.centres).map(([f, [x, y]]) => `<div class="famille-t" style="left:${x}px;top:${y - 210}px">${esc(f.toUpperCase())}</div>`).join('');
-  CARTE.cartes = {};
-  for (const m of CARTE.data.marches) {
-    const el = document.createElement('div'); el.className = 'mc'; el.dataset.c = m.code; box.appendChild(el); CARTE.cartes[m.code] = el; majCarte(m);
-  }
-  dessineFils();
-}
-function majCarte(m) {
-  const el = CARTE.cartes[m.code]; if (!el) return; const [x, y] = centreCarte(m.code), e = echelleCarte(m);
-  const pr = priorite(m); el.innerHTML = carteHTML(m) + (pr.pq.length ? `<div class="pq"><b>À regarder :</b> ${esc(pr.pq.join(' · '))}</div>` : '') + (CARTE.ordre === 'priorite' && pr.sc >= 2 ? `<div class="score">${Math.round(pr.sc)}</div>` : '');
-  el.classList.toggle('calme', pr.sc < 1 && !m.veille); el.style.left = `${x - 135}px`; el.style.top = `${y - 95}px`; el.style.transform = `scale(${e})`;
-  el.classList.toggle('alerte', !!m.veille); el.classList.toggle('crit', !!m.critique && !m.veille); el.classList.toggle('casse', Object.values(m.dow).some(d => d && d[1]) && !m.veille && !m.critique);
-  dessineMini(el.querySelector('canvas'), m);
-}
-function centreCarte(code) { const [x, y] = (CARTE.ordre !== 'priorite' && CARTE.pos[code]) || (CARTE.dispo && CARTE.dispo.pos[code]) || [0, 0]; return [x, y]; }
-function dessineFils() {
-  const COUL = { normal: null, relache: 'rgba(139,147,163,.28)', inhabituel: '#ffb020' };
-  $('#fils').innerHTML = (CARTE.data.liens || []).map(l => { if (!CARTE.cartes[l.a] || !CARTE.cartes[l.b]) return '';
-    const [x1, y1] = centreCarte(l.a), [x2, y2] = centreCarte(l.b), mx = (x1 + x2) / 2 + (y2 - y1) * .18, my = (y1 + y2) / 2 - (x2 - x1) * .18;
-    const col = COUL[l.etat] || (l.attendu > 0 ? 'rgba(10,163,127,.75)' : 'rgba(41,98,255,.75)'), ep = 1.5 + 5 * Math.abs(l.corr);
-    return `<path d="M${x1},${y1} Q${mx},${my} ${x2},${y2}" stroke="${col}" stroke-width="${ep}" class="${l.etat === 'inhabituel' ? 'vibre' : ''}"><title>${esc((NOMC[l.a] || l.a) + ' / ' + (NOMC[l.b] || l.b))} · corrélation ${nb(l.corr, 2)}${l.phrase ? ' · ' + esc(l.phrase) : ''}</title></path>`
-      + (l.etat === 'inhabituel' ? `<text x="${(x1 + 2 * mx + x2) / 4}" y="${(y1 + 2 * my + y2) / 4}" text-anchor="middle">⚡ ils se séparent</text>` : ''); }).join('');
-}
-function appliqueCam() { const c = CARTE.cam, W = innerWidth, H = innerHeight; $('#monde').style.transform = `translate(${W / 2 - c.x * c.s}px, ${H / 2 - c.y * c.s}px) scale(${c.s})`; $('#carte-fond').style.backgroundPosition = `${(W / 2 - c.x * c.s * .35) % 34}px ${(H / 2 - c.y * c.s * .35) % 34}px`; }
-function boucleCam() {  // la caméra rejoint sa cible en douceur, avec l'élan quand on lâche
-  if (!CARTE.ouverte) return; const c = CARTE.cam, b = CARTE.but;
-  if (!CARTE.glisse && (Math.abs(CARTE.v.x) > .05 || Math.abs(CARTE.v.y) > .05)) { c.x -= CARTE.v.x / c.s; c.y -= CARTE.v.y / c.s; CARTE.v.x *= .92; CARTE.v.y *= .92; if (b) { b.x = c.x; b.y = c.y; } }
-  if (b) { c.x += (b.x - c.x) * .16; c.y += (b.y - c.y) * .16; c.s *= Math.pow(b.s / c.s, .16); if (Math.abs(b.s / c.s - 1) < .002 && Math.abs(b.x - c.x) < .5 && Math.abs(b.y - c.y) < .5) { c.x = b.x; c.y = b.y; c.s = b.s; CARTE.but = null; } }
-  appliqueCam();
-  if (!CARTE.plonge && c.s > 2.25 && !CARTE.glisse) { const proche = Object.keys(CARTE.cartes).map(k => { const [x, y] = centreCarte(k); return { k, d: Math.hypot(x - c.x, y - c.y) }; }).sort((a, b2) => a.d - b2.d)[0]; if (proche && proche.d < 170) { plonger(proche.k); return; } }
-  requestAnimationFrame(boucleCam);
-}
-function toutVoir(instant) { const pts = Object.keys(CARTE.cartes).map(centreCarte); if (!pts.length) return; const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), bw = Math.max(...xs) - Math.min(...xs) + 520, bh = Math.max(...ys) - Math.min(...ys) + 480;
-  const but = { x: (Math.max(...xs) + Math.min(...xs)) / 2, y: (Math.max(...ys) + Math.min(...ys)) / 2, s: Math.min(innerWidth / bw, (innerHeight - 90) / bh, 1.1) }; if (instant) { Object.assign(CARTE.cam, but); appliqueCam(); } else CARTE.but = but; }
-async function chargeCarte() { try { const r = await api('/maison/graphique?carte=1'); const neuf = !CARTE.data || CARTE.data.marches.length !== r.marches.length; CARTE.data = r; if (neuf) construitCarte(); else { if (CARTE.ordre === 'priorite') CARTE.dispo = carteDispo(); r.marches.forEach(majCarte); dessineFils(); } $('#carte-heure').textContent = `${new Date().toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} · ${r.marches.filter(m => m.veille || m.critique).length} marché(s) à regarder`; } catch (e) { $('#carte-heure').textContent = 'la maison ne répond pas'; } }
-async function ouvreCarte(depuis) {
-  const k = $('#carte'); CARTE.ouverte = true; CARTE.plonge = false; k.classList.add('on'); ecrit('g-carte', '1');
-  if (!CARTE.data) await chargeCarte(); else chargeCarte();
-  if (depuis && CARTE.cartes[depuis]) { const [x, y] = centreCarte(depuis); Object.assign(CARTE.cam, { x, y, s: 3.2 }); appliqueCam(); setTimeout(() => { k.classList.add('visible'); toutVoir(); }, 30); }
-  else { toutVoir(true); setTimeout(() => k.classList.add('visible'), 30); }
-  clearInterval(CARTE.minuterie); CARTE.minuterie = setInterval(chargeCarte, 30000); boucleCam();
-}
-function fermeCarte() { const k = $('#carte'); CARTE.ouverte = false; clearInterval(CARTE.minuterie); k.classList.remove('visible'); ecrit('g-carte', '0'); setTimeout(() => k.classList.remove('on'), 450); setTimeout(toutDessine, 60); }
-async function plonger(c) {  // la caméra plonge dans le marché, la carte devient son graphique
-  if (CARTE.plonge) return; CARTE.plonge = true; const [x, y] = centreCarte(c); CARTE.but = { x, y, s: 6 };
-  Object.values(CARTE.cartes).forEach(e => e.classList.toggle('choisi', e.dataset.c === c));
-  if (c !== code) changeCode(c);
-  setTimeout(fermeCarte, 380);
-}
-(() => {
-  const k = $('#carte');
-  k.addEventListener('pointerdown', ev => { if (ev.target.closest('.carte-hud')) return; const carteEl = ev.target.closest('.mc'); CARTE.glisse = { x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, el: carteEl, deplace: false, t: performance.now() }; CARTE.but = null; CARTE.v = { x: 0, y: 0 }; k.classList.add('glisse'); k.setPointerCapture(ev.pointerId); });
-  k.addEventListener('pointermove', ev => { const g = CARTE.glisse; if (!g) return; const dx = ev.clientX - g.x, dy = ev.clientY - g.y; g.x = ev.clientX; g.y = ev.clientY; if (Math.hypot(ev.clientX - g.x0, ev.clientY - g.y0) > 5) g.deplace = true;
-    if (g.el && ev.altKey) { const c = g.el.dataset.c, [x, y] = centreCarte(c); CARTE.pos[c] = [x + dx / CARTE.cam.s, y + dy / CARTE.cam.s]; const m = CARTE.data.marches.find(z => z.code === c); g.el.style.left = `${CARTE.pos[c][0] - 135}px`; g.el.style.top = `${CARTE.pos[c][1] - 95}px`; dessineFils(); return; }
-    CARTE.cam.x -= dx / CARTE.cam.s; CARTE.cam.y -= dy / CARTE.cam.s; CARTE.v = { x: dx, y: dy }; appliqueCam(); });
-  k.addEventListener('pointerup', ev => { const g = CARTE.glisse; CARTE.glisse = null; k.classList.remove('glisse'); if (!g) return; if (g.el && ev.altKey) { ecrit('g-carte-pos', JSON.stringify(CARTE.pos)); return; }
-    if (g.el && !g.deplace) plonger(g.el.dataset.c); });
-  k.addEventListener('wheel', ev => { ev.preventDefault(); const c = CARTE.cam, b = CARTE.but || { ...c }, f = Math.exp(-ev.deltaY * .0016), s2 = Math.min(6, Math.max(.18, b.s * f));
-    const wx = (ev.clientX - innerWidth / 2) / c.s + c.x, wy = (ev.clientY - innerHeight / 2) / c.s + c.y; CARTE.but = { s: s2, x: wx - (ev.clientX - innerWidth / 2) / s2, y: wy - (ev.clientY - innerHeight / 2) / s2 }; }, { passive: false });
-  $('#carte-taille').onclick = () => { CARTE.taille = !CARTE.taille; ecrit('g-carte-taille', CARTE.taille ? '1' : '0'); $('#carte-taille').classList.toggle('on', CARTE.taille); CARTE.data.marches.forEach(majCarte); };
-  $('#carte-taille').classList.toggle('on', CARTE.taille);
-  const majOrdre = () => { $('#carte-ordre').textContent = CARTE.ordre === 'priorite' ? 'Par priorité' : 'Par famille'; $('#carte-ordre').classList.toggle('on', CARTE.ordre === 'priorite'); };
-  $('#carte-ordre').onclick = () => { CARTE.ordre = CARTE.ordre === 'priorite' ? 'famille' : 'priorite'; ecrit('g-carte-ordre', CARTE.ordre); CARTE.pos = {}; majOrdre(); construitCarte(); toutVoir(); }; majOrdre();
-  $('#carte-vue').onclick = () => toutVoir(); $('#carte-range').onclick = () => { CARTE.pos = {}; ecrit('g-carte-pos', '{}'); construitCarte(); toutVoir(); };
-  $('#carte-sortir').onclick = fermeCarte; $('#carte-pres').onclick = () => { fermeCarte(); setTimeout(presente, 500); };
-  $('#b-carte').onclick = () => ouvreCarte(code);
-  window.addEventListener('resize', () => { if (CARTE.ouverte) appliqueCam(); });
-  if (lit('g-carte', '0') === '1' && FEN === '1') setTimeout(() => ouvreCarte(), 800);  // (on la retrouve comme on l'a laissée)
-})();
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
-  if (k === 'g' && !ev.repeat && !PRES) { if (CARTE.ouverte) fermeCarte(); else ouvreCarte(code); return; }
-  if (CARTE.ouverte) { if (k === 'escape') fermeCarte(); return; }
   if (PRES) { if (k === 'escape' || k === 'b') { arretePresente(); return; } if (k === ' ') { ev.preventDefault(); pausePresente(); return; } if (k === 'arrowright') { suivantPresente(); return; } return; }
   if (k === 'b' && !ev.repeat) { presente(); return; }
   if (k === 'escape' && $('#dow').classList.contains('on')) { ouvreDow(); return; }
@@ -1414,6 +1336,7 @@ document.addEventListener('keydown', ev => {
   else if ((k === 'q' || k === 'v') && !ev.repeat) demarreMicro(k === 'q' ? 'q' : 'v');
 });
 document.addEventListener('keyup', ev => { const k = ev.key.toLowerCase(); if ((k === 'q' || k === 'v') && rec && rec.mode === k) arreteMicro(); });
+try { document.fonts.ready.then(() => setTimeout(toutDessine, 50)); } catch (e) { /* rien */ }
 versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
 (async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; } await chargeLignes(); construit(); chargeListe(); })();
 </script>
