@@ -147,7 +147,7 @@
   .dow.on { display: block; animation: monte .2s ease-out; }
   .dow h2 { margin: 0; font: 800 15px 'Inter'; letter-spacing: .16em; } .dow .sous { color: var(--doux); font-size: 12.5px; margin: 6px 0 18px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
   .dow .sous i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; } .dow .x { position: absolute; right: 22px; top: 18px; background: var(--cadre3); border: 1px solid var(--ligne); color: var(--texte); border-radius: 9px; padding: 7px 12px; font: 600 12px 'Inter'; }
-  .grille { display: grid; grid-template-columns: 210px repeat(5, minmax(92px, 1fr)) 150px; gap: 6px; max-width: 1180px; }
+  .grille { display: grid; grid-template-columns: 190px repeat(3, minmax(84px, 1fr)) 130px; gap: 6px; max-width: 980px; }
   .grille .th { font: 700 11px 'Inter'; letter-spacing: .14em; color: var(--tres-doux); text-align: center; padding: 6px 0; } .grille .th:first-child { text-align: left; }
   .grille .fam2 { grid-column: 1 / -1; font: 700 10.5px 'Inter'; letter-spacing: .16em; color: var(--tres-doux); padding: 12px 0 2px; }
   .grille .nom { display: flex; flex-direction: column; justify-content: center; padding: 0 6px; cursor: pointer; } .grille .nom b { font: 700 14px 'Inter'; } .grille .nom small { color: var(--tres-doux); font-size: 11px; }
@@ -403,6 +403,17 @@
   body.role-ensemble .dow { display: block !important; inset: 96px 350px 40px 12px; z-index: 5; border: 1px solid var(--bord); border-radius: 10px; animation: none; }
   body.role-ensemble #dow-x, body.role-ensemble .haut .seg, body.role-ensemble .haut .grp { display: none; } body.role-ensemble .liste { grid-column: 3; }
   .role-badge { font: 800 9.5px 'Inter'; letter-spacing: .2em; color: #160d00; background: var(--ambre); padding: 4px 9px; border-radius: 5px; white-space: nowrap; }
+
+  @media (orientation: portrait) {
+    body.role-ensemble .dow { inset: 96px 10px 46vh 10px !important; }
+    body.role-ensemble .liste { position: fixed !important; left: 10px; right: 10px; top: auto; bottom: 40px; height: calc(46vh - 52px); margin: 0 !important; display: grid !important; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; column-gap: 12px; }
+    body.role-ensemble .liste .tete, body.role-ensemble .liste .cols-t { grid-column: 1 / -1; }
+    body.role-ensemble .liste > .fam:first-of-type, body.role-ensemble #liens { grid-column: 1; } body.role-ensemble #liste { grid-column: 2; grid-row: 2 / span 40; overflow-y: auto; }
+    body.role-ensemble .aide { display: none; }
+    body.role-ensemble .grille { max-width: none; }
+  }
+  /* la carte « Ta salle » : sans les boutons du copilote */
+  .copi.salle .copi-pied { display: none; }
 </style>
 </head>
 <body>
@@ -433,7 +444,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v35</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v36</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -890,6 +901,7 @@ function choisirUT(ut) {
 }
 function toutDessine() { panes.forEach(p => p.dessine()); requestAnimationFrame(() => requestAnimationFrame(majBarreLigne)); }
 async function chargeTout() {
+  if (ROLE === 'ensemble') { const ok = L.length > 0 && SANTE.maison !== false; $('#pt').className = 'pt ' + (ok ? 'ok' : 'ko'); $('#etat').textContent = ok ? 'en direct' : 'hors liaison'; return; }
   const ok = (await Promise.all(panes.map(p => p.charge()))).some(Boolean);
   $('#pt').className = 'pt ' + (ok ? 'ok' : 'ko'); $('#etat').textContent = ok ? 'en direct' : 'hors liaison';
 }
@@ -904,7 +916,7 @@ if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev
 async function changeCode(c, diffuse = true) { if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); if (ROLE === 'ensemble') chargeTout(); try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
 function spark(v, up) {
   if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
@@ -1056,7 +1068,7 @@ async function dire(texte) {
 }
 /* --- le copilote : il regarde le graphique actif et dit ce qui se passe --- */
 let copiOccupe = false;
-function ouvreCopi(titre, txt, question, pense) { const k = $('#copi'); k.classList.add('on'); k.classList.toggle('pense', !!pense); $('#copi-titre').textContent = titre || 'Copilote'; $('#copi-txt').textContent = txt || ''; $('#copi-q-txt').textContent = question ? `« ${question} »` : ''; }
+function ouvreCopi(titre, txt, question, pense) { const k = $('#copi'); if (titre !== 'Ta salle') k.classList.remove('salle'); k.classList.add('on'); k.classList.toggle('pense', !!pense); $('#copi-titre').textContent = titre || 'Copilote'; $('#copi-txt').textContent = txt || ''; $('#copi-q-txt').textContent = question ? `« ${question} »` : ''; }
 async function copilote(question = '') {
   if (copiOccupe) return; copiOccupe = true; taisToi();
   const p = panes[actif] || panes[0]; ouvreCopi('Copilote', 'Je regarde ton graphique…', question, true);
@@ -1311,7 +1323,7 @@ async function installeSalle() {
     const geo = p ? `left=${p.x},top=${p.y},width=${p.w},height=${p.h}` : e ? `left=${e.availLeft},top=${e.availTop},width=${e.availWidth},height=${e.availHeight}` : `width=1400,height=900`;
     const w = window.open(urlRole(role), 'atlas-' + role, `popup,${geo}`); if (!w) bloques.push([role, nom]);
   });
-  if (bloques.length) { ouvreCopi('Ta salle', "Ton navigateur a bloqué l'ouverture de certaines fenêtres. Ouvre-les d'un clic (ou autorise les fenêtres pop-up et la gestion des fenêtres pour ce site : la prochaine fois, tout s'ouvrira d'un coup).", '', false);
+  if (bloques.length) { $('#copi').classList.add('salle'); ouvreCopi('Ta salle', "Ton navigateur a bloqué l'ouverture de certaines fenêtres. Ouvre-les d'un clic (ou autorise les fenêtres pop-up et la gestion des fenêtres pour ce site : la prochaine fois, tout s'ouvrira d'un coup).", '', false);
     $('#copi-txt').insertAdjacentHTML('beforeend', bloques.map(([r, n]) => `<button class="salle-btn" data-r="${r}">Ouvrir : ${n}</button>`).join(''));
     document.querySelectorAll('#copi-txt [data-r]').forEach(b => b.onclick = () => { const r = b.dataset.r, p = JSON.parse(lit('g-salle-pos', '{}'))[r]; window.open(urlRole(r), 'atlas-' + r, `popup,${p ? `left=${p.x},top=${p.y},width=${p.w},height=${p.h}` : 'width=1400,height=900'}`); b.remove(); }); }
   else toast(ecrans && ecrans.length >= 4 ? 'Ta salle est installée sur tes 4 écrans' : 'Ta salle est installée : glisse chaque fenêtre sur son écran, elle retiendra sa place');
@@ -1343,6 +1355,8 @@ let dowAvant = {}, dowMinuterie = null;
 const FLECHE = { hausse: '▲', baisse: '▼', transition: '◆' };
 async function chargeDow() {
   try { const r = await api('/maison/graphique?dow=1'), fams = [...new Set(r.lignes.map(l => l.famille))];
+    r.uts = ['D1', 'H4', 'H1'];  // (ses unités : D, H4, H1)
+    r.lignes.forEach(l => { const t = r.uts.map(u => (l.cases[u] || {}).tendance), nh = t.filter(x => x === 'hausse').length, nb2 = t.filter(x => x === 'baisse').length; l.alignement = Math.max(nh, nb2); l.sens = nh > nb2 ? 'hausse' : nb2 > nh ? 'baisse' : 'mixte'; });
     $('#dow-etat').textContent = r.complet < r.total ? `lecture en cours : ${r.complet}/${r.total}` : `à jour · ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
     let h = `<div class="th">MARCHÉ</div>${r.uts.map(u => `<div class="th">${LIB[u] || u}</div>`).join('')}<div class="th">ALIGNEMENT</div>`;
     for (const f of fams) {
@@ -1352,8 +1366,8 @@ async function chargeDow() {
         for (const u of r.uts) { const c = l.cases[u], k = `${l.code}|${u}`, sig = c ? c.tendance + (c.casse ? c.casse.sens : '') : '', fl = dowAvant[k] && sig && dowAvant[k] !== sig ? ' flash' : ''; if (sig) dowAvant[k] = sig;
           h += c ? `<div class="cel ${c.tendance}${c.casse && c.casse.recent ? ' recent' : ''}${fl}" data-c="${esc(l.code)}" data-u="${u}" title="dernier sommet ${c.sommet ?? '—'} · dernier creux ${c.creux ?? '—'}${c.casse ? ` · ${c.casse.sens === 'haut' ? 'sommet' : 'creux'} cassé à ${c.casse.prix}${c.casse.at ? ' le ' + new Date(c.casse.at * 1000).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}` : ''}">${FLECHE[c.tendance]}${c.casse ? `<small>${c.casse.sens === 'haut' ? 'SOMMET CASSÉ' : 'CREUX CASSÉ'}</small>` : ''}</div>`
                  : `<div class="cel vide" data-c="${esc(l.code)}" data-u="${u}">…</div>`; }
-        const fort = l.alignement >= 4;
-        h += `<div class="alig${fort ? ' fort' : ''}"><span class="barres">${r.uts.map(u => { const c = l.cases[u]; return `<i class="${c && c.tendance === 'hausse' ? 'h' : c && c.tendance === 'baisse' ? 'b' : ''}"></i>`; }).join('')}</span>${fort ? `${l.alignement}/5 ${l.sens === 'hausse' ? '▲' : '▼'}` : l.sens === 'mixte' ? 'partagé' : `${l.alignement}/5`}</div>`;
+        const fort = l.alignement >= 3;
+        h += `<div class="alig${fort ? ' fort' : ''}"><span class="barres">${r.uts.map(u => { const c = l.cases[u]; return `<i class="${c && c.tendance === 'hausse' ? 'h' : c && c.tendance === 'baisse' ? 'b' : ''}"></i>`; }).join('')}</span>${fort ? `alignés ${l.sens === 'hausse' ? '▲' : '▼'}` : l.sens === 'mixte' ? 'partagé' : `${l.alignement}/3`}</div>`;
       }
     }
     $('#grille').innerHTML = h;
