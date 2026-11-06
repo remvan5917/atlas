@@ -447,6 +447,21 @@
   body.role-ensemble .liste > .fam[style] { display: none; } body.role-ensemble #liens { border-bottom: 0; }
   body.role-ensemble .app { grid-template-columns: 64px 1fr 400px; } body.role-ensemble .dow { right: 420px !important; }
   @media (orientation: portrait) { body.role-ensemble .liste { display: block !important; } body.role-ensemble #liens { grid-column: 1 / -1; } }
+
+  /* les indicateurs */
+  .pane .titre .indl { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; font: 600 10.5px 'Inter'; color: #c4c9d3; } .pane .titre .indl i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
+  .indic-p { position: fixed; inset: 0; z-index: 62; display: none; align-items: flex-start; justify-content: center; padding-top: 9vh; background: rgba(5, 7, 12, .55); backdrop-filter: blur(3px); }
+  .indic-p.on { display: flex; } .indic-b { width: min(720px, 94vw); max-height: 80vh; overflow-y: auto; background: var(--verre-fort); border: 1px solid var(--bord2); border-radius: 14px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); padding: 18px 20px; }
+  .indic-b h3 { margin: 0 0 4px; font: 800 12px 'Inter'; letter-spacing: .2em; color: var(--ambre); } .indic-b p.s { margin: 0 0 10px; color: var(--doux); font-size: 12px; }
+  .indic-b .nl { display: flex; gap: 8px; } .indic-b .nl input { flex: 1; background: #0d1018; border: 1px solid var(--bord2); border-radius: 9px; color: var(--texte); font: 500 14px 'Inter'; padding: 11px 12px; outline: none; }
+  .indic-b .nl input:focus { border-color: var(--ambre); } .indic-b button.go { background: var(--grad); border: 0; color: #160d00; font: 800 12.5px 'Inter'; border-radius: 9px; padding: 0 16px; }
+  .indic-b .ex { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; } .indic-b .ex span { font-size: 11.5px; color: var(--doux); border: 1px dashed var(--bord2); border-radius: 20px; padding: 4px 10px; cursor: pointer; } .indic-b .ex span:hover { color: var(--ambre); border-color: var(--ambre); }
+  .indic-b .msg { min-height: 18px; margin: 6px 0 12px; font-size: 12px; color: #ffd37a; }
+  .indic-b .cl { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin: 8px 0 16px; }
+  .indic-b .cl button { text-align: left; background: #0d1018; border: 1px solid var(--bord); border-radius: 9px; padding: 9px 11px; color: var(--texte); font: 600 12.5px 'Inter'; } .indic-b .cl button:hover { border-color: var(--ambre); } .indic-b .cl button small { display: block; color: var(--tres-doux); font-weight: 500; font-size: 11px; }
+  .indic-b .act { display: flex; flex-direction: column; gap: 6px; } .indic-b .act div { display: grid; grid-template-columns: 10px 1fr auto auto auto; gap: 10px; align-items: center; background: #0d1018; border: 1px solid var(--bord); border-radius: 9px; padding: 8px 10px; }
+  .indic-b .act i { width: 10px; height: 10px; border-radius: 3px; } .indic-b .act b { font: 600 13px 'Inter'; } .indic-b .act small { display: block; color: var(--tres-doux); font-size: 11px; font-weight: 500; }
+  .indic-b .act button { background: none; border: 1px solid var(--bord2); color: var(--doux); border-radius: 7px; padding: 4px 8px; font: 600 11px 'Inter'; } .indic-b .act button:hover { color: var(--ambre); border-color: var(--ambre); } .indic-b .act div.off { opacity: .5; }
 </style>
 </head>
 <body>
@@ -462,7 +477,8 @@
       <button class="ico" id="vue-trois" data-tip="Trois graphiques (clique sur l'un, puis sur une unité)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg></button>
     </div>
     <div class="grp masque-mobile">
-      <button class="ico" id="t-bougies" data-tip="Bougies / barres"><svg viewBox="0 0 24 24"><path d="M8 4v16M16 6v12"/><rect x="6" y="8" width="4" height="7" rx="1"/><rect x="14" y="9" width="4" height="5" rx="1"/></svg></button>
+      <button class="ico" id="t-indic" data-tip="Indicateurs : les classiques, ou décris le tien en français (I)"><svg viewBox="0 0 24 24"><path d="M4 18c3-8 5-8 8-4s5 4 8-6"/><path d="M4 6h5M6.5 3.5v5" /></svg></button>
+      <button class="ico" id="t-bougies" data-tip="Type de graphique : barres, bougies, Heikin Ashi, ligne"><svg viewBox="0 0 24 24"><path d="M8 4v16M16 6v12"/><rect x="6" y="8" width="4" height="7" rx="1"/><rect x="14" y="9" width="4" height="5" rx="1"/></svg></button>
       <button class="ico" id="t-zz" data-tip="Zigzag (5, 10)"><svg viewBox="0 0 24 24"><path d="M3 17l5-9 4 6 4-8 5 9"/></svg></button>
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
@@ -477,7 +493,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v40</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v41</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -542,6 +558,13 @@
 <div class="amb asie" id="amb-asie"></div><div class="amb londres" id="amb-londres"></div><div class="amb ny" id="amb-ny"></div>
 <div class="pub" id="pub"><div class="q" id="pub-q"></div><div class="chiffres" id="pub-c"></div><div class="reac" id="pub-r"></div><button class="x" id="pub-x">×</button></div>
 <button class="onglet-mon" id="mon-o" title="Sortir le moniteur">MONITEUR</button>
+<div class="indic-p" id="indic-p"><div class="indic-b">
+  <h3>DÉCRIS TON INDICATEUR</h3><p class="s">En français, comme tu le dirais. Atlas l'assemble avec des briques sûres et le range dans ta bibliothèque.</p>
+  <div class="nl"><input id="indic-q" placeholder="ex. une moyenne mobile 20 et une 50, colore le fond quand la 20 passe au-dessus" autocomplete="off"><button class="go" id="indic-go">Créer</button></div>
+  <div class="ex"><span>surligne les bougies dont le volume dépasse 2 fois la moyenne</span><span>le plus haut et le plus bas de la séance de Londres</span><span>un RSI 14 avec 30 et 70</span><span>marque quand le prix croise le VWAP vers le haut</span></div>
+  <div class="msg" id="indic-m"></div>
+  <h3>LES CLASSIQUES</h3><div class="cl" id="indic-cl"></div>
+  <h3>SUR TON GRAPHIQUE</h3><div class="act" id="indic-a"></div></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
@@ -631,7 +654,8 @@ class Pane {
     if (!this.d) return; this.taille();
     if (this.W < 120 || this.H < 80) { requestAnimationFrame(() => setTimeout(() => this.dessine(), 120)); return; }
     const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
-    const pw = W - AX, ph = H - BT, BN = 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 92 : 76, BASP = ph - BN - volH - 8;
+    const IND = indicsActifs(), OSC = IND.some(r => r.lignes.some(l => l.panneau === 'bas')) && H > 320 ? Math.round((H - BT) * .2) : 0;
+    const pw = W - AX, ph = H - BT, BN = 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 92 : 76, BASP = ph - BN - volH - 8 - (OSC ? OSC + 12 : 0);
     let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2])); const pad = (hi - lo) * .05 || 1; lo -= pad; hi += pad;
     const cle = code + '|' + this.ut; const HAUTr = HAUT;
     if (this.y) { lo = this.y[0]; hi = this.y[1]; }
@@ -648,6 +672,7 @@ class Pane {
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
     const iY = y => hi - (y - HAUT) / (BASP - HAUT) * (hi - lo);
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
+    const IC = IND.length ? calculeIndics(this, B, IND) : [], HA = TYPE === 'heikin' ? heikin(this, B) : null;
     const TH = theme(), coul = x => (!x || x === '#000' || x === '#000000' || x === '#0b0e15') ? TH.fg : x;
     c.clearRect(0, 0, W, H); c.fillStyle = TH.bg; c.fillRect(0, 0, W, H);
     // la grille pointillée
@@ -673,10 +698,14 @@ class Pane {
     if (opt.vol) { const vm = Math.max(...v.map(b => b[5] || 0)) || 1, lv = opt.bougies ? Math.max(1, bw * .6) : Math.max(1, bw * .24);
       for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? TH.hausse : TH.fg) : TH.vol; c.fillRect(Math.round(X(k) - lv / 2), ph - BN - h, lv, h); } }
     const dureeUT = DUREE[this.ut] || 3600, finBarre = B.length ? B[B.length - 1][0] + dureeUT : 0, enCours = false, aCompte = !REPLAY && Date.now() / 1000 < finBarre && ['5m', '15m', '30m', 'H1', 'H4'].includes(this.ut);  // (la bougie reste dessinée normalement ; seul le compte à rebours)
-    // les barres OHLC, noires (son style)
-    if (opt.bougies) {
+    // les zones des indicateurs : un fond coloré, ou la bougie surlignée (sous les bougies)
+    IC.forEach(r => r.zones.forEach(z => { for (let k = i; k < j; k++) { if (!z.v[k]) continue; const x0 = X(k) - bw / 2;
+      if (z.cible === 'bougie') { c.fillStyle = z.couleur + '66'; c.fillRect(x0, Y(B[k][2]) - 2, bw, Y(B[k][3]) - Y(B[k][2]) + 4); } else { c.fillStyle = z.couleur + '1f'; c.fillRect(x0, HAUT - 20, bw + .5, BASP - HAUT + 20); } } }));
+    // les barres OHLC, noires (son style) — ou la ligne, ou les bougies Heikin Ashi
+    if (TYPE === 'ligne') { c.strokeStyle = TH.fg; c.lineWidth = 1.6; c.lineJoin = 'round'; c.beginPath(); for (let k = i; k < j; k++) { const x = X(k), y = Y(B[k][4]); k === i ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); }
+    else if (opt.bougies) {
       const cw = Math.max(1, bw * .62);
-      for (let k = i; k < j; k++) { const b = B[k], x = Math.round(X(k)) + .5, up = b[4] >= b[1], yo = Y(b[1]), yc = Y(b[4]), cours = k === B.length - 1 && enCours;
+      for (let k = i; k < j; k++) { const b = HA ? HA[k] : B[k], x = Math.round(X(k)) + .5, up = b[4] >= b[1], yo = Y(b[1]), yc = Y(b[4]), cours = k === B.length - 1 && enCours;
         c.strokeStyle = cours ? '#8a91a0' : up ? TH.mecheH : TH.fg; c.lineWidth = 1; c.beginPath(); c.moveTo(x, Y(b[2])); c.lineTo(x, Y(b[3])); c.stroke();
         if (cours) { c.fillStyle = '#fff'; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); c.setLineDash([2, 2]); c.strokeRect(Math.round(x - cw / 2) + .5, Math.min(yo, yc) + .5, Math.max(1, Math.round(cw)) - 1, Math.max(1, Math.abs(yc - yo)) - 1); c.setLineDash([]); continue; }
         c.fillStyle = up ? TH.hausse : TH.fg; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); }
@@ -689,6 +718,24 @@ class Pane {
     // le zigzag (5, 10) : épais, la dernière jambe en tirets
     if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = TH.fg; c.lineWidth = 2.4; c.lineJoin = 'round';
       for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [6, 5] : []); c.beginPath(); c.moveTo(T(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(T(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]); }
+    // les indicateurs : leurs lignes sur le prix, leurs marqueurs, et la sous-fenêtre des oscillateurs
+    if (IC.length) {
+      const trace = (v, couleur, style, Yf, y0, y1) => { c.strokeStyle = couleur; c.lineWidth = 1.5; c.setLineDash(style === 'tirets' ? [6, 4] : []); c.beginPath(); let en = false;
+        for (let k = i; k < j; k++) { const y = Yf(v[k]); if (!isFinite(v[k]) || y < y0 - 2 || y > y1 + 2) { en = false; continue; } if (!en) { c.moveTo(X(k), y); en = true; } else c.lineTo(X(k), y); } c.stroke(); c.setLineDash([]); };
+      IC.forEach(r => r.lignes.filter(l => l.panneau === 'prix').forEach(l => trace(l.v, l.couleur, l.style, Y, 0, BASP + 4)));
+      IC.forEach(r => r.marqueurs.forEach(m => { for (let k = i; k < j; k++) { if (!m.v[k]) continue; const x = X(k); c.fillStyle = m.couleur; c.beginPath();
+        if (m.forme === 'haut') { const y = Y(B[k][3]) + 10; c.moveTo(x, y - 6); c.lineTo(x - 5, y + 3); c.lineTo(x + 5, y + 3); } else if (m.forme === 'bas') { const y = Y(B[k][2]) - 10; c.moveTo(x, y + 6); c.lineTo(x - 5, y - 3); c.lineTo(x + 5, y - 3); } else c.arc(x, Y(B[k][4]), 3.5, 0, 7);
+        c.closePath(); c.fill(); } }));
+      if (OSC) {  // la sous-fenêtre : entre le prix et le volume, avec sa propre échelle
+        const o0 = BASP + 12, o1 = BASP + 12 + OSC, bas = IC.flatMap(r => r.lignes.filter(l => l.panneau === 'bas').map(l => ({ ...l, niveaux: r.niveaux })));
+        let mn = Infinity, mx = -Infinity; bas.forEach(l => { for (let k = i; k < j; k++) if (isFinite(l.v[k])) { mn = Math.min(mn, l.v[k]); mx = Math.max(mx, l.v[k]); } (l.niveaux || []).forEach(n => { mn = Math.min(mn, n); mx = Math.max(mx, n); }); });
+        if (isFinite(mn)) { const pd = (mx - mn) * .08 || 1; mn -= pd; mx += pd; const Yo = v => o0 + (mx - v) / (mx - mn) * (o1 - o0);
+          c.fillStyle = TH.nuit ? 'rgba(255,255,255,.02)' : 'rgba(15,19,28,.025)'; c.fillRect(0, o0, pw, o1 - o0); c.strokeStyle = TH.axe; c.beginPath(); c.moveTo(0, o0 - 6 + .5); c.lineTo(pw, o0 - 6 + .5); c.stroke();
+          [...new Set(bas.flatMap(l => l.niveaux || []))].forEach(n => { const y = Yo(n); c.strokeStyle = TH.txt; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(0, y); c.lineTo(pw, y); c.stroke(); c.setLineDash([]); c.fillStyle = TH.txt; c.font = '500 10px "JetBrains Mono", monospace'; c.fillText(String(n), pw + 6, y + 4); });
+          bas.forEach(l => trace(l.v, l.couleur, l.style, Yo, o0, o1));
+          c.font = '700 10px Inter, sans-serif'; let xl = 8; bas.forEach(l => { const der = [...l.v.slice(0, j)].reverse().find(isFinite), tx = `${l.nom || ''} ${der != null ? nb(der, Math.abs(der) < 10 ? 2 : 1) : ''}`; c.fillStyle = l.couleur; c.fillText(tx, xl, o0 + 12); xl += c.measureText(tx).width + 14; }); }
+      }
+    }
     // ses lignes
     const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : 1.2; c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
       const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
@@ -799,7 +846,7 @@ class Pane {
       c.fillStyle = '#3d4a66'; c.beginPath(); c.roundRect(mx - 54, ph + 2, 108, BT - 4, 5); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '600 10.5px Inter, sans-serif'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
   }
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
@@ -945,7 +992,7 @@ function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAl
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
-[['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-cot', 'cot'], ['#t-news', 'news']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
+[['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-cot', 'cot'], ['#t-news', 'news']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
 const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle' + (DEV ? '-dev' : '')) : null;
 // (seules les fenêtres de la salle suivent : la fenêtre principale et celles qui ont un rôle ; une « + Fenêtre » libre garde son marché)
 if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev.data || {}; if (m.t !== 'code' || !m.c) return; const cible = ROLE === 'lie' ? (FRERE[m.c] || m.c) : m.c; if (cible !== code) changeCode(cible, false); };
@@ -1756,6 +1803,99 @@ moniteur(lit(K('g-moniteur'), ['structure', 'lie'].includes(ROLE) ? '0' : '1') =
 const dowPxAvant = {};
 function pxCellule(q) { if (q.dernier == null) return '<b>—</b>'; const t = nb(q.dernier, q.dec), h = `<b>${odo(dowPxAvant[q.code] || '', t, q.dernier >= (dowPxAvant[q.code + 'v'] ?? q.dernier))}</b><small class="${q.pct >= 0 ? 'h' : 'r'}">${q.pct > 0 ? '+' : ''}${nb(q.pct, 2)} %</small>`; dowPxAvant[q.code] = t; dowPxAvant[q.code + 'v'] = q.dernier; return h; }
 function majPxDow() { if (!$('#dow').classList.contains('on')) return; L.forEach(q => { const e = document.getElementById('dpx-' + q.code); if (e) e.innerHTML = pxCellule(q); }); document.querySelectorAll('#grille .nom').forEach(e => e.classList.toggle('ici', e.dataset.c === code)); }
+
+/* ================= le moteur d'indicateurs : les classiques et ceux décrits en français, avec les mêmes briques sûres ================= */
+let TYPE = lit('g-type', opt.bougies ? 'bougies' : 'barres'); opt.bougies = TYPE === 'bougies' || TYPE === 'heikin';
+const TYPES = [['barres', 'Barres'], ['bougies', 'Bougies'], ['heikin', 'Heikin Ashi'], ['ligne', 'Ligne']];
+function majType() { const b = $('#t-bougies'); b.classList.toggle('on', TYPE !== 'barres'); b.dataset.tip = `Type de graphique : ${TYPES.find(t => t[0] === TYPE)[1]} · clic pour changer`; }
+$('#t-bougies').onclick = () => { const k = TYPES.findIndex(t => t[0] === TYPE); TYPE = TYPES[(k + 1) % TYPES.length][0]; opt.bougies = TYPE === 'bougies' || TYPE === 'heikin'; ecrit('g-type', TYPE); ecrit('g-bougies', opt.bougies ? '1' : '0'); majType(); toast(`Graphique en ${TYPES.find(t => t[0] === TYPE)[1].toLowerCase()}`); toutDessine(); };
+majType();
+const C = (src) => ({ src }), F = (f, o = {}) => ({ f, ...o });
+const CLASSIQUES = [
+  { id: 'sma', nom: 'Moyenne mobile', aide: 'simple', n: 20, r: n => ({ nom: `MM ${n}`, lignes: [{ nom: `MM ${n}`, expr: F('sma', { src: C('close'), n }), couleur: '#3d7bff', style: 'plein', panneau: 'prix' }], zones: [], marqueurs: [], niveaux: [] }) },
+  { id: 'ema', nom: 'Moyenne mobile exponentielle', aide: 'réagit plus vite', n: 20, r: n => ({ nom: `MME ${n}`, lignes: [{ nom: `MME ${n}`, expr: F('ema', { src: C('close'), n }), couleur: '#ff8a00', style: 'plein', panneau: 'prix' }], zones: [], marqueurs: [], niveaux: [] }) },
+  { id: 'vwap', nom: 'VWAP', aide: 'prix moyen pondéré de la séance', r: () => ({ nom: 'VWAP', lignes: [{ nom: 'VWAP', expr: F('vwap'), couleur: '#8b5cff', style: 'plein', panneau: 'prix' }], zones: [], marqueurs: [], niveaux: [] }) },
+  { id: 'boll', nom: 'Bandes de Bollinger', aide: '20 périodes, 2 écarts-types', n: 20, r: n => { const m = F('sma', { src: C('close'), n }), e = { op: '*', a: { const: 2 }, b: F('stdev', { src: C('close'), n }) }; return { nom: `Bollinger ${n}`, lignes: [{ nom: 'Haute', expr: { op: '+', a: m, b: e }, couleur: '#0ea5a4', style: 'plein', panneau: 'prix' }, { nom: 'Milieu', expr: m, couleur: '#0ea5a4', style: 'tirets', panneau: 'prix' }, { nom: 'Basse', expr: { op: '-', a: m, b: e }, couleur: '#0ea5a4', style: 'plein', panneau: 'prix' }], zones: [], marqueurs: [], niveaux: [] }; } },
+  { id: 'donch', nom: 'Plus haut / plus bas', aide: 'canal des n dernières barres', n: 20, r: n => ({ nom: `Canal ${n}`, lignes: [{ nom: 'Haut', expr: F('plus_haut', { src: C('high'), n }), couleur: '#14b887', style: 'tirets', panneau: 'prix' }, { nom: 'Bas', expr: F('plus_bas', { src: C('low'), n }), couleur: '#f0435a', style: 'tirets', panneau: 'prix' }], zones: [], marqueurs: [], niveaux: [] }) },
+  { id: 'veille', nom: 'Haut et bas de la veille', aide: 'la journée précédente', r: () => ({ nom: 'Veille', lignes: [{ nom: 'Haut veille', expr: F('veille_haut'), couleur: '#14b887', style: 'tirets', panneau: 'prix' }, { nom: 'Bas veille', expr: F('veille_bas'), couleur: '#f0435a', style: 'tirets', panneau: 'prix' }], zones: [], marqueurs: [], niveaux: [] }) },
+  { id: 'rsi', nom: 'RSI', aide: 'force relative, 30 et 70', n: 14, r: n => ({ nom: `RSI ${n}`, lignes: [{ nom: `RSI ${n}`, expr: F('rsi', { src: C('close'), n }), couleur: '#8b5cff', style: 'plein', panneau: 'bas' }], zones: [], marqueurs: [], niveaux: [30, 70] }) },
+  { id: 'macd', nom: 'MACD', aide: '12, 26, 9', r: () => ({ nom: 'MACD', lignes: [{ nom: 'MACD', expr: F('macd'), couleur: '#3d7bff', style: 'plein', panneau: 'bas' }, { nom: 'Signal', expr: F('macd_signal'), couleur: '#ff8a00', style: 'plein', panneau: 'bas' }], zones: [], marqueurs: [], niveaux: [0] }) },
+  { id: 'atr', nom: 'ATR', aide: 'volatilité moyenne', n: 14, r: n => ({ nom: `ATR ${n}`, lignes: [{ nom: `ATR ${n}`, expr: F('atr', { n }), couleur: '#ffab1a', style: 'plein', panneau: 'bas' }], zones: [], marqueurs: [], niveaux: [] }) },
+];
+let INDICS = []; try { INDICS = JSON.parse(lit('g-indics', '[]')); } catch (e) { INDICS = []; } let indicsVersion = 1;
+function gardeIndics() { ecrit('g-indics', JSON.stringify(INDICS)); indicsVersion++; try { new BroadcastChannel('atlas-indics' + (DEV ? '-dev' : '')).postMessage(1); } catch (e) { /* rien */ } toutDessine(); majPanneauIndic(); }
+try { new BroadcastChannel('atlas-indics' + (DEV ? '-dev' : '')).onmessage = () => { try { INDICS = JSON.parse(lit('g-indics', '[]')); } catch (e) { /* rien */ } indicsVersion++; toutDessine(); }; } catch (e) { /* rien */ }
+function indicsActifs() { return INDICS.filter(x => x.visible !== false).map(x => x.recette); }
+// le calcul : des séries de la longueur des barres (NaN là où rien n'est défini), gardées en cache tant que les barres ne changent pas
+function heikin(p, B) { const k = 'ha' + B.length + ':' + (B.length ? B[B.length - 1][4] : 0); if (p._ha && p._ha.k === k) return p._ha.v; const out = []; let po = null, pc = null;
+  for (const b of B) { const c = (b[1] + b[2] + b[3] + b[4]) / 4, o = po == null ? (b[1] + b[4]) / 2 : (po + pc) / 2; out.push([b[0], o, Math.max(b[2], o, c), Math.min(b[3], o, c), c, b[5]]); po = o; pc = c; } p._ha = { k, v: out }; return out; }
+function calculeIndics(p, B, IND) {
+  const cle = indicsVersion + ':' + B.length + ':' + (B.length ? B[B.length - 1][0] + ':' + B[B.length - 1][4] : 0) + ':' + p.ut + ':' + code;
+  if (p._ic && p._ic.cle === cle) return p._ic.v;
+  const N = B.length, memo = new Map();
+  const ser = e => { const k = JSON.stringify(e); if (memo.has(k)) return memo.get(k); const v = ev(e); memo.set(k, v); return v; };
+  const roul = (src, n, fn) => { const o = new Float64Array(N).fill(NaN); for (let k = n - 1; k < N; k++) { const w = []; for (let q = k - n + 1; q <= k; q++) w.push(src[q]); if (w.every(isFinite)) o[k] = fn(w); } return o; };
+  const ema = (src, n) => { const o = new Float64Array(N).fill(NaN), a = 2 / (n + 1); let pr = NaN; for (let k = 0; k < N; k++) { if (!isFinite(src[k])) continue; pr = isFinite(pr) ? pr + a * (src[k] - pr) : src[k]; o[k] = pr; } return o; };
+  const jourCME = t => Math.floor((t + (7 * 3600) - (1440 - decalage('America/Chicago', t)) % 1440 * 60) / 86400);  // (la journée CME commence à 17 h à Chicago)
+  const PL = { tokyo: ['Asia/Tokyo', 480, 900], londres: ['Europe/London', 420, 960], newyork: ['America/New_York', 480, 1020] };
+  function ev(e) {
+    if (e.src && Object.keys(e).length === 1) { const i = { open: 1, high: 2, low: 3, close: 4, volume: 5 }[e.src]; if (i) return Float64Array.from(B, b => b[i] ?? NaN); return Float64Array.from(B, b => e.src === 'hl2' ? (b[2] + b[3]) / 2 : (b[2] + b[3] + b[4]) / 3); }
+    if ('const' in e) return new Float64Array(N).fill(+e.const);
+    if (e.op) { const a = ser(e.a), b = ser(e.b), o = new Float64Array(N); for (let k = 0; k < N; k++) o[k] = e.op === '+' ? a[k] + b[k] : e.op === '-' ? a[k] - b[k] : e.op === '*' ? a[k] * b[k] : b[k] ? a[k] / b[k] : NaN; return o; }
+    const n = Math.max(1, Math.min(500, +e.n || 14)), S = e.src ? ser(e.src) : null;
+    switch (e.f) {
+      case 'sma': return roul(S, n, w => w.reduce((x, y) => x + y, 0) / n);
+      case 'ema': return ema(S, n);
+      case 'wma': return roul(S, n, w => w.reduce((x, y, q) => x + y * (q + 1), 0) / (n * (n + 1) / 2));
+      case 'stdev': return roul(S, n, w => { const m = w.reduce((x, y) => x + y, 0) / n; return Math.sqrt(w.reduce((x, y) => x + (y - m) ** 2, 0) / n); });
+      case 'plus_haut': return roul(S, n, w => Math.max(...w));
+      case 'plus_bas': return roul(S, n, w => Math.min(...w));
+      case 'change': { const o = new Float64Array(N).fill(NaN); for (let k = n; k < N; k++) o[k] = S[k] - S[k - n]; return o; }
+      case 'abs': return S.map(Math.abs);
+      case 'moyenne_volume': return roul(ser({ src: 'volume' }), n, w => w.reduce((x, y) => x + y, 0) / n);
+      case 'rsi': { const o = new Float64Array(N).fill(NaN); let g = 0, l = 0; for (let k = 1; k < N; k++) { const d = S[k] - S[k - 1], up = Math.max(0, d), dn = Math.max(0, -d); if (k <= n) { g += up / n; l += dn / n; if (k === n) o[k] = l ? 100 - 100 / (1 + g / l) : 100; } else { g = (g * (n - 1) + up) / n; l = (l * (n - 1) + dn) / n; o[k] = l ? 100 - 100 / (1 + g / l) : 100; } } return o; }
+      case 'atr': { const tr = Float64Array.from(B, (b, k) => k ? Math.max(b[2] - b[3], Math.abs(b[2] - B[k - 1][4]), Math.abs(b[3] - B[k - 1][4])) : b[2] - b[3]); return ema(tr, 2 * n - 1); }
+      case 'macd': { const c = ser({ src: 'close' }), a = ema(c, 12), b = ema(c, 26); return a.map((x, k) => x - b[k]); }
+      case 'macd_signal': return ema(ser({ f: 'macd' }), 9);
+      case 'vwap': { const o = new Float64Array(N).fill(NaN); let j0 = null, pv = 0, vv = 0; for (let k = 0; k < N; k++) { const b = B[k], j = jourCME(b[0]); if (j !== j0) { j0 = j; pv = 0; vv = 0; } const v = b[5] || 0; pv += (b[2] + b[3] + b[4]) / 3 * v; vv += v; o[k] = vv ? pv / vv : NaN; } return o; }
+      case 'veille_haut': case 'veille_bas': case 'veille_cloture': { const o = new Float64Array(N).fill(NaN); let j0 = null, cur = null, prev = null;
+        for (let k = 0; k < N; k++) { const b = B[k], j = jourCME(b[0]); if (j !== j0) { if (cur) prev = cur; cur = [b[2], b[3], b[4]]; j0 = j; } else { cur[0] = Math.max(cur[0], b[2]); cur[1] = Math.min(cur[1], b[3]); cur[2] = b[4]; } if (prev) o[k] = e.f === 'veille_haut' ? prev[0] : e.f === 'veille_bas' ? prev[1] : prev[2]; } return o; }
+      case 'session_haut': case 'session_bas': { const [tz, d0, d1] = PL[e.place] || PL.londres, o = new Float64Array(N).fill(NaN); let cle0 = null, run = null, fait = null;
+        for (let k = 0; k < N; k++) { const t = B[k][0], m = minutesLa(tz, t), dans = m >= d0 && m < d1, cl = Math.floor((t + decalage(tz, t) * 60) / 86400);
+          if (dans) { if (cl !== cle0) { cle0 = cl; run = [B[k][2], B[k][3]]; } else { run[0] = Math.max(run[0], B[k][2]); run[1] = Math.min(run[1], B[k][3]); } fait = run; }
+          if (fait) o[k] = e.f === 'session_haut' ? fait[0] : fait[1]; } return o; }
+    }
+    return new Float64Array(N).fill(NaN);
+  }
+  const cond = c => { if (c.op === 'et' || c.op === 'ou') { const a = cond(c.a), b = cond(c.b); return a.map((x, k) => c.op === 'et' ? x && b[k] : x || b[k]); }
+    const a = ser(c.a), b = ser(c.b), o = new Uint8Array(N); for (let k = 1; k < N; k++) o[k] = c.op === '>' ? a[k] > b[k] : c.op === '<' ? a[k] < b[k] : c.op === '>=' ? a[k] >= b[k] : c.op === '<=' ? a[k] <= b[k] : c.op === 'croise_haut' ? a[k - 1] <= b[k - 1] && a[k] > b[k] : a[k - 1] >= b[k - 1] && a[k] < b[k]; return o; };
+  const v = IND.map(r => ({ nom: r.nom, niveaux: r.niveaux || [], lignes: (r.lignes || []).map(l => ({ ...l, v: ser(l.expr) })), zones: (r.zones || []).map(z => ({ ...z, v: cond(z.si) })), marqueurs: (r.marqueurs || []).map(m => ({ ...m, v: cond(m.si) })) }));
+  p._ic = { cle, v }; return v;
+}
+/* --- le panneau des indicateurs --- */
+function majPanneauIndic() {
+  $('#indic-cl').innerHTML = CLASSIQUES.map(x => `<button data-c="${x.id}">${esc(x.nom)}<small>${esc(x.aide)}${x.n ? ` · ${x.n}` : ''}</small></button>`).join('');
+  $('#indic-a').innerHTML = INDICS.length ? INDICS.map((x, k) => `<div class="${x.visible === false ? 'off' : ''}"><i style="background:${(x.recette.lignes[0] || x.recette.zones[0] || x.recette.marqueurs[0] || {}).couleur || '#888'}"></i><div><b>${esc(x.recette.nom)}</b><small>${esc(x.texte ? '« ' + x.texte + ' »' : x.recette.explication || 'classique')}</small></div>`
+    + `${x.n ? `<button data-k="${k}" data-a="n">période ${x.n}</button>` : '<span></span>'}<button data-k="${k}" data-a="vis">${x.visible === false ? 'afficher' : 'masquer'}</button><button data-k="${k}" data-a="sup">retirer</button></div>`).join('')
+    : '<p class="s">Aucun indicateur pour l’instant : ajoute un classique ou décris le tien.</p>';
+}
+function ouvreIndic() { const p = $('#indic-p'), on = !p.classList.contains('on'); p.classList.toggle('on', on); if (on) { majPanneauIndic(); setTimeout(() => $('#indic-q').focus(), 30); } }
+$('#t-indic').onclick = ouvreIndic; $('#indic-p').addEventListener('click', ev => { if (ev.target.id === 'indic-p') ouvreIndic(); });
+$('#indic-cl').addEventListener('click', ev => { const b = ev.target.closest('[data-c]'); if (!b) return; const x = CLASSIQUES.find(z => z.id === b.dataset.c); INDICS.push({ id: idNeuf(), classique: x.id, n: x.n, recette: x.r(x.n), visible: true }); gardeIndics(); toast(`${x.nom} ajouté`); });
+$('#indic-a').addEventListener('click', ev => { const b = ev.target.closest('button[data-k]'); if (!b) return; const x = INDICS[+b.dataset.k]; if (!x) return;
+  if (b.dataset.a === 'sup') INDICS.splice(+b.dataset.k, 1);
+  else if (b.dataset.a === 'vis') x.visible = x.visible === false;
+  else if (b.dataset.a === 'n') { const v = parseInt(prompt('Période (nombre de barres) :', x.n), 10); if (v >= 1 && v <= 500) { x.n = v; x.recette = CLASSIQUES.find(z => z.id === x.classique).r(v); } }
+  gardeIndics(); });
+async function creeIndic() {
+  const t = $('#indic-q').value.trim(); if (!t) return; $('#indic-m').textContent = 'Atlas assemble ton indicateur…';
+  try { const r = await api('/maison/graphique', { action: 'indic', texte: t });
+    if (!r.ok) { $('#indic-m').textContent = r.raison || 'Je n’ai pas su l’assembler.'; return; }
+    INDICS.push({ id: idNeuf(), texte: t, recette: r.recette, visible: true }); gardeIndics(); $('#indic-q').value = ''; $('#indic-m').textContent = `✓ ${r.recette.nom} — ${r.recette.explication}`;
+  } catch (e) { $('#indic-m').textContent = 'La maison ne répond pas.'; }
+}
+$('#indic-go').onclick = creeIndic; $('#indic-q').addEventListener('keydown', ev => { if (ev.key === 'Enter') creeIndic(); if (ev.key === 'Escape') ouvreIndic(); });
+document.querySelectorAll('.indic-b .ex span').forEach(e => e.onclick = () => { $('#indic-q').value = e.textContent; creeIndic(); });
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
@@ -1765,6 +1905,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'escape' && $('#etude').classList.contains('on')) { ouvreEtude(); return; }
   if (REPLAY && !REPLAY.choix) { if (k === ' ') { ev.preventDefault(); joue(!REPLAY.jeu); return; } if (k === 'arrowright') { avance(1); return; } if (k === 'arrowleft') { avance(-1); return; } if (k === 'escape') { quitteReplay(); return; } }
   if (k === 'z' && !ev.repeat) { focus(); return; }
+  if (k === 'i' && !ev.repeat) { ouvreIndic(); return; }
   if (k === 'a' && !ev.repeat) { ouvreEtude(); return; } if (k === 'r' && !ev.repeat) { choisirReplay(); return; }
   if (k === 'e' && !ev.repeat) copilote(); else if (k === 'm' && !ev.repeat) memoire(); else if (k === 'd' && !ev.repeat) ouvreDow();
   else if ((k === 'q' || k === 'v') && !ev.repeat) demarreMicro(k === 'q' ? 'q' : 'v');
