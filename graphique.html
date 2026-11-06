@@ -397,6 +397,12 @@
   .amb.on { opacity: 1; } .amb.asie { background: radial-gradient(1300px 620px at 50% -15%, rgba(70, 92, 170, .20), transparent 62%); }
   .amb.londres { background: radial-gradient(1300px 620px at 50% -15%, rgba(80, 150, 215, .17), transparent 62%); } .amb.ny { background: radial-gradient(1300px 620px at 50% -15%, rgba(255, 140, 0, .16), transparent 62%); }
   body.nuitg .pane { background: #14171e; }
+
+  /* la salle : la vue d'ensemble (sans graphique) */
+  body.role-ensemble .graphes, body.role-ensemble .outils { visibility: hidden; }
+  body.role-ensemble .dow { display: block !important; inset: 96px 350px 40px 12px; z-index: 5; border: 1px solid var(--bord); border-radius: 10px; animation: none; }
+  body.role-ensemble #dow-x, body.role-ensemble .haut .seg, body.role-ensemble .haut .grp { display: none; } body.role-ensemble .liste { grid-column: 3; }
+  .role-badge { font: 800 9.5px 'Inter'; letter-spacing: .2em; color: #160d00; background: var(--ambre); padding: 4px 9px; border-radius: 5px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -427,7 +433,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v34</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v35</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -451,6 +457,7 @@
     <span class="ressort"></span>
       <button class="ico outil-d" id="photo" data-tip="Capture du graphique (PNG)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <button class="ico outil-d" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="ico outil-d" id="b-salle" data-tip="Installe ma salle : tes 4 écrans (structure, marché lié, vue d'ensemble, veille)"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="2.5" y="13.5" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="13.5" width="8.5" height="6.5" rx="1.2"/></svg></button>
       <button class="ico outil-d" id="b-mur" data-tip="Le Radar en mode mur : pour un autre écran, lisible de loin"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h3M7 12h6M14 9h3"/></svg></button>
       <button class="ico outil-d" id="b-sons" data-tip="Les sons de la salle (ligne touchée, nouvelle critique, ligne posée)"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button>
       <button class="ico outil-d" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
@@ -526,7 +533,11 @@ const ecrit = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* rie
 const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
 let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
-if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
+// la salle sur 4 écrans : chaque fenêtre a un rôle (structure · lié · ensemble ; la veille, c'est le Radar en mode mur)
+const ROLE = diese.get('role') || '';
+const FRERE = { SIL: 'MGC', MGC: 'SIL', GC: 'SIL', MNQ: 'MYM', NQ: 'MYM', MES: 'MNQ', MYM: 'MNQ', M6E: 'DXY', DXY: 'M6E', MCL: 'DXY', CL: 'DXY', ZL: 'MCL', VIX: 'MNQ', MBT: 'MNQ' };
+if (ROLE === 'lie') { const c0 = diese.get('code'); if (c0) code = FRERE[c0] || code; }
+document.title = ROLE === 'lie' ? 'Atlas · Marché lié' : ROLE === 'ensemble' ? 'Atlas · Vue d’ensemble' : ROLE === 'structure' ? 'Atlas · Structure' : FEN !== '1' ? `Graphique Atlas · ${FEN}` : document.title;
 let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones-d1', '1') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1', pos: lit('g-pos', '1') === '1', cot: lit('g-cot', '1') === '1', news: lit('g-news', '1') === '1', zoomc: false };  // (le passage automatique d'unité à la molette : retiré, pas pratique)
 let NOUV = {};
 let COTD = {};
@@ -863,7 +874,7 @@ async function chargeLignes() {
 
 /* ---------- les panneaux, la liste, les touches ---------- */
 let panes = [];
-function construit() {
+function construit() { if (ROLE === 'ensemble') return;
   const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un');
   g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas><div class="charge">Chargement…</div></div>`).join('');
   panes = [...g.querySelectorAll('.pane')].map((el, k) => new Pane(el, UTS()[k])); actif = Math.min(actif, panes.length - 1); majActif();
@@ -887,7 +898,10 @@ document.querySelector('.outils').addEventListener('click', ev => { const b = ev
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
 [['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-cot', 'cot'], ['#t-news', 'news']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
-async function changeCode(c) { $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
+const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle') : null;
+// (seules les fenêtres de la salle suivent : la fenêtre principale et celles qui ont un rôle ; une « + Fenêtre » libre garde son marché)
+if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev.data || {}; if (m.t !== 'code' || !m.c) return; const cible = ROLE === 'lie' ? (FRERE[m.c] || m.c) : m.c; if (cible !== code) changeCode(cible, false); };
+async function changeCode(c, diffuse = true) { if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
 async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
@@ -1278,24 +1292,36 @@ async function chargeCommandes() {
 setInterval(chargeCommandes, 2000); chargeCommandes();
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { chargeLiens(); chargeEtat(); } });
 /* --- « installe ma salle de marché » : une fenêtre par écran (le graphique ici, le radar, et ton deuxième marché) --- */
+const ROLES_SALLE = [['lie', 'Marché lié'], ['ensemble', 'Vue d’ensemble'], ['veille', 'Veille (Radar)']];
+function urlRole(role) { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : '';
+  if (role === 'veille') return `radar.html#mur=1&role=veille${m}`;
+  const f = role === 'lie' ? '2' : '3'; if (role === 'lie' && lit('g-vue-2', '') === '') { ecrit('g-vue-2', 'trois'); ecrit('g-uts-2', JSON.stringify(['D1', 'H4', 'H1'])); }
+  return `${location.pathname}#f=${f}&role=${role}&code=${encodeURIComponent(code)}${m}`; }
 async function installeSalle() {
   let ecrans = null;
   try { if ('getScreenDetails' in window) ecrans = (await window.getScreenDetails()).screens; } catch (e) { /* refusé */ }
-  if (!ecrans || ecrans.length < 2) { toast(ecrans ? 'Un seul écran détecté : la salle tient ici.' : 'Ton navigateur ne me laisse pas voir tes écrans : autorise « gestion des fenêtres » pour ce site.'); return; }
-  const ici = ecrans.find(e => window.screenLeft >= e.left && window.screenLeft < e.left + e.width) || ecrans[0], autres = ecrans.filter(e => e !== ici);
-  const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : '';
-  const deuxieme = code === 'MGC' ? 'SIL' : 'MGC', plan = [['radar.html' + (m ? '#' + m.slice(1) : ''), 'radar'], [null, 'graphique-2']];
-  let bloque = false;
-  autres.slice(0, 2).forEach((e, k) => {
-    let url = plan[k][0];
-    if (!url) { const n = '2'; ecrit(`g-code-${n}`, deuxieme); ecrit(`g-vue-${n}`, 'trois'); url = `${location.pathname}#f=${n}${m}`; }
-    const w = window.open(url, plan[k][1], `popup,left=${e.availLeft},top=${e.availTop},width=${e.availWidth},height=${e.availHeight}`); if (!w) bloque = true;
+  const pos = JSON.parse(lit('g-salle-pos', '{}'));
+  const ici = ecrans ? (ecrans.find(e => window.screenLeft >= e.left && window.screenLeft < e.left + e.width) || ecrans[0]) : null;
+  const autres = ecrans ? ecrans.filter(e => e !== ici).sort((a, b) => a.left - b.left || a.top - b.top) : [];
+  if (!ROLE) { history.replaceState(null, '', location.pathname + location.search + '#' + (location.hash.slice(1) ? location.hash.slice(1) + '&' : '') + 'role=structure'); document.title = 'Atlas · Structure'; }
+  vue = 'trois'; utsTrois = ['D1', 'H4', 'H1']; ecrit(K('g-vue'), vue); ecrit(K('g-uts'), JSON.stringify(utsTrois)); construit();
+  const bloques = [];
+  ROLES_SALLE.forEach(([role, nom], k) => {
+    const p = pos[role], e = autres[k];
+    const geo = p ? `left=${p.x},top=${p.y},width=${p.w},height=${p.h}` : e ? `left=${e.availLeft},top=${e.availTop},width=${e.availWidth},height=${e.availHeight}` : `width=1400,height=900`;
+    const w = window.open(urlRole(role), 'atlas-' + role, `popup,${geo}`); if (!w) bloques.push([role, nom]);
   });
-  vue = 'trois'; ecrit(K('g-vue'), vue); construit();
-  if (bloque) { ouvreCopi('Salle de marché', "Ton navigateur a bloqué l'ouverture des fenêtres. Clique sur le bouton ci-dessous (ou autorise les fenêtres pop-up pour ce site).", '', false);
-    $('#copi-txt').insertAdjacentHTML('beforeend', '<button class="salle-btn" id="salle-go">Installer ma salle de marché</button>'); $('#salle-go').onclick = () => { $('#copi').classList.remove('on'); installeSalle(); }; }
-  else toast(`Salle installée sur ${Math.min(3, ecrans.length)} écrans`);
+  if (bloques.length) { ouvreCopi('Ta salle', "Ton navigateur a bloqué l'ouverture de certaines fenêtres. Ouvre-les d'un clic (ou autorise les fenêtres pop-up et la gestion des fenêtres pour ce site : la prochaine fois, tout s'ouvrira d'un coup).", '', false);
+    $('#copi-txt').insertAdjacentHTML('beforeend', bloques.map(([r, n]) => `<button class="salle-btn" data-r="${r}">Ouvrir : ${n}</button>`).join(''));
+    document.querySelectorAll('#copi-txt [data-r]').forEach(b => b.onclick = () => { const r = b.dataset.r, p = JSON.parse(lit('g-salle-pos', '{}'))[r]; window.open(urlRole(r), 'atlas-' + r, `popup,${p ? `left=${p.x},top=${p.y},width=${p.w},height=${p.h}` : 'width=1400,height=900'}`); b.remove(); }); }
+  else toast(ecrans && ecrans.length >= 4 ? 'Ta salle est installée sur tes 4 écrans' : 'Ta salle est installée : glisse chaque fenêtre sur son écran, elle retiendra sa place');
 }
+// chaque fenêtre de la salle retient sa place (écran, position, taille) pour la prochaine installation
+function retiensPlace() { const r = ROLE || (document.title === 'Atlas · Structure' ? 'structure' : ''); if (!r) return; const p = JSON.parse(lit('g-salle-pos', '{}')); p[r] = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; ecrit('g-salle-pos', JSON.stringify(p)); }
+setInterval(retiensPlace, 5000); window.addEventListener('beforeunload', retiensPlace);
+if (ROLE) { document.body.classList.add('role-' + ROLE); const et = $('#etat'); if (et) et.insertAdjacentHTML('beforebegin', `<span class="role-badge">${ROLE === 'lie' ? 'MARCHÉ LIÉ' : ROLE === 'ensemble' ? 'VUE D’ENSEMBLE' : 'STRUCTURE'}</span>`); }
+if (ROLE === 'ensemble') setTimeout(() => { if (!$('#dow').classList.contains('on')) ouvreDow(); }, 400);
+if (ROLE === 'lie') setTimeout(() => { if (vue !== 'trois') { vue = 'trois'; utsTrois = ['D1', 'H4', 'H1']; construit(); } }, 300);
 
 /* --- les nouvelles sur le graphique --- */
 async function chargeNouvelles() { const k = code; if (document.hidden && NOUV[k]) return; try { const r = await api(`/maison/graphique?nouvelles=1&code=${k}`); NOUV[k] = r.nouvelles || []; toutDessine(); } catch (e) { /* hors liaison */ } }
@@ -1335,7 +1361,7 @@ async function chargeDow() {
 }
 function ouvreDow() { const d = $('#dow'), on = !d.classList.contains('on'); d.classList.toggle('on', on); $('#b-dow').classList.toggle('on', on); clearInterval(dowMinuterie); if (on) { chargeDow(); dowMinuterie = setInterval(chargeDow, 20000); } }
 $('#b-dow').onclick = ouvreDow; $('#dow-x').onclick = ouvreDow;
-$('#grille').addEventListener('click', async ev => { const t = ev.target.closest('[data-c]'); if (!t) return; ouvreDow(); if (t.dataset.c !== code) await changeCode(t.dataset.c); if (t.dataset.u) choisirUT(t.dataset.u); });
+$('#grille').addEventListener('click', async ev => { const t = ev.target.closest('[data-c]'); if (!t) return; if (ROLE === 'ensemble') { changeCode(t.dataset.c); toast(`${t.dataset.c} ouvert sur l'écran de structure`); return; } ouvreDow(); if (t.dataset.c !== code) await changeCode(t.dataset.c); if (t.dataset.u) choisirUT(t.dataset.u); });
 
 /* --- le replay : la séance rejouée bougie par bougie, toutes les fenêtres synchronisées, les nouvelles qui tombent à leur heure --- */
 let REPLAY = null;
@@ -1618,6 +1644,7 @@ function guetteTouches() {
 }
 let nbLignesAvant = null;
 /* --- le mur de salle : c'est le Radar en mode mur (un seul écran secondaire) --- */
+$('#b-salle').onclick = installeSalle;
 $('#b-mur').onclick = () => { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
