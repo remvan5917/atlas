@@ -147,7 +147,11 @@
   .dow.on { display: block; animation: monte .2s ease-out; }
   .dow h2 { margin: 0; font: 800 15px 'Inter'; letter-spacing: .16em; } .dow .sous { color: var(--doux); font-size: 12.5px; margin: 6px 0 18px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
   .dow .sous i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; } .dow .x { position: absolute; right: 22px; top: 18px; background: var(--cadre3); border: 1px solid var(--ligne); color: var(--texte); border-radius: 9px; padding: 7px 12px; font: 600 12px 'Inter'; }
-  .grille { display: grid; grid-template-columns: 190px repeat(3, minmax(84px, 1fr)) 130px repeat(3, 78px); gap: 6px; max-width: 1240px; }
+  .grille { display: grid; grid-template-columns: 150px 118px 70px repeat(3, minmax(70px, 1fr)) 112px repeat(3, 74px); gap: 5px; max-width: 1400px; align-items: center; }
+  .grille .px-c { text-align: right; padding-right: 6px; cursor: pointer; } .grille .px-c b { display: block; font: 700 15px var(--mono); color: #fff; } .grille .px-c small { font: 700 11px var(--mono); }
+  .grille .sp-c { cursor: pointer; } .grille .sp-c svg { width: 70px; height: 26px; display: block; } .grille .px-t { text-align: right; padding-right: 6px; }
+  .grille .nom.ici { box-shadow: inset 3px 0 0 var(--ambre); background: rgba(255, 171, 26, .07); border-radius: 6px; } .grille .nom.ici b { color: var(--ambre); }
+  body.role-ensemble .cel, body.role-ensemble .chal { height: 42px; } body.role-ensemble .grille .fam2 { padding: 8px 0 0; }
   .chal { height: 54px; border-radius: 10px; display: grid; place-items: center; font: 700 13px var(--mono); color: #fff; border: 1px solid rgba(255, 255, 255, .05); } .chal.vide { color: var(--tres-doux); background: var(--cadre2); }
   .chal.chaud { box-shadow: 0 0 0 2px rgba(255, 171, 26, .85), 0 0 18px rgba(255, 171, 26, .45); animation: lueur 1.6s ease-in-out infinite; } .chal-t { color: var(--ambre) !important; }
   .grille .th { font: 700 11px 'Inter'; letter-spacing: .14em; color: var(--tres-doux); text-align: center; padding: 6px 0; } .grille .th:first-child { text-align: left; }
@@ -437,6 +441,12 @@
   body.sans-moniteur .app { grid-template-columns: 64px 1fr 0; } body.sans-moniteur .liste { display: none; } body.sans-moniteur .onglet-mon { display: block; }
   body.sans-moniteur .pub { right: 30px; } body.sans-moniteur .graphes { margin-right: 22px; }
   body.role-ensemble .retracte, body.role-ensemble .onglet-mon { display: none !important; }
+
+  body.role-ensemble #liste, body.role-ensemble .cols-t, body.role-ensemble .aide { display: none !important; }
+  body.role-ensemble .liste .tete span { display: none; }
+  body.role-ensemble .liste > .fam[style] { display: none; } body.role-ensemble #liens { border-bottom: 0; }
+  body.role-ensemble .app { grid-template-columns: 64px 1fr 400px; } body.role-ensemble .dow { right: 420px !important; }
+  @media (orientation: portrait) { body.role-ensemble .liste { display: block !important; } body.role-ensemble #liens { grid-column: 1 / -1; } }
 </style>
 </head>
 <body>
@@ -467,7 +477,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v38</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v39</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -938,10 +948,10 @@ $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); 
 const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle') : null;
 // (seules les fenêtres de la salle suivent : la fenêtre principale et celles qui ont un rôle ; une « + Fenêtre » libre garde son marché)
 if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev.data || {}; if (m.t !== 'code' || !m.c) return; const cible = ROLE === 'lie' ? (FRERE[m.c] || m.c) : m.c; if (cible !== code) changeCode(cible, false); };
-async function changeCode(c, diffuse = true) { if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
+async function changeCode(c, diffuse = true) { setTimeout(() => { try { majPxDow(); } catch (e) { /* rien */ } }, 50); if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); if (ROLE === 'ensemble') chargeTout(); try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); if (ROLE === 'ensemble') chargeTout(); try { majPxDow(); } catch (er) { /* rien */ } try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
 function spark(v, up) {
   if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
@@ -1259,7 +1269,7 @@ async function chargeLiens() {
   if (document.hidden || !ROOT) return;
   try { const r = await api('/maison/copilote', { action: 'liens' }), RG = { inhabituel: 0, normal: 1, relache: 2 };
     const l = (r.liens || []).slice().sort((p, q) => (RG[p.etat] - RG[q.etat]) || (Math.abs(q.corr) - Math.abs(p.corr)));
-    $('#liens').innerHTML = l.map(x => { const k = x.a + '-' + x.b, ouvert = liensOuverts.has(k) || x.etat === 'inhabituel', inv = x.attendu < 0;
+    $('#liens').innerHTML = l.map((x, idx) => { const k = x.a + '-' + x.b, ouvert = liensOuverts.has(k) || x.etat === 'inhabituel' || (ROLE === 'ensemble' && !liensOuverts.size && idx < 3), inv = x.attendu < 0;
       const etat = x.etat === 'inhabituel' ? 'SE SÉPARENT' : x.etat === 'relache' ? 'lien faible' : (x.attendu > 0 ? `ensemble · ${forceLien(x.corr)}` : `miroir · ${forceLien(x.corr)}`);
       return `<div class="lien2 ${x.etat}${ouvert ? ' ouvert' : ''}" data-k="${k}">
         <div class="l1"><i></i><span class="nm"><b data-c="${esc(x.a)}">${NOMC[x.a] || x.a}</b> ${inv ? '⇅' : '⇄'} <b data-c="${esc(x.b)}">${NOMC[x.b] || x.b}</b></span>${duo(x, 64, 20)}<small>${etat}</small></div>
@@ -1383,11 +1393,13 @@ async function chargeDow() {
     r.uts = ['D1', 'H4', 'H1'];  // (ses unités : D, H4, H1)
     r.lignes.forEach(l => { const t = r.uts.map(u => (l.cases[u] || {}).tendance), nh = t.filter(x => x === 'hausse').length, nb2 = t.filter(x => x === 'baisse').length; l.alignement = Math.max(nh, nb2); l.sens = nh > nb2 ? 'hausse' : nb2 > nh ? 'baisse' : 'mixte'; });
     $('#dow-etat').textContent = r.complet < r.total ? `lecture en cours : ${r.complet}/${r.total}` : `à jour · ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-    let h = `<div class="th">MARCHÉ</div>${r.uts.map(u => `<div class="th">${LIB[u] || u}</div>`).join('')}<div class="th">ALIGNEMENT</div><div class="th chal-t" title="Le mouvement en ticks ; la couleur dit s'il est habituel ou non (en écarts-types de ses mouvements habituels)">5 MIN</div><div class="th chal-t">15 MIN</div><div class="th chal-t">1 H</div>`;
+    let h = `<div class="th">MARCHÉ</div><div class="th px-t">DERNIER · VAR</div><div class="th">5 JOURS</div>${r.uts.map(u => `<div class="th">${LIB[u] || u}</div>`).join('')}<div class="th">ALIGNEMENT</div><div class="th chal-t" title="Le mouvement en ticks ; la couleur dit s'il est habituel ou non (en écarts-types de ses mouvements habituels)">5 MIN</div><div class="th chal-t">15 MIN</div><div class="th chal-t">1 H</div>`;
     for (const f of fams) {
       h += `<div class="fam2">${esc(f.toUpperCase())}</div>`;
       for (const l of r.lignes.filter(x => x.famille === f)) {
-        h += `<div class="nom" data-c="${esc(l.code)}"><b>${esc(l.code)}</b><small>${esc(l.nom)}</small></div>`;
+        const q = L.find(z => z.code === l.code) || {};
+        h += `<div class="nom${l.code === code ? ' ici' : ''}" data-c="${esc(l.code)}"><b>${esc(l.code)}</b><small>${esc(l.nom)}</small></div>`
+          + `<div class="px-c" data-c="${esc(l.code)}" id="dpx-${esc(l.code)}">${pxCellule(q)}</div><div class="sp-c" data-c="${esc(l.code)}">${spark(q.spark, (q.pct || 0) >= 0)}</div>`;
         for (const u of r.uts) { const c = l.cases[u], k = `${l.code}|${u}`, sig = c ? c.tendance + (c.casse ? c.casse.sens : '') : '', fl = dowAvant[k] && sig && dowAvant[k] !== sig ? ' flash' : ''; if (sig) dowAvant[k] = sig;
           h += c ? `<div class="cel ${c.tendance}${c.casse && c.casse.recent ? ' recent' : ''}${fl}" data-c="${esc(l.code)}" data-u="${u}" title="dernier sommet ${c.sommet ?? '—'} · dernier creux ${c.creux ?? '—'}${c.casse ? ` · ${c.casse.sens === 'haut' ? 'sommet' : 'creux'} cassé à ${c.casse.prix}${c.casse.at ? ' le ' + new Date(c.casse.at * 1000).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}` : ''}">${FLECHE[c.tendance]}${c.casse ? `<small>${c.casse.sens === 'haut' ? 'SOMMET CASSÉ' : 'CREUX CASSÉ'}</small>` : ''}</div>`
                  : `<div class="cel vide" data-c="${esc(l.code)}" data-u="${u}">…</div>`; }
@@ -1733,9 +1745,15 @@ $('#pub-x').onclick = () => { if (EVT) { evtFermes.add(EVT.cle); ecrit('g-evt-fe
 setInterval(majEvt, 1000);
 
 /* --- le moniteur : rentré par défaut sur les écrans de graphique de la salle (structure, marché lié) --- */
+if (ROLE === 'ensemble') { const b = document.querySelector('.liste .tete b'); if (b) b.innerHTML = '<i class="led"></i>LIENS ENTRE MARCHÉS'; }
 function moniteur(on, garde = true) { if (ROLE === 'ensemble') on = true; document.body.classList.toggle('sans-moniteur', !on); if (garde) ecrit(K('g-moniteur'), on ? '1' : '0'); setTimeout(toutDessine, 60); }
 $('#mon-x').onclick = () => moniteur(false); $('#mon-o').onclick = () => moniteur(true);
 moniteur(lit(K('g-moniteur'), ['structure', 'lie'].includes(ROLE) ? '0' : '1') === '1', false);
+
+/* --- la page structure : le prix de chaque marché, dans le tableau, en direct --- */
+const dowPxAvant = {};
+function pxCellule(q) { if (q.dernier == null) return '<b>—</b>'; const t = nb(q.dernier, q.dec), h = `<b>${odo(dowPxAvant[q.code] || '', t, q.dernier >= (dowPxAvant[q.code + 'v'] ?? q.dernier))}</b><small class="${q.pct >= 0 ? 'h' : 'r'}">${q.pct > 0 ? '+' : ''}${nb(q.pct, 2)} %</small>`; dowPxAvant[q.code] = t; dowPxAvant[q.code + 'v'] = q.dernier; return h; }
+function majPxDow() { if (!$('#dow').classList.contains('on')) return; L.forEach(q => { const e = document.getElementById('dpx-' + q.code); if (e) e.innerHTML = pxCellule(q); }); document.querySelectorAll('#grille .nom').forEach(e => e.classList.toggle('ici', e.dataset.c === code)); }
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
