@@ -242,13 +242,14 @@ let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } 
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
-if (location.pathname.startsWith('/salle/')) ROOT = location.origin;
-if (ROOT && !location.pathname.startsWith('/salle/')) document.getElementById('b-graphique').href = 'graphique.html#maison=' + encodeURIComponent(ROOT);
+if (/^\/salle(-dev)?\//.test(location.pathname)) ROOT = location.origin;
+if (ROOT && !/^\/salle(-dev)?\//.test(location.pathname)) document.getElementById('b-graphique').href = 'graphique.html#maison=' + encodeURIComponent(ROOT);
 const MK = ['M6E', 'MNQ', 'MYM', 'MGC', 'SIL', 'MCL'];
 const NOMS = { M6E: 'Euro-dollar', MNQ: 'Nasdaq 100', MYM: 'Dow Jones', MGC: 'Or', SIL: 'Argent', MCL: 'Pétrole WTI' };
 const DEC = { M6E: 5, MNQ: 2, MYM: 0, MGC: 1, SIL: 3, MCL: 2 };
-const lit = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
-const ecrit = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } };
+const DEV = location.pathname.startsWith('/salle-dev/'), PK = DEV ? 'dev:' : '';
+const lit = (k, d) => { try { const v = localStorage.getItem(PK + k); return v == null ? d : v; } catch (e) { return d; } };
+const ecrit = (k, v) => { try { localStorage.setItem(PK + k, v); } catch (e) { /* rien */ } };
 let vue = lit('radar-vue', 'tout'), marche = lit('radar-marche', ''), son = lit('radar-son', '0') === '1', cherche = '';
 let D = null, ouverts = new Set(), sel = -1, premier = true, dernierOk = 0;
 let vus = new Set(); try { vus = new Set(JSON.parse(lit('radar-lus', '[]'))); } catch (e) { /* rien */ }
@@ -625,9 +626,9 @@ function murDonnees() {
 function modeMur(on) { document.body.classList.toggle('mode-mur', on); $('#b-mur').classList.toggle('on', on); ecrit('radar-mur', on ? '1' : '0'); if (on) { murTic(); murDonnees(); } }
 $('#b-mur').onclick = () => modeMur(!document.body.classList.contains('mode-mur'));
 // dans la salle : un clic sur un marché du mur l'ouvre sur l'écran de structure ; la fenêtre retient sa place
-const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle') : null;
+const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle' + (DEV ? '-dev' : '')) : null;
 $('#mur-g').addEventListener('click', ev => { const t = ev.target.closest('.tuile-m'); if (!t || !SALLE_BC) return; const c = t.querySelector('.c b').textContent; if (['DXY', 'VIX'].includes(c) || MK.includes(c)) SALLE_BC.postMessage({ t: 'code', c, de: 'radar' }); t.animate([{ boxShadow: 'inset 0 0 0 3px #ffb020' }, { boxShadow: 'none' }], { duration: 900 }); });
-if (diese.get('role') === 'veille') { const garde = () => { try { const p = JSON.parse(localStorage.getItem('g-salle-pos') || '{}'); p.veille = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; localStorage.setItem('g-salle-pos', JSON.stringify(p)); } catch (e) { /* rien */ } }; setInterval(garde, 5000); window.addEventListener('beforeunload', garde); document.title = 'Atlas · Veille'; }
+if (diese.get('role') === 'veille') { const garde = () => { try { const p = JSON.parse(localStorage.getItem(PK + 'g-salle-pos') || '{}'); p.veille = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; localStorage.setItem(PK + 'g-salle-pos', JSON.stringify(p)); } catch (e) { /* rien */ } }; setInterval(garde, 5000); window.addEventListener('beforeunload', garde); document.title = 'Atlas · Veille'; }
 $('#mur').addEventListener('click', ev => { if (ev.target.id === 'mur-x') modeMur(false); });
 setInterval(murTic, 1000);
 if (diese.get('mur') === '1' || lit('radar-mur', '0') === '1') modeMur(true);

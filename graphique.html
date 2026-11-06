@@ -477,7 +477,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v39</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v40</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -571,10 +571,11 @@ let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } 
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
-if (location.pathname.startsWith('/salle/')) ROOT = location.origin;
-if (ROOT && !location.pathname.startsWith('/salle/')) $('#lien-radar').href = 'radar.html#maison=' + encodeURIComponent(ROOT);
-const lit = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
-const ecrit = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } };
+if (/^\/salle(-dev)?\//.test(location.pathname)) ROOT = location.origin;
+if (ROOT && !/^\/salle(-dev)?\//.test(location.pathname)) $('#lien-radar').href = 'radar.html#maison=' + encodeURIComponent(ROOT);
+const DEV = location.pathname.startsWith('/salle-dev/'), PK = DEV ? 'dev:' : '';  // (la version d'essai garde ses réglages à part)
+const lit = (k, d) => { try { const v = localStorage.getItem(PK + k); return v == null ? d : v; } catch (e) { return d; } };
+const ecrit = (k, v) => { try { localStorage.setItem(PK + k, v); } catch (e) { /* rien */ } };
 // plusieurs fenêtres (une par écran) : chacune a son numéro (#f=2 dans l'adresse) et garde ses réglages ; les lignes, elles, sont communes
 const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
@@ -945,7 +946,7 @@ document.querySelector('.outils').addEventListener('click', ev => { const b = ev
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
 $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
 [['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant'], ['#t-cot', 'cot'], ['#t-news', 'news']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
-const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle') : null;
+const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle' + (DEV ? '-dev' : '')) : null;
 // (seules les fenêtres de la salle suivent : la fenêtre principale et celles qui ont un rôle ; une « + Fenêtre » libre garde son marché)
 if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev.data || {}; if (m.t !== 'code' || !m.c) return; const cible = ROLE === 'lie' ? (FRERE[m.c] || m.c) : m.c; if (cible !== code) changeCode(cible, false); };
 async function changeCode(c, diffuse = true) { setTimeout(() => { try { majPxDow(); } catch (e) { /* rien */ } }, 50); if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
@@ -1048,7 +1049,7 @@ window.addEventListener('resize', toutDessine);
 $('#nouvelle').onclick = () => {
   const n = String(Math.max(1, ...JSON.parse(lit('g-fenetres', '[1]'))) + 1); ecrit('g-fenetres', JSON.stringify([...JSON.parse(lit('g-fenetres', '[1]')), +n]));
   ecrit(`g-code-${n}`, code); ecrit(`g-vue-${n}`, 'un'); ecrit(`g-ut-${n}`, 'H1');
-  const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : '';
+  const m = ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : '';
   window.open(`${location.pathname}#f=${n}${m}`, `graphique-${n}`, `popup,width=${Math.min(1600, screen.availWidth)},height=${Math.min(950, screen.availHeight)}`);
 };
 // les lignes, communes à toutes les fenêtres : un tracé dans l'une apparaît aussitôt dans les autres
@@ -1340,7 +1341,7 @@ setInterval(chargeCommandes, 2000); chargeCommandes();
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { chargeLiens(); chargeEtat(); } });
 /* --- « installe ma salle de marché » : une fenêtre par écran (le graphique ici, le radar, et ton deuxième marché) --- */
 const ROLES_SALLE = [['lie', 'Marché lié'], ['ensemble', 'Vue d’ensemble'], ['veille', 'Veille (Radar)']];
-function urlRole(role) { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : '';
+function urlRole(role) { const m = ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : '';
   if (role === 'veille') return `radar.html#mur=1&role=veille${m}`;
   const f = role === 'lie' ? '2' : '3'; if (role === 'lie' && lit('g-vue-2', '') === '') { ecrit('g-vue-2', 'trois'); ecrit('g-uts-2', JSON.stringify(['D1', 'H4', 'H1'])); }
   return `${location.pathname}#f=${f}&role=${role}&code=${encodeURIComponent(code)}${m}`; }
@@ -1356,16 +1357,17 @@ async function installeSalle() {
   ROLES_SALLE.forEach(([role, nom], k) => {
     const p = pos[role], e = autres[k];
     const geo = p ? `left=${p.x},top=${p.y},width=${p.w},height=${p.h}` : e ? `left=${e.availLeft},top=${e.availTop},width=${e.availWidth},height=${e.availHeight}` : `width=1400,height=900`;
-    const w = window.open(urlRole(role), 'atlas-' + role, `popup,${geo}`); if (!w) bloques.push([role, nom]);
+    const w = window.open(urlRole(role), PK + 'atlas-' + role, `popup,${geo}`); if (!w) bloques.push([role, nom]);
   });
   if (bloques.length) { $('#copi').classList.add('salle'); ouvreCopi('Ta salle', "Ton navigateur a bloqué l'ouverture de certaines fenêtres. Ouvre-les d'un clic (ou autorise les fenêtres pop-up et la gestion des fenêtres pour ce site : la prochaine fois, tout s'ouvrira d'un coup).", '', false);
     $('#copi-txt').insertAdjacentHTML('beforeend', bloques.map(([r, n]) => `<button class="salle-btn" data-r="${r}">Ouvrir : ${n}</button>`).join(''));
-    document.querySelectorAll('#copi-txt [data-r]').forEach(b => b.onclick = () => { const r = b.dataset.r, p = JSON.parse(lit('g-salle-pos', '{}'))[r]; window.open(urlRole(r), 'atlas-' + r, `popup,${p ? `left=${p.x},top=${p.y},width=${p.w},height=${p.h}` : 'width=1400,height=900'}`); b.remove(); }); }
+    document.querySelectorAll('#copi-txt [data-r]').forEach(b => b.onclick = () => { const r = b.dataset.r, p = JSON.parse(lit('g-salle-pos', '{}'))[r]; window.open(urlRole(r), PK + 'atlas-' + r, `popup,${p ? `left=${p.x},top=${p.y},width=${p.w},height=${p.h}` : 'width=1400,height=900'}`); b.remove(); }); }
   else toast(ecrans && ecrans.length >= 4 ? 'Ta salle est installée sur tes 4 écrans' : 'Ta salle est installée : glisse chaque fenêtre sur son écran, elle retiendra sa place');
 }
 // chaque fenêtre de la salle retient sa place (écran, position, taille) pour la prochaine installation
 function retiensPlace() { const r = ROLE || (document.title === 'Atlas · Structure' ? 'structure' : ''); if (!r) return; const p = JSON.parse(lit('g-salle-pos', '{}')); p[r] = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; ecrit('g-salle-pos', JSON.stringify(p)); }
 setInterval(retiensPlace, 5000); window.addEventListener('beforeunload', retiensPlace);
+if (DEV) { const et = $('#etat'); if (et) et.insertAdjacentHTML('beforebegin', '<span class="role-badge" style="background:#d61f3a;color:#fff">VERSION D’ESSAI</span>'); document.title = 'ESSAI · ' + document.title; }
 if (ROLE) { document.body.classList.add('role-' + ROLE); const et = $('#etat'); if (et) et.insertAdjacentHTML('beforebegin', `<span class="role-badge">${ROLE === 'lie' ? 'MARCHÉ LIÉ' : ROLE === 'ensemble' ? 'VUE D’ENSEMBLE' : 'STRUCTURE'}</span>`); }
 if (ROLE === 'ensemble') setTimeout(() => { if (!$('#dow').classList.contains('on')) ouvreDow(); }, 400);
 if (ROLE === 'lie') setTimeout(() => { if (vue !== 'trois') { vue = 'trois'; utsTrois = ['D1', 'H4', 'H1']; construit(); } }, 300);
@@ -1698,7 +1700,7 @@ function guetteTouches() {
 let nbLignesAvant = null;
 /* --- le mur de salle : c'est le Radar en mode mur (un seul écran secondaire) --- */
 $('#b-salle').onclick = installeSalle;
-$('#b-mur').onclick = () => { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
+$('#b-mur').onclick = () => { const m = ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
 
 /* ================= le tableau du chiffre en direct · la cloche des ouvertures ================= */
 let ITEMS = [], EVT = null, evtReac = null, evtCharge = 0; const evtFermes = new Set(JSON.parse(lit('g-evt-fermes', '[]')));
