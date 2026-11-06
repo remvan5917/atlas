@@ -355,6 +355,18 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
     const st = statsTrades((tdEtat.trades || []).filter(x => (x.fin || x.at) >= Date.now() / 1000 - 31 * 86400)), p = tdEtat.payout || {};
     return say(`Sur 30 jours : ${st.n} trades, ${st.pnl >= 0 ? 'plus' : 'moins'} ${dollars(st.pnl)}, ${st.taux} % de gagnants.${st.elargis.length ? ` ${st.elargis.length} stop${st.elargis.length > 1 ? 's' : ''} élargi${st.elargis.length > 1 ? 's' : ''}.` : ''} Topstep : ${p.eligible ? `payout possible, jusqu'à ${dollars(p.montant)}` : 'pas encore de payout'}, ${dollars(p.marge_mll)} de marge avant la perte maximale. Le détail est à l'écran.`);
   }
+  // le bouton « mode radar » (et « affiche le radar ») : l'écran des dépêches, dans sa propre fenêtre, avec l'adresse de la maison
+  function ouvreRadar() {
+    const b = document.getElementById('btn-radar'); if (b) b.classList.remove('neuf');
+    try { window.open(`radar.html${S.settings && S.settings.localUrl ? '#maison=' + encodeURIComponent(S.settings.localUrl.replace(/\/+$/, '').replace(/\/v1$/, '')) : ''}`, 'radar'); } catch (e) { /* bloqué */ }
+  }
+  // le bouton s'allume en rouge quand une nouvelle critique est tombée depuis la dernière ouverture
+  setInterval(async () => {
+    const b = document.getElementById('btn-radar'); if (!b || document.hidden || !root()) return;
+    try { const r = await appel('/maison/radar', null, 10000); const c = (r.items || []).find(x => x.urgence === 'critique'); const vu = +(localStorage.getItem('radar-vu') || 0);
+      if (c && c.at * 1000 > vu && Date.now() - c.at * 1000 < 3 * 3600000) b.classList.add('neuf'); } catch (e) { /* hors liaison */ }
+  }, 60000);
+  document.addEventListener('click', ev => { if (ev.target.closest && ev.target.closest('#btn-radar')) { try { localStorage.setItem('radar-vu', String(Date.now())); } catch (e) { /* rien */ } ouvreRadar(); } });
   // le radar de risque : ce qui vient de tomber sur ses marchés, et comment le prix a réagi (en ticks) — de l'information, jamais un conseil
   async function radar() {
     let r; try { r = await appel('/maison/radar', null, 15000); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas le radar."); }
@@ -370,7 +382,7 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
   }
   document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-td]'); if (!b) return; if (b.dataset.td === 'per') { S.tdPeriode = b.dataset.id; save(); ecranTrading(); } });
   function route(t, n) {
-    if (/\b(affiche|ouvre|montre|mets)\b.*\b(le |l )?(ecran )?radar\b/.test(n)) return () => { try { window.open(`radar.html${S.settings && S.settings.localUrl ? '#maison=' + encodeURIComponent(S.settings.localUrl.replace(/\/+$/, '').replace(/\/v1$/, '')) : ''}`, 'radar'); } catch (e) { /* bloqué */ } return say("J'ouvre l'écran du radar : les dépêches de tes marchés en direct, avec leurs incidences. Laisse-le ouvert à côté du graphique."); };
+    if (/\b(affiche|ouvre|montre|mets)\b.*\b(le |l )?(ecran )?radar\b|\bmode radar\b/.test(n)) return () => { ouvreRadar(); return say("J'ouvre l'écran du radar : les dépêches de tes marchés en direct, avec leurs incidences. Laisse-le ouvert à côté du graphique."); };
     if (/\b(le radar|mon radar|radar (de risque|des marches|trading)|quoi de neuf sur (les|mes) marches|les (nouvelles|depeches|news) (des|de mes|sur mes) marches|ce qui (est tombe|vient de tomber) sur (les|mes) marches)\b/.test(n)) return radar;
     if (/\b(mon trading|mon journal de trading|mes (stats|statistiques) de trading|statistiques de trading|tableau de bord (du )?trading|mes comptes (de trading|financés|finances|topstep)|mes objectifs de trading)\b/.test(n)) return monTrading;
     if (/\b(fin (de (la |ma )?)?(session|trading)|j arrete (de trader|le trading|ma session|la session)|je coupe (le trading|ma session)|session terminee|je termine (ma session|le trading)|fin du mode trading)\b/.test(n)) return fin;
@@ -398,5 +410,5 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
     if (trade && /\b(j ai (perdu|gagne|pris|encaisse)|je perds|je gagne|stop (touche|pris)|j ai ete stoppe)\b/.test(n) && /\d/.test(t)) return () => sortie(t, n, montant(t)); // un trade ouvert dans la boîte noire : il le clôture
     return null;
   }
-  return { route, radar, actif: () => actif, bilanNoire, bilanSeance, payout, monTrading, _controle: controle, _montant: montant, _prixApres: prixApres };
+  return { route, radar, ouvreRadar, actif: () => actif, bilanNoire, bilanSeance, payout, monTrading, _controle: controle, _montant: montant, _prixApres: prixApres };
 })();

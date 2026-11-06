@@ -874,7 +874,9 @@ function majEtat() {
     + `<span class="puce"><span class="led ${shOk ? 'ok' : ''}"></span>SHADOW <b>${shOk ? (sh[1].enfantVu ? 'AVEC LUI' : 'EN LIGNE') : 'EN VEILLE'}</b></span>`
     + `<span class="puce"><span class="led ${pb == null ? '' : pb ? 'al' : 'ok'}"></span>SYSTÈMES <b>${pb == null ? '…' : pb ? 'À VÉRIFIER' : 'NOMINAUX'}</b></span>`
     + (ATLAS ? '<button class="puce cmd" id="btn-c" title="Toutes les commandes">' + ic('grille') + 'COMMANDES</button>' : '')
+    + '<button class="puce cmd" id="btn-radar-c" title="Mode radar : les dépêches de tes marchés en direct">RADAR</button>'
     + (REGLAGES ? '<button class="puce reglages" id="btn-r" title="Réglages" aria-label="Réglages">' + ic('reglages') + '</button>' : '');
+  const bz = $('#btn-radar-c'); if (bz) bz.onclick = () => { try { window.open(`${location.pathname.startsWith('/salle/') ? '/salle/' : ''}radar.html${ROOT && !location.pathname.startsWith('/salle/') ? '#maison=' + encodeURIComponent(ROOT) : ''}`, 'radar'); } catch (e) { /* bloqué */ } };
   const br = $('#btn-r'); if (br) br.onclick = () => { try { REGLAGES(); } catch (e) { /* rien */ } };
   const bc = $('#btn-c'); if (bc) bc.onclick = panneau;
 }

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <script>
-    window.ATLAS_VERSION = '261';
+    window.ATLAS_VERSION = '262';
     // Filet de sécurité : si quelque chose casse, on l'affiche au lieu d'un écran noir
     (function () {
       function show(msg) {
@@ -44,7 +44,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css?v=261">
+  <link rel="stylesheet" href="style.css?v=262">
 </head>
 <body>
   <!-- l'état d'Atlas (écoute, réflexion, parole) : le noyau le lit -->
@@ -79,6 +79,7 @@
     <div class="porte"><div class="anneau"><i></i></div><b>ATLAS</b><small>TOUCHER POUR DÉMARRER</small></div>
   </div>
 
+  <button id="btn-radar" type="button" aria-label="Ouvrir l'écran Radar" title="Mode radar : les dépêches de tes marchés en direct"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 L19 6"/><circle cx="16.5" cy="9.5" r="1.2" class="plein"/></svg></button>
   <button id="btn-reglages" type="button" aria-label="Réglages">⚙</button>
   <div id="toast" hidden></div>
 
@@ -169,48 +170,48 @@
     </form>
   </dialog>
 
-  <script src="orthographe.js?v=261"></script>
-  <script src="cerveau.js?v=261"></script>
-  <script src="oreilles.js?v=261"></script>
-  <script src="voix.js?v=261"></script>
-  <script src="empreintes.js?v=261"></script>
-  <script src="yeux.js?v=261"></script>
-  <script src="atlas.js?v=261"></script>
-  <script src="outils.js?v=261"></script>
-  <script src="memoire.js?v=261"></script>
-  <script src="marche.js?v=261"></script>
-  <script src="proactif.js?v=261"></script>
-  <script src="foyer.js?v=261"></script>
-  <script src="bord.js?v=261"></script>
-  <script src="vivant.js?v=261"></script>
-  <script src="cuisine.js?v=261"></script>
-  <script src="prix.js?v=261"></script>
-  <script src="cuisine-ui.js?v=261"></script>
-  <script src="agent.js?v=261"></script>
-  <script src="maison.js?v=261"></script>
-  <script src="securite.js?v=261"></script>
-  <script src="veille.js?v=261"></script>
-  <script src="gardien.js?v=261"></script>
-  <script src="pc.js?v=261"></script>
-  <script src="coequipier.js?v=261"></script>
-  <script src="compta.js?v=261"></script>
-  <script src="bureau.js?v=261"></script>
-  <script src="telephone.js?v=261"></script>
-  <script src="jumelage.js?v=261"></script>
-  <script src="visio.js?v=261"></script>
-  <script src="scifi.js?v=261"></script>
-  <script src="trading.js?v=261"></script>
-  <script src="duo.js?v=261"></script>
-  <script src="prescience.js?v=261"></script>
-  <script src="anticipe.js?v=261"></script>
-  <script src="constellation.js?v=261"></script>
-  <script src="agenda.js?v=261"></script>
-  <script src="secretaire.js?v=261"></script>
-  <script src="avenir.js?v=261"></script>
-  <script src="vie.js?v=261"></script>
-  <script src="futur.js?v=261"></script>
-  <script src="scene.js?v=261"></script>
-  <script src="presentation.js?v=261"></script>
-  <script src="noyau.js?v=261"></script>
+  <script src="orthographe.js?v=262"></script>
+  <script src="cerveau.js?v=262"></script>
+  <script src="oreilles.js?v=262"></script>
+  <script src="voix.js?v=262"></script>
+  <script src="empreintes.js?v=262"></script>
+  <script src="yeux.js?v=262"></script>
+  <script src="atlas.js?v=262"></script>
+  <script src="outils.js?v=262"></script>
+  <script src="memoire.js?v=262"></script>
+  <script src="marche.js?v=262"></script>
+  <script src="proactif.js?v=262"></script>
+  <script src="foyer.js?v=262"></script>
+  <script src="bord.js?v=262"></script>
+  <script src="vivant.js?v=262"></script>
+  <script src="cuisine.js?v=262"></script>
+  <script src="prix.js?v=262"></script>
+  <script src="cuisine-ui.js?v=262"></script>
+  <script src="agent.js?v=262"></script>
+  <script src="maison.js?v=262"></script>
+  <script src="securite.js?v=262"></script>
+  <script src="veille.js?v=262"></script>
+  <script src="gardien.js?v=262"></script>
+  <script src="pc.js?v=262"></script>
+  <script src="coequipier.js?v=262"></script>
+  <script src="compta.js?v=262"></script>
+  <script src="bureau.js?v=262"></script>
+  <script src="telephone.js?v=262"></script>
+  <script src="jumelage.js?v=262"></script>
+  <script src="visio.js?v=262"></script>
+  <script src="scifi.js?v=262"></script>
+  <script src="trading.js?v=262"></script>
+  <script src="duo.js?v=262"></script>
+  <script src="prescience.js?v=262"></script>
+  <script src="anticipe.js?v=262"></script>
+  <script src="constellation.js?v=262"></script>
+  <script src="agenda.js?v=262"></script>
+  <script src="secretaire.js?v=262"></script>
+  <script src="avenir.js?v=262"></script>
+  <script src="vie.js?v=262"></script>
+  <script src="futur.js?v=262"></script>
+  <script src="scene.js?v=262"></script>
+  <script src="presentation.js?v=262"></script>
+  <script src="noyau.js?v=262"></script>
 </body>
 </html>
