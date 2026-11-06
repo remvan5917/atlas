@@ -61,6 +61,7 @@
     <span class="sep masque-mobile"></span>
     <button class="b masque-mobile" id="t-bougies">Bougies</button><button class="b masque-mobile" id="t-zz">Zigzag</button><button class="b masque-mobile" id="t-zones">Zones S/R H4</button><button class="b masque-mobile" id="t-vol">Volume</button><button class="b masque-mobile" id="t-aimant" title="Aimant : tes lignes se collent sur les rebonds du zigzag (sinon sur le haut, le bas, l'ouverture ou la clôture d'une bougie)">Aimant</button>
     <div class="espace"></div>
+ <button class="b masque-mobile" id="nouvelle" title="Une fenêtre de plus, à glisser sur un autre écran">+ Fenêtre</button>
     <a class="b bleu masque-mobile" id="lien-radar" href="radar.html" target="radar" style="text-decoration:none">Radar</a>
     <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span></span>
   </div>
@@ -98,8 +99,11 @@ if (location.pathname.startsWith('/salle/')) ROOT = location.origin;
 if (ROOT && !location.pathname.startsWith('/salle/')) $('#lien-radar').href = 'radar.html#maison=' + encodeURIComponent(ROOT);
 const lit = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
 const ecrit = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } };
-let code = diese.get('code') || lit('g-code', 'SIL'), vue = lit('g-vue', 'trois'), utSeul = lit('g-ut', 'D1'), outil = 'curseur';
-let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit('g-uts', 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
+// plusieurs fenêtres (une par écran) : chacune a son numéro (#f=2 dans l'adresse) et garde ses réglages ; les lignes, elles, sont communes
+const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
+let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
+let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
+if (FEN !== '1') document.title = `Graphique Atlas · ${FEN}`;
 let opt = { zz: lit('g-zz', '1') === '1', zones: lit('g-zones2', '0') === '1', vol: lit('g-vol', '1') === '1', bougies: lit('g-bougies', '0') === '1', aimant: lit('g-aimant', '1') === '1' };
 let lignes = [], choisie = null, brouillon = null, actif = 0;
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -261,7 +265,7 @@ function sauve() { toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(asyn
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
   const env = []; lignes.forEach(l => { env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : 'ta ligne de tendance', alerte: true, ecart: l.ecart, canal: l.genre === 'canal' });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: true, double: l.id }); });
-  try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
+  try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
 async function chargeLignes() {
   try { const r = await api(`/maison/graphique?lignes=1&code=${code}`); const l = r.lignes || [];
     lignes = l.filter(x => !x.double).map(x => x.canal ? { ...x, genre: 'canal' } : x); } catch (e) { lignes = []; }
@@ -280,8 +284,8 @@ function construit() {
 function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif)); majBoutonsUT(); }
 function majBoutonsUT() { const u = vue === 'trois' ? (utsTrois[actif] || '') : utSeul; document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', b.dataset.ut === u)); }
 function choisirUT(ut) {
-  if (vue === 'trois') { utsTrois[actif] = ut; ecrit('g-uts', JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = 0; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
-  else { utSeul = ut; ecrit('g-ut', ut); construit(); }
+  if (vue === 'trois') { utsTrois[actif] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = 0; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
+  else { utSeul = ut; ecrit(K('g-ut'), ut); construit(); }
 }
 function toutDessine() { panes.forEach(p => p.dessine()); }
 async function chargeTout() {
@@ -291,9 +295,9 @@ async function chargeTout() {
 function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAll('[data-o]').forEach(b => b.classList.toggle('on', b.dataset.o === o)); panes.forEach(p => p.cv.style.cursor = o === 'curseur' ? 'default' : 'crosshair'); }
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
-$('#vue-un').onclick = () => { vue = 'un'; ecrit('g-vue', vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit('g-vue', vue); construit(); };
+$('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); }; $('#vue-trois').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); };
 [['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones2' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
-async function changeCode(c) { code = c; ecrit('g-code', c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); }
+async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); }
 let L = [];
 async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; majListe(r.familles || []); } catch (e) { /* hors liaison */ } }
 function majListe(fams) {
@@ -309,7 +313,16 @@ document.addEventListener('keydown', ev => {
   else if (/^[1-8]$/.test(k)) choisirUT(['5m', '15m', '30m', 'H1', 'H4', 'D1', 'W', 'M'][+k - 1]);
 });
 window.addEventListener('resize', toutDessine);
-setInterval(chargeTout, 20000); setInterval(chargeListe, 30000);
+$('#nouvelle').onclick = () => {
+  const n = String(Math.max(1, ...JSON.parse(lit('g-fenetres', '[1]'))) + 1); ecrit('g-fenetres', JSON.stringify([...JSON.parse(lit('g-fenetres', '[1]')), +n]));
+  ecrit(`g-code-${n}`, code); ecrit(`g-vue-${n}`, 'un'); ecrit(`g-ut-${n}`, 'H1');
+  const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : '';
+  window.open(`${location.pathname}#f=${n}${m}`, `graphique-${n}`, `popup,width=${Math.min(1600, screen.availWidth)},height=${Math.min(950, screen.availHeight)}`);
+};
+// les lignes, communes à toutes les fenêtres : un tracé dans l'une apparaît aussitôt dans les autres
+const canal = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-lignes') : null;
+if (canal) canal.onmessage = async ev => { if (ev.data && ev.data.code === code && !brouillon) { await chargeLignes(); toutDessine(); } };
+setInterval(async () => { if (!brouillon && !choisie) await chargeLignes(); chargeTout(); }, 20000); setInterval(chargeListe, 30000);
 (async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; } await chargeLignes(); construit(); chargeListe(); })();
 </script>
 </body>
