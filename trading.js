@@ -360,12 +360,13 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
     let r; try { r = await appel('/maison/radar', null, 15000); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas le radar."); }
     const now = Date.now() / 1000, l = (r.items || []).filter(x => now - x.at < 24 * 3600);
     const reac = x => Object.entries(x.reaction || {}).filter(([, v]) => v['+15'] != null).map(([m, v]) => `${m} ${v['+15'] > 0 ? '+' : ''}${v['+15']} t`).join(' · ');
-    const L = l.slice(0, 12).map(x => [`${hm(x.at)} · ${x.urgence === 'critique' ? 'CRITIQUE' : 'importante'}`, `${x.titre}${x.marches.length ? ` (${x.marches.join(', ')})` : ''}${reac(x) ? ` — à +15 min : ${reac(x)}` : ''}`, x.urgence === 'critique' ? 'alerte' : 'ok']);
+    const inc = x => Object.entries(x.incidences || {}).map(([m, v]) => `${m} : ${v}`).join(' · ');
+    const L = l.slice(0, 10).map(x => [`${hm(x.at)} · ${x.urgence === 'critique' ? 'CRITIQUE' : 'importante'}`, `${x.titre}${inc(x) ? ` — ${inc(x)}` : x.pourquoi ? ` — ${x.pourquoi}` : ''}${reac(x) ? ` — à +15 min : ${reac(x)}` : ''}`, x.urgence === 'critique' ? 'alerte' : 'ok']);
     try { SCIFI.hud('Radar · 24 heures', L.length ? L : [['Radar', 'rien de critique ni d’important depuis hier', 'ok']]); } catch (er) { /* pas d'écran */ }
     if (!l.length) return say("Rien de critique ni d'important sur tes marchés depuis hier.");
     const crit = l.filter(x => x.urgence === 'critique');
     const top = (crit.length ? crit : l).slice(0, 3);
-    return say(`${crit.length ? `${crit.length} nouvelle${crit.length > 1 ? 's' : ''} critique${crit.length > 1 ? 's' : ''}` : `${l.length} nouvelle${l.length > 1 ? 's' : ''} importante${l.length > 1 ? 's' : ''}`} en 24 heures. ${top.map(x => `À ${hm(x.at)} : ${x.titre}.`).join(' ')} Le détail est à l'écran.`);
+    return say(`${crit.length ? `${crit.length} nouvelle${crit.length > 1 ? 's' : ''} critique${crit.length > 1 ? 's' : ''}` : `${l.length} nouvelle${l.length > 1 ? 's' : ''} importante${l.length > 1 ? 's' : ''}`} en 24 heures. ${top.map((x, i) => `À ${hm(x.at)} : ${x.titre}.${i === 0 ? ` ${Object.values(x.incidences || {}).slice(0, 3).join(' ') || x.pourquoi || ''}` : ''}`).join(' ')} Le détail est à l'écran.`);
   }
   document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-td]'); if (!b) return; if (b.dataset.td === 'per') { S.tdPeriode = b.dataset.id; save(); ecranTrading(); } });
   function route(t, n) {
