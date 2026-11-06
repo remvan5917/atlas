@@ -400,7 +400,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v28</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v29</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -583,7 +583,7 @@ class Pane {
     // le volume (fines barres noires en bas)
     if (opt.vol) { const vm = Math.max(...v.map(b => b[5] || 0)) || 1, lv = opt.bougies ? Math.max(1, bw * .6) : Math.max(1, bw * .24);
       for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? '#9e9e9e' : '#000') : 'rgba(0,0,0,.85)'; c.fillRect(Math.round(X(k) - lv / 2), ph - BN - h, lv, h); } }
-    const dureeUT = DUREE[this.ut] || 3600, finBarre = B.length ? B[B.length - 1][0] + dureeUT : 0, enCours = false;  // (la bougie en creux et son compte à rebours : retirés, pas bien)
+    const dureeUT = DUREE[this.ut] || 3600, finBarre = B.length ? B[B.length - 1][0] + dureeUT : 0, enCours = false, aCompte = !REPLAY && Date.now() / 1000 < finBarre && ['5m', '15m', '30m', 'H1', 'H4'].includes(this.ut);  // (la bougie reste dessinée normalement ; seul le compte à rebours)
     // les barres OHLC, noires (son style)
     if (opt.bougies) {
       const cw = Math.max(1, bw * .62);
@@ -666,6 +666,9 @@ class Pane {
       bas2.sort((a, b2) => Math.abs(a.d) - Math.abs(b2.d)).slice(0, 3).forEach((o, k) => pastille(o, ph - 20 - k * 19, false)); }
     // le ruban des séances, tout en bas de l'axe du temps (intraday) : Asie gris, Londres bleu, New York ambre
     if (['5m', '15m', '30m', 'H1'].includes(this.ut)) { for (let k = i; k < j; k++) { const se = seanceDe(B[k][0]); if (!se) continue; c.fillStyle = se; c.fillRect(X(k) - bw / 2, H - 3, bw + .5, 3); } }
+    // le compte à rebours de la bougie en cours, dans l'axe du temps, sous elle
+    if (aCompte) { const r = Math.max(0, Math.round(finBarre - Date.now() / 1000)), hh = Math.floor(r / 3600), mm = Math.floor(r % 3600 / 60), ss = r % 60, tx = hh ? `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+      const xc = X(B.length - 1); if (xc > 0 && xc < pw + 30) { c.font = '700 9.5px "JetBrains Mono", monospace'; const tw = c.measureText(tx).width + 12, xx = Math.min(pw - tw - 2, Math.max(2, xc - tw / 2)); c.fillStyle = '#ffab1a'; c.beginPath(); c.roundRect(xx, ph + 9, tw, 13, 6.5); c.fill(); c.fillStyle = '#160d00'; c.fillText(tx, xx + 6, ph + 19); } }
     // les nouvelles, gravées dans l'axe du temps : de fines encoches de couleur à la minute exacte (le code-barres de l'actualité) ;
     // rien ne se pose sur les bougies ni sur le volume — on survole l'encoche pour la bulle et le projecteur
     this.marques = [];
@@ -1519,6 +1522,8 @@ function seanceDe(t) {
   return null;
 }
 function travail() { /* (l'interface qui s'efface : retirée) */ }
+// le compte à rebours avance chaque seconde (seulement la page visible)
+setInterval(() => { if (!document.hidden && panes.some(p => ['5m', '15m', '30m', 'H1', 'H4'].includes(p.ut))) panes.forEach(p => p.dessine()); }, 1000);
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
