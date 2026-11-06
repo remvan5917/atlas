@@ -3,117 +3,201 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#04060a">
+<meta name="theme-color" content="#05070b">
 <title>Radar Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg: #03050a; --carte: rgba(10, 14, 21, .95); --carte2: rgba(14, 20, 30, .95); --ambre: #ffb547; --cyan: #5fd3ff; --texte: #eef3f8; --doux: rgba(190, 215, 235, .58);
-    --ligne: rgba(95, 211, 255, .14); --ok: #6ef0b8; --alerte: #ff5a3c; --hausse: #4ee39a; --baisse: #ff6b55; color-scheme: dark; }
+  :root {
+    --bg: #05070b; --p1: #0a0f16; --p2: #0e141d; --p3: #131b26; --ligne: rgba(130, 170, 210, .11); --ligne2: rgba(130, 170, 210, .2);
+    --texte: #e9eff6; --doux: #8d9bab; --tres-doux: #5c6a7a;
+    --cyan: #4cc9f0; --ambre: #ffb020; --rouge: #ff4d4f; --vert: #22c55e;
+    --ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --mono: 'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace;
+    color-scheme: dark;
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; background: var(--bg); color: var(--texte); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-  body { padding: 8px 12px 14px; min-height: 100vh; background: radial-gradient(60% 35% at 50% -6%, rgba(95, 211, 255, .07), transparent 70%), var(--bg); }
-  .mono, .t, .badge, .px { font-family: ui-monospace, 'DejaVu Sans Mono', 'Roboto Mono', monospace; font-variant-numeric: tabular-nums; }
-  button { font: inherit; }
-  /* l'en-tête */
-  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 7px; border-bottom: 1px solid var(--ligne); position: sticky; top: 0; background: var(--bg); z-index: 6; }
-  .marque { font: 600 11px ui-monospace, monospace; letter-spacing: .38em; color: var(--cyan); } .marque b { color: var(--ambre); font-weight: 600; }
-  .heure { font: 200 28px/1 ui-monospace, monospace; color: #fff; text-shadow: 0 0 16px rgba(95, 211, 255, .3); }
-  .etat { display: flex; align-items: center; gap: 7px; font: 11px ui-monospace, monospace; color: var(--doux); }
-  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--doux); flex: none; } .led.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-  .led.al { background: var(--alerte); box-shadow: 0 0 8px var(--alerte); animation: clig 1.2s steps(2) infinite; } @keyframes clig { 50% { opacity: .25; } }
-  .outils { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-left: auto; }
-  .chip { background: none; border: 1px solid var(--ligne); color: var(--doux); border-radius: 14px; padding: 4px 10px; font: 11px ui-monospace, monospace; letter-spacing: .04em; cursor: pointer; }
-  .chip.on { border-color: var(--cyan); color: var(--cyan); background: rgba(95, 211, 255, .08); } .chip.son.on { border-color: var(--ambre); color: var(--ambre); background: rgba(255, 181, 71, .08); }
-  select.chip, input.chip { appearance: none; background: rgba(255, 255, 255, .03); color: var(--texte); outline: none; } input.chip { width: 150px; cursor: text; }
-  /* le tableau des prix */
-  .prix { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 8px 0; }
-  .px { background: var(--carte); border: 1px solid var(--ligne); border-radius: 6px; padding: 6px 8px; position: relative; overflow: hidden; }
-  .px .c { font-size: 11px; color: var(--cyan); letter-spacing: .1em; display: flex; justify-content: space-between; } .px .c i { font-style: normal; color: var(--ambre); }
-  .px .v { font-size: 18px; color: #fff; margin: 1px 0; } .px .d { font-size: 11.5px; } .px svg { position: absolute; right: 6px; bottom: 6px; width: 46%; height: 26px; opacity: .8; }
-  .px.pos { border-color: rgba(255, 181, 71, .55); box-shadow: inset 0 0 0 1px rgba(255, 181, 71, .25); }
-  .px.flash { animation: flash 2.5s ease-out; } @keyframes flash { 0% { background: rgba(255, 90, 60, .25); } 100% { background: var(--carte); } }
-  .h { color: var(--hausse); } .b { color: var(--baisse); }
-  /* la grille : le fil à gauche, la colonne d'appui à droite */
-  .grille { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 10px; align-items: start; }
-  aside { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 64px; }
-  .bloc { background: var(--carte); border: 1px solid var(--ligne); border-radius: 6px; padding: 8px 10px; }
-  .bloc h3 { margin: 0 0 6px; font: 600 10.5px ui-monospace, monospace; letter-spacing: .22em; color: var(--cyan); }
-  .ag { display: grid; grid-template-columns: 78px 1fr; gap: 3px 8px; font: 12px ui-monospace, monospace; }
-  .ag .q { color: var(--doux); } .ag .q.proche { color: var(--ambre); font-weight: 700; } .ag .x { color: #dbe5ef; } .ag .x small { color: var(--doux); display: block; font-size: 10.5px; }
-  .ag .passe { opacity: .38; } .ag .x small.fiche { color: var(--ambre); opacity: .85; } .ag .fort { border-left: 2px solid var(--alerte); padding-left: 5px; }
-  .ligne { display: flex; justify-content: space-between; gap: 8px; font: 12px ui-monospace, monospace; padding: 2px 0; color: #dbe5ef; } .ligne span:first-child { color: var(--doux); }
-  /* le fil */
-  .fil { display: flex; flex-direction: column; gap: 7px; }
-  .it { background: var(--carte); border: 1px solid var(--ligne); border-left: 3px solid var(--cyan); border-radius: 6px; padding: 8px 11px; }
-  .it.critique { border-left-color: var(--alerte); background: linear-gradient(90deg, rgba(255, 90, 60, .09), var(--carte) 45%); }
-  .it.info { border-left-color: rgba(190, 215, 235, .28); opacity: .8; } .it.bruit { opacity: .45; }
-  .it.neuf { animation: neuf 2.6s ease-out; } @keyframes neuf { 0% { box-shadow: 0 0 0 2px var(--ambre); } 100% { box-shadow: none; } }
-  .tete { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-  .t { font-size: 12px; color: var(--doux); min-width: 40px; }
-  .badge { font-size: 9.5px; font-weight: 700; letter-spacing: .12em; padding: 2px 6px; border-radius: 3px; border: 1px solid; }
-  .badge.critique { color: var(--alerte); border-color: var(--alerte); } .badge.importante { color: var(--cyan); border-color: var(--cyan); } .badge.info { color: var(--doux); border-color: rgba(190, 215, 235, .3); }
-  .badge.chiffre { color: var(--ambre); border-color: var(--ambre); } .badge.mvt { color: #111; background: var(--ambre); border-color: var(--ambre); }
-  .it.mv { border-left-color: var(--ambre); background: linear-gradient(90deg, rgba(255, 181, 71, .1), var(--carte) 45%); } .badge.mk { color: #cfe3f5; border-color: rgba(190, 215, 235, .25); font-weight: 600; }
-  .titre { font-weight: 650; font-size: 15px; flex: 1 1 300px; }
-  .resume { color: #c9d4df; font-size: 13.3px; margin: 3px 0 0 49px; line-height: 1.4; }
-  .inc { margin: 5px 0 0 49px; display: grid; gap: 2px; } .inc div { font-size: 13px; line-height: 1.35; color: #dde6ef; }
-  .inc b { display: inline-block; min-width: 42px; font: 700 11px ui-monospace, monospace; color: var(--ambre); }
-  .pied { margin: 5px 0 0 49px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font: 11px ui-monospace, monospace; color: var(--doux); }
-  .reac b { font-weight: 700; }
-  .avis { margin-left: auto; display: flex; gap: 4px; } .avis button { background: none; border: 1px solid var(--ligne); border-radius: 4px; color: var(--doux); font-size: 13px; padding: 1px 7px; cursor: pointer; }
-  .avis button.on.utile { border-color: var(--hausse); color: var(--hausse); } .avis button.on.bruit { border-color: var(--baisse); color: var(--baisse); }
-  .vide { color: var(--doux); font: 13px ui-monospace, monospace; padding: 30px 0; text-align: center; }
-  .perdue { display: none; position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 20; background: #2a0d08; border: 1px solid var(--alerte); color: #ffd2c6; padding: 8px 16px; border-radius: 6px; font: 13px ui-monospace, monospace; }
+  html, body { margin: 0; background: var(--bg); color: var(--texte); font: 400 14px/1.4 var(--ui); }
+  body { min-height: 100vh; padding: 0 16px 24px; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .h { color: var(--vert); } .b { color: var(--rouge); }
+
+  /* ---------- la barre du haut ---------- */
+  .barre { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 18px; padding: 10px 0; background: linear-gradient(var(--bg) 82%, transparent); }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo svg { width: 26px; height: 26px; color: var(--cyan); }
+  .logo .nom { font: 800 13px var(--ui); letter-spacing: .32em; } .logo .nom b { color: var(--ambre); font-weight: 800; }
+  .horloge { font: 500 22px var(--mono); letter-spacing: .02em; }
+  .seances { display: flex; gap: 6px; }
+  .seance { font: 600 10.5px var(--ui); letter-spacing: .08em; padding: 4px 9px; border-radius: 999px; background: var(--p2); color: var(--tres-doux); border: 1px solid var(--ligne); }
+  .seance.ouverte { color: var(--vert); border-color: rgba(34, 197, 94, .35); background: rgba(34, 197, 94, .08); }
+  .seance.ouverte::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--vert); margin-right: 6px; vertical-align: 1px; box-shadow: 0 0 8px var(--vert); }
+  .espace { flex: 1; }
+  .segment { display: flex; background: var(--p2); border: 1px solid var(--ligne); border-radius: 10px; padding: 3px; }
+  .segment button { background: none; border: 0; padding: 6px 12px; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--doux); }
+  .segment button.on { background: var(--p3); color: var(--texte); }
+  .rond { width: 38px; height: 38px; border-radius: 10px; background: var(--p2); border: 1px solid var(--ligne); display: grid; place-items: center; color: var(--doux); }
+  .rond svg { width: 18px; height: 18px; } .rond.on { color: var(--ambre); border-color: rgba(255, 176, 32, .4); background: rgba(255, 176, 32, .08); }
+  .liaison { display: flex; align-items: center; gap: 7px; font: 500 11.5px var(--mono); color: var(--doux); }
+  .point { width: 8px; height: 8px; border-radius: 50%; background: var(--tres-doux); }
+  .point.ok { background: var(--vert); box-shadow: 0 0 10px var(--vert); } .point.ko { background: var(--rouge); box-shadow: 0 0 10px var(--rouge); animation: clig 1.1s steps(2) infinite; }
+  @keyframes clig { 50% { opacity: .2; } }
+  .cherche { display: none; } .cherche.on { display: block; }
+  .cherche input { width: 220px; background: var(--p2); border: 1px solid var(--ligne2); border-radius: 10px; padding: 9px 12px; color: var(--texte); font: 500 13px var(--ui); outline: none; }
+
+  /* ---------- « le moment » ---------- */
+  .moment { border-radius: 16px; padding: 18px 22px; margin: 4px 0 14px; background: var(--p1); border: 1px solid var(--ligne); position: relative; overflow: hidden; min-height: 112px; }
+  .moment .eti { font: 700 11px var(--ui); letter-spacing: .22em; color: var(--doux); }
+  .moment .gros { font: 750 26px/1.2 var(--ui); margin: 6px 0 4px; letter-spacing: -.01em; }
+  .moment .sous { color: var(--doux); font-size: 14px; }
+  .moment.alerte { background: linear-gradient(110deg, rgba(255, 77, 79, .18), rgba(255, 77, 79, .04) 55%, var(--p1)); border-color: rgba(255, 77, 79, .45); }
+  .moment.alerte .eti { color: var(--rouge); }
+  .moment.alerte::after, .moment.mvt::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .moment.alerte::after { background: var(--rouge); box-shadow: 0 0 22px var(--rouge); }
+  .moment.mvt { background: linear-gradient(110deg, rgba(255, 176, 32, .17), rgba(255, 176, 32, .03) 55%, var(--p1)); border-color: rgba(255, 176, 32, .45); }
+  .moment.mvt .eti { color: var(--ambre); } .moment.mvt::after { background: var(--ambre); box-shadow: 0 0 22px var(--ambre); }
+  .moment.attente .eti { color: var(--cyan); }
+  .compte { font: 600 46px/1 var(--mono); letter-spacing: -.02em; }
+  .compte.proche { color: var(--ambre); text-shadow: 0 0 24px rgba(255, 176, 32, .35); }
+  .moment .flex { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .incs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .inc { display: flex; align-items: flex-start; gap: 8px; background: rgba(255, 255, 255, .035); border: 1px solid var(--ligne); border-radius: 10px; padding: 8px 10px; max-width: 440px; }
+  .inc .code { font: 700 11px var(--mono); color: var(--cyan); } .inc .txt { font-size: 13px; color: #cfd8e3; }
+  .fleche { font: 800 15px var(--ui); width: 18px; text-align: center; flex: none; line-height: 1.2; } .fleche.hausse { color: var(--vert); } .fleche.baisse { color: var(--rouge); } .fleche.mixte { color: var(--ambre); }
+  .fiche { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .fiche .f { background: rgba(255, 255, 255, .035); border: 1px solid var(--ligne); border-radius: 10px; padding: 7px 12px; }
+  .fiche .f .code { font: 700 11px var(--mono); color: var(--cyan); } .fiche .f .val { font: 600 18px var(--mono); } .fiche .f small { color: var(--doux); font-size: 11px; display: block; }
+
+  /* ---------- les tuiles des marchés ---------- */
+  .tuiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .tuile { background: var(--p1); border: 1px solid var(--ligne); border-radius: 14px; padding: 12px 14px 10px; position: relative; overflow: hidden; text-align: left; transition: border-color .2s; }
+  .tuile:hover { border-color: var(--ligne2); } .tuile.choisie { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan) inset; }
+  .tuile .haut { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .tuile .code { font: 700 13px var(--mono); letter-spacing: .06em; } .tuile .nomm { font-size: 11px; color: var(--doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tuile .px { font: 600 24px/1.2 var(--mono); margin-top: 6px; letter-spacing: -.01em; }
+  .tuile .var { font: 500 12px var(--mono); }
+  .tuile svg.spark { display: block; width: 100%; height: 34px; margin-top: 6px; }
+  .tuile .pos { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; font: 600 11.5px var(--mono); padding: 5px 8px; border-radius: 8px; background: rgba(255, 176, 32, .1); color: var(--ambre); }
+  .tuile.enpos { border-color: rgba(255, 176, 32, .5); } .tuile .pos { flex-wrap: wrap; }
+  .tuile .marque { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--rouge); box-shadow: 0 0 10px var(--rouge); animation: clig 1.2s steps(2) infinite; }
+  .tuile.bouge { animation: bouge 1.6s ease-in-out infinite; } @keyframes bouge { 50% { box-shadow: 0 0 0 1px var(--ambre) inset, 0 0 24px rgba(255, 176, 32, .25); } }
+
+  /* ---------- la grille ---------- */
+  .grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+  .rail { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 68px; }
+  .carte { background: var(--p1); border: 1px solid var(--ligne); border-radius: 14px; padding: 14px; }
+  .carte h3 { margin: 0 0 10px; font: 700 11px var(--ui); letter-spacing: .2em; color: var(--doux); display: flex; justify-content: space-between; }
+
+  /* ---------- le fil ---------- */
+  .fil { background: var(--p1); border: 1px solid var(--ligne); border-radius: 14px; overflow: hidden; }
+  .jour { font: 700 11px var(--ui); letter-spacing: .2em; color: var(--tres-doux); padding: 12px 16px 6px; }
+  .ligne { display: grid; grid-template-columns: 52px 4px minmax(0, 1fr) auto 18px; gap: 12px; align-items: center; padding: 11px 16px; border-top: 1px solid var(--ligne); cursor: pointer; transition: background .15s; position: relative; }
+  .ligne:hover, .ligne.sel { background: var(--p2); }
+  .ligne .t { font: 500 12px var(--mono); color: var(--doux); }
+  .ligne .sev { width: 4px; height: 22px; border-radius: 2px; background: var(--cyan); opacity: .7; }
+  .ligne .sev.critique { background: var(--rouge); opacity: 1; box-shadow: 0 0 10px rgba(255, 77, 79, .5); } .ligne .sev.info { background: var(--tres-doux); } .ligne .sev.mvt { background: var(--ambre); opacity: 1; }
+  .ligne .tit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .ligne .tit .texte { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 550; }
+  .ligne.critique .tit .texte { font-weight: 700; } .ligne.info .tit .texte { color: var(--doux); font-weight: 450; }
+  .chip { font: 700 10px var(--mono); padding: 2px 6px; border-radius: 5px; background: var(--p3); color: #b9cadb; flex: none; letter-spacing: .04em; }
+  .chip.chiffre { background: rgba(255, 176, 32, .14); color: var(--ambre); } .chip.mvt { background: var(--ambre); color: #120c00; }
+  .ligne .reac { font: 600 12px var(--mono); white-space: nowrap; }
+  .ligne .chev { color: var(--tres-doux); transition: transform .2s; font-size: 16px; } .ligne.ouverte .chev { transform: rotate(90deg); }
+  .ligne.neuf::before { content: ''; position: absolute; left: 5px; top: 50%; width: 5px; height: 5px; margin-top: -2.5px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .detail { padding: 4px 16px 16px 84px; background: var(--p2); }
+  .detail .res { color: #c8d2de; font-size: 13.5px; margin: 0 0 10px; max-width: 900px; }
+  .detail .incs { margin-top: 0; }
+  .tablo { margin-top: 12px; display: inline-grid; grid-template-columns: auto repeat(4, 66px); gap: 2px; font: 600 12px var(--mono); }
+  .tablo div { padding: 5px 8px; background: var(--p3); text-align: right; } .tablo .th { background: none; color: var(--tres-doux); font-weight: 500; font-size: 10.5px; }
+  .tablo .lab { text-align: left; color: var(--cyan); background: none; }
+  .pied { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--doux); }
+  .avis { margin-left: auto; display: flex; gap: 6px; }
+  .avis button { background: var(--p3); border: 1px solid var(--ligne); border-radius: 8px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; color: var(--doux); }
+  .avis button.on.utile { color: var(--vert); border-color: rgba(34, 197, 94, .5); background: rgba(34, 197, 94, .1); }
+  .avis button.on.bruit { color: var(--rouge); border-color: rgba(255, 77, 79, .5); background: rgba(255, 77, 79, .1); }
+  .vide { padding: 40px 16px; text-align: center; color: var(--doux); }
+
+  /* ---------- le rail ---------- */
+  .ev { display: grid; grid-template-columns: 58px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--ligne); }
+  .ev:first-child { border-top: 0; } .ev.passe { opacity: .4; }
+  .ev .q { font: 600 12.5px var(--mono); color: var(--doux); } .ev .q.proche { color: var(--ambre); }
+  .ev .x { font-size: 13px; font-weight: 550; } .ev .x small { display: block; color: var(--doux); font: 500 11px var(--mono); margin-top: 2px; }
+  .ev.fort .x::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rouge); margin-right: 7px; vertical-align: 1px; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 12.5px; border-top: 1px solid var(--ligne); }
+  .kv:first-child { border-top: 0; } .kv span:first-child { color: var(--doux); } .kv span:last-child { font: 600 12.5px var(--mono); text-align: right; }
+  .jauge { height: 6px; border-radius: 3px; background: var(--p3); overflow: hidden; margin: 2px 0 4px; } .jauge i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--vert)); }
+  .touches { font-size: 11.5px; color: var(--tres-doux); line-height: 1.8; } .touches kbd { font: 600 10.5px var(--mono); background: var(--p3); border: 1px solid var(--ligne2); border-radius: 4px; padding: 1px 5px; color: var(--doux); }
+  .perdue { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 20; background: #2a0b0b; border: 1px solid var(--rouge); color: #ffd6d6; padding: 10px 18px; border-radius: 12px; font-weight: 600; display: none; }
   .perdue.on { display: block; }
-  .note { margin-top: 12px; font: 10.5px ui-monospace, monospace; color: var(--doux); text-align: center; }
-  @media (max-width: 1100px) { .grille { grid-template-columns: 1fr; } aside { position: static; order: -1; } .prix { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (max-width: 640px) { .resume, .inc, .pied { margin-left: 0; } .heure { font-size: 22px; } .prix { grid-template-columns: repeat(2, minmax(0, 1fr)); } input.chip { width: 110px; } }
+  .mention { margin-top: 18px; font-size: 11.5px; color: var(--tres-doux); text-align: center; }
+
+  @media (max-width: 1280px) { .tuiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1080px) { .grille { grid-template-columns: 1fr; } .rail { position: static; } .seances { display: none; } }
+  @media (max-width: 700px) {
+    body { padding: 0 10px 20px; } .barre { gap: 10px; flex-wrap: wrap; } .tuiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .tuile .px { font-size: 19px; }
+    .horloge, #liaison { display: none; } .moment .gros { font-size: 20px; } .compte { font-size: 34px; }
+    .ligne { grid-template-columns: 44px 4px minmax(0, 1fr) 14px; } .ligne .reac { display: none; } .detail { padding-left: 16px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <div><div class="marque">ATLAS · <b>RADAR</b></div><div class="heure mono" id="heure">--:--:--</div></div>
-  <div class="etat"><span class="led" id="led"></span><span id="etat">connexion…</span></div>
-  <div class="outils" id="outils">
-    <button class="chip on" data-f="tout">Tout</button><button class="chip" data-f="critique">Critique</button><button class="chip" data-f="chiffre">Chiffres</button>
-    <button class="chip" data-f="M6E">M6E</button><button class="chip" data-f="MNQ">MNQ</button><button class="chip" data-f="MYM">MYM</button><button class="chip" data-f="MGC">MGC</button><button class="chip" data-f="SIL">SIL</button><button class="chip" data-f="MCL">MCL</button>
-    <button class="chip" data-f="infos">+ infos</button>
-    <select class="chip" id="jours" title="Historique"><option value="1">24 h</option><option value="3" selected>3 jours</option><option value="7">7 jours</option><option value="30">30 jours</option></select>
-    <input class="chip" id="cherche" type="search" placeholder="Rechercher…" autocomplete="off">
-    <button class="chip son" id="son" title="Touche M">Son : non</button>
-  </div>
-</header>
-<div class="prix" id="prix"></div>
+<div class="barre">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="5.5" opacity=".6"/><path d="M12 12 L19.5 6.5"/><circle cx="16.6" cy="9" r="1.3" fill="currentColor" stroke="none"/></svg><span class="nom">ATLAS <b>RADAR</b></span></div>
+  <div class="horloge" id="horloge">--:--:--</div>
+  <div class="seances" id="seances"></div>
+  <div class="espace"></div>
+  <div class="segment" id="vue"><button data-v="tout">Tout</button><button data-v="critique">Critiques</button><button data-v="miens">Mes positions</button><button data-v="infos">+ Infos</button></div>
+  <div class="cherche" id="cherche"><input id="q" type="search" placeholder="Rechercher une nouvelle…" autocomplete="off"></div>
+  <button class="rond" id="b-cherche" title="Rechercher ( / )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+  <button class="rond" id="b-son" title="Son ( M )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path id="ondes" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+  <div class="liaison"><span class="point" id="point"></span><span id="liaison">connexion…</span></div>
+</div>
+
+<section class="moment" id="moment"><div class="eti">CHARGEMENT</div></section>
+<section class="tuiles" id="tuiles"></section>
+
 <div class="grille">
-  <main class="fil" id="fil"><div class="vide">Chargement du radar…</div></main>
-  <aside>
-    <div class="bloc"><h3>AGENDA DU JOUR</h3><div class="ag" id="agenda"></div></div>
-    <div class="bloc"><h3>MES POSITIONS</h3><div id="positions"></div></div>
-    <div class="bloc"><h3>LE RADAR VISE-T-IL JUSTE ?</h3><div id="bilan"></div></div>
-    <div class="bloc"><h3>ÉTAT</h3><div id="sys"></div></div>
+  <main>
+    <div class="fil" id="fil"><div class="vide">Chargement du radar…</div></div>
+    <div class="mention">Des faits et des mécanismes, jamais un conseil d'achat ou de vente. Les réactions sont en ticks, sur les cours TopstepX. Ton avis (utile / bruit) apprend au radar ce qui compte pour toi.</div>
+  </main>
+  <aside class="rail">
+    <div class="carte"><h3><span>AGENDA DU JOUR</span><span id="ag-n"></span></h3><div id="agenda"></div></div>
+    <div class="carte"><h3><span>LE RADAR VISE-T-IL JUSTE ?</span></h3><div id="bilan"></div></div>
+    <div class="carte"><h3><span>COULISSES</span></h3><div id="sys"></div></div>
+    <div class="carte touches"><kbd>J</kbd> <kbd>K</kbd> naviguer · <kbd>Entrée</kbd> déplier · <kbd>U</kbd> utile · <kbd>B</kbd> bruit · <kbd>1</kbd>–<kbd>6</kbd> un marché · <kbd>0</kbd> tous · <kbd>/</kbd> chercher · <kbd>M</kbd> son</div>
   </aside>
 </div>
-<div class="note">Des faits et des mécanismes, jamais un conseil d'achat ou de vente. Réaction du prix en ticks, à +1, +5, +15 et +60 minutes (cours TopstepX). 👍 / 👎 : ton avis apprend au radar ce qui compte pour toi.</div>
-<div class="perdue" id="perdue">Liaison perdue avec l'ordinateur de la maison (Tailscale ?)</div>
+<div class="perdue" id="perdue">Liaison perdue avec l'ordinateur de la maison — Tailscale est-il allumé ?</div>
+
 <script>
 'use strict';
-/* L'écran Radar, façon terminal de salle de marché : ses 6 contrats en direct (cours TopstepX), le fil des dépêches qui comptent pour ses marchés
-   (triées sur l'ordinateur de la maison) avec leurs incidences et la réaction du prix, l'agenda avec compte à rebours, ses positions,
-   et le bilan : après une nouvelle critique, le marché a-t-il vraiment bougé ? Ses avis (👍 utile / 👎 bruit) apprennent au radar ce qui compte. */
+/* L'écran Radar d'Atlas, pensé comme un poste de trader : en haut « le moment » (la seule chose qui compte maintenant), ses 6 marchés en direct
+   (avec sa position et son résultat latent), le fil des nouvelles qui comptent (compact, dépliable), l'agenda avec la fiche de chaque annonce,
+   et le bilan du radar. Des faits et des mécanismes, jamais un conseil. Tout vient de l'ordinateur de la maison (cours TopstepX). */
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
-const reglages = S.settings || {};
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
-if (!ROOT) ROOT = (reglages.localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
-if (location.pathname.startsWith('/salle/')) ROOT = location.origin; // servie par l'ordinateur de la maison lui-même
-const MK = ['M6E', 'MNQ', 'MYM', 'MGC', 'SIL', 'MCL'], DEC = { M6E: 5, MNQ: 2, MYM: 0, MGC: 1, SIL: 3, MCL: 2 };
-let filtre = 'tout', infos = false, son = false, jours = 3, cherche = '', vus = new Set(), premier = true, dernierOk = 0, donnees = null, prixAvant = {};
-try { son = localStorage.getItem('radar-son') === '1'; filtre = localStorage.getItem('radar-filtre') || 'tout'; infos = localStorage.getItem('radar-infos') === '1'; jours = +(localStorage.getItem('radar-jours') || 3); } catch (e) { /* rien */ }
+if (location.pathname.startsWith('/salle/')) ROOT = location.origin;
+const MK = ['M6E', 'MNQ', 'MYM', 'MGC', 'SIL', 'MCL'];
+const NOMS = { M6E: 'Euro-dollar', MNQ: 'Nasdaq 100', MYM: 'Dow Jones', MGC: 'Or', SIL: 'Argent', MCL: 'Pétrole WTI' };
+const DEC = { M6E: 5, MNQ: 2, MYM: 0, MGC: 1, SIL: 3, MCL: 2 };
+const lit = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+const ecrit = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* rien */ } };
+let vue = lit('radar-vue', 'tout'), marche = lit('radar-marche', ''), son = lit('radar-son', '0') === '1', cherche = '';
+let D = null, ouverts = new Set(), sel = -1, premier = true, dernierOk = 0;
+let vus = new Set(); try { vus = new Set(JSON.parse(lit('radar-lus', '[]'))); } catch (e) { /* rien */ }
 const hm = s => { const d = new Date(s * 1000); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
-const jourHm = s => { const d = new Date(s * 1000), auj = new Date(); return d.toDateString() === auj.toDateString() ? hm(s) : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${hm(s)}`; };
 const nb = (x, dec) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-function bip(fort) {  // les mêmes sons qu'Atlas : « flash info » pour une critique, « terminal » sinon
+const sg = x => (x > 0 ? '+' : '') + x;
+const cl = x => (x > 0 ? 'h' : x < 0 ? 'b' : '');
+const FL = { hausse: '↑', baisse: '↓', mixte: '↕' };
+
+/* ---------- le son (le même qu'Atlas) ---------- */
+function bip(fort) {
   if (!son) return;
   try { const c = bip.ac || (bip.ac = new (window.AudioContext || window.webkitAudioContext)()); if (c.state === 'suspended') c.resume(); const out = c.createGain(); out.gain.value = 1; out.connect(c.destination); sonRadar(c, out, c.currentTime + 0.02, fort); } catch (e) { /* pas de son */ }
 }
@@ -138,104 +222,211 @@ function sonRadar(c, out, t0, critique) {
     sub(110, 0.01, 0.25, 0.09); [[880, 0.02], [659.3, 0.13], [1318.5, 0.24]].forEach(([f, d]) => fm(f, d, 0.5, 0.11));
   }
 }
-function majBoutons() {
-  document.querySelectorAll('#outils button[data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === 'infos' ? infos : b.dataset.f === filtre));
-  $('#son').classList.toggle('on', son); $('#son').textContent = son ? 'Son : oui' : 'Son : non'; $('#jours').value = String(jours);
+
+/* ---------- les séances (Tokyo, Londres, New York) ---------- */
+function ouverte(zone, h1, m1, h2, m2) {
+  const p = new Intl.DateTimeFormat('en-GB', { timeZone: zone, weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+  const g = t => (p.find(x => x.type === t) || {}).value; if (['Sat', 'Sun'].includes(g('weekday'))) return false;
+  const m = +g('hour') * 60 + +g('minute'); return m >= h1 * 60 + m1 && m < h2 * 60 + m2;
 }
-function garde() { try { localStorage.setItem('radar-son', son ? '1' : '0'); localStorage.setItem('radar-filtre', filtre); localStorage.setItem('radar-infos', infos ? '1' : '0'); localStorage.setItem('radar-jours', String(jours)); } catch (e) { /* rien */ } }
-$('#outils').addEventListener('click', ev => {
-  const b = ev.target.closest('button'); if (!b) return;
-  if (b.id === 'son') { son = !son; bip(false); } else if (b.dataset.f === 'infos') { infos = !infos; charge(); } else if (b.dataset.f) filtre = b.dataset.f;
-  garde(); majBoutons(); dessine();
-});
-$('#jours').addEventListener('change', () => { jours = +$('#jours').value; garde(); charge(); });
-let tCherche = 0; $('#cherche').addEventListener('input', () => { clearTimeout(tCherche); tCherche = setTimeout(() => { cherche = $('#cherche').value.trim(); charge(); }, 350); });
-document.addEventListener('keydown', ev => { if (ev.target.tagName === 'INPUT') return; if (ev.key === 'm' || ev.key === 'M') { son = !son; garde(); majBoutons(); if (son) bip(false); } });
-// son avis : utile ou bruit (un second appui l'enlève)
-$('#fil').addEventListener('click', async ev => {
-  const b = ev.target.closest('.avis button'); if (!b) return;
-  const id = b.closest('.it').dataset.id, it = (donnees.items || []).find(x => x.id === id); if (!it) return;
-  const avis = it.avis === b.dataset.a ? '' : b.dataset.a; it.avis = avis || null; dessine();
-  try { await fetch(`${ROOT}/maison/radar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'avis', id, avis }), cache: 'no-store' }); } catch (e) { /* hors liaison */ }
-});
+function seances() {
+  $('#seances').innerHTML = [['TOKYO', 'Asia/Tokyo', 9, 0, 15, 0], ['LONDRES', 'Europe/London', 8, 0, 16, 30], ['NEW YORK', 'America/New_York', 9, 30, 16, 0]]
+    .map(([n, z, a, b, c, d]) => `<span class="seance ${ouverte(z, a, b, c, d) ? 'ouverte' : ''}">${n}</span>`).join('');
+}
+
+/* ---------- les incidences, avec la flèche du sens habituel ---------- */
+const incs = i => Object.entries(i.incidences || {}).map(([m, v]) => { const s_ = (i.sens || {})[m] || ''; return `<div class="inc"><span class="fleche ${esc(s_)}">${FL[s_] || '•'}</span><div><span class="code">${esc(m)}</span> <span class="txt">${esc(v)}</span></div></div>`; }).join('');
+
+/* ---------- le moment : la seule chose qui compte maintenant ---------- */
+function moment() {
+  const now = Date.now() / 1000, items = D.items || [], mv = D.mouvements || [];
+  const crit = items.find(i => i.urgence === 'critique' && now - (i.publie || i.at) < 20 * 60);
+  const mvt = mv.find(m => now - m.at < 10 * 60);
+  const prochaine = (D.agenda || []).filter(a => a.fort && a.at > now).sort((a, b) => a.at - b.at)[0];
+  const el = $('#moment');
+  if (crit && (!mvt || (crit.publie || crit.at) >= mvt.at)) {
+    el.className = 'moment alerte';
+    el.innerHTML = `<div class="eti">● CRITIQUE · ${hm(crit.publie || crit.at)} · ${esc((crit.sources || []).join(' · '))}</div><div class="gros">${esc(crit.titre)}</div><div class="sous">${esc(crit.resume || '')}</div><div class="incs">${incs(crit)}</div>`;
+    return;
+  }
+  if (mvt) {
+    el.className = 'moment mvt';
+    el.innerHTML = `<div class="eti">⚡ MOUVEMENT ANORMAL · ${hm(mvt.at)}</div><div class="gros">${esc(NOMS[mvt.code])} (${esc(mvt.code)}) : <span class="${cl(mvt.ticks)}">${sg(mvt.ticks)} ticks</span> en ${mvt.minutes} minute${mvt.minutes > 1 ? 's' : ''}</div>
+      <div class="sous">${String(mvt.fois).replace('.', ',')} fois l'agitation habituelle. ${mvt.explication ? `L'explication : <b>${esc(mvt.explication.titre)}</b>` : 'Pas encore de dépêche : elle s’affichera ici dès qu’elle tombe.'}</div>`;
+    return;
+  }
+  if (prochaine && prochaine.at - now < 3 * 3600) {
+    const dt = Math.max(0, prochaine.at - now), h = Math.floor(dt / 3600), m = Math.floor(dt % 3600 / 60), s = Math.floor(dt % 60);
+    const fi = (D.fiches || {})[`${prochaine.at}-${prochaine.titre}`];
+    el.className = 'moment attente';
+    el.innerHTML = `<div class="eti">PROCHAINE ANNONCE · ${hm(prochaine.at)} · ${esc(prochaine.pays)}</div>
+      <div class="flex"><div class="compte mono ${dt < 15 * 60 ? 'proche' : ''}" id="compte">${h ? `${h}:` : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}</div>
+      <div><div class="gros" style="margin:0">${esc(prochaine.titre_fr && prochaine.titre_fr !== prochaine.titre ? prochaine.titre_fr : prochaine.titre)}</div>
+      <div class="sous mono">${prochaine.prevision ? `consensus ${esc(prochaine.prevision)}` : 'pas de consensus'}${prochaine.precedent ? ` · précédent ${esc(prochaine.precedent)}` : ''}</div></div></div>
+      ${fi && Object.keys(fi.marches).length ? `<div class="fiche">${Object.entries(fi.marches).map(([mk, x]) => `<div class="f"><span class="code">${esc(mk)}</span><div class="val">${x.p5_med != null ? `±${x.p5_med}` : x.amp60_med} t</div><small>${x.p5_med != null ? `en 5 min · ${x.n5} fois` : `dans l'heure · max ${x.amp60_max}`}</small></div>`).join('')}<div class="f" style="background:none;border-style:dashed"><small>D’habitude, sur les ${fi.n} dernières fois :<br>la taille du mouvement, pas son sens.</small></div></div>` : ''}`;
+    return;
+  }
+  const der = items.find(i => i.urgence === 'critique');
+  el.className = 'moment';
+  el.innerHTML = `<div class="eti">LE MOMENT</div><div class="gros">Calme sur tes marchés.</div><div class="sous">${der ? `Dernière nouvelle critique à ${hm(der.publie || der.at)} : ${esc(der.titre)}.` : 'Aucune nouvelle critique récente.'} ${prochaine ? `Prochaine annonce importante à ${hm(prochaine.at)}.` : 'Plus d’annonce importante aujourd’hui.'}</div>`;
+}
+
+/* ---------- les tuiles des marchés ---------- */
+let nGrad = 0;
 function courbe(v) {
-  if (!v || v.length < 2) return '';
-  const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1, coul = v[v.length - 1] >= v[0] ? 'var(--hausse)' : 'var(--baisse)';
-  return `<svg viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="${v.map((x, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(24 - (x - lo) / r * 22).toFixed(1)}`).join(' ')}" fill="none" stroke="${coul}" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>`;
+  if (!v || v.length < 2) return '<svg class="spark"></svg>';
+  const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1, c = v[v.length - 1] >= v[0] ? '#22c55e' : '#ff4d4f', id = 'g' + (nGrad++);
+  const pts = v.map((x, i) => `${(i * 100 / (v.length - 1)).toFixed(2)},${(32 - (x - lo) / r * 28).toFixed(2)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".28"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient></defs>
+    <polygon points="0,34 ${pts} 100,34" fill="url(#${id})"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
 }
-function reaction(r) {
-  return ['+1', '+5', '+15', '+60'].filter(k => r[k] != null).map(k => `${k} <b class="${r[k] > 0 ? 'h' : r[k] < 0 ? 'b' : ''}">${r[k] > 0 ? '+' : ''}${r[k]}</b>`).join(' ');
-}
-function dessine() {
-  if (!donnees) return;
-  const now = Date.now() / 1000, pos = donnees.positions || [], tab = donnees.tableau || {};
-  const enPos = code => pos.some(p => String(p.instr || '').toUpperCase().includes(code));
-  // les prix en direct
-  $('#prix').innerHTML = MK.map(m => {
-    const x = tab[m], flash = x && prixAvant[m] != null && Math.abs(x.dernier - prixAvant[m]) / (x.dernier || 1) > 0.004;
-    return `<div class="px ${enPos(m) ? 'pos' : ''} ${flash ? 'flash' : ''}"><div class="c"><span>${m}</span>${enPos(m) ? '<i>POSITION</i>' : ''}</div>
-      <div class="v">${x ? nb(x.dernier, DEC[m]) : '—'}</div><div class="d ${x && x.var_ticks > 0 ? 'h' : x && x.var_ticks < 0 ? 'b' : ''}">${x ? `${x.var_ticks > 0 ? '+' : ''}${x.var_ticks} t · ${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %` : ''}</div>${x ? courbe(x.heure) : ''}</div>`;
+function tuiles() {
+  const now = Date.now() / 1000, tab = D.tableau || {}, pos = D.positions || [], vt = D.valeur_tick || {}, tk = D.tick || {};
+  $('#tuiles').innerHTML = MK.map((m, k) => {
+    const x = tab[m], p = pos.find(p_ => String(p_.instr || '').toUpperCase().includes(m));
+    const nouv = (D.items || []).some(i => i.urgence === 'critique' && (i.marches || []).includes(m) && now - (i.publie || i.at) < 15 * 60);
+    const bouge = (D.mouvements || []).some(v => v.code === m && now - v.at < 5 * 60);
+    let lat = '';
+    if (p && x && p.prix_moyen && tk[m]) { const t = Math.round((x.dernier - p.prix_moyen) / tk[m] * (p.sens === 'short' ? -1 : 1)); lat = `<span class="${cl(t)}">${sg(t)} t · ${sg(Math.round(t * (vt[m] || 0) * (p.taille || 1)))} $</span>`; }
+    return `<button class="tuile ${p ? 'enpos' : ''} ${marche === m ? 'choisie' : ''} ${bouge ? 'bouge' : ''}" data-m="${m}" title="Touche ${k + 1} : seulement ce marché">
+      ${nouv ? '<span class="marque"></span>' : ''}
+      <div class="haut"><span class="code">${m}</span><span class="nomm">${NOMS[m]}</span></div>
+      <div class="px">${x ? nb(x.dernier, DEC[m]) : '—'}</div>
+      <div class="var ${x ? cl(x.var_ticks) : ''}">${x ? `${sg(x.var_ticks)} t · ${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %` : '&nbsp;'}</div>
+      ${courbe(x && x.heure)}
+      ${p ? `<div class="pos"><span>${esc((p.sens || '').toUpperCase())} ×${esc(p.taille)}</span>${lat}</div>` : ''}
+    </button>`;
   }).join('');
-  MK.forEach(m => { if (tab[m]) prixAvant[m] = tab[m].dernier; });
-  // l'agenda
-  const ag = (donnees.agenda || []).slice().sort((a, b) => a.at - b.at);
-  $('#agenda').innerHTML = ag.length ? ag.map(a => {
-    const dt = a.at - now, proche = dt > 0 && dt < 15 * 60, q = dt > 0 && dt < 3600 ? `dans ${Math.max(1, Math.ceil(dt / 60))} min` : hm(a.at);
-    const fi = (donnees.fiches || {})[`${a.at}-${a.titre}`];
-    const fl = fi ? Object.entries(fi.marches).map(([m, x]) => `${m} ${x.p5_med != null ? `${x.p5_med} t/5 min` : `${x.amp60_med} t/h`}`).join(' · ') : '';
-    return `<div class="q ${proche ? 'proche' : ''} ${dt < -600 ? 'passe' : ''}">${esc(q)}</div><div class="x ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}">${esc(a.pays)} ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}<small>${a.prevision ? `cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}</small>${fl ? `<small class="fiche" title="Amplitude habituelle, sur les ${fi.n} dernières fois : la taille du mouvement à attendre, pas son sens">d'habitude : ${esc(fl)}</small>` : ''}</div>`;
-  }).join('') : '<div class="q">—</div><div class="x">Pas d’annonce importante aujourd’hui.</div>';
-  // ses positions
-  $('#positions').innerHTML = pos.length ? pos.map(p => `<div class="ligne"><span>${esc(p.compte || '')}</span><span>${esc(p.instr)} ${esc(p.sens || '')} ×${esc(p.taille)}</span></div>`).join('') : '<div class="ligne"><span>Aucune position ouverte</span><span></span></div>';
-  // le bilan : après une nouvelle, le marché a-t-il bougé (au-delà d'un seuil, en 15 min) ?
-  const bl = (donnees.bilan || {}).critique || {}, bi = (donnees.bilan || {}).importante || {};
-  const cel = x => x ? `${x.bouge} % <small style="color:var(--doux)">/${x.n}</small>` : '<small style="color:var(--doux)">—</small>';
-  const lb = MK.filter(m => bl[m] || bi[m]).map(m => `<div class="ligne"><span>${m}</span><span>crit. ${cel(bl[m])} · imp. ${cel(bi[m])}</span></div>`);
-  $('#bilan').innerHTML = (lb.length ? `<div class="ligne" style="font-size:10.5px"><span>part des nouvelles suivies d'un vrai mouvement en 15 min</span><span></span></div>` + lb.join('') : '<div class="ligne"><span>Les mesures arrivent au fil des nouvelles</span><span></span></div>')
-    + `<div class="ligne"><span>Tes avis</span><span>👍 ${(donnees.avis || {}).utile || 0} · 👎 ${(donnees.avis || {}).bruit || 0}</span></div>`;
-  $('#sys').innerHTML = `<div class="ligne"><span>Sources suivies</span><span>${donnees.sources || '—'}</span></div><div class="ligne"><span>FinancialJuice</span><span>toutes les ${donnees.rythme_fj || '—'} s</span></div>`
-    + `<div class="ligne"><span>Notifications ntfy</span><span>${donnees.ntfy ? 'actives' : 'non réglées'}</span></div><div class="ligne"><span>Cours</span><span>${Object.values(tab)[0] ? (Object.values(tab)[0].source === 'topstepx' ? 'TopstepX, en direct' : 'différés') : '—'}</span></div>`;
-  // le fil
-  let l = (donnees.items || []).concat((donnees.mouvements || []).map(m => ({ ...m, mv: true, urgence: 'critique', marches: [m.code] }))).sort((a, b) => b.at - a.at);
-  if (filtre === 'critique') l = l.filter(i => i.urgence === 'critique');
-  else if (filtre === 'chiffre') l = l.filter(i => i.chiffre);
-  else if (filtre !== 'tout') l = l.filter(i => (i.marches || []).includes(filtre));
-  $('#fil').innerHTML = l.length ? l.map(i => {
-    if (i.mv) return `<div class="it mv ${vus.has(i.id) || premier ? '' : 'neuf'}" data-id="${esc(i.id)}"><div class="tete"><span class="t">${jourHm(i.at)}</span><span class="badge mvt">MOUVEMENT</span><span class="badge mk">${esc(i.code)}</span>
-      <span class="titre">${i.ticks > 0 ? '+' : ''}${i.ticks} ticks en ${i.minutes} min · ${String(i.fois).replace('.', ',')} × l'agitation habituelle</span></div>
-      <div class="resume">${i.explication ? `L'explication : <b>${esc(i.explication.titre)}</b>` : 'Pas de dépêche dans les 15 minutes : le prix a bougé avant (ou sans) la nouvelle.'}</div></div>`;
-    const inc = Object.entries(i.incidences || {});
-    const r = Object.entries(i.reaction || {}).map(([m, v]) => { const t = reaction(v); return t ? `${m} ${t}` : ''; }).filter(Boolean).join(' · ');
-    return `<div class="it ${esc(i.urgence)} ${i.avis === 'bruit' ? 'bruit' : ''} ${vus.has(i.id) || premier ? '' : 'neuf'}" data-id="${esc(i.id)}">
-      <div class="tete"><span class="t">${jourHm(i.at)}</span><span class="badge ${esc(i.urgence)}">${i.urgence === 'critique' ? 'CRITIQUE' : i.urgence === 'importante' ? 'IMPORTANT' : 'INFO'}</span>${i.chiffre ? '<span class="badge chiffre">CHIFFRE</span>' : ''}${(i.marches || []).map(m => `<span class="badge mk">${esc(m)}</span>`).join('')}<span class="titre">${esc(i.titre)}</span></div>
-      ${i.resume ? `<div class="resume">${esc(i.resume)}</div>` : ''}
-      ${inc.length ? `<div class="inc">${inc.map(([m, v]) => `<div><b>${esc(m)}</b> ${esc(v)}</div>`).join('')}</div>` : (i.pourquoi ? `<div class="inc"><div>${esc(i.pourquoi)}</div></div>` : '')}
-      <div class="pied"><span>${esc((i.sources || []).join(' · '))}</span>${r ? `<span class="reac">ticks : ${r}</span>` : ''}${i.dit ? '<span style="color:var(--ambre)">dit par Atlas</span>' : ''}
-        <span class="avis"><button data-a="utile" class="utile ${i.avis === 'utile' ? 'on' : ''}" title="Utile">👍</button><button data-a="bruit" class="bruit ${i.avis === 'bruit' ? 'on' : ''}" title="Du bruit : ne pas me déranger pour ça">👎</button></span></div>
-    </div>`;
-  }).join('') : '<div class="vide">Rien pour l’instant avec ce filtre.</div>';
-  const nouveaux = (donnees.items || []).concat(donnees.mouvements || []).filter(i => !vus.has(i.id));
-  if (!premier && nouveaux.length) bip(nouveaux.some(i => i.urgence === 'critique' || i.code));
-  nouveaux.forEach(i => vus.add(i.id)); premier = false;
 }
+
+/* ---------- le fil ---------- */
+function liste() {
+  const pos = D.positions || [];
+  let l = (D.items || []).concat((D.mouvements || []).map(m => ({ ...m, mv: true, urgence: 'mvt', marches: [m.code], titre: `${NOMS[m.code]} : ${sg(m.ticks)} ticks en ${m.minutes} min (${String(m.fois).replace('.', ',')} × l'agitation habituelle)` })));
+  l.sort((a, b) => (b.publie || b.at) - (a.publie || a.at));
+  if (vue === 'critique') l = l.filter(i => i.urgence === 'critique' || i.mv);
+  if (vue === 'miens') { const mes = MK.filter(m => pos.some(p => String(p.instr || '').toUpperCase().includes(m))); l = l.filter(i => (i.marches || []).some(m => mes.includes(m))); }
+  if (marche) l = l.filter(i => (i.marches || []).includes(marche));
+  return l.slice(0, 200);
+}
+function reacPrincipale(i) {
+  const r = i.reaction || {}, m = (i.marches || []).find(x => r[x] && r[x]['+15'] != null) || (i.marches || []).find(x => r[x] && r[x]['+5'] != null);
+  if (!m) return '<span></span>'; const v = r[m]['+15'] != null ? r[m]['+15'] : r[m]['+5'];
+  return `<span class="reac ${cl(v)}" title="Réaction de ${m} en ticks (${r[m]['+15'] != null ? '+15' : '+5'} min)">${m} ${sg(v)} t</span>`;
+}
+function detail(i) {
+  if (i.mv) return `<div class="detail"><p class="res">${i.explication ? `L'explication : <b>${esc(i.explication.titre)}</b>` : 'Aucune dépêche dans les 15 minutes : le prix a bougé avant la nouvelle, ou sans nouvelle.'}</p></div>`;
+  const inc = incs(i), r = i.reaction || {}, mk = Object.keys(r).filter(m => ['+1', '+5', '+15', '+60'].some(k => r[m][k] != null));
+  const tablo = mk.length ? `<div class="tablo"><div class="th"></div><div class="th">+1 min</div><div class="th">+5 min</div><div class="th">+15 min</div><div class="th">+60 min</div>${mk.map(m => `<div class="lab">${m}</div>${['+1', '+5', '+15', '+60'].map(k => `<div class="${r[m][k] != null ? cl(r[m][k]) : ''}">${r[m][k] != null ? sg(r[m][k]) : '…'}</div>`).join('')}`).join('')}</div>` : '';
+  return `<div class="detail">${i.resume ? `<p class="res">${esc(i.resume)}</p>` : ''}${inc ? `<div class="incs">${inc}</div>` : (i.pourquoi ? `<p class="res">${esc(i.pourquoi)}</p>` : '')}${tablo}
+    <div class="pied"><span>${esc((i.sources || []).join(' · '))}</span>${i.original ? `<span title="${esc(i.original)}">VO : ${esc(i.original.slice(0, 90))}${i.original.length > 90 ? '…' : ''}</span>` : ''}${i.dit ? '<span style="color:var(--ambre)">dit par Atlas</span>' : ''}
+    <span class="avis" data-id="${esc(i.id)}"><button data-a="utile" class="utile ${i.avis === 'utile' ? 'on' : ''}">Utile</button><button data-a="bruit" class="bruit ${i.avis === 'bruit' ? 'on' : ''}">Bruit</button></span></div></div>`;
+}
+function fil() {
+  const now = Date.now() / 1000, l = liste();
+  if (!l.length) { $('#fil').innerHTML = `<div class="vide">${cherche ? 'Aucune nouvelle ne correspond.' : 'Rien pour l’instant avec ce filtre. Le radar veille.'}</div>`; return; }
+  let jour = '', h = '';
+  const auj = new Date().toDateString(), hier = new Date(Date.now() - 86400000).toDateString();
+  l.forEach((i, k) => {
+    const t = i.publie || i.at, dj = new Date(t * 1000), lab = dj.toDateString() === auj ? "AUJOURD'HUI" : dj.toDateString() === hier ? 'HIER' : dj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+    if (lab !== jour) { jour = lab; h += `<div class="jour">${lab}</div>`; }
+    const ouvert = ouverts.has(i.id);
+    h += `<div class="ligne ${esc(i.urgence)} ${ouvert ? 'ouverte' : ''} ${k === sel ? 'sel' : ''} ${vus.has(i.id) ? '' : 'neuf'}" data-id="${esc(i.id)}" data-k="${k}">
+      <span class="t">${hm(t)}</span><span class="sev ${i.mv ? 'mvt' : esc(i.urgence)}"></span>
+      <span class="tit">${i.mv ? '<span class="chip mvt">MOUVEMENT</span>' : ''}${i.chiffre ? '<span class="chip chiffre">CHIFFRE</span>' : ''}${(i.marches || []).slice(0, 4).map(m => `<span class="chip">${esc(m)}</span>`).join('')}<span class="texte">${esc(i.titre)}</span></span>
+      ${reacPrincipale(i)}<span class="chev">›</span></div>${ouvert ? detail(i) : ''}`;
+  });
+  $('#fil').innerHTML = h;
+}
+
+/* ---------- le rail : agenda, bilan, coulisses ---------- */
+function rail() {
+  const now = Date.now() / 1000, ag = (D.agenda || []).slice().sort((a, b) => a.at - b.at);
+  $('#ag-n').textContent = ag.length ? `${ag.filter(a => a.at > now).length} à venir` : '';
+  $('#agenda').innerHTML = ag.length ? ag.map(a => {
+    const dt = a.at - now, fi = (D.fiches || {})[`${a.at}-${a.titre}`];
+    const fl = fi ? Object.entries(fi.marches).slice(0, 3).map(([m, x]) => `${m} ${x.p5_med != null ? `±${x.p5_med}` : x.amp60_med} t`).join(' · ') : '';
+    return `<div class="ev ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}"><div class="q ${dt > 0 && dt < 15 * 60 ? 'proche' : ''}">${dt > 0 && dt < 3600 ? `${Math.ceil(dt / 60)} min` : hm(a.at)}</div>
+      <div class="x">${esc(a.pays)} · ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}<small>${a.prevision ? `cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}${fl ? `<br><span style="color:var(--ambre)">d’habitude : ${esc(fl)}</span>` : ''}</small></div></div>`;
+  }).join('') : '<div class="vide" style="padding:12px 0">Pas d’annonce importante aujourd’hui.</div>';
+  const bl = D.bilan || {}, mk = MK.filter(m => (bl.critique || {})[m] || (bl.importante || {})[m]);
+  $('#bilan').innerHTML = (mk.length ? mk.map(m => { const c = (bl.critique || {})[m], x = c || (bl.importante || {})[m];
+    return `<div class="kv"><span>${m} · ${c ? 'critiques' : 'importantes'}</span><span>${x.bouge} % <small style="color:var(--doux)">sur ${x.n}</small></span></div><div class="jauge"><i style="width:${x.bouge}%"></i></div>`; }).join('')
+    + `<div style="font-size:11.5px;color:var(--doux);margin:4px 0 8px">Part des nouvelles suivies d’un vrai mouvement en 15 min.</div>` : '<div class="kv"><span>Les mesures arrivent au fil des nouvelles</span><span></span></div>')
+    + `<div class="kv"><span>Tes avis</span><span>${(D.avis || {}).utile || 0} utiles · ${(D.avis || {}).bruit || 0} bruit</span></div>`;
+  const t0 = Object.values(D.tableau || {})[0];
+  $('#sys').innerHTML = `<div class="kv"><span>Sources suivies</span><span>${D.sources || '—'}</span></div><div class="kv"><span>FinancialJuice</span><span>toutes les ${D.rythme_fj || '—'} s</span></div>`
+    + `<div class="kv"><span>Cours</span><span>${t0 ? (t0.source === 'topstepx' ? 'TopstepX · direct' : 'différés') : '—'}</span></div><div class="kv"><span>Notifications</span><span>${D.ntfy ? 'ntfy · actives' : 'non réglées'}</span></div>`;
+}
+
+function tout() { if (!D) return; moment(); tuiles(); fil(); rail(); }
+
+/* ---------- les interactions ---------- */
+function majVue() {
+  document.querySelectorAll('#vue button').forEach(b => b.classList.toggle('on', b.dataset.v === 'infos' ? lit('radar-infos', '0') === '1' : b.dataset.v === vue));
+  $('#b-son').classList.toggle('on', son); $('#ondes').style.opacity = son ? 1 : .15;
+}
+$('#vue').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.v === 'infos') { ecrit('radar-infos', lit('radar-infos', '0') === '1' ? '0' : '1'); charge(); } else { vue = b.dataset.v; ecrit('radar-vue', vue); }
+  sel = -1; majVue(); tout();
+});
+$('#tuiles').addEventListener('click', ev => { const t = ev.target.closest('.tuile'); if (!t) return; marche = marche === t.dataset.m ? '' : t.dataset.m; ecrit('radar-marche', marche); sel = -1; tout(); });
+$('#b-son').addEventListener('click', () => { son = !son; ecrit('radar-son', son ? '1' : '0'); majVue(); bip(false); });
+$('#b-cherche').addEventListener('click', () => { const c = $('#cherche'); c.classList.toggle('on'); if (c.classList.contains('on')) $('#q').focus(); else { $('#q').value = ''; cherche = ''; charge(); } });
+let tq = 0; $('#q').addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { cherche = $('#q').value.trim(); charge(); }, 300); });
+function garderLus() { ecrit('radar-lus', JSON.stringify([...vus].slice(-600))); }
+function bascule(id) { if (ouverts.has(id)) ouverts.delete(id); else ouverts.add(id); vus.add(id); garderLus(); fil(); }
+async function avis(id, a) {
+  const i = (D.items || []).find(x => x.id === id); if (!i) return;
+  const v = i.avis === a ? '' : a; i.avis = v || null; fil();
+  try { await fetch(`${ROOT}/maison/radar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'avis', id, avis: v }), cache: 'no-store' }); } catch (e) { /* hors liaison */ }
+}
+$('#fil').addEventListener('click', ev => {
+  const a = ev.target.closest('.avis button'); if (a) { avis(a.parentElement.dataset.id, a.dataset.a); return; }
+  const l = ev.target.closest('.ligne'); if (l) { sel = +l.dataset.k; bascule(l.dataset.id); }
+});
+document.addEventListener('keydown', ev => {
+  if (ev.target.tagName === 'INPUT') { if (ev.key === 'Escape') ev.target.blur(); return; }
+  if (!D) return;
+  const l = liste(), k = ev.key, va = () => { fil(); const e = document.querySelector('.ligne.sel'); if (e) e.scrollIntoView({ block: 'nearest' }); };
+  if (k === 'j' || k === 'ArrowDown') { sel = Math.min(l.length - 1, sel + 1); va(); ev.preventDefault(); }
+  else if (k === 'k' || k === 'ArrowUp') { sel = Math.max(0, sel - 1); va(); ev.preventDefault(); }
+  else if (k === 'Enter' && l[sel]) bascule(l[sel].id);
+  else if ((k === 'u' || k === 'b') && l[sel] && !l[sel].mv) avis(l[sel].id, k === 'u' ? 'utile' : 'bruit');
+  else if (k === 'm' || k === 'M') $('#b-son').click();
+  else if (k === '/') { ev.preventDefault(); $('#cherche').classList.add('on'); $('#q').focus(); }
+  else if (k === '0') { marche = ''; ecrit('radar-marche', ''); tout(); }
+  else if (/^[1-6]$/.test(k)) { marche = MK[+k - 1]; ecrit('radar-marche', marche); tout(); }
+});
+
+/* ---------- les données ---------- */
 async function charge() {
-  if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre ce lien depuis Atlas'; $('#led').className = 'led al'; return; }
+  if (!ROOT) { $('#liaison').textContent = 'adresse de la maison inconnue'; $('#point').className = 'point ko'; return; }
   try {
-    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 12000);
-    const p = new URLSearchParams({ jours: String(jours) }); if (infos) p.set('tout', '1'); if (cherche) p.set('q', cherche);
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 12000);
+    const p = new URLSearchParams({ jours: cherche ? '30' : '3' }); if (lit('radar-infos', '0') === '1') p.set('tout', '1'); if (cherche) p.set('q', cherche);
     const r = await fetch(`${ROOT}/maison/radar?${p}`, { cache: 'no-store', signal: ctl.signal }); clearTimeout(tm);
     if (!r.ok) throw new Error(r.status);
-    donnees = await r.json(); dernierOk = Date.now();
-    $('#led').className = 'led ok'; $('#etat').textContent = `en direct · ${hm(donnees.maj || Date.now() / 1000)}`; $('#perdue').classList.remove('on');
-    dessine();
+    const avant = D; D = await r.json(); dernierOk = Date.now();
+    $('#point').className = 'point ok'; $('#liaison').textContent = 'en direct'; $('#perdue').classList.remove('on');
+    const tous = (D.items || []).concat(D.mouvements || []), now = Date.now() / 1000;
+    if (premier) { tous.forEach(i => { if (now - (i.publie || i.at) > 3600) vus.add(i.id); }); garderLus(); }
+    else if (avant) {
+      const ids = new Set((avant.items || []).concat(avant.mouvements || []).map(x => x.id)), neufs = tous.filter(i => !ids.has(i.id));
+      neufs.forEach(i => { if (i.urgence === 'critique' || i.code) ouverts.add(i.id); });
+      if (neufs.length) bip(neufs.some(i => i.urgence === 'critique' || i.code));
+    }
+    tout(); premier = false;
   } catch (e) {
-    $('#led').className = 'led al'; $('#etat').textContent = 'hors liaison';
+    $('#point').className = 'point ko'; $('#liaison').textContent = 'hors liaison';
     if (Date.now() - dernierOk > 45000) $('#perdue').classList.add('on');
   }
 }
-setInterval(() => { const d = new Date(); $('#heure').textContent = d.toLocaleTimeString('fr-FR'); }, 1000);
-setInterval(charge, 10000); setInterval(() => { if (donnees) dessine(); }, 1000 * 15); // (l'agenda : le compte à rebours)
-majBoutons(); charge();
+setInterval(() => { $('#horloge').textContent = new Date().toLocaleTimeString('fr-FR'); if ($('#compte') && D) moment(); }, 1000);
+setInterval(seances, 30000);
+setInterval(charge, 8000);
+seances(); majVue(); charge();
 </script>
 </body>
 </html>
