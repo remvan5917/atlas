@@ -8,81 +8,151 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --cadre: #131722; --cadre2: #1e222d; --ligne: #2a2e39; --texte: #d1d4dc; --doux: #868993; --bleu: #2962ff; --vert: #089981; --rouge: #f23645; color-scheme: dark; }
+  :root { --cadre: #0f131c; --cadre2: #171c27; --cadre3: #1f2532; --ligne: #262c3a; --texte: #dfe3ea; --doux: #8b93a3; --tres-doux: #5d6576; --bleu: #2962ff; --bleu2: #5b8bff;
+    --vert: #0aa37f; --rouge: #f23645; --ambre: #ffb020; color-scheme: dark; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: var(--cadre); color: var(--texte); font: 400 13px/1.35 'Inter', system-ui, sans-serif; overflow: hidden; }
   button { font: inherit; color: inherit; cursor: pointer; }
-  .app { display: grid; grid-template-rows: 46px 1fr; grid-template-columns: 44px 1fr 300px; height: 100vh; }
-  /* la barre du haut */
-  .haut { grid-column: 1 / 4; display: flex; align-items: center; gap: 4px; padding: 0 8px; border-bottom: 1px solid var(--ligne); background: var(--cadre); }
-  .sym { font: 700 14px 'Inter'; padding: 6px 10px; border-radius: 6px; background: var(--cadre2); margin-right: 8px; min-width: 70px; }
-  .sep { width: 1px; height: 22px; background: var(--ligne); margin: 0 6px; }
-  .b { background: none; border: 0; padding: 6px 9px; border-radius: 6px; color: var(--texte); font-weight: 500; }
-  .b:hover { background: var(--cadre2); } .b.on { color: #fff; background: #2a2e39; } .b.bleu { color: var(--bleu); }
+  .num { font-variant-numeric: tabular-nums; }
+  .app { display: grid; grid-template-rows: 52px 1fr; grid-template-columns: 48px 1fr 312px; height: 100vh; }
+  /* ---- la barre du haut ---- */
+  .haut { grid-column: 1 / 4; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-bottom: 1px solid var(--ligne); background: linear-gradient(var(--cadre2), var(--cadre)); }
+  .sym { display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 8px; border-radius: 10px; background: var(--cadre3); border: 1px solid var(--ligne); min-width: 190px; text-align: left; }
+  .sym:hover { border-color: #3a4256; } .sym .ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font: 800 10px 'Inter'; color: #fff; background: linear-gradient(135deg, #2962ff, #7b5cff); }
+  .sym b { font: 700 14px 'Inter'; display: block; } .sym small { color: var(--doux); font-size: 11px; display: block; margin-top: 1px; }
+  .sym .px { margin-left: auto; text-align: right; font: 600 13px 'Inter'; } .sym .px small { font-weight: 600; }
+  .seg { display: flex; background: var(--cadre2); border: 1px solid var(--ligne); border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg button { background: none; border: 0; padding: 5px 9px; border-radius: 7px; color: var(--doux); font-weight: 600; font-size: 12.5px; transition: background .15s, color .15s; }
+  .seg button:hover { color: var(--texte); } .seg button.on { background: var(--bleu); color: #fff; box-shadow: 0 2px 10px rgba(41, 98, 255, .35); }
+  .ico { width: 34px; height: 34px; border-radius: 9px; background: none; border: 1px solid transparent; display: grid; place-items: center; color: var(--doux); position: relative; }
+  .ico:hover { background: var(--cadre3); color: var(--texte); } .ico.on { color: var(--bleu2); background: rgba(41, 98, 255, .12); border-color: rgba(41, 98, 255, .3); }
+  .ico svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .grp { display: flex; gap: 2px; padding: 0 4px; border-left: 1px solid var(--ligne); }
   .espace { flex: 1; }
-  .etat { font-size: 11.5px; color: var(--doux); display: flex; align-items: center; gap: 6px; } .pt { width: 7px; height: 7px; border-radius: 50%; background: var(--doux); } .pt.ok { background: var(--vert); } .pt.ko { background: var(--rouge); }
-  /* les outils à gauche */
-  .outils { border-right: 1px solid var(--ligne); display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 8px; }
-  .outil { width: 34px; height: 34px; border-radius: 6px; background: none; border: 0; display: grid; place-items: center; color: var(--texte); }
-  .outil:hover { background: var(--cadre2); } .outil.on { background: rgba(41, 98, 255, .2); color: #7aa2ff; }
+  .lien { display: flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 9px; color: var(--texte); text-decoration: none; font-weight: 600; font-size: 12.5px; background: var(--cadre3); border: 1px solid var(--ligne); }
+  .lien:hover { border-color: #3a4256; } .lien svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .etat { font-size: 11.5px; color: var(--doux); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .pt { width: 8px; height: 8px; border-radius: 50%; background: var(--doux); } .pt.ok { background: var(--vert); box-shadow: 0 0 8px var(--vert); } .pt.ko { background: var(--rouge); box-shadow: 0 0 8px var(--rouge); }
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after { content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 6px 9px; border-radius: 7px; font: 500 11.5px 'Inter'; white-space: nowrap; z-index: 50; pointer-events: none; box-shadow: 0 6px 18px rgba(0, 0, 0, .4); }
+  .outils [data-tip]:hover::after { top: 50%; left: calc(100% + 10px); transform: translateY(-50%); }
+  /* ---- les outils à gauche ---- */
+  .outils { grid-column: 1; grid-row: 2; border-right: 1px solid var(--ligne); display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 10px; background: var(--cadre); }
+  .outil { width: 36px; height: 36px; border-radius: 9px; background: none; border: 1px solid transparent; display: grid; place-items: center; color: var(--doux); }
+  .outil:hover { background: var(--cadre3); color: var(--texte); } .outil.on { background: rgba(41, 98, 255, .15); color: var(--bleu2); border-color: rgba(41, 98, 255, .35); }
   .outil svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
-  /* les graphiques */
-  .graphes { display: grid; gap: 1px; background: var(--ligne); min-height: 0; grid-column: 2; grid-row: 2; }
-  .outils { grid-column: 1; grid-row: 2; } .liste { grid-column: 3; grid-row: 2; }
+  .outils .sep2 { width: 22px; height: 1px; background: var(--ligne); margin: 4px 0; }
+  /* ---- les graphiques ---- */
+  .graphes { display: grid; gap: 2px; background: var(--ligne); min-height: 0; grid-column: 2; grid-row: 2; }
   .graphes.un { grid-template-columns: 1fr; } .graphes.trois { grid-template-columns: 1fr 1fr 1fr; }
   .pane { position: relative; background: #fff; min-width: 0; min-height: 0; overflow: hidden; }
   .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
-  .pane .titre { position: absolute; left: 8px; top: 6px; font: 500 12.5px 'Inter'; color: #131722; pointer-events: none; z-index: 2; white-space: nowrap; }
-  .pane .titre b { font-weight: 600; } .pane .titre .ohlc { color: #555; font-variant-numeric: tabular-nums; }
-  .pane .titre .h { color: var(--vert); } .pane .titre .r { color: var(--rouge); }
-  .pane.actif { box-shadow: inset 0 0 0 2px var(--bleu); }
-  /* la liste de suivi */
-  .liste { border-left: 1px solid var(--ligne); overflow-y: auto; }
-  .liste .tete { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font: 700 13px 'Inter'; letter-spacing: .04em; }
-  .liste table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  .liste th { text-align: right; font: 500 11.5px 'Inter'; color: var(--doux); padding: 4px 10px; } .liste th:first-child { text-align: left; }
-  .liste td { padding: 6px 10px; text-align: right; white-space: nowrap; } .liste td:first-child { text-align: left; font-weight: 600; }
-  .liste tr.fam td { font: 600 10.5px 'Inter'; letter-spacing: .1em; color: var(--doux); text-align: left; padding-top: 12px; }
-  .liste tr.l { cursor: pointer; } .liste tr.l:hover td { background: var(--cadre2); } .liste tr.l.sel td { background: rgba(41, 98, 255, .14); }
-  .liste .h { color: var(--vert); } .liste .r { color: var(--rouge); } .liste small { display: block; color: var(--doux); font-weight: 400; font-size: 10.5px; }
-  .aide { padding: 12px; color: var(--doux); font-size: 11.5px; line-height: 1.6; border-top: 1px solid var(--ligne); }
-  .aide kbd { background: var(--cadre2); border: 1px solid var(--ligne); border-radius: 4px; padding: 0 5px; font-size: 10.5px; }
-  .bulle { position: fixed; z-index: 20; background: #131722; color: #fff; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; display: none; box-shadow: 0 8px 24px rgba(0, 0, 0, .4); }
-  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none; } }
+  .pane .titre { position: absolute; left: 10px; top: 8px; font: 500 12.5px 'Inter'; color: #131722; pointer-events: none; z-index: 2; white-space: nowrap; }
+  .pane .titre b { font-weight: 700; } .pane .titre .ohlc { color: #555; font-variant-numeric: tabular-nums; }
+  .pane .titre .h { color: #089981; } .pane .titre .r { color: var(--rouge); }
+  .pane.actif::after { content: ''; position: absolute; inset: 0; border: 2px solid var(--bleu); pointer-events: none; z-index: 3; }
+  .pane .charge { position: absolute; inset: 0; display: grid; place-items: center; color: #8a8a8a; font: 500 13px 'Inter'; z-index: 2; pointer-events: none; }
+  /* ---- la petite barre d'une ligne choisie ---- */
+  .barre-ligne { position: fixed; z-index: 40; display: none; align-items: center; gap: 2px; padding: 4px; background: #fff; border: 1px solid #d9dde5; border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 19, 28, .25); }
+  .barre-ligne.on { display: flex; }
+  .barre-ligne button { width: 30px; height: 30px; border: 0; border-radius: 7px; background: none; display: grid; place-items: center; color: #222; }
+  .barre-ligne button:hover { background: #eef1f6; } .barre-ligne button.on { background: #e7eeff; color: var(--bleu); }
+  .barre-ligne svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .barre-ligne .pastille { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #c9ced8; }
+  .barre-ligne .sep3 { width: 1px; height: 20px; background: #e2e5eb; margin: 0 3px; }
+  /* ---- la liste de suivi ---- */
+  .liste { grid-column: 3; grid-row: 2; border-left: 1px solid var(--ligne); overflow-y: auto; background: var(--cadre); }
+  .liste::-webkit-scrollbar { width: 8px; } .liste::-webkit-scrollbar-thumb { background: var(--cadre3); border-radius: 4px; }
+  .liste .tete { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px 8px; background: var(--cadre); }
+  .liste .tete b { font: 700 12px 'Inter'; letter-spacing: .14em; } .liste .tete span { color: var(--tres-doux); font-size: 11px; }
+  .fam { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px 5px; font: 700 10.5px 'Inter'; letter-spacing: .14em; color: var(--tres-doux); cursor: pointer; user-select: none; }
+  .fam:hover { color: var(--doux); } .fam i { font-style: normal; transition: transform .2s; } .fam.ferme i { transform: rotate(-90deg); }
+  .ligne-s { display: grid; grid-template-columns: 1fr 54px auto; align-items: center; gap: 8px; padding: 7px 14px; cursor: pointer; border-left: 2px solid transparent; transition: background .15s; }
+  .ligne-s:hover { background: var(--cadre2); } .ligne-s.sel { background: rgba(41, 98, 255, .1); border-left-color: var(--bleu); }
+  .ligne-s .c b { font: 700 13px 'Inter'; display: flex; align-items: center; gap: 6px; } .ligne-s .c small { color: var(--tres-doux); font-size: 10.5px; }
+  .ligne-s .pos { font: 700 9px 'Inter'; letter-spacing: .06em; color: #120c00; background: var(--ambre); padding: 1px 5px; border-radius: 4px; }
+  .ligne-s svg { width: 54px; height: 22px; }
+  .ligne-s .v { text-align: right; font-variant-numeric: tabular-nums; } .ligne-s .v div { font: 600 13px 'Inter'; border-radius: 4px; padding: 0 3px; transition: background .6s; }
+  .ligne-s .v small { font: 600 11px 'Inter'; } .h { color: var(--vert); } .r { color: var(--rouge); }
+  .flash-h { background: rgba(10, 163, 127, .35) !important; transition: none !important; } .flash-r { background: rgba(242, 54, 69, .35) !important; transition: none !important; }
+  .aide { margin: 14px; padding: 12px; color: var(--doux); font-size: 11.5px; line-height: 1.65; border: 1px solid var(--ligne); border-radius: 10px; background: var(--cadre2); }
+  .aide b { color: var(--texte); } .aide kbd { background: var(--cadre3); border: 1px solid var(--ligne); border-radius: 4px; padding: 0 5px; font: 600 10.5px 'Inter'; color: var(--texte); }
+  /* ---- la recherche ---- */
+  .voile { position: fixed; inset: 0; z-index: 60; background: rgba(5, 7, 12, .55); backdrop-filter: blur(3px); display: none; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+  .voile.on { display: flex; }
+  .recherche { width: min(560px, 92vw); background: var(--cadre2); border: 1px solid #333b4d; border-radius: 16px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); overflow: hidden; }
+  .recherche input { width: 100%; background: none; border: 0; outline: none; color: var(--texte); font: 500 18px 'Inter'; padding: 18px 20px; border-bottom: 1px solid var(--ligne); }
+  .resultats { max-height: 50vh; overflow-y: auto; padding: 6px; }
+  .res { display: grid; grid-template-columns: 70px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+  .res.sel, .res:hover { background: rgba(41, 98, 255, .14); } .res b { font: 700 14px 'Inter'; } .res span { color: var(--doux); } .res .v { font: 600 13px 'Inter'; font-variant-numeric: tabular-nums; }
+  .recherche .pied { padding: 8px 14px; color: var(--tres-doux); font-size: 11px; border-top: 1px solid var(--ligne); }
+  /* ---- les petits messages ---- */
+  .toasts { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 70; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .toast { background: #0b0e14; color: #fff; border: 1px solid #2c3445; padding: 9px 16px; border-radius: 10px; font-weight: 500; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: toast 2.6s ease forwards; }
+  @keyframes toast { 0% { opacity: 0; transform: translateY(10px); } 10%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
+  .masque-mobile { }
+  @media (max-width: 1200px) { .sym { min-width: 0; } .sym .px { display: none; } }
+  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } .haut { grid-column: 1; overflow-x: auto; } .graphes { grid-column: 1; } .outils, .liste { display: none; } .graphes.trois { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } .masque-mobile { display: none !important; } }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="haut">
-    <span class="sym" id="sym">SIL</span>
-    <button class="b" data-ut="5m">5m</button><button class="b" data-ut="15m">15m</button><button class="b" data-ut="30m">30m</button><button class="b" data-ut="H1">1h</button><button class="b" data-ut="H4">4h</button><button class="b" data-ut="D1">D</button><button class="b" data-ut="W">W</button><button class="b" data-ut="M">M</button>
-    <span class="sep"></span>
-    <button class="b" id="vue-un" title="Un seul graphique">1 graphique</button><button class="b" id="vue-trois" title="Trois graphiques côte à côte : clique sur un graphique puis sur une unité de temps pour le changer">3 graphiques</button>
-    <span class="sep masque-mobile"></span>
-    <button class="b masque-mobile" id="t-bougies">Bougies</button><button class="b masque-mobile" id="t-zz">Zigzag</button><button class="b masque-mobile" id="t-zones">Zones S/R D1</button><button class="b masque-mobile" id="t-vol">Volume</button><button class="b masque-mobile" id="t-aimant" title="Aimant : tes lignes se collent sur les rebonds du zigzag (sinon sur le haut, le bas, l'ouverture ou la clôture d'une bougie)">Aimant</button>
+    <button class="sym" id="sym" data-tip="Changer de marché ( / )"><span class="ic" id="sym-ic">SIL</span><span><b id="sym-code">SIL</b><small id="sym-nom">Micro argent</small></span><span class="px num" id="sym-px"></span></button>
+    <div class="seg" id="seg-ut"><button data-ut="5m">5m</button><button data-ut="15m">15m</button><button data-ut="30m">30m</button><button data-ut="H1">1h</button><button data-ut="H4">4h</button><button data-ut="D1">D</button><button data-ut="W">W</button><button data-ut="M">M</button></div>
+    <div class="grp">
+      <button class="ico" id="vue-un" data-tip="Un graphique"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
+      <button class="ico" id="vue-trois" data-tip="Trois graphiques (clique sur l'un, puis sur une unité)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg></button>
+    </div>
+    <div class="grp masque-mobile">
+      <button class="ico" id="t-bougies" data-tip="Bougies / barres"><svg viewBox="0 0 24 24"><path d="M8 4v16M16 6v12"/><rect x="6" y="8" width="4" height="7" rx="1"/><rect x="14" y="9" width="4" height="5" rx="1"/></svg></button>
+      <button class="ico" id="t-zz" data-tip="Zigzag (5, 10)"><svg viewBox="0 0 24 24"><path d="M3 17l5-9 4 6 4-8 5 9"/></svg></button>
+      <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
+      <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
+      <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
+    </div>
     <div class="espace"></div>
- <button class="b masque-mobile" id="nouvelle" title="Une fenêtre de plus, à glisser sur un autre écran">+ Fenêtre</button>
-    <a class="b bleu masque-mobile" id="lien-radar" href="radar.html" target="radar" style="text-decoration:none">Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.6">· v7</span></span>
+    <div class="grp masque-mobile" style="border:0">
+      <button class="ico" id="photo" data-tip="Capture du graphique (PNG)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+      <button class="ico" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
+    </div>
+    <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v8</span></span>
   </div>
   <div class="outils">
-    <button class="outil on" data-o="curseur" title="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
-    <button class="outil" data-o="ligne" title="Ligne de tendance (L) : deux clics"><svg viewBox="0 0 24 24"><path d="M4 19L20 5"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/></svg></button>
-    <button class="outil" data-o="horizontale" title="Ligne horizontale (H) : un clic"><svg viewBox="0 0 24 24"><path d="M3 12h18"/></svg></button>
-    <button class="outil" data-o="canal" title="Canal parallèle (C) : deux clics, puis un troisième pour la largeur"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
-    <button class="outil" data-o="efface" title="Effacer la ligne choisie (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
+    <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
+    <span class="sep2"></span>
+    <button class="outil" data-o="ligne" data-tip="Ligne de tendance (L) : deux clics"><svg viewBox="0 0 24 24"><path d="M4 19L20 5"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/></svg></button>
+    <button class="outil" data-o="horizontale" data-tip="Ligne horizontale (H) : un clic"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="1.6"/></svg></button>
+    <button class="outil" data-o="canal" data-tip="Canal parallèle (C) : trois clics"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
+    <span class="sep2"></span>
+    <button class="outil" data-o="efface" data-tip="Effacer la ligne choisie (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
   </div>
   <div class="graphes un" id="graphes"></div>
   <div class="liste">
-    <div class="tete"><span>LISTE DE SUIVI</span><span style="color:var(--doux);font-weight:500;font-size:11px">cours TopstepX</span></div>
-    <table><thead><tr><th>Symbole</th><th>Dernier</th><th>Chg</th><th>Chg%</th></tr></thead><tbody id="liste"></tbody></table>
+    <div class="tete"><b>LISTE DE SUIVI</b><span>cours TopstepX en direct</span></div>
+    <div id="liste"></div>
     <div class="aide">
-      <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. <b>Tes lignes</b> sont gardées sur l'ordinateur de la maison et apparaissent sur tous tes écrans. Atlas te prévient quand le prix <b>touche</b> ou <b>casse</b> une ligne (voix et ntfy).<br>
-      Glisser dans le graphique : le déplacer · sur l'échelle des prix : l'étirer · sur l'échelle du temps : zoomer · molette : zoom (sur les prix aussi) · double-clic sur les prix : échelle auto · double-clic dans le graphique : tout recadrer<br>
-      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M (en vue à 3 : clique d'abord sur un graphique) · <kbd>Échap</kbd> curseur
+      <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. Clique sur une ligne : sa petite barre (alerte, couleur, style, effacer).<br>
+      <b>Souris</b> : glisser = déplacer · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
+      <kbd>/</kbd> chercher un marché · <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
   </div>
 </div>
+<div class="barre-ligne" id="barre-ligne">
+  <button data-l="alerte" title="Alerte (touche / cassure)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg></button>
+  <span class="sep3"></span>
+  <button data-c="#000000" title="Noir"><span class="pastille" style="background:#000"></span></button>
+  <button data-c="#2962ff" title="Bleu"><span class="pastille" style="background:#2962ff"></span></button>
+  <button data-c="#f23645" title="Rouge"><span class="pastille" style="background:#f23645"></span></button>
+  <button data-c="#089981" title="Vert"><span class="pastille" style="background:#089981"></span></button>
+  <span class="sep3"></span>
+  <button data-l="style" title="Plein / pointillés"><svg viewBox="0 0 24 24"><path d="M3 12h4M10 12h4M17 12h4"/></svg></button>
+  <button data-l="efface" title="Effacer (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
+</div>
+<div class="voile" id="voile"><div class="recherche"><input id="q" placeholder="Chercher un marché : or, argent, MNQ, pétrole, euro…" autocomplete="off"><div class="resultats" id="resultats"></div><div class="pied">↑ ↓ pour choisir · Entrée pour ouvrir · Échap pour fermer</div></div></div>
+<div class="toasts" id="toasts"></div>
 <div class="bulle" id="bulle"></div>
 <script>
 'use strict';
@@ -122,8 +192,9 @@ async function api(chemin, corps) {
 class Pane {
   constructor(el, ut) { this.el = el; this.ut = ut; this.d = null; this.n = 120; this.fin = 0; this.y = null; this.souris = null; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.ecoute(); }
   async charge() {
-    try { this.d = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); if (!this.fin) this.fin = 0; this.dessine(); return true; }
-    catch (e) { return false; }
+    const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
+    try { this.d = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); if (!this.fin) this.fin = 0; if (ch) ch.style.display = 'none'; this.dessine(); return true; }
+    catch (e) { if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
   }
   taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; this.W = r.width; this.H = r.height; this.cv.width = r.width * dpr; this.cv.height = r.height * dpr; this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
   // les bougies visibles : les n dernières, décalées de « fin » vers le passé
@@ -187,13 +258,15 @@ class Pane {
     if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = '#000'; c.lineWidth = 2.4; c.lineJoin = 'round';
       for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [6, 5] : []); c.beginPath(); c.moveTo(T(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(T(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]); }
     // ses lignes
-    const tracer = (l, sel) => { c.strokeStyle = sel ? '#2962ff' : '#000'; c.lineWidth = sel ? 2 : 1;
+    const tracer = (l, sel) => { c.strokeStyle = l.couleur || '#000'; c.lineWidth = sel ? 2.2 : 1.2; c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
       const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
       if (l.genre === 'horizontale') { const y = Y(l.p1); c.beginPath(); c.moveTo(0, y); c.lineTo(pw, y); c.stroke(); }
       else { seg(l.t1, l.p1, l.t2, l.p2); if (l.genre === 'canal' && l.ecart != null) seg(l.t1, l.p1 + l.ecart, l.t2, l.p2 + l.ecart); }
-      if (sel && l.genre !== 'horizontale') { c.fillStyle = '#2962ff'; [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.beginPath(); c.arc(T(t), Y(p), 4, 0, 7); c.fill(); }); } };
+      c.setLineDash([]);
+      if (sel && l.genre !== 'horizontale') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = '#fff'; c.strokeStyle = l.couleur || '#2962ff'; c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
+      if (l.alerte === false) { /* (sans alerte : rien de plus) */ } };
     lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
-    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l === choisie ? '#2962ff' : '#000'; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
+    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = l.couleur || '#000'; c.fillRect(pw, y - 10, AX, 20); c.fillStyle = '#fff'; c.font = '600 11px Inter, sans-serif'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
     // l'unité de temps, en grand (comme sur son TradingView)
     c.fillStyle = '#000'; c.font = '700 34px Inter, sans-serif'; c.textAlign = 'right'; c.fillText(LIB[this.ut] || this.ut, pw - 14, 48); c.textAlign = 'left';
     // le dernier cours (boîte noire sur l'axe)
@@ -265,14 +338,15 @@ function aimant(p, x, y) {
   if (mieux) return mieux;
   const B = p.d.bougies || [], { i, j } = p.vis(), k = Math.min(j - 1, Math.max(i, Math.floor(x / p.bw + i)));
   if (B[k]) { let dm = 10; [B[k][1], B[k][2], B[k][3], B[k][4]].forEach(v => { const d = Math.abs(p.Y(v) - y); if (d < dm) { dm = d; mieux = [B[k][0], v]; } }); }
-  return mieux || [p.iT(x), p.iY(y)];
+  const tk = p.d.tick, py = p.iY(y);
+  return mieux || [p.iT(x), tk ? Math.round(py / tk) * tk : py];
 }
 function cliqueDessin(p, x, y) {
   const [t, pr] = aimant(p, x, y);
-  if (outil === 'horizontale') { lignes.push({ id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }); sauve(); choisieOutil('curseur'); return; }
+  if (outil === 'horizontale') { const l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(`Ligne posée à ${nb(pr, p.d.dec)} · alerte active`); return; }
   if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: true }; return; }
   if (brouillon.genre === 'canal' && brouillon.etape === 1) { brouillon.etape = 2; brouillon.ecart = 0; return; }
-  const l = { ...brouillon }; delete l.pane; delete l.etape; lignes.push(l); brouillon = null; sauve(); choisieOutil('curseur');
+  const l = { ...brouillon }; delete l.pane; delete l.etape; lignes.push(l); brouillon = null; choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(l.genre === 'canal' ? 'Canal tracé · alerte active sur ses deux bords' : 'Ligne tracée · alerte active');
 }
 function majBrouillon(p, x, y) {
   if (brouillon.etape === 1) { const [t, pr] = aimant(p, x, y); brouillon.t2 = t; brouillon.p2 = pr; }
@@ -293,8 +367,8 @@ const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
 function sauve() { toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
-  const env = []; lignes.forEach(l => { env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : 'ta ligne de tendance', alerte: true, ecart: l.ecart, canal: l.genre === 'canal' });
-    if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: true, double: l.id }); });
+  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
+    if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
   try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
 async function chargeLignes() {
   try { const r = await api(`/maison/graphique?lignes=1&code=${code}`); const l = r.lignes || [];
@@ -305,11 +379,11 @@ async function chargeLignes() {
 let panes = [];
 function construit() {
   const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un');
-  g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas></div>`).join('');
+  g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas><div class="charge">Chargement…</div></div>`).join('');
   panes = [...g.querySelectorAll('.pane')].map((el, k) => new Pane(el, UTS()[k])); actif = Math.min(actif, panes.length - 1); majActif();
   majBoutonsUT();
   $('#vue-un').classList.toggle('on', vue === 'un'); $('#vue-trois').classList.toggle('on', vue === 'trois');
-  $('#sym').textContent = code; chargeTout();
+  majSym(); chargeTout();
 }
 function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif)); majBoutonsUT(); }
 function majBoutonsUT() { const u = vue === 'trois' ? (utsTrois[actif] || '') : utSeul; document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', b.dataset.ut === u)); }
@@ -317,7 +391,7 @@ function choisirUT(ut) {
   if (vue === 'trois') { utsTrois[actif] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = 0; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
   else { utSeul = ut; ecrit(K('g-ut'), ut); construit(); }
 }
-function toutDessine() { panes.forEach(p => p.dessine()); }
+function toutDessine() { panes.forEach(p => p.dessine()); majBarreLigne(); }
 async function chargeTout() {
   const ok = (await Promise.all(panes.map(p => p.charge()))).some(Boolean);
   $('#pt').className = 'pt ' + (ok ? 'ok' : 'ko'); $('#etat').textContent = ok ? 'en direct' : 'hors liaison';
@@ -329,14 +403,85 @@ $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); 
 [['#t-bougies', 'bougies'], ['#t-zz', 'zz'], ['#t-zones', 'zones'], ['#t-vol', 'vol'], ['#t-aimant', 'aimant']].forEach(([s, k]) => { const b = $(s); b.classList.toggle('on', opt[k]); b.onclick = () => { opt[k] = !opt[k]; ecrit(k === 'zones' ? 'g-zones-d1' : 'g-' + k, opt[k] ? '1' : '0'); b.classList.toggle('on', opt[k]); toutDessine(); }; });
 async function changeCode(c) { code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; majListe(r.familles || []); } catch (e) { /* hors liaison */ } }
-function majListe(fams) {
-  fams = fams && fams.length ? fams : [...new Set(L.map(x => x.famille))];
-  $('#liste').innerHTML = fams.map(f => `<tr class="fam"><td colspan="4">${esc(f.toUpperCase())}</td></tr>` + L.filter(x => x.famille === f).map(x => `<tr class="l ${x.code === code ? 'sel' : ''}" data-c="${esc(x.code)}"><td>${esc(x.code)}<small>${esc(x.nom)}</small></td><td>${nb(x.dernier, x.dec)}</td><td class="${x.chg >= 0 ? 'h' : 'r'}">${x.chg > 0 ? '+' : ''}${nb(x.chg, x.dec)}</td><td class="${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</td></tr>`).join('')).join('');
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); } catch (e) { /* hors liaison */ } }
+const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
+function spark(v, up) {
+  if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
+  return `<svg viewBox="0 0 54 22" preserveAspectRatio="none"><polyline points="${v.map((x, i) => `${(i * 54 / (v.length - 1)).toFixed(1)},${(20 - (x - lo) / r * 18).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#0aa37f' : '#f23645'}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
-$('#liste').addEventListener('click', ev => { const t = ev.target.closest('tr.l'); if (t) changeCode(t.dataset.c); });
+function majListe(fams) {
+  FAMS = fams && fams.length ? fams : FAMS.length ? FAMS : [...new Set(L.map(x => x.famille))];
+  const enPos = c => POS.some(p => String(p.instr || '').toUpperCase().startsWith(c));
+  $('#liste').innerHTML = FAMS.map(f => `<div class="fam ${fermees.has(f) ? 'ferme' : ''}" data-f="${esc(f)}">${esc(f.toUpperCase())}<i>▾</i></div>` + (fermees.has(f) ? '' : L.filter(x => x.famille === f).map(x => {
+    const fl = avantPx[x.code] != null && avantPx[x.code] !== x.dernier ? (x.dernier > avantPx[x.code] ? 'flash-h' : 'flash-r') : '';
+    return `<div class="ligne-s ${x.code === code ? 'sel' : ''}" data-c="${esc(x.code)}"><div class="c"><b>${esc(x.code)}${enPos(x.code) ? '<span class="pos">POSITION</span>' : ''}</b><small>${esc(x.nom)}</small></div>${spark(x.spark, x.pct >= 0)}
+      <div class="v"><div class="${fl}">${nb(x.dernier, x.dec)}</div><small class="${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</small></div></div>`; }).join(''))).join('');
+  L.forEach(x => { avantPx[x.code] = x.dernier; });
+  setTimeout(() => document.querySelectorAll('.flash-h, .flash-r').forEach(e => e.classList.remove('flash-h', 'flash-r')), 50);
+  majSym();
+}
+function majSym() {
+  const x = L.find(y => y.code === code) || {};
+  $('#sym-ic').textContent = code.slice(0, 3); $('#sym-code').textContent = code; $('#sym-nom').textContent = x.nom || '';
+  $('#sym-px').innerHTML = x.dernier != null ? `${nb(x.dernier, x.dec)}<small class="${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</small>` : '';
+}
+$('#liste').addEventListener('click', ev => {
+  const f = ev.target.closest('.fam'); if (f) { const k = f.dataset.f; if (fermees.has(k)) fermees.delete(k); else fermees.add(k); ecrit('g-fams-fermees', JSON.stringify([...fermees])); majListe(); return; }
+  const t = ev.target.closest('.ligne-s'); if (t) changeCode(t.dataset.c);
+});
+/* la recherche d'un marché (/ ou clic sur le marché) : avec les mots de tous les jours */
+const MOTS = { MGC: 'or gold micro', GC: 'or gold', SIL: 'argent silver', MCL: 'petrole petrol wti brut oil', CL: 'petrole petrol wti brut oil', ZL: 'soja huile', MYM: 'dow jones dow', MNQ: 'nasdaq tech', NQ: 'nasdaq tech', MES: 's&p sp500 sp 500', DXY: 'dollar', M6E: 'euro eur dollar', VIX: 'vix peur volatilite', MBT: 'bitcoin btc crypto' };
+const sansAccent = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+let selRes = 0;
+function ouvreRecherche(lettre) { $('#voile').classList.add('on'); $('#q').value = lettre || ''; selRes = 0; filtreRecherche(); setTimeout(() => $('#q').focus(), 10); }
+function fermeRecherche() { $('#voile').classList.remove('on'); }
+function filtreRecherche() {
+  const q = sansAccent($('#q').value.trim());
+  const r = L.filter(x => !q || sansAccent(`${x.code} ${x.nom} ${x.famille} ${MOTS[x.code] || ''}`).includes(q));
+  selRes = Math.min(selRes, Math.max(0, r.length - 1));
+  $('#resultats').innerHTML = r.map((x, k) => `<div class="res ${k === selRes ? 'sel' : ''}" data-c="${esc(x.code)}"><b>${esc(x.code)}</b><span>${esc(x.nom)} · ${esc(x.famille)}</span><span class="v">${nb(x.dernier, x.dec)}</span><span class="v ${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</span></div>`).join('') || '<div class="res"><span>Aucun marché trouvé.</span></div>';
+  return r;
+}
+$('#sym').onclick = () => ouvreRecherche();
+$('#q').addEventListener('input', () => { selRes = 0; filtreRecherche(); });
+$('#q').addEventListener('keydown', ev => {
+  const r = filtreRecherche();
+  if (ev.key === 'ArrowDown') { selRes = Math.min(r.length - 1, selRes + 1); filtreRecherche(); ev.preventDefault(); }
+  else if (ev.key === 'ArrowUp') { selRes = Math.max(0, selRes - 1); filtreRecherche(); ev.preventDefault(); }
+  else if (ev.key === 'Enter' && r[selRes]) { fermeRecherche(); changeCode(r[selRes].code); }
+  else if (ev.key === 'Escape') fermeRecherche();
+});
+$('#resultats').addEventListener('click', ev => { const t = ev.target.closest('.res[data-c]'); if (t) { fermeRecherche(); changeCode(t.dataset.c); } });
+$('#voile').addEventListener('click', ev => { if (ev.target.id === 'voile') fermeRecherche(); });
+/* les petits messages */
+function toast(t) { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; $('#toasts').appendChild(e); setTimeout(() => e.remove(), 2700); }
+/* la petite barre d'une ligne choisie : alerte, couleur, style, effacer */
+function majBarreLigne() {
+  const bl = $('#barre-ligne'), p = panes[actif] || panes[0];
+  if (!choisie || !p || !p.T) { bl.classList.remove('on'); return; }
+  const r = p.cv.getBoundingClientRect();
+  let x, y; if (choisie.genre === 'horizontale') { x = r.left + p.pw - 270; y = r.top + p.Y(choisie.p1); } else { x = r.left + Math.min(p.pw - 270, Math.max(10, p.T(choisie.t2))); y = r.top + p.Y(choisie.p2); }
+  bl.style.left = `${Math.max(r.left + 8, x)}px`; bl.style.top = `${Math.min(r.bottom - 50, Math.max(r.top + 8, y - 52))}px`; bl.classList.add('on');
+  bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false);
+  bl.querySelector('[data-l="style"]').classList.toggle('on', choisie.style === 'tirets');
+}
+$('#barre-ligne').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b || !choisie) return;
+  if (b.dataset.c) { choisie.couleur = b.dataset.c; sauve(); }
+  else if (b.dataset.l === 'alerte') { choisie.alerte = choisie.alerte === false; sauve(); toast(choisie.alerte ? 'Alerte activée : Atlas te prévient quand le prix touche ou casse cette ligne' : 'Alerte coupée pour cette ligne'); }
+  else if (b.dataset.l === 'style') { choisie.style = choisie.style === 'tirets' ? 'plein' : 'tirets'; sauve(); }
+  else if (b.dataset.l === 'efface') { efface(); toast('Ligne effacée'); }
+  toutDessine();
+});
+/* la capture du graphique, le plein écran */
+$('#photo').onclick = () => { const p = panes[actif] || panes[0]; if (!p) return; p.cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${code}-${LIB[p.ut] || p.ut}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Capture enregistrée dans tes téléchargements'); }); };
+$('#plein').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); };
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT') return; const k = ev.key.toLowerCase();
+  if (k === '/' || (k === 'k' && (ev.ctrlKey || ev.metaKey))) { ev.preventDefault(); ouvreRecherche(); return; }
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if (k === 'f') { $('#plein').click(); return; }
+  if (k === 'p') { $('#photo').click(); return; }
   if (k === 'escape') { brouillon = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l') choisieOutil('ligne'); else if (k === 'h') choisieOutil('horizontale'); else if (k === 'c') choisieOutil('canal');
   else if (k === 'delete' || k === 'backspace') efface();
