@@ -203,6 +203,7 @@
   <a class="rond" id="b-graphique" href="graphique.html" target="graphique" title="Le graphique (D1 · H4 · H1, tes lignes)" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></a>
   <button class="rond" id="b-cherche" title="Rechercher ( / )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
   <button class="rond" id="b-mur" title="Mode mur : lisible de loin, pour un autre écran ( W )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
+  <button class="rond" id="b-squawk" title="La voix de la salle : Atlas annonce les nouvelles critiques et les chiffres publiés ( V )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h3l5 4V5L7 9z"/><path d="M16 8.5c1.5 1.8 1.5 5.2 0 7M18.8 6c2.8 3.4 2.8 8.6 0 12"/></svg></button>
   <button class="rond" id="b-son" title="Son ( M )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path id="ondes" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
   <div class="liaison"><span class="point" id="point"></span><span id="liaison">connexion…</span></div>
 </div>
@@ -520,6 +521,7 @@ $('#fil').addEventListener('click', ev => {
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT') { if (ev.key === 'Escape') ev.target.blur(); return; }
   if (ev.key === 'w' || ev.key === 'W') { modeMur(!document.body.classList.contains('mode-mur')); return; }
+  if (ev.key === 'v' || ev.key === 'V') { $('#b-squawk').click(); return; }
   if (document.body.classList.contains('mode-mur')) { if (ev.key === 'Escape') modeMur(false); return; }
   if (ev.key === 'Escape' && grapheOuvert) { fermeGraphe(); return; }
   if (!D) return;
@@ -550,6 +552,7 @@ async function charge() {
       const ids = new Set((avant.items || []).concat(avant.mouvements || []).map(x => x.id)), neufs = tous.filter(i => !ids.has(i.id));
       neufs.forEach(i => { if (i.urgence === 'critique' || i.code) ouverts.add(i.id); });
       if (neufs.length) bip(neufs.some(i => i.urgence === 'critique' || i.code));
+      annonce(neufs.filter(i => !i.code));
     }
     tout(); premier = false; murDonnees();
   } catch (e) {
@@ -571,10 +574,38 @@ function ouverte(nom) {
 const MUR_CODES = ['SIL', 'MGC', 'MNQ', 'MYM', 'MCL', 'M6E', 'DXY', 'VIX'], murAv = {};
 function odoM(av, ap, monte) { if (!av || av.length !== ap.length) return `<span class="odo">${esc(ap)}</span>`; return `<span class="odo">${[...ap].map((ch, i) => ch !== av[i] && /\d/.test(ch) ? `<span class="r ${monte ? 'u' : 'd'}">${ch}</span>` : `<span>${esc(ch)}</span>`).join('')}</span>`; }
 function courbeM(v, up) { if (!v || v.length < 2) return ''; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1; return `<svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="${v.map((y, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(28 - (y - lo) / r * 26).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#22c55e' : '#ff4d4f'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; }
+
+/* ---------- la voix de la salle (le « squawk ») ---------- */
+let squawk = lit('radar-squawk', '1') === '1', fileVoix = Promise.resolve(); const VUS_DITS = new Set();
+$('#b-squawk').classList.toggle('on', squawk);
+$('#b-squawk').onclick = () => { squawk = !squawk; ecrit('radar-squawk', squawk ? '1' : '0'); $('#b-squawk').classList.toggle('on', squawk); };
+function dis(texte) {
+  if (!squawk || !texte || !ROOT) return;
+  fileVoix = fileVoix.then(async () => {
+    try { const r = await fetch(`${ROOT}/maison/voix-atlas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texte.slice(0, 400) }) }); if (!r.ok) return;
+      const c = bip.ac || (bip.ac = new (window.AudioContext || window.webkitAudioContext)()); if (c.state === 'suspended') await c.resume();
+      const buf = await c.decodeAudioData(await r.arrayBuffer()), s = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain(); s.buffer = buf; hp.type = 'highpass'; hp.frequency.value = 75; g.gain.value = .95;
+      s.connect(hp); hp.connect(g); g.connect(c.destination); await new Promise(res => { s.onended = res; s.start(); });
+    } catch (e) { /* rien */ }
+  });
+}
+function annonce(neufs) {
+  for (const i of neufs) { if (VUS_DITS.has(i.id)) continue; VUS_DITS.add(i.id);
+    if (i.chiffre) dis(`Chiffre publié. ${i.titre}.`); else if (i.urgence === 'critique') dis(`Flash. ${i.titre}.`); }
+}
+// le chiffre publié sur le mur : pendant 15 minutes, à la place du compte à rebours, avec la réaction de ses marchés
+function murPublie() {
+  const now = Date.now() / 1000, i = ((D && D.items) || []).filter(x => x.chiffre && now - (x.publie || x.at) < 900).sort((a, b) => (b.publie || b.at) - (a.publie || a.at))[0];
+  if (!i) return false;
+  const r = i.reaction || {}, reac = Object.entries(r).map(([c, v]) => { const k = ['+15', '+5', '+1'].find(x => v[x] != null); return k ? `<span style="font:700 2.2vh var(--mono);margin-right:1.6vw"><b style="color:var(--ambre);font-size:2vh">${c}</b> <span class="${v[k] > 0 ? 'h' : v[k] < 0 ? 'b' : ''}">${v[k] > 0 ? '+' : ''}${v[k]} t</span> <small style="color:var(--tres-doux)">${k} min</small></span>` : ''; }).join('');
+  $('#mur-c').innerHTML = `<div><small>CHIFFRE PUBLIÉ · ${hm(i.publie || i.at)}</small><br><b style="font-size:4.4vh;color:#ffd37a">${esc(i.titre)}</b></div><span>${reac || 'la réaction de tes marchés arrive…'}</span>`; $('#mur-c').classList.remove('proche');
+  return true;
+}
 function murTic() {
   if (!document.body.classList.contains('mode-mur')) return;
   $('#mur-h').innerHTML = PLACES.map(([n, tz, ici]) => { const h = heureLa(tz); return `<div class="hl${ici ? ' ici' : ''}"><b>${ici ? h.txt + `<span style="opacity:.5;font-size:.55em">:${h.s}</span>` : h.txt}</b><small><i class="${ouverte(ici ? 'CME' : n) ? 'ouv' : ''}"></i>${ici ? 'PARIS · CME' : n}</small></div>`; }).join('')
     + '<div class="esp"></div><div class="tm"><b>ATLAS · RADAR</b><button id="mur-x">Mode lecture · W</button></div>';
+  if (murPublie()) return;
   const now = Date.now() / 1000, a = ((D && D.agenda) || []).filter(x => x.fort && x.at > now - 60).sort((x, y) => x.at - y.at)[0];
   if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60);
     $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }

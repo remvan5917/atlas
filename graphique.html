@@ -147,7 +147,9 @@
   .dow.on { display: block; animation: monte .2s ease-out; }
   .dow h2 { margin: 0; font: 800 15px 'Inter'; letter-spacing: .16em; } .dow .sous { color: var(--doux); font-size: 12.5px; margin: 6px 0 18px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
   .dow .sous i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; } .dow .x { position: absolute; right: 22px; top: 18px; background: var(--cadre3); border: 1px solid var(--ligne); color: var(--texte); border-radius: 9px; padding: 7px 12px; font: 600 12px 'Inter'; }
-  .grille { display: grid; grid-template-columns: 190px repeat(3, minmax(84px, 1fr)) 130px; gap: 6px; max-width: 980px; }
+  .grille { display: grid; grid-template-columns: 190px repeat(3, minmax(84px, 1fr)) 130px repeat(3, 78px); gap: 6px; max-width: 1240px; }
+  .chal { height: 54px; border-radius: 10px; display: grid; place-items: center; font: 700 13px var(--mono); color: #fff; border: 1px solid rgba(255, 255, 255, .05); } .chal.vide { color: var(--tres-doux); background: var(--cadre2); }
+  .chal.chaud { box-shadow: 0 0 0 2px rgba(255, 171, 26, .85), 0 0 18px rgba(255, 171, 26, .45); animation: lueur 1.6s ease-in-out infinite; } .chal-t { color: var(--ambre) !important; }
   .grille .th { font: 700 11px 'Inter'; letter-spacing: .14em; color: var(--tres-doux); text-align: center; padding: 6px 0; } .grille .th:first-child { text-align: left; }
   .grille .fam2 { grid-column: 1 / -1; font: 700 10.5px 'Inter'; letter-spacing: .16em; color: var(--tres-doux); padding: 12px 0 2px; }
   .grille .nom { display: flex; flex-direction: column; justify-content: center; padding: 0 6px; cursor: pointer; } .grille .nom b { font: 700 14px 'Inter'; } .grille .nom small { color: var(--tres-doux); font-size: 11px; }
@@ -414,6 +416,17 @@
   }
   /* la carte « Ta salle » : sans les boutons du copilote */
   .copi.salle .copi-pied { display: none; }
+
+  .pub { position: fixed; top: 96px; left: 84px; right: 352px; z-index: 46; display: none; grid-template-columns: minmax(220px, 1.1fr) 1.6fr 2fr auto; gap: 18px; align-items: center; padding: 14px 18px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(40, 8, 14, .96), rgba(14, 10, 12, .96)); border: 1px solid rgba(255, 61, 90, .55); box-shadow: 0 20px 60px rgba(0, 0, 0, .6), 0 0 40px rgba(214, 31, 58, .25); }
+  .pub.on { display: grid; animation: monte .3s ease-out; } .pub.ouverture { background: linear-gradient(135deg, rgba(40, 26, 4, .96), rgba(14, 12, 8, .96)); border-color: rgba(255, 171, 26, .6); box-shadow: 0 20px 60px rgba(0, 0, 0, .6), 0 0 40px rgba(255, 140, 0, .25); }
+  .pub .q small { display: block; font: 800 10px 'Inter'; letter-spacing: .26em; color: #ff8fa1; } .pub.ouverture .q small { color: var(--ambre); } .pub .q b { display: block; font: 800 18px 'Inter'; color: #fff; margin-top: 4px; line-height: 1.25; } .pub .q span { font: 600 12px var(--mono); color: var(--doux); }
+  .pub .chiffres { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; } .pub .chiffres div small { display: block; font: 700 9.5px 'Inter'; letter-spacing: .2em; color: var(--tres-doux); }
+  .pub .chiffres div b { font: 800 26px var(--mono); color: #fff; } .pub .chiffres .publie b { font-size: 32px; color: #ffd37a; } .pub .chiffres .compte b { font-size: 34px; color: #fff; } .pub .chiffres .titre-p { font: 700 15px 'Inter'; color: #ffd37a; max-width: 420px; line-height: 1.35; }
+  .pub .reac { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; } .pub .reac div { background: rgba(255, 255, 255, .05); border-radius: 8px; padding: 6px 8px; text-align: center; }
+  .pub .reac div small { display: block; font: 700 9.5px var(--mono); color: var(--ambre); letter-spacing: .06em; } .pub .reac div b { font: 800 16px var(--mono); } .pub .reac div em { display: block; font: 600 9.5px var(--mono); font-style: normal; color: var(--tres-doux); }
+  @media (max-width: 1300px) { .pub { left: 8px; right: 8px; grid-template-columns: 1fr 1fr auto; } .pub .reac { grid-column: 1 / -1; grid-row: 2; } }
+  .pub .x { background: none; border: 1px solid rgba(255, 255, 255, .15); color: var(--doux); border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; }
 </style>
 </head>
 <body>
@@ -444,7 +457,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v36</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v37</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -507,6 +520,7 @@
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
 <div class="amb asie" id="amb-asie"></div><div class="amb londres" id="amb-londres"></div><div class="amb ny" id="amb-ny"></div>
+<div class="pub" id="pub"><div class="q" id="pub-q"></div><div class="chiffres" id="pub-c"></div><div class="reac" id="pub-r"></div><button class="x" id="pub-x">×</button></div>
 <div class="bulle" id="bulle"></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
@@ -1354,11 +1368,11 @@ chargeNouvelles(); setInterval(chargeNouvelles, 60000);
 let dowAvant = {}, dowMinuterie = null;
 const FLECHE = { hausse: '▲', baisse: '▼', transition: '◆' };
 async function chargeDow() {
-  try { const r = await api('/maison/graphique?dow=1'), fams = [...new Set(r.lignes.map(l => l.famille))];
+  try { const [r, ch] = await Promise.all([api('/maison/graphique?dow=1'), api('/maison/graphique?chaleur=1').catch(() => ({ marches: {} }))]), fams = [...new Set(r.lignes.map(l => l.famille))], CH = ch.marches || {};
     r.uts = ['D1', 'H4', 'H1'];  // (ses unités : D, H4, H1)
     r.lignes.forEach(l => { const t = r.uts.map(u => (l.cases[u] || {}).tendance), nh = t.filter(x => x === 'hausse').length, nb2 = t.filter(x => x === 'baisse').length; l.alignement = Math.max(nh, nb2); l.sens = nh > nb2 ? 'hausse' : nb2 > nh ? 'baisse' : 'mixte'; });
     $('#dow-etat').textContent = r.complet < r.total ? `lecture en cours : ${r.complet}/${r.total}` : `à jour · ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-    let h = `<div class="th">MARCHÉ</div>${r.uts.map(u => `<div class="th">${LIB[u] || u}</div>`).join('')}<div class="th">ALIGNEMENT</div>`;
+    let h = `<div class="th">MARCHÉ</div>${r.uts.map(u => `<div class="th">${LIB[u] || u}</div>`).join('')}<div class="th">ALIGNEMENT</div><div class="th chal-t" title="Le mouvement en ticks ; la couleur dit s'il est habituel ou non (en écarts-types de ses mouvements habituels)">5 MIN</div><div class="th chal-t">15 MIN</div><div class="th chal-t">1 H</div>`;
     for (const f of fams) {
       h += `<div class="fam2">${esc(f.toUpperCase())}</div>`;
       for (const l of r.lignes.filter(x => x.famille === f)) {
@@ -1367,7 +1381,9 @@ async function chargeDow() {
           h += c ? `<div class="cel ${c.tendance}${c.casse && c.casse.recent ? ' recent' : ''}${fl}" data-c="${esc(l.code)}" data-u="${u}" title="dernier sommet ${c.sommet ?? '—'} · dernier creux ${c.creux ?? '—'}${c.casse ? ` · ${c.casse.sens === 'haut' ? 'sommet' : 'creux'} cassé à ${c.casse.prix}${c.casse.at ? ' le ' + new Date(c.casse.at * 1000).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}` : ''}">${FLECHE[c.tendance]}${c.casse ? `<small>${c.casse.sens === 'haut' ? 'SOMMET CASSÉ' : 'CREUX CASSÉ'}</small>` : ''}</div>`
                  : `<div class="cel vide" data-c="${esc(l.code)}" data-u="${u}">…</div>`; }
         const fort = l.alignement >= 3;
-        h += `<div class="alig${fort ? ' fort' : ''}"><span class="barres">${r.uts.map(u => { const c = l.cases[u]; return `<i class="${c && c.tendance === 'hausse' ? 'h' : c && c.tendance === 'baisse' ? 'b' : ''}"></i>`; }).join('')}</span>${fort ? `alignés ${l.sens === 'hausse' ? '▲' : '▼'}` : l.sens === 'mixte' ? 'partagé' : `${l.alignement}/3`}</div>`;
+        h += `<div class="alig${fort ? ' fort' : ''}"><span class="barres">${r.uts.map(u => { const c = l.cases[u]; return `<i class="${c && c.tendance === 'hausse' ? 'h' : c && c.tendance === 'baisse' ? 'b' : ''}"></i>`; }).join('')}</span>${fort ? `alignés ${l.sens === 'hausse' ? '▲' : '▼'}` : l.sens === 'mixte' ? 'partagé' : `${l.alignement}/3`}</div>`
+          + ['5', '15', '60'].map(n => { const v = (CH[l.code] || {})[n]; if (!v) return '<div class="chal vide">·</div>'; const a = Math.min(1, Math.abs(v.z) / 3), fond = v.z >= 0 ? `rgba(25,211,140,${(.08 + .62 * a).toFixed(2)})` : `rgba(255,61,90,${(.08 + .62 * a).toFixed(2)})`;
+            return `<div class="chal${Math.abs(v.z) >= 2.5 ? ' chaud' : ''}" style="background:${fond}" title="${v.z > 0 ? '+' : ''}${nb(v.z, 1)} écarts-types : ${Math.abs(v.z) >= 2.5 ? 'mouvement inhabituel' : Math.abs(v.z) >= 1.5 ? 'mouvement net' : 'mouvement ordinaire'}">${v.ticks > 0 ? '+' : ''}${v.ticks} t</div>`; }).join('');
       }
     }
     $('#grille').innerHTML = h;
@@ -1585,7 +1601,7 @@ $('#piste').addEventListener('click', ev => { const t = ev.target.closest('.tk[d
 async function chargeFil() {
   if (!ROOT) return;
   try { const r = await api('/maison/radar'), l = (r.items || []).slice().sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 14);
-    AGENDA = (r.agenda || []).filter(a => a.fort); CLIMAT = r.climat || {}; majTicker();
+    AGENDA = (r.agenda || []).filter(a => a.fort); CLIMAT = r.climat || {}; ITEMS = r.items || []; majTicker();
     const h = l.map(i => `<span class="dp"><time>${new Date((i.publie || i.at) * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time>${i.urgence === 'critique' ? '<span class="fl">FLASH</span>' : i.urgence === 'importante' ? '<span class="im">IMPORTANT</span>' : ''}${esc(i.titre)}${(i.marches || []).length ? `<small>${esc(i.marches.join(' '))}</small>` : ''}</span>`).join('') || '<span class="dp">Aucune dépêche importante pour l’instant.</span>';
     const p = $('#piste2'); p.innerHTML = h + h; p.style.setProperty('--duree', `${Math.max(50, l.length * 9)}s`);
     SANTE.radar = true; boot('radar', true); majSante();
@@ -1660,6 +1676,50 @@ let nbLignesAvant = null;
 /* --- le mur de salle : c'est le Radar en mode mur (un seul écran secondaire) --- */
 $('#b-salle').onclick = installeSalle;
 $('#b-mur').onclick = () => { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
+
+/* ================= le tableau du chiffre en direct · la cloche des ouvertures ================= */
+let ITEMS = [], EVT = null, evtReac = null, evtCharge = 0; const evtFermes = new Set(JSON.parse(lit('g-evt-fermes', '[]')));
+const QUI_SONNE = FEN === '1' || ROLE === 'structure';  // (une seule fenêtre sonne : la principale)
+function cloche() {  // une cloche de Bourse, discrète (des partiels inharmoniques qui s'éteignent lentement)
+  if (!SONS || !QUI_SONNE) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
+    [[523.25, .10], [1046.5, .05], [1311, .035], [1568, .03], [2093, .018]].forEach(([f, v]) => [0, .9].forEach(d => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(v, t + d + .005); g.gain.exponentialRampToValueAtTime(.0005, t + d + 2.4); o.connect(g); g.connect(actx.destination); o.start(t + d); o.stop(t + d + 2.5); }));
+  } catch (e) { /* rien */ }
+}
+function ouvertureDu(tz, h, m) {  // l'instant (en secondes) de l'ouverture d'aujourd'hui, à l'heure locale de la place
+  const now = Date.now() / 1000, mn = minutesLa(tz, now), d = (h * 60 + m) - mn; return Math.round((now + d * 60) / 60) * 60;
+}
+function evtCourant() {
+  const now = Date.now() / 1000, jour = new Date().getDay();
+  // une annonce à fort impact : de 2 minutes avant à 15 minutes après
+  const a = AGENDA.filter(x => now >= x.at - 120 && now <= x.at + 900).sort((x, y) => x.at - y.at)[0];
+  if (a) return { cle: `a${a.at}${a.titre}`, genre: 'chiffre', titre: a.titre_fr || a.titre, pays: a.pays, at: a.at, prevision: a.prevision, precedent: a.precedent };
+  if (jour >= 1 && jour <= 5) for (const [nom, tz, h, m] of [['LONDRES', 'Europe/London', 8, 0], ['NEW YORK', 'America/New_York', 9, 30]]) {
+    const t = ouvertureDu(tz, h, m); if (now >= t && now <= t + 150) return { cle: `o${nom}${new Date().toDateString()}`, genre: 'ouverture', titre: `Ouverture de ${nom === 'LONDRES' ? 'Londres' : 'New York'}`, at: t };
+  }
+  return null;
+}
+async function majEvt() {
+  const e = evtCourant(), p = $('#pub');
+  if (!e || evtFermes.has(e.cle)) { if (EVT) { EVT = null; p.classList.remove('on'); } return; }
+  const neuf = !EVT || EVT.cle !== e.cle; EVT = e; const now = Date.now() / 1000;
+  if (neuf) { evtReac = null; p.className = 'pub on' + (e.genre === 'ouverture' ? ' ouverture' : ''); if (e.genre === 'ouverture') { cloche(); halo('ambre'); } }
+  if (e.genre === 'chiffre' && now >= e.at && now - e.at < 3 && !e.sonne) { e.sonne = true; if (QUI_SONNE) sonne('critique'); halo('rouge'); }
+  $('#pub-q').innerHTML = e.genre === 'chiffre' ? `<small>${now < e.at ? 'PUBLICATION IMMINENTE' : 'CHIFFRE PUBLIÉ'}</small><b>${esc(e.titre)}</b><span>${esc(e.pays || '')} · ${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>`
+    : `<small>LA CLOCHE</small><b>${esc(e.titre)}</b><span>${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · les premières minutes</span>`;
+  if (e.genre === 'chiffre') {
+    const pub = ITEMS.filter(i => i.chiffre && (i.publie || i.at) >= e.at - 60 && (i.publie || i.at) <= e.at + 900).sort((x, y) => (x.publie || x.at) - (y.publie || y.at))[0];
+    const d = Math.max(0, e.at - now), mm = Math.floor(d / 60), ss = Math.floor(d % 60);
+    $('#pub-c').innerHTML = (now < e.at ? `<div class="compte"><small>DANS</small><b>${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}</b></div>` : '')
+      + `<div><small>ATTENDU</small><b>${esc(e.prevision || '—')}</b></div><div><small>PRÉCÉDENT</small><b>${esc(e.precedent || '—')}</b></div>`
+      + (now >= e.at ? (pub ? `<div class="titre-p">${esc(pub.titre)}</div>` : `<div class="publie"><small>PUBLIÉ</small><b>…</b></div>`) : '');
+  } else $('#pub-c').innerHTML = '';
+  // la réaction de ses marchés depuis l'instant, toutes les 10 secondes
+  if (now >= e.at && Date.now() - evtCharge > 10000) { evtCharge = Date.now(); try { evtReac = await api(`/maison/graphique?reaction=${e.at}`); } catch (er) { /* rien */ } }
+  $('#pub-r').innerHTML = now < e.at ? '<div style="grid-column:1/-1;color:var(--doux);font:600 12px Inter;text-align:left;background:none">La réaction de tes marchés s’affichera ici, en ticks, dès la publication.</div>'
+    : Object.entries((evtReac || {}).marches || {}).map(([c, v]) => `<div><small>${c}</small><b class="${v.ticks > 0 ? 'h' : v.ticks < 0 ? 'r' : ''}">${v.ticks > 0 ? '+' : ''}${v.ticks} t</b><em>${v.haut > 0 ? '+' : ''}${v.haut} / ${v.bas} t</em></div>`).join('') || '<div style="grid-column:1/-1;background:none;color:var(--doux)">…</div>';
+}
+$('#pub-x').onclick = () => { if (EVT) { evtFermes.add(EVT.cle); ecrit('g-evt-fermes', JSON.stringify([...evtFermes].slice(-40))); } $('#pub').classList.remove('on'); EVT = null; };
+setInterval(majEvt, 1000);
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
