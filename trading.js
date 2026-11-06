@@ -9,6 +9,8 @@
      et dit la marge avant ta limite ; à la moitié il propose une pause de 15 minutes, à 80 % il rappelle ta règle : on arrête.
    - « fin de session » / « j'arrête de trader » : tout revient comme avant, il demande ton résultat et le garde.
    - « mes résultats de la semaine », « mes limites », « ma limite du jour est de 800 dollars », « ma perte max est de 2 000 ».
+   - Le radar de risque (sur l'ordinateur de la maison, chaque minute) : les dépêches qui peuvent secouer SES marchés. Atlas parle
+     seul si une position ouverte est touchée par une nouvelle critique, ou pendant la séance ; « le radar » : les dernières, et la réaction du prix.
    ========================================================= */
 'use strict';
 
@@ -353,8 +355,21 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
     const st = statsTrades((tdEtat.trades || []).filter(x => (x.fin || x.at) >= Date.now() / 1000 - 31 * 86400)), p = tdEtat.payout || {};
     return say(`Sur 30 jours : ${st.n} trades, ${st.pnl >= 0 ? 'plus' : 'moins'} ${dollars(st.pnl)}, ${st.taux} % de gagnants.${st.elargis.length ? ` ${st.elargis.length} stop${st.elargis.length > 1 ? 's' : ''} élargi${st.elargis.length > 1 ? 's' : ''}.` : ''} Topstep : ${p.eligible ? `payout possible, jusqu'à ${dollars(p.montant)}` : 'pas encore de payout'}, ${dollars(p.marge_mll)} de marge avant la perte maximale. Le détail est à l'écran.`);
   }
+  // le radar de risque : ce qui vient de tomber sur ses marchés, et comment le prix a réagi (en ticks) — de l'information, jamais un conseil
+  async function radar() {
+    let r; try { r = await appel('/maison/radar', null, 15000); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas le radar."); }
+    const now = Date.now() / 1000, l = (r.items || []).filter(x => now - x.at < 24 * 3600);
+    const reac = x => Object.entries(x.reaction || {}).filter(([, v]) => v['+15'] != null).map(([m, v]) => `${m} ${v['+15'] > 0 ? '+' : ''}${v['+15']} t`).join(' · ');
+    const L = l.slice(0, 12).map(x => [`${hm(x.at)} · ${x.urgence === 'critique' ? 'CRITIQUE' : 'importante'}`, `${x.titre}${x.marches.length ? ` (${x.marches.join(', ')})` : ''}${reac(x) ? ` — à +15 min : ${reac(x)}` : ''}`, x.urgence === 'critique' ? 'alerte' : 'ok']);
+    try { SCIFI.hud('Radar · 24 heures', L.length ? L : [['Radar', 'rien de critique ni d’important depuis hier', 'ok']]); } catch (er) { /* pas d'écran */ }
+    if (!l.length) return say("Rien de critique ni d'important sur tes marchés depuis hier.");
+    const crit = l.filter(x => x.urgence === 'critique');
+    const top = (crit.length ? crit : l).slice(0, 3);
+    return say(`${crit.length ? `${crit.length} nouvelle${crit.length > 1 ? 's' : ''} critique${crit.length > 1 ? 's' : ''}` : `${l.length} nouvelle${l.length > 1 ? 's' : ''} importante${l.length > 1 ? 's' : ''}`} en 24 heures. ${top.map(x => `À ${hm(x.at)} : ${x.titre}.`).join(' ')} Le détail est à l'écran.`);
+  }
   document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-td]'); if (!b) return; if (b.dataset.td === 'per') { S.tdPeriode = b.dataset.id; save(); ecranTrading(); } });
   function route(t, n) {
+    if (/\b(le radar|mon radar|radar (de risque|des marches|trading)|quoi de neuf sur (les|mes) marches|les (nouvelles|depeches|news) (des|de mes|sur mes) marches|ce qui (est tombe|vient de tomber) sur (les|mes) marches)\b/.test(n)) return radar;
     if (/\b(mon trading|mon journal de trading|mes (stats|statistiques) de trading|statistiques de trading|tableau de bord (du )?trading|mes comptes (de trading|financés|finances|topstep)|mes objectifs de trading)\b/.test(n)) return monTrading;
     if (/\b(fin (de (la |ma )?)?(session|trading)|j arrete (de trader|le trading|ma session|la session)|je coupe (le trading|ma session)|session terminee|je termine (ma session|le trading)|fin du mode trading)\b/.test(n)) return fin;
     if (/\b(mode trading|session de trading|copilote de trading|je (commence|lance|demarre|attaque) (ma |la )?(session|journee de trading)|je vais trader|on va trader)\b/.test(n)) return () => debut(n);
@@ -381,5 +396,5 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
     if (trade && /\b(j ai (perdu|gagne|pris|encaisse)|je perds|je gagne|stop (touche|pris)|j ai ete stoppe)\b/.test(n) && /\d/.test(t)) return () => sortie(t, n, montant(t)); // un trade ouvert dans la boîte noire : il le clôture
     return null;
   }
-  return { route, actif: () => actif, bilanNoire, bilanSeance, payout, monTrading, _controle: controle, _montant: montant, _prixApres: prixApres };
+  return { route, radar, actif: () => actif, bilanNoire, bilanSeance, payout, monTrading, _controle: controle, _montant: montant, _prixApres: prixApres };
 })();
