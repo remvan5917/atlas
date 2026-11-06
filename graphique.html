@@ -371,6 +371,18 @@
   .fil-e .s { display: inline-flex; align-items: center; gap: 5px; } .fil-e .s i { width: 6px; height: 6px; border-radius: 50%; background: var(--vert); box-shadow: 0 0 6px var(--vert); } .fil-e .s.ko i { background: var(--rouge); box-shadow: 0 0 6px var(--rouge); } .fil-e .lat { color: var(--ambre); }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--ambre); outline-offset: 2px; } ::selection { background: rgba(255, 171, 26, .35); }
 
+
+  /* les liens entre marchés : les deux courbes côte à côte */
+  .lien2 { padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: background .15s; } .lien2:hover { background: rgba(255, 171, 26, .05); }
+  .lien2 .l1 { display: grid; grid-template-columns: 8px 1fr 56px 96px; gap: 8px; align-items: center; font-size: 12px; }
+  .lien2 .l1 i { width: 7px; height: 7px; border-radius: 50%; background: var(--vert); } .lien2.relache .l1 i { background: var(--tres-doux); } .lien2.inhabituel .l1 i { background: var(--ambre); box-shadow: 0 0 8px var(--ambre); animation: clign 1.2s infinite; }
+  .lien2 .nm b { font-weight: 600; color: var(--texte); } .lien2 .nm b:hover { color: var(--ambre); text-decoration: underline; } .lien2.relache .nm b { color: var(--doux); }
+  .lien2 .l1 svg { width: 56px; height: 20px; } .lien2 .l1 small { text-align: right; white-space: nowrap; font: 700 9px 'Inter'; letter-spacing: .04em; color: var(--tres-doux); text-transform: uppercase; }
+  .lien2.inhabituel { background: rgba(255, 171, 26, .07); box-shadow: inset 2px 0 0 var(--ambre); } .lien2.inhabituel .l1 small { color: var(--ambre); }
+  .lien2 .l2 { display: none; padding: 8px 0 4px 16px; } .lien2.ouvert .l2 { display: block; } .lien2.ouvert .l1 svg { visibility: hidden; }
+  .lien2 .l2 svg { width: 100%; height: 64px; display: block; background: rgba(255, 255, 255, .02); border-radius: 6px; }
+  .lien2 .leg { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; font: 600 10.5px var(--mono); }
+  .lien2 .l2 p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.45; color: #c8cdd6; } .lien2.inhabituel .l2 p:first-of-type { color: #ffd37a; } .lien2 .l2 p.nb { color: var(--tres-doux); font-size: 10.5px; }
 </style>
 </head>
 <body>
@@ -400,7 +412,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v29</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v30</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -429,7 +441,7 @@
   <div class="graphes un" id="graphes"></div>
   <div class="liste">
     <div class="tete"><b><i class="led"></i>MONITEUR</b><span>TopstepX · temps réel</span></div>
-    <div class="fam" style="cursor:default">LIENS ENTRE MARCHÉS<i title="vert : lien normal · gris : lien relâché ces jours-ci · ambre : ils se séparent">?</i></div>
+    <div class="fam" style="cursor:default">LIENS ENTRE MARCHÉS<i title="Chaque couple : ses deux courbes des 4 dernières heures. Clique pour agrandir, clique un nom pour ouvrir ce marché. Ambre : ils se séparent.">?</i></div>
     <div class="liens" id="liens"><div class="lien-m relache"><i></i><span>chargement…</span></div></div>
     <div class="cols-t"><span>MARCHÉ</span><span>5 JOURS</span><span>DERNIER · VAR</span></div>
     <div id="liste"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></div>
@@ -1155,12 +1167,38 @@ chargeEtat(); setInterval(chargeEtat, 30000);
 
 /* --- les liens entre les marchés --- */
 const NOMC = { MGC: 'Or', SIL: 'Argent', DXY: 'Dollar', TAUX: 'Taux US', MNQ: 'Nasdaq', MYM: 'Dow', M6E: 'Euro', MCL: 'Pétrole', CAD: 'Dollar CAD', VIX: 'VIX' };
+const liensOuverts = new Set(JSON.parse(lit('g-liens-ouverts', '[]')));
+const NOMC2 = { MGC: "l'or", SIL: "l'argent", DXY: 'le dollar', TAUX: 'les taux US', MNQ: 'le Nasdaq', MYM: 'le Dow', M6E: "l'euro", MCL: 'le pétrole', CAD: 'le dollar canadien', VIX: 'le VIX' };
+function duo(x, W, H) {  // les deux courbes des 4 dernières heures, la seconde retournée si le lien est inverse
+  const a = x.courbe_a || [], b = x.courbe_b || []; if (a.length < 3) return `<svg viewBox="0 0 ${W} ${H}"></svg>`;
+  const v = [...a, ...b], lo = Math.min(...v, 0), hi = Math.max(...v, 0), r = hi - lo || 1, X = k => (k * W / (a.length - 1)).toFixed(1), Y = y => (H - 2 - (y - lo) / r * (H - 4)).toFixed(1);
+  const ecart = a.map((y, k) => `${X(k)},${Y(y)}`).join(' ') + ' ' + b.map((y, k) => `${X(k)},${Y(y)}`).reverse().join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polygon points="${ecart}" fill="${x.etat === 'inhabituel' ? 'rgba(255,171,26,.22)' : 'rgba(255,255,255,.05)'}"/><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(255,255,255,.12)" stroke-dasharray="2 3"/>`
+    + `<polyline points="${a.map((y, k) => `${X(k)},${Y(y)}`).join(' ')}" fill="none" stroke="#ffab1a" stroke-width="1.6" vector-effect="non-scaling-stroke"/><polyline points="${b.map((y, k) => `${X(k)},${Y(y)}`).join(' ')}" fill="none" stroke="#33d6ff" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function forceLien(c) { const a = Math.abs(c); return a >= .7 ? 'fort' : a >= .45 ? 'net' : 'faible'; }
+function mouv(z) { const a = Math.abs(z); return a < .5 ? '→ calme' : `${z > 0 ? '▲' : '▼'} ${a >= 2.5 ? 'très fort' : a >= 1.3 ? 'fort' : 'léger'}`; }
+function phraseLien(x) {
+  const A = NOMC2[x.a] || x.a, B = NOMC2[x.b] || x.b, c = `corrélation ${x.corr > 0 ? '+' : ''}${nb(x.corr, 2)} sur 5 jours`;
+  if (x.etat === 'inhabituel') return x.phrase;
+  if (x.etat === 'relache') return `Lien faible ces jours-ci (${c}) : ${A} et ${B} suivent chacun leur route.`;
+  return x.attendu > 0 ? `${A[0].toUpperCase() + A.slice(1)} et ${B} bougent ensemble (${c}, lien ${forceLien(x.corr)}).` : `Quand ${A} monte, ${B} baisse, et inversement (${c}, lien ${forceLien(x.corr)}).`;
+}
 async function chargeLiens() {
   if (document.hidden || !ROOT) return;
-  try { const r = await api('/maison/copilote', { action: 'liens' }), l = r.liens || [];
-    $('#liens').innerHTML = l.map(x => `<div class="lien-m ${x.etat}" title="corrélation sur 5 jours : ${x.corr > 0 ? '+' : ''}${nb(x.corr, 2)} · depuis 1 h : ${x.za > 0 ? '+' : ''}${nb(x.za, 1)} / ${x.zb > 0 ? '+' : ''}${nb(x.zb, 1)} écarts-types"><i></i><span>${NOMC[x.a] || x.a} ${x.attendu > 0 ? '⇄' : '⇅'} ${NOMC[x.b] || x.b}</span><small>${x.etat === 'inhabituel' ? 'SE SÉPARENT' : x.etat === 'relache' ? 'lien relâché' : (x.attendu > 0 ? 'ensemble' : 'en miroir')}</small>${x.phrase ? `<div class="ph">${esc(x.phrase)}</div>` : ''}</div>`).join('') || '<div class="lien-m relache"><i></i><span>pas encore de données</span></div>';
+  try { const r = await api('/maison/copilote', { action: 'liens' }), RG = { inhabituel: 0, normal: 1, relache: 2 };
+    const l = (r.liens || []).slice().sort((p, q) => (RG[p.etat] - RG[q.etat]) || (Math.abs(q.corr) - Math.abs(p.corr)));
+    $('#liens').innerHTML = l.map(x => { const k = x.a + '-' + x.b, ouvert = liensOuverts.has(k) || x.etat === 'inhabituel', inv = x.attendu < 0;
+      const etat = x.etat === 'inhabituel' ? 'SE SÉPARENT' : x.etat === 'relache' ? 'lien faible' : (x.attendu > 0 ? `ensemble · ${forceLien(x.corr)}` : `miroir · ${forceLien(x.corr)}`);
+      return `<div class="lien2 ${x.etat}${ouvert ? ' ouvert' : ''}" data-k="${k}">
+        <div class="l1"><i></i><span class="nm"><b data-c="${esc(x.a)}">${NOMC[x.a] || x.a}</b> ${inv ? '⇅' : '⇄'} <b data-c="${esc(x.b)}">${NOMC[x.b] || x.b}</b></span>${duo(x, 64, 20)}<small>${etat}</small></div>
+        <div class="l2">${duo(x, 280, 64)}<div class="leg"><span style="color:#ffab1a">— ${NOMC[x.a] || x.a} ${mouv(x.za)}</span><span style="color:#33d6ff">— ${NOMC[x.b] || x.b}${inv ? ' (retourné)' : ''} ${mouv(x.zb)}</span></div><p>${esc(phraseLien(x))}</p><p class="nb">4 dernières heures${inv ? ' · lien inverse : la courbe bleue est retournée, elles se superposent quand tout est normal' : ' · elles se superposent quand tout est normal'}.</p></div></div>`; }).join('') || '<div class="lien2 relache"><div class="l1"><i></i><span class="nm">pas encore de données</span></div></div>';
   } catch (e) { /* hors liaison */ }
 }
+$('#liens').addEventListener('click', ev => {
+  const nm = ev.target.closest('b[data-c]'); if (nm && L.some(z => z.code === nm.dataset.c)) { changeCode(nm.dataset.c); return; }
+  const e = ev.target.closest('.lien2[data-k]'); if (!e) return; const k = e.dataset.k; if (liensOuverts.has(k)) liensOuverts.delete(k); else liensOuverts.add(k); ecrit('g-liens-ouverts', JSON.stringify([...liensOuverts])); e.classList.toggle('ouvert');
+});
 chargeLiens(); setInterval(chargeLiens, 60000); chargeCot();
 /* --- la veille : ce qu'Atlas a dit seul (il le dit à voix haute dans Atlas ; ici, la carte) --- */
 let veilleVue = Math.floor(Date.now() / 1000);
