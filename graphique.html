@@ -168,7 +168,7 @@
       <button class="ico" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
     </div>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v10</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v11</span></span>
   </div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
@@ -609,17 +609,30 @@ async function chargeDirect() {
 chargeDirect(); setInterval(chargeDirect, 4000);
 
 /* ================= la salle de marché ================= */
-/* --- la voix d'Atlas (fabriquée par l'ordinateur de la maison, rendue robot ici, comme dans Atlas) --- */
+/* --- la voix d'Atlas : sa voix ElevenLabs (par la maison) ; en secours, la voix de la maison rendue robot --- */
 let SON = lit('g-son', '1') === '1', actx = null, voixEnCours = null;
 $('#b-son').classList.toggle('on', SON);
 $('#b-son').onclick = () => { SON = !SON; ecrit('g-son', SON ? '1' : '0'); $('#b-son').classList.toggle('on', SON); if (!SON) taisToi(); toast(SON ? "La voix d'Atlas est allumée" : "La voix d'Atlas est coupée"); };
 function taisToi() { try { voixEnCours && voixEnCours.stop(); } catch (e) { /* rien */ } voixEnCours = null; try { speechSynthesis.cancel(); } catch (e) { /* rien */ } $('#copi').classList.remove('parle'); }
 async function dire(texte) {
   if (!SON || !texte) return; taisToi(); $('#copi').classList.add('parle');
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') try { await actx.resume(); } catch (e) { /* rien */ }
+  try {  // la vraie voix d'Atlas (ElevenLabs), avec sa touche numérique légère, comme dans Atlas
+    const r = await fetch(`${ROOT}/maison/voix-atlas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texte.slice(0, 900) }) });
+    if (!r.ok) throw new Error('eleven ' + r.status);
+    const buf = await actx.decodeAudioData(await r.arrayBuffer()), src = actx.createBufferSource(); src.buffer = buf;
+    const G = v => { const g = actx.createGain(); g.gain.value = v; return g; }, hp = actx.createBiquadFilter(), pres = actx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 75; pres.type = 'peaking'; pres.frequency.value = 3200; pres.Q.value = 0.9; pres.gain.value = 1.5;
+    const sum = G(1), d = actx.createDelay(0.05), fb = G(0.18), wet = G(0.09), lfo = actx.createOscillator(), lg = G(0.0004), out = G(0.95), lim = actx.createDynamicsCompressor();
+    d.delayTime.value = 0.0012; lfo.frequency.value = 0.15; lfo.connect(lg); lg.connect(d.delayTime); lfo.start();
+    lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.12;
+    src.connect(hp); hp.connect(pres); pres.connect(sum); pres.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(sum); sum.connect(out); out.connect(lim); lim.connect(actx.destination);
+    src.onended = () => { try { lfo.stop(); } catch (e) { /* rien */ } if (voixEnCours === src) { voixEnCours = null; $('#copi').classList.remove('parle'); } };
+    voixEnCours = src; src.start(); return;
+  } catch (e) { /* ElevenLabs indisponible : la voix de la maison */ }
   try {
     const r = await fetch(`${ROOT}/shadow/voix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texte.slice(0, 600), voix: 'pierre', vitesse: 0.92 }) });
     if (!r.ok) throw new Error('voix ' + r.status);
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') await actx.resume();
     const buf = await actx.decodeAudioData(await r.arrayBuffer()), src = actx.createBufferSource(); src.buffer = buf; src.playbackRate.value = 0.93;
     const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 90;
     const ring = actx.createGain(), osc = actx.createOscillator(), og = actx.createGain(); osc.frequency.value = 30; og.gain.value = 0.07; osc.connect(og); og.connect(ring.gain); osc.start();
