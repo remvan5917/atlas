@@ -487,6 +487,16 @@
   .renomme { width: 100%; box-sizing: border-box; font: 500 11px 'Inter'; background: rgba(255, 255, 255, .06); border: 1px solid var(--ambre); border-radius: 4px; color: var(--texte); padding: 1px 4px; outline: none; }
   .res-t { padding: 10px 12px 4px; font: 700 9.5px 'Inter'; letter-spacing: .16em; color: var(--tres-doux); }
   .res.aj .plus { color: var(--ambre); font-weight: 700; } .res.aj .deja { color: var(--vert); font-weight: 700; }
+  /* ses alertes d'indicateurs, en français */
+  .indic-b .al { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 16px; }
+  .indic-b .al div { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; background: #0d1018; border: 1px solid var(--bord); border-radius: 9px; padding: 8px 10px; cursor: pointer; }
+  .indic-b .al div:hover { border-color: var(--bord2); } .indic-b .al div.off { opacity: .5; } .indic-b .al div.vrai { box-shadow: inset 3px 0 0 var(--ambre); }
+  .indic-b .al b { font: 600 13px 'Inter'; } .indic-b .al small { display: block; color: var(--tres-doux); font-size: 11px; font-weight: 500; margin-top: 2px; }
+  .indic-b .al button { background: none; border: 1px solid var(--bord2); color: var(--doux); border-radius: 7px; padding: 4px 8px; font: 600 11px 'Inter'; cursor: pointer; } .indic-b .al button:hover { color: var(--ambre); border-color: var(--ambre); }
+  .indic-b .al .vide { display: block; cursor: default; color: var(--tres-doux); font-size: 12px; } .indic-b .al .j { display: block; cursor: default; font-size: 12px; color: var(--doux); }
+  .indic-b .al .j em { font-style: normal; color: var(--ambre); font: 600 11px var(--mono, 'Inter'); margin-right: 8px; }
+  .titre .alt { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; font-size: 10.5px; color: var(--ambre); opacity: .85; }
+  .titre .alt svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 2.2; }
 </style>
 </head>
 <body>
@@ -518,7 +528,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v44</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v45</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -539,6 +549,7 @@
       <button class="ico outil-d" id="b-dow" data-tip="Structure de Dow : tous tes marchés, toutes les unités (D)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="5" rx="1"/><rect x="10" y="4" width="5" height="5" rx="1"/><rect x="17" y="4" width="4" height="5" rx="1"/><rect x="3" y="11" width="5" height="5" rx="1"/><rect x="10" y="11" width="5" height="5" rx="1"/><path d="M17 16l2-4 2 4M3 20h18"/></svg></button>
       <button class="ico outil-d" id="b-etude" data-tip="Étude d'annonce : les dernières fois superposées (A)"><svg viewBox="0 0 24 24"><path d="M3 20h18M7 4v16"/><path d="M7 13c3-1 4-6 7-6s3 5 7 4M7 15c3 0 5 2 8 1s4-3 6-2" opacity=".6"/></svg></button>
       <button class="ico outil-d" id="b-replay" data-tip="Replay : rejoue la séance bougie par bougie, nouvelles comprises (R)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6"/><path d="M4 4v4.6h4.6M10 9v6l5-3z"/></svg></button>
+      <button class="ico outil-d" id="b-alertes" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/><path d="M19.5 4.5l1.5-1.5M4.5 4.5L3 3"/></svg></button>
       <button class="ico outil-d" id="b-passe" data-tip="Interroge le passé : « montre-moi les fois où… » (Maj + H)"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6M10.5 7.5v3l2 1.5"/></svg></button>
       <button class="ico outil-d" id="b-memoire" data-tip="Mémoire du marché (M) : les moments passés qui ressemblent à celui-ci"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></button>
       <button class="ico outil-d" id="b-journal" data-tip="Journal vocal : maintiens V pendant un trade pour parler"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
@@ -596,6 +607,13 @@
   <div class="msg" id="indic-m"></div>
   <h3>LES CLASSIQUES</h3><div class="cl" id="indic-cl"></div>
   <h3>SUR TON GRAPHIQUE</h3><div class="act" id="indic-a"></div></div></div>
+<div class="indic-p" id="alerte-p"><div class="indic-b">
+  <h3>TES ALERTES</h3><p class="s">Dis ce qu'Atlas doit surveiller, en français. Il le surveille même graphique fermé, et te prévient une fois à chaque fois que ça arrive : sa voix, ton téléphone, un son et le halo ici.</p>
+  <div class="nl"><input id="alerte-q" placeholder="ex. préviens-moi quand le RSI H1 de l'argent passe sous 30" autocomplete="off"><button class="go" id="alerte-go">Créer</button></div>
+  <div class="ex"><span>quand le RSI passe sous 30</span><span>quand le prix croise la MM 50</span><span>quand le prix casse le plus haut de la veille</span><span>quand le volume dépasse 2 fois sa moyenne</span><span>à la clôture au-dessus de la MM 200 en D1</span></div>
+  <div class="msg" id="alerte-m"></div>
+  <h3>SURVEILLÉES</h3><div class="al" id="alerte-l"></div>
+  <h3>CE QUI EST ARRIVÉ</h3><div class="al" id="alerte-j"></div></div></div>
 <div class="indic-p" id="passe-p"><div class="indic-b" style="width:min(820px,94vw)">
   <h3>INTERROGE LE PASSÉ</h3><p class="s">Pose ta question en français. Atlas cherche dans l'historique et te montre chaque fois, et ce qui a suivi — dans les deux sens.</p>
   <div class="nl"><input id="passe-q" placeholder="ex. montre-moi les fois où l'argent a cassé le plus haut de la veille avant 15 h" autocomplete="off"><button class="go" id="passe-go">Chercher</button></div>
@@ -898,7 +916,7 @@ class Pane {
       c.fillStyle = '#3d4a66'; c.beginPath(); c.roundRect(mx - 54, ph + 2, 108, BT - 4, 5); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '600 10.5px Inter, sans-serif'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${(ALERTES || []).filter(a => a.actif && a.marche === code && a.ut === this.ut).length ? `<div class="indl">${ALERTES.filter(a => a.actif && a.marche === code && a.ut === this.ut).slice(0, 3).map(a => `<span class="alt" title="Alerte : ${esc(a.texte)}"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>${esc(a.titre)}</span>`).join('')}</div>` : ''}${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
   }
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
@@ -1205,6 +1223,7 @@ $('#q').addEventListener('keydown', ev => {
   else if (ev.key === 'Enter' && r[selRes] && r[selRes].aj) { if (!r[selRes].suivi) ajouteMarche(r[selRes].code, !AJOUT); }
   else if (ev.key === 'Enter' && AJOUT) { /* (en mode ajout, Entrée n'ajoute que le contrat choisi) */ }
   else if (ev.key === 'Enter' && r[selRes] && $('#q').value.trim().split(/\s+/).length <= 2) { fermeRecherche(); changeCode(r[selRes].code); }
+  else if (ev.key === 'Enter' && /^(pr[ée]viens(-| )moi|alerte(-| )moi|avertis(-| )moi|pr[ée]viens si|alerte (quand|si|sur))/i.test($('#q').value.trim())) { const q = $('#q').value.trim(); fermeRecherche(); ouvreAlertes(q); }
   else if (ev.key === 'Enter' && /^(montre(-| )moi les fois|les fois o[uù]|combien de fois|quand est-ce que)/i.test($('#q').value.trim())) { const q = $('#q').value.trim(); fermeRecherche(); ouvrePasse(q); }
   else if (ev.key === 'Enter' && $('#q').value.trim()) { const q = $('#q').value.trim(); fermeRecherche(); commandeGraphique(q).then(ok => ok ? toast(`✓ ${ok}`) : copilote(q)).catch(() => copilote(q)); }
   else if (ev.key === 'Escape') fermeRecherche();
@@ -1241,7 +1260,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'f') { $('#plein').click(); return; }
   if (k === 'p') { $('#photo').click(); return; }
   if (k === 'escape') { travail(false); brouillon = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
-  else if (k === 'l') choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c') choisieOutil('canal');
+  else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c') choisieOutil('canal');
   else if (k === 'delete' || k === 'backspace') efface();
   else if (/^[1-8]$/.test(k)) { if (ev.repeat) return; const p0 = panes[actif] || panes[0]; coupDoeil = { k: ev.key, t: performance.now(), avant: p0 ? p0.ut : utSeul }; choisirUT(ORDRE_UT[+k - 1]); }
 });
@@ -2068,6 +2087,41 @@ async function cherchePasse() {
 }
 $('#passe-go').onclick = cherchePasse; $('#passe-q').addEventListener('keydown', ev => { if (ev.key === 'Enter') cherchePasse(); if (ev.key === 'Escape') ouvrePasse(); });
 document.querySelectorAll('#passe-p .ex span').forEach(e => e.onclick = () => { $('#passe-q').value = e.textContent; cherchePasse(); });
+/* ses alertes d'indicateurs : la phrase → une condition sûre, surveillée par le relais (une fois par croisement) ; ici, le panneau, le son, le halo */
+var ALERTES = [], alerteVue = Math.floor(Date.now() / 1000), JOURNAL_AL = [];
+const quand = t => { const d = new Date(t * 1000), auj = new Date().toDateString() === d.toDateString(); return (auj ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ') + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); };
+function ouvreAlertes(q) { const p = $('#alerte-p'), on = q != null || !p.classList.contains('on'); p.classList.toggle('on', on); if (on) { majAlertes(); chargeAlertes(); if (q) { $('#alerte-q').value = q; creeAlerte(); } setTimeout(() => $('#alerte-q').focus(), 30); } }
+$('#b-alertes').onclick = () => ouvreAlertes(); $('#alerte-p').addEventListener('click', ev => { if (ev.target.id === 'alerte-p') ouvreAlertes(); });
+document.querySelectorAll('#alerte-p .ex span').forEach(e => e.onclick = () => { $('#alerte-q').value = e.textContent; creeAlerte(); });
+$('#alerte-go').onclick = () => creeAlerte(); $('#alerte-q').addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') creeAlerte(); if (ev.key === 'Escape') ouvreAlertes(); });
+function majAlertes() {
+  $('#alerte-l').innerHTML = ALERTES.length ? ALERTES.slice().reverse().map(a => `<div class="${a.actif ? '' : 'off'}" data-id="${esc(a.id)}" data-c="${esc(a.marche)}" data-ut="${esc(a.ut)}"><span><b>${esc(a.titre)}</b><small>${esc(a.marche)} · ${esc(a.ut)} · ${a.moment === 'cloture' ? 'à la clôture de la bougie' : 'dès que ça arrive'} · ${a.fois ? `arrivée ${a.fois} fois, la dernière ${quand(a.derniere)}` : 'pas encore arrivée'} · « ${esc(a.texte)} »</small></span><button data-op="${a.actif ? 'pause' : 'reprend'}">${a.actif ? 'Pause' : 'Reprendre'}</button><button data-op="efface">Effacer</button></div>`).join('')
+    : '<span class="vide">Aucune alerte pour l’instant : écris ce que tu veux surveiller, au-dessus.</span>';
+  $('#alerte-j').innerHTML = JOURNAL_AL.length ? JOURNAL_AL.slice(0, 12).map(j => `<span class="j"><em>${quand(j.at)}</em>${esc(j.texte)}</span>`).join('') : '<span class="vide">Rien n’est encore arrivé.</span>';
+}
+$('#alerte-l').addEventListener('click', async ev => {
+  const d = ev.target.closest('[data-id]'); if (!d) return; const b = ev.target.closest('button[data-op]');
+  if (!b) { ouvreAlertes(); if (d.dataset.c !== code) await changeCode(d.dataset.c); if (vue === 'un' && typeof choisirUT === 'function') choisirUT(d.dataset.ut); return; }
+  try { const r = await api('/maison/graphique', { action: 'alerte_op', op: b.dataset.op, id: d.dataset.id }); if (r.ok === false) throw new Error(r.raison); await chargeAlertes(); toast(b.dataset.op === 'efface' ? 'Alerte effacée' : b.dataset.op === 'pause' ? 'Alerte en pause' : 'Alerte reprise'); } catch (e) { toast(`✗ ${e.message}`); }
+});
+async function creeAlerte() {
+  const t = $('#alerte-q').value.trim(); if (!t) return; $('#alerte-m').textContent = 'Atlas traduit ton alerte…';
+  try { const ut = (panes.find(p => p.ut === 'H1') || panes[0] || {}).ut || 'H1', r = await api('/maison/graphique', { action: 'alerte', texte: t, code, ut });
+    if (!r.ok) { $('#alerte-m').textContent = `✗ ${r.raison || 'je n’ai pas compris'}`; return; }
+    const a = r.alerte; $('#alerte-q').value = '';
+    $('#alerte-m').textContent = `✓ Surveillée : ${a.titre} — ${a.marche} en ${a.ut}, ${a.moment === 'cloture' ? 'à la clôture de la bougie' : 'dès que ça arrive'}. ${r.maintenant ? 'C’est déjà le cas en ce moment : elle partira à la prochaine fois.' : 'Ce n’est pas le cas en ce moment.'}`;
+    sonne('pose'); await chargeAlertes(); }
+  catch (e) { $('#alerte-m').textContent = '✗ La maison ne répond pas.'; }
+}
+async function chargeAlertes() {
+  if (!ROOT) return;
+  try { const r = await api('/maison/graphique?alertes=1'); ALERTES = r.alertes || []; JOURNAL_AL = r.journal || [];
+    const n = JOURNAL_AL.filter(j => j.at > alerteVue);
+    if (n.length) { alerteVue = Math.max(...n.map(j => j.at)); halo('ambre'); if (QUI_SONNE) sonne('ligne'); n.slice(0, 3).forEach(j => toast(`🔔 ${j.texte}`)); }
+    if ($('#alerte-p').classList.contains('on')) majAlertes(); toutDessine(); }
+  catch (e) { /* hors liaison */ }
+}
+chargeAlertes(); setInterval(() => { if (!document.hidden) chargeAlertes(); }, 20000);
 $('#passe-r').addEventListener('click', async ev => { const e = ev.target.closest('.pcas'); if (!e || !PASSE) return; const c = PASSE.cas[+e.dataset.k];
   $('#passe-p').classList.remove('on'); if (PASSE.marche !== code) await changeCode(PASSE.marche);
   let p = panes.find(q => q.ut === PASSE.ut); if (!p) { choisirUT(PASSE.ut); await new Promise(r => setTimeout(r, 600)); p = panes.find(q => q.ut === PASSE.ut) || panes[actif] || panes[0]; }
@@ -2085,6 +2139,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'z' && !ev.repeat) { focus(); return; }
   if (k === 'i' && !ev.repeat) { ouvreIndic(); return; }
   if (k === 'h' && ev.shiftKey && !ev.repeat) { ouvrePasse(); return; }
+  if (k === 'l' && ev.shiftKey && !ev.repeat) { ouvreAlertes(); return; }
   if (k === 'escape' && MARQUE_PASSE) { MARQUE_PASSE = null; toutDessine(); }
   if (k === 'a' && !ev.repeat) { ouvreEtude(); return; } if (k === 'r' && !ev.repeat) { choisirReplay(); return; }
   if (k === 'e' && !ev.repeat) copilote(); else if (k === 'm' && !ev.repeat) memoire(); else if (k === 'd' && !ev.repeat) ouvreDow();
