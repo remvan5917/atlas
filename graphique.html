@@ -397,25 +397,6 @@
   .amb.on { opacity: 1; } .amb.asie { background: radial-gradient(1300px 620px at 50% -15%, rgba(70, 92, 170, .20), transparent 62%); }
   .amb.londres { background: radial-gradient(1300px 620px at 50% -15%, rgba(80, 150, 215, .17), transparent 62%); } .amb.ny { background: radial-gradient(1300px 620px at 50% -15%, rgba(255, 140, 0, .16), transparent 62%); }
   body.nuitg .pane { background: #14171e; }
-  /* le mur de salle : pour un autre écran, lisible de loin */
-  .mur { display: none; position: fixed; inset: 0; z-index: 10; padding: 2.4vh 2.4vw 0; flex-direction: column; gap: 2vh; }
-  body.mode-mur .mur { display: flex; } .mur-g { flex: 1; } .mur-f { margin-top: auto; flex: none; } body.mode-mur .app { display: none; }
-  .mur-h { display: flex; align-items: flex-end; gap: 3vw; border-bottom: 1px solid var(--bord); padding-bottom: 1.6vh; }
-  .mur-h .hl { display: flex; flex-direction: column; } .mur-h .hl b { font: 700 4.6vh var(--mono); color: #fff; letter-spacing: .02em; } .mur-h .hl.ici b { font-size: 8.4vh; color: var(--ambre); line-height: 1; }
-  .mur-h .hl small { font: 800 1.35vh 'Inter'; letter-spacing: .3em; color: var(--tres-doux); display: flex; align-items: center; gap: .6vh; margin-top: .6vh; } .mur-h .hl small i { width: 1vh; height: 1vh; border-radius: 50%; background: #3a4152; } .mur-h .hl small i.ouv { background: var(--vert); box-shadow: 0 0 1vh var(--vert); }
-  .mur-h .esp { flex: 1; } .mur-h .titre-m { font: 800 1.6vh 'Inter'; letter-spacing: .5em; color: var(--ambre); align-self: flex-start; }
-  .mur-c { display: flex; align-items: center; gap: 2vw; padding: 1.4vh 2vw; border: 1px solid rgba(255, 61, 90, .35); border-radius: 1.2vh; background: rgba(255, 61, 90, .07); } .mur-c:empty { display: none; }
-  .mur-c small { font: 800 1.5vh 'Inter'; letter-spacing: .3em; color: #ff8fa1; } .mur-c b { font: 800 5.6vh var(--mono); color: #fff; } .mur-c span { font: 600 2.2vh 'Inter'; color: #e8ebf0; flex: 1; }
-  .mur-c.proche { animation: alarme 1s ease-in-out infinite; }
-  .mur-g { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 1.6vh 1.2vw; min-height: 0; }
-  .tuile { position: relative; border: 1px solid var(--bord); border-radius: 1.4vh; background: linear-gradient(180deg, #0d1018, #090b10); padding: 2vh 1.6vw; display: flex; flex-direction: column; overflow: hidden; }
-  .tuile::after { content: ''; position: absolute; left: 1.6vw; right: 1.6vw; top: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 171, 26, .5), transparent); }
-  .tuile .c { display: flex; justify-content: space-between; align-items: baseline; } .tuile .c b { font: 800 3.2vh var(--mono); color: var(--ambre); letter-spacing: .04em; } .tuile .c small { font: 600 1.6vh 'Inter'; color: var(--doux); }
-  .tuile .px { font: 700 6.6vh var(--mono); color: #fff; letter-spacing: -.02em; margin-top: 1vh; line-height: 1.05; }
-  .tuile .vr { font: 800 2.6vh var(--mono); margin-top: .4vh; } .tuile .vr.h { color: var(--vert); } .tuile .vr.r { color: var(--rouge); }
-  .tuile svg { margin-top: auto; width: 100%; height: 7vh; }
-  .mur-f { display: flex; align-items: center; height: 6vh; margin: 0 -2.4vw; border-top: 1px solid var(--bord); background: #07090d; overflow: hidden; }
-  .mur-f .fil-t { font-size: 1.5vh; padding: 0 2vw; } .mur-f .fil-v { flex: 1; overflow: hidden; position: relative; height: 100%; } .mur-f .dp { font-size: 2.3vh; padding: 0 3vw; } .mur-f .dp time { font-size: 2.1vh; }
 </style>
 </head>
 <body>
@@ -446,7 +427,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v33</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v34</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -470,7 +451,7 @@
     <span class="ressort"></span>
       <button class="ico outil-d" id="photo" data-tip="Capture du graphique (PNG)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <button class="ico outil-d" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-      <button class="ico outil-d" id="b-mur" data-tip="Le mur de salle : pour un autre écran, lisible de loin"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h3M7 12h6M14 9h3"/></svg></button>
+      <button class="ico outil-d" id="b-mur" data-tip="Le Radar en mode mur : pour un autre écran, lisible de loin"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h3M7 12h6M14 9h3"/></svg></button>
       <button class="ico outil-d" id="b-sons" data-tip="Les sons de la salle (ligne touchée, nouvelle critique, ligne posée)"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button>
       <button class="ico outil-d" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
   </div>
@@ -508,8 +489,6 @@
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
 <div class="amb asie" id="amb-asie"></div><div class="amb londres" id="amb-londres"></div><div class="amb ny" id="amb-ny"></div>
-<div class="mur" id="mur"><div class="mur-h" id="mur-h"></div><div class="mur-c" id="mur-c"></div><div class="mur-g" id="mur-g"></div>
-  <div class="mur-f"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="mur-piste"></div></div></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
@@ -911,7 +890,7 @@ $('#vue-un').onclick = () => { vue = 'un'; ecrit(K('g-vue'), vue); construit(); 
 async function changeCode(c) { $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); try { majTicker(); majTuiles(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
 function spark(v, up) {
   if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
@@ -1569,7 +1548,6 @@ async function chargeFil() {
     AGENDA = (r.agenda || []).filter(a => a.fort); CLIMAT = r.climat || {}; majTicker();
     const h = l.map(i => `<span class="dp"><time>${new Date((i.publie || i.at) * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time>${i.urgence === 'critique' ? '<span class="fl">FLASH</span>' : i.urgence === 'importante' ? '<span class="im">IMPORTANT</span>' : ''}${esc(i.titre)}${(i.marches || []).length ? `<small>${esc(i.marches.join(' '))}</small>` : ''}</span>`).join('') || '<span class="dp">Aucune dépêche importante pour l’instant.</span>';
     const p = $('#piste2'); p.innerHTML = h + h; p.style.setProperty('--duree', `${Math.max(50, l.length * 9)}s`);
-    const pm = $('#mur-piste'); if (pm) { pm.innerHTML = h + h; pm.style.setProperty('--duree', `${Math.max(60, l.length * 11)}s`); }
     SANTE.radar = true; boot('radar', true); majSante();
   } catch (e) { SANTE.radar = false; boot('radar', false); majSante(); }
 }
@@ -1639,24 +1617,8 @@ function guetteTouches() {
   derAvant = { code, v: d };
 }
 let nbLignesAvant = null;
-/* ================= le mur de salle ================= */
-const MUR = diese.get('mur') === '1', MUR_CODES = ['SIL', 'MGC', 'MNQ', 'MYM', 'MCL', 'M6E', 'DXY', 'VIX'], murAvant = {};
-function majMur() {
-  if (!MUR) return;
-  $('#mur-h').innerHTML = PLACES.map(([n, tz, ici]) => { const h = heureLa(tz); return `<div class="hl${ici ? ' ici' : ''}"><b>${ici ? h.txt + `<span style="opacity:.5;font-size:.55em">:${h.s}</span>` : h.txt}</b><small><i class="${seanceOuverte(ici ? 'CME' : n) ? 'ouv' : ''}"></i>${ici ? 'PARIS · CME' : n}</small></div>`; }).join('') + '<div class="esp"></div><div class="titre-m">ATLAS · SALLE DE MARCHÉ</div>';
-  const now = Date.now() / 1000, a = AGENDA.filter(x => x.at > now - 60).sort((x, y) => x.at - y.at)[0];
-  if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60); $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
-  else $('#mur-c').innerHTML = '';
-}
-function majTuiles() {
-  if (!MUR) return;
-  $('#mur-g').innerHTML = MUR_CODES.map(c => { const x = L.find(z => z.code === c); if (!x) return '';
-    const v = x.spark || [], lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1, sv = v.length > 1 ? `<svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="${v.map((y, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(28 - (y - lo) / r * 26).toFixed(1)}`).join(' ')}" fill="none" stroke="${x.pct >= 0 ? '#19d38c' : '#ff3d5a'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>` : '';
-    const t = nb(x.dernier, x.dec), html = `<div class="tuile"><div class="c"><b>${esc(c)}</b><small>${esc(x.nom)}</small></div><div class="px">${odo(murAvant[c] || '', t, x.dernier >= (murAvant[c + 'v'] ?? x.dernier))}</div><div class="vr ${x.pct >= 0 ? 'h' : 'r'}">${x.pct >= 0 ? '▲' : '▼'} ${nb(Math.abs(x.pct), 2)} %</div>${sv}</div>`;
-    murAvant[c] = t; murAvant[c + 'v'] = x.dernier; return html; }).join('');
-}
-if (MUR) { document.body.classList.add('mode-mur'); document.title = 'Atlas · Mur de salle'; setInterval(majMur, 1000); majMur(); }
-$('#b-mur').onclick = () => { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`${location.pathname}#mur=1${m}`, 'atlas-mur', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le mur de salle s’ouvre : glisse-le sur ton autre écran (F11 pour le plein écran)'); };
+/* --- le mur de salle : c'est le Radar en mode mur (un seul écran secondaire) --- */
+$('#b-mur').onclick = () => { const m = ROOT && !location.pathname.startsWith('/salle/') ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
 /* --- les touches de la salle : E explique, M mémoire, Q maintenu = question, V maintenu = note --- */
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT' || ev.ctrlKey || ev.metaKey || ev.altKey) return; const k = ev.key.toLowerCase();
@@ -1674,7 +1636,6 @@ document.addEventListener('keyup', ev => { const k = ev.key.toLowerCase(); if ((
 try { document.fonts.ready.then(() => setTimeout(toutDessine, 50)); } catch (e) { /* rien */ }
 versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
 (async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; }
-  if (MUR) { try { const b = $('#boot'); if (b) b.remove(); } catch (e) { /* rien */ } chargeListe(); setInterval(chargeListe, 10000); return; }
   await chargeLignes(); nbLignesAvant = lignes.length; construit(); chargeListe(); })();
 </script>
 </body>

@@ -166,6 +166,30 @@
     .horloge, #liaison { display: none; } .moment .gros { font-size: 20px; } .compte { font-size: 34px; }
     .ligne { grid-template-columns: 44px 4px minmax(0, 1fr) 14px; } .ligne .reac { display: none; } .detail { padding-left: 16px; }
   }
+
+  /* ---------- le mode mur : le même radar, lisible de loin (pour un autre écran) ---------- */
+  .mur { display: none; position: fixed; inset: 0; z-index: 40; background: radial-gradient(1200px 520px at 50% -15%, rgba(255, 140, 0, .10), transparent 60%), #05070a; padding: 2.4vh 2.4vw 0; flex-direction: column; gap: 2vh; }
+  body.mode-mur .mur { display: flex; } body.mode-mur { overflow: hidden; }
+  .mur-h { display: flex; align-items: flex-end; gap: 3vw; border-bottom: 1px solid var(--ligne); padding-bottom: 1.6vh; }
+  .mur-h .hl { display: flex; flex-direction: column; } .mur-h .hl b { font: 700 4.6vh var(--mono); color: #fff; letter-spacing: .02em; } .mur-h .hl.ici b { font-size: 8.4vh; color: var(--ambre); line-height: 1; }
+  .mur-h .hl small { font: 800 1.35vh var(--ui); letter-spacing: .3em; color: var(--tres-doux); display: flex; align-items: center; gap: .6vh; margin-top: .6vh; } .mur-h .hl small i { width: 1vh; height: 1vh; border-radius: 50%; background: #3a4152; } .mur-h .hl small i.ouv { background: var(--vert); box-shadow: 0 0 1vh var(--vert); }
+  .mur-h .esp { flex: 1; } .mur-h .tm { align-self: flex-start; text-align: right; } .mur-h .tm b { display: block; font: 800 1.6vh var(--ui); letter-spacing: .5em; color: var(--ambre); } .mur-h .tm button { margin-top: 1.2vh; background: none; border: 1px solid var(--ligne2); color: var(--doux); border-radius: 8px; padding: .6vh 1vw; font: 600 1.3vh var(--ui); }
+  .mur-c { display: flex; align-items: center; gap: 2vw; padding: 1.4vh 2vw; border: 1px solid rgba(255, 77, 79, .35); border-radius: 1.2vh; background: rgba(255, 77, 79, .07); } .mur-c:empty { display: none; }
+  .mur-c small { font: 800 1.5vh var(--ui); letter-spacing: .3em; color: #ff9a9b; } .mur-c b { font: 800 5.6vh var(--mono); color: #fff; } .mur-c span { font: 600 2.2vh var(--ui); color: var(--texte); flex: 1; }
+  .mur-c.proche { animation: alarme-m 1s ease-in-out infinite; } @keyframes alarme-m { 50% { background: rgba(255, 77, 79, .22); box-shadow: 0 0 2vh rgba(255, 77, 79, .4); } }
+  .mur-g { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 1.6vh 1.2vw; min-height: 0; }
+  .tuile-m { position: relative; border: 1px solid var(--ligne); border-radius: 1.4vh; background: linear-gradient(180deg, #0d1219, #090c11); padding: 2vh 1.6vw; display: flex; flex-direction: column; overflow: hidden; }
+  .tuile-m::after { content: ''; position: absolute; left: 1.6vw; right: 1.6vw; top: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 176, 32, .5), transparent); }
+  .tuile-m .c { display: flex; justify-content: space-between; align-items: baseline; } .tuile-m .c b { font: 800 3.2vh var(--mono); color: var(--ambre); letter-spacing: .04em; } .tuile-m .c small { font: 600 1.6vh var(--ui); color: var(--doux); }
+  .tuile-m .px { font: 700 6.6vh var(--mono); color: #fff; letter-spacing: -.02em; margin-top: 1vh; line-height: 1.05; } .tuile-m .vr { font: 800 2.6vh var(--mono); margin-top: .4vh; }
+  .tuile-m svg { margin-top: auto; width: 100%; height: 7vh; } .tuile-m.crit { box-shadow: inset 0 0 0 2px rgba(255, 77, 79, .7); }
+  .odo { display: inline-flex; overflow: hidden; vertical-align: bottom; } .odo span { display: inline-block; } .odo span.r { animation: roule-m .45s cubic-bezier(.2, .9, .3, 1); } .odo span.r.d { animation-name: roule-md; }
+  @keyframes roule-m { from { transform: translateY(85%); opacity: 0; } } @keyframes roule-md { from { transform: translateY(-85%); opacity: 0; } } .odo span.r.u { color: var(--vert); } .odo span.r.d { color: var(--rouge); }
+  .mur-f { display: flex; align-items: center; height: 6vh; margin: 0 -2.4vw; border-top: 1px solid var(--ligne); background: #07090d; overflow: hidden; flex: none; }
+  .mur-f .t { flex: none; height: 100%; display: flex; align-items: center; gap: 1vh; padding: 0 2vw; font: 800 1.5vh var(--ui); letter-spacing: .2em; color: #fff; background: #d61f3a; }
+  .mur-f .v { flex: 1; overflow: hidden; position: relative; height: 100%; } .mur-f .p { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; white-space: nowrap; animation: defile-m var(--duree, 80s) linear infinite; } @keyframes defile-m { to { transform: translateX(-50%); } }
+  .mur-f .dp { display: inline-flex; align-items: center; gap: 1vw; padding: 0 3vw; font: 500 2.3vh var(--ui); color: #d6dae2; } .mur-f .dp time { font: 700 2.1vh var(--mono); color: var(--ambre); }
+  .mur-f .dp .fl { font: 800 1.4vh var(--ui); letter-spacing: .14em; padding: .3vh .6vw; border-radius: 3px; background: #d61f3a; color: #fff; } .mur-f .dp .im { font: 800 1.4vh var(--ui); letter-spacing: .14em; padding: .3vh .6vw; border-radius: 3px; background: rgba(255, 176, 32, .18); color: var(--ambre); }
 </style>
 </head>
 <body>
@@ -178,6 +202,7 @@
   <div class="cherche" id="cherche"><input id="q" type="search" placeholder="Rechercher une nouvelle…" autocomplete="off"></div>
   <a class="rond" id="b-graphique" href="graphique.html" target="graphique" title="Le graphique (D1 · H4 · H1, tes lignes)" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></a>
   <button class="rond" id="b-cherche" title="Rechercher ( / )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+  <button class="rond" id="b-mur" title="Mode mur : lisible de loin, pour un autre écran ( W )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
   <button class="rond" id="b-son" title="Son ( M )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path id="ondes" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
   <div class="liaison"><span class="point" id="point"></span><span id="liaison">connexion…</span></div>
 </div>
@@ -201,6 +226,8 @@
   </aside>
 </div>
 <div class="voile" id="voile"><div class="boite" id="boite"></div></div>
+<div class="mur" id="mur"><div class="mur-h" id="mur-h"></div><div class="mur-c" id="mur-c"></div><div class="mur-g" id="mur-g"></div>
+  <div class="mur-f"><span class="t">● DÉPÊCHES</span><div class="v"><div class="p" id="mur-p"></div></div></div></div>
 <div class="perdue" id="perdue">Liaison perdue avec l'ordinateur de la maison — Tailscale est-il allumé ?</div>
 
 <script>
@@ -492,6 +519,8 @@ $('#fil').addEventListener('click', ev => {
 });
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT') { if (ev.key === 'Escape') ev.target.blur(); return; }
+  if (ev.key === 'w' || ev.key === 'W') { modeMur(!document.body.classList.contains('mode-mur')); return; }
+  if (document.body.classList.contains('mode-mur')) { if (ev.key === 'Escape') modeMur(false); return; }
   if (ev.key === 'Escape' && grapheOuvert) { fermeGraphe(); return; }
   if (!D) return;
   const l = liste(), k = ev.key, va = () => { fil(); const e = document.querySelector('.ligne.sel'); if (e) e.scrollIntoView({ block: 'nearest' }); };
@@ -522,12 +551,51 @@ async function charge() {
       neufs.forEach(i => { if (i.urgence === 'critique' || i.code) ouverts.add(i.id); });
       if (neufs.length) bip(neufs.some(i => i.urgence === 'critique' || i.code));
     }
-    tout(); premier = false;
+    tout(); premier = false; murDonnees();
   } catch (e) {
     $('#point').className = 'point ko'; $('#liaison').textContent = 'hors liaison';
     if (Date.now() - dernierOk > 45000) $('#perdue').classList.add('on');
   }
 }
+
+/* ---------- le mode mur : horloges et séances, prochain chiffre, tes marchés en très grand, les dépêches qui défilent ---------- */
+const PLACES = [['PARIS', 'Europe/Paris', true], ['NEW YORK', 'America/New_York'], ['LONDRES', 'Europe/London'], ['TOKYO', 'Asia/Tokyo']];
+function heureLa(tz) { const p = new Intl.DateTimeFormat('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short', hour12: false }).formatToParts(new Date()), g = t => (p.find(x => x.type === t) || {}).value; return { h: +g('hour'), m: +g('minute'), s: g('second'), j: g('weekday'), txt: `${g('hour')}:${g('minute')}` }; }
+function ouverte(nom) {
+  const ny = heureLa('America/New_York'), tn = ny.h * 60 + ny.m;
+  if (nom === 'NEW YORK') return !['sam.', 'dim.'].includes(ny.j) && tn >= 570 && tn < 960;
+  if (nom === 'LONDRES') { const l = heureLa('Europe/London'), t = l.h * 60 + l.m; return !['sam.', 'dim.'].includes(l.j) && t >= 480 && t < 990; }
+  if (nom === 'TOKYO') { const k = heureLa('Asia/Tokyo'), t = k.h * 60 + k.m; return !['sam.', 'dim.'].includes(k.j) && ((t >= 540 && t < 690) || (t >= 750 && t < 930)); }
+  if (ny.j === 'sam.') return false; if (ny.j === 'dim.') return tn >= 1080; if (ny.j === 'ven.') return tn < 1020; return !(tn >= 1020 && tn < 1080);
+}
+const MUR_CODES = ['SIL', 'MGC', 'MNQ', 'MYM', 'MCL', 'M6E', 'DXY', 'VIX'], murAv = {};
+function odoM(av, ap, monte) { if (!av || av.length !== ap.length) return `<span class="odo">${esc(ap)}</span>`; return `<span class="odo">${[...ap].map((ch, i) => ch !== av[i] && /\d/.test(ch) ? `<span class="r ${monte ? 'u' : 'd'}">${ch}</span>` : `<span>${esc(ch)}</span>`).join('')}</span>`; }
+function courbeM(v, up) { if (!v || v.length < 2) return ''; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1; return `<svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="${v.map((y, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(28 - (y - lo) / r * 26).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#22c55e' : '#ff4d4f'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; }
+function murTic() {
+  if (!document.body.classList.contains('mode-mur')) return;
+  $('#mur-h').innerHTML = PLACES.map(([n, tz, ici]) => { const h = heureLa(tz); return `<div class="hl${ici ? ' ici' : ''}"><b>${ici ? h.txt + `<span style="opacity:.5;font-size:.55em">:${h.s}</span>` : h.txt}</b><small><i class="${ouverte(ici ? 'CME' : n) ? 'ouv' : ''}"></i>${ici ? 'PARIS · CME' : n}</small></div>`; }).join('')
+    + '<div class="esp"></div><div class="tm"><b>ATLAS · RADAR</b><button id="mur-x">Mode lecture · W</button></div>';
+  const now = Date.now() / 1000, a = ((D && D.agenda) || []).filter(x => x.fort && x.at > now - 60).sort((x, y) => x.at - y.at)[0];
+  if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60);
+    $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
+  else $('#mur-c').innerHTML = '';
+}
+function murDonnees() {
+  if (!D || !document.body.classList.contains('mode-mur')) return;
+  const T = D.tableau || {}, C = D.climat || {}, now = Date.now() / 1000, recent = new Set((D.items || []).filter(i => i.urgence === 'critique' && now - (i.publie || i.at) < 5400).flatMap(i => i.marches || []));
+  $('#mur-g').innerHTML = MUR_CODES.map(c => { const t = T[c], k = C[c]; const der = t ? t.dernier : k ? k.dernier : null, pct = t ? t.var_pct : k ? k.var_pct : null; if (der == null) return '';
+    const dec = DEC[c] != null ? DEC[c] : 2, txt = nb(der, dec), html = `<div class="tuile-m${recent.has(c) ? ' crit' : ''}"><div class="c"><b>${c}</b><small>${esc(NOMS[c] || (k && k.nom) || c)}</small></div><div class="px">${odoM(murAv[c] || '', txt, der >= (murAv[c + 'v'] ?? der))}</div>`
+      + `<div class="vr ${pct >= 0 ? 'h' : 'b'}">${pct >= 0 ? '▲' : '▼'} ${nb(Math.abs(pct || 0), 2)} %${t && t.var_ticks != null ? ` · ${sg(t.var_ticks)} t` : ''}</div>${courbeM(t ? t.heure : k.courbe, (pct || 0) >= 0)}</div>`;
+    murAv[c] = txt; murAv[c + 'v'] = der; return html; }).join('');
+  const l = (D.items || []).filter(i => i.urgence === 'critique' || i.urgence === 'importante').sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 14);
+  const h = l.map(i => `<span class="dp"><time>${hm(i.publie || i.at)}</time>${i.urgence === 'critique' ? '<span class="fl">FLASH</span>' : '<span class="im">IMPORTANT</span>'}${esc(i.titre)}</span>`).join('') || '<span class="dp">Aucune dépêche importante pour l’instant.</span>';
+  const pm = $('#mur-p'); if (pm.dataset.h !== h) { pm.dataset.h = h; pm.innerHTML = h + h; pm.style.setProperty('--duree', `${Math.max(60, l.length * 11)}s`); }
+}
+function modeMur(on) { document.body.classList.toggle('mode-mur', on); $('#b-mur').classList.toggle('on', on); ecrit('radar-mur', on ? '1' : '0'); if (on) { murTic(); murDonnees(); } }
+$('#b-mur').onclick = () => modeMur(!document.body.classList.contains('mode-mur'));
+$('#mur').addEventListener('click', ev => { if (ev.target.id === 'mur-x') modeMur(false); });
+setInterval(murTic, 1000);
+if (diese.get('mur') === '1' || lit('radar-mur', '0') === '1') modeMur(true);
 setInterval(() => { $('#horloge').textContent = new Date().toLocaleTimeString('fr-FR'); if ($('#compte') && D) moment(); }, 1000);
 setInterval(seances, 30000);
 // la page se met à jour toute seule quand une nouvelle version est publiée (sauf si un graphique est ouvert ou une recherche en cours)
