@@ -467,6 +467,26 @@
   .pstat small { display: block; font: 700 9.5px 'Inter'; letter-spacing: .12em; color: var(--tres-doux); } .pstat b { font: 800 18px var(--mono); }
   .pcas { display: grid; grid-template-columns: 150px 1fr 80px 120px; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 8px; cursor: pointer; font-size: 12.5px; } .pcas:hover { background: rgba(255, 171, 26, .08); }
   .pcas svg { width: 100%; height: 26px; } .pcas b { font: 700 13px var(--mono); } .pcas small { color: var(--tres-doux); font: 600 10.5px var(--mono); }
+  /* sa liste à lui : modifier, glisser, ajouter */
+  .cols-t .b-ml { all: unset; cursor: pointer; margin-left: 8px; font: 700 8.5px 'Inter'; letter-spacing: .14em; color: var(--ambre); opacity: .75; } .cols-t .b-ml:hover { opacity: 1; }
+  .liste-pied { display: none; flex-wrap: wrap; gap: 6px; padding: 10px 14px 12px; border-top: 1px solid var(--bord); }
+  body.liste-edit .liste-pied { display: flex; }
+  .liste-pied button, .liste-pied input { font: 600 11px 'Inter'; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--bord2); background: transparent; color: var(--texte); cursor: pointer; }
+  .liste-pied button:hover { border-color: var(--ambre); } .liste-pied #ml-ajout { background: var(--ambre); color: #120c00; border-color: transparent; }
+  .liste-pied input { cursor: text; width: 160px; outline: none; border-color: var(--ambre); } .liste-pied #ml-defaut.sur { color: var(--rouge); border-color: var(--rouge); }
+  .ligne-s.edit { grid-template-columns: 1fr auto; cursor: grab; } .ligne-s.edit:active { cursor: grabbing; }
+  .ligne-s.edit .poi { font-style: normal; color: var(--tres-doux); margin-right: 1px; }
+  .ligne-s.edit small { cursor: text; } .ligne-s.edit small:hover { color: var(--texte); text-decoration: underline dotted; }
+  .ligne-s .ret { all: unset; cursor: pointer; width: 24px; height: 24px; border-radius: 6px; text-align: center; line-height: 24px; color: var(--tres-doux); font-size: 16px; } .ligne-s .ret:hover { background: rgba(242, 54, 69, .15); color: var(--rouge); }
+  .ligne-s.glisse, .fam.glisse { opacity: .3; }
+  .ligne-s.cible-av { box-shadow: inset 0 2px 0 var(--ambre) !important; }
+  .fam.cible-dans, .fam.cible-av, .vide-f.cible-dans { color: var(--ambre) !important; box-shadow: inset 0 -2px 0 var(--ambre); }
+  body.liste-edit .fam { cursor: grab; }
+  .vide-f { margin: 2px 14px 6px; padding: 10px; border: 1px dashed var(--bord2); border-radius: 8px; color: var(--tres-doux); font-size: 11px; text-align: center; }
+  .edit-aide { padding: 8px 14px 4px; font-size: 10.5px; color: var(--tres-doux); line-height: 1.45; }
+  .renomme { width: 100%; box-sizing: border-box; font: 500 11px 'Inter'; background: rgba(255, 255, 255, .06); border: 1px solid var(--ambre); border-radius: 4px; color: var(--texte); padding: 1px 4px; outline: none; }
+  .res-t { padding: 10px 12px 4px; font: 700 9.5px 'Inter'; letter-spacing: .16em; color: var(--tres-doux); }
+  .res.aj .plus { color: var(--ambre); font-weight: 700; } .res.aj .deja { color: var(--vert); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -498,7 +518,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v43</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v44</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -537,8 +557,9 @@
     <div class="tete"><b><i class="led"></i>MONITEUR</b><span>TopstepX · temps réel</span><button class="retracte" id="mon-x" title="Rentrer le moniteur (il reste sur ta vue d'ensemble)">▸</button></div>
     <div class="fam" style="cursor:default">LIENS ENTRE MARCHÉS<i title="Chaque couple : ses deux courbes des 4 dernières heures. Clique pour agrandir, clique un nom pour ouvrir ce marché. Ambre : ils se séparent.">?</i></div>
     <div class="liens" id="liens"><div class="lien-m relache"><i></i><span>chargement…</span></div></div>
-    <div class="cols-t"><span>MARCHÉ</span><span>5 JOURS</span><span>DERNIER · VAR</span></div>
+    <div class="cols-t"><span>MARCHÉ<button class="b-ml" id="b-maliste" data-tip="Ta liste : ajouter n'importe quel contrat TopstepX, retirer, réordonner, tes familles">MODIFIER</button></span><span>5 JOURS</span><span>DERNIER · VAR</span></div>
     <div id="liste"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></div>
+    <div class="liste-pied" id="liste-pied"><button id="ml-ajout">+ Ajouter un marché</button><button id="ml-fam">+ Famille</button><input id="ml-fam-n" placeholder="Nom de la famille, Entrée" maxlength="30" hidden><button id="ml-defaut">Liste d'origine</button><button id="ml-fini">Terminé</button></div>
     <div class="aide">
       <b>Tes supports et résistances</b> : trace-les sur les rebonds du zigzag, l'aimant les colle au point exact. Clique sur une ligne : sa petite barre (alerte, couleur, style, effacer).<br>
       <b>Le graphique</b> : <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
@@ -1037,7 +1058,7 @@ if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev
 async function changeCode(c, diffuse = true) { setTimeout(() => { try { majPxDow(); } catch (e) { /* rien */ } }, 50); if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; majListe(r.familles || []); if (ROLE === 'ensemble') chargeTout(); try { majPxDow(); } catch (er) { /* rien */ } try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; if (!GLISSE && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#liste'))) majListe(r.familles || []); else FAMS = r.familles || FAMS; if (ROLE === 'ensemble') chargeTout(); try { majPxDow(); } catch (er) { /* rien */ } try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
 function spark(v, up) {
   if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
@@ -1045,6 +1066,13 @@ function spark(v, up) {
 }
 function majListe(fams) {
   FAMS = fams && fams.length ? fams : FAMS.length ? FAMS : [...new Set(L.map(x => x.famille))];
+  if (EDIT) {
+    $('#liste').innerHTML = '<div class="edit-aide">Glisse un marché pour le déplacer ou le changer de famille, une famille pour la déplacer · double-clic sur un nom pour le renommer · × pour le retirer.</div>'
+      + FAMS.concat(FAMS_VIDES.filter(f => !FAMS.includes(f))).map(f => { const l = L.filter(x => x.famille === f);
+        return `<div class="fam" draggable="true" data-f="${esc(f)}">${esc(f.toUpperCase())}<i title="Glisse pour déplacer la famille">⇅</i></div>` + (l.length ? l.map(x => `<div class="ligne-s edit ${x.code === code ? 'sel' : ''}" draggable="true" data-c="${esc(x.code)}"><div class="c"><b><i class="poi">⠿</i>${esc(x.code)}</b><small>${esc(x.nom)}</small></div><button class="ret" data-ret="${esc(x.code)}" title="Retirer de ta liste">×</button></div>`).join('')
+          : `<div class="vide-f" data-f="${esc(f)}">Glisse un marché ici</div>`); }).join('');
+    majSym(); return;
+  }
   $('#liste').innerHTML = FAMS.map(f => `<div class="fam ${fermees.has(f) ? 'ferme' : ''}" data-f="${esc(f)}">${esc(f.toUpperCase())}<i>▾</i></div>` + (fermees.has(f) ? '' : L.filter(x => x.famille === f).map(x => {
     const fl = avantPx[x.code] != null && avantPx[x.code] !== x.dernier ? (x.dernier > avantPx[x.code] ? 'flash-h' : 'flash-r') : '';
     return `<div class="ligne-s ${x.code === code ? 'sel' : ''}" data-c="${esc(x.code)}"><div class="c"><b>${esc(x.code)}</b><small>${esc(x.nom)}</small></div>${spark(x.spark, x.pct >= 0)}
@@ -1067,22 +1095,106 @@ function majSym() {
     const ex = $('#sym .spk'); if (ex) ex.outerHTML = sv; else $('#sym-px').insertAdjacentHTML('beforebegin', sv); }
   symAvant = { code, txt: pxTxt, v: x.dernier };
 }
-$('#liste').addEventListener('click', ev => {
+$('#liste').addEventListener('click', async ev => {
+  const rt = ev.target.closest('[data-ret]');
+  if (rt) { const c = rt.dataset.ret; if (L.length <= 1) return;
+    try { await suivi({ op: 'retire', code: c }); L = L.filter(x => x.code !== c); majListe(); toast(`${c} retiré de ta liste · « + Ajouter un marché » pour le remettre`); apresSuivi(); if (c === code && L[0]) changeCode(L[0].code); } catch (e) { toast(`✗ ${e.message}`); }
+    return; }
+  if (EDIT && ev.target.closest('.fam')) return;
   const f = ev.target.closest('.fam'); if (f) { const k = f.dataset.f; if (fermees.has(k)) fermees.delete(k); else fermees.add(k); ecrit('g-fams-fermees', JSON.stringify([...fermees])); majListe(); return; }
   const t = ev.target.closest('.ligne-s'); if (t) changeCode(t.dataset.c);
+});
+/* sa liste à lui : n'importe quel contrat TopstepX, son ordre (glisser), ses noms, ses familles ; toutes ses fenêtres suivent */
+let EDIT = false, GLISSE = null, FAMS_VIDES = [];
+const LISTE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-liste' + (DEV ? '-dev' : '')) : null;
+if (LISTE_BC) LISTE_BC.onmessage = () => chargeListe();
+async function suivi(corps) { const r = await api('/maison/graphique', { action: 'suivi', ...corps }); if (!r || r.ok === false) throw new Error((r && r.raison) || 'refusé'); return r; }
+async function apresSuivi() { await chargeListe(); try { if (LISTE_BC) LISTE_BC.postMessage(1); } catch (e) { /* rien */ } }
+function modeEdition(on) { EDIT = on; document.body.classList.toggle('liste-edit', on); $('#b-maliste').textContent = on ? 'TERMINÉ' : 'MODIFIER'; if (!on) { FAMS_VIDES = []; $('#ml-fam-n').hidden = true; } majListe(); }
+$('#b-maliste').onclick = () => modeEdition(!EDIT); $('#ml-fini').onclick = () => modeEdition(false);
+$('#ml-ajout').onclick = () => ouvreRecherche('', true);
+$('#ml-fam').onclick = () => { const i = $('#ml-fam-n'); i.hidden = false; i.value = ''; i.focus(); };
+$('#ml-fam-n').addEventListener('keydown', ev => { ev.stopPropagation(); const i = ev.target;
+  if (ev.key === 'Escape') { i.hidden = true; return; } if (ev.key !== 'Enter') return;
+  const n = i.value.trim().replace(/\s+/g, ' ').slice(0, 30); i.hidden = true;
+  if (n && !FAMS.includes(n) && !FAMS_VIDES.includes(n)) { FAMS_VIDES.push(n); majListe(); toast(`Glisse des marchés dans « ${n} »`); } });
+let defautSur = 0;
+$('#ml-defaut').onclick = async () => { const b = $('#ml-defaut');
+  if (Date.now() - defautSur > 3000) { defautSur = Date.now(); b.classList.add('sur'); b.textContent = 'Sûr ? Clique encore'; setTimeout(() => { b.classList.remove('sur'); b.textContent = "Liste d'origine"; }, 3000); return; }
+  defautSur = 0; b.classList.remove('sur'); b.textContent = "Liste d'origine";
+  try { await suivi({ op: 'defaut' }); FAMS_VIDES = []; await apresSuivi(); toast("✓ Liste d'origine (tes contrats ajoutés restent à portée de « + Ajouter »)"); } catch (e) { toast(`✗ ${e.message}`); } };
+function cibleDe(ev) {
+  const r = ev.target.closest('.ligne-s'), f = ev.target.closest('.fam, .vide-f');
+  if (GLISSE.code) { if (r && r.dataset.c !== GLISSE.code) return { el: r, genre: 'cible-av' }; if (f) return { el: f, genre: 'cible-dans' }; }
+  else if (f && f.classList.contains('fam') && f.dataset.f !== GLISSE.fam) return { el: f, genre: 'cible-av' };
+  return null;
+}
+const nettoieGlisse = () => document.querySelectorAll('#liste .glisse, #liste .cible-av, #liste .cible-dans').forEach(e => e.classList.remove('glisse', 'cible-av', 'cible-dans'));
+$('#liste').addEventListener('dragstart', ev => {
+  if (!EDIT) return; const r = ev.target.closest('.ligne-s'), f = ev.target.closest('.fam');
+  GLISSE = r ? { code: r.dataset.c } : f ? { fam: f.dataset.f } : null; if (!GLISSE) return;
+  ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', GLISSE.code || GLISSE.fam); (r || f).classList.add('glisse');
+});
+$('#liste').addEventListener('dragend', () => { GLISSE = null; nettoieGlisse(); });
+$('#liste').addEventListener('dragover', ev => { if (!GLISSE) return; const t = cibleDe(ev); if (!t) return; ev.preventDefault(); if (!t.el.classList.contains(t.genre)) { document.querySelectorAll('#liste .cible-av, #liste .cible-dans').forEach(e => e.classList.remove('cible-av', 'cible-dans')); t.el.classList.add(t.genre); } });
+$('#liste').addEventListener('drop', async ev => {
+  if (!GLISSE) return; const t = cibleDe(ev); if (!t) return; ev.preventDefault(); const g = GLISSE; GLISSE = null; nettoieGlisse();
+  try {
+    if (g.code) {
+      const x = L.find(y => y.code === g.code), ordre = L.map(y => y.code).filter(c => c !== g.code); let fam;
+      if (t.genre === 'cible-av') { const c = t.el.dataset.c; ordre.splice(ordre.indexOf(c), 0, g.code); fam = (L.find(y => y.code === c) || {}).famille; }
+      else { fam = t.el.dataset.f; let k = -1; ordre.forEach((c, i) => { if ((L.find(y => y.code === c) || {}).famille === fam) k = i; }); ordre.splice(k >= 0 ? k + 1 : ordre.length, 0, g.code); }
+      if (x && fam && fam !== x.famille) { await suivi({ op: 'famille', code: g.code, famille: fam }); x.famille = fam; FAMS_VIDES = FAMS_VIDES.filter(f => f !== fam); }
+      const r = await suivi({ op: 'ordre', codes: ordre });
+      L = ordre.map(c => L.find(y => y.code === c)).filter(Boolean); majListe(r.familles);
+    } else {
+      const fs = FAMS.filter(f => f !== g.fam); fs.splice(fs.indexOf(t.el.dataset.f), 0, g.fam);
+      const r = await suivi({ op: 'ordre_familles', familles: fs }); majListe(r.familles);
+    }
+    apresSuivi();
+  } catch (e) { toast(`✗ ${e.message}`); majListe(); }
+});
+$('#liste').addEventListener('dblclick', ev => {
+  if (!EDIT) return; const s = ev.target.closest('.ligne-s small'); if (!s) return;
+  const c = s.closest('.ligne-s').dataset.c, x = L.find(y => y.code === c); if (!x) return;
+  const i = document.createElement('input'); i.className = 'renomme'; i.value = x.nom; i.maxLength = 40; i.draggable = false; s.replaceWith(i); i.focus(); i.select();
+  let fait = false;
+  const fin = async ok => { if (fait) return; fait = true; const n = i.value.trim();
+    if (ok && n !== x.nom) { try { await suivi({ op: 'nom', code: c, nom: n }); if (n) x.nom = n; apresSuivi(); } catch (e) { toast(`✗ ${e.message}`); } }
+    majListe(); };
+  i.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') fin(true); else if (e.key === 'Escape') fin(false); });
+  i.addEventListener('blur', () => fin(true));
 });
 /* la recherche d'un marché (/ ou clic sur le marché) : avec les mots de tous les jours */
 const MOTS = { MGC: 'or gold micro', GC: 'or gold', SIL: 'argent silver', MCL: 'petrole petrol wti brut oil', CL: 'petrole petrol wti brut oil', ZL: 'soja huile', MYM: 'dow jones dow', MNQ: 'nasdaq tech', NQ: 'nasdaq tech', MES: 's&p sp500 sp 500', DXY: 'dollar', M6E: 'euro eur dollar', VIX: 'vix peur volatilite', MBT: 'bitcoin btc crypto' };
 const sansAccent = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 let selRes = 0;
-function ouvreRecherche(lettre) { $('#voile').classList.add('on'); $('#q').value = lettre || ''; selRes = 0; filtreRecherche(); setTimeout(() => $('#q').focus(), 10); }
+const PH_Q = $('#q').placeholder;
+function ouvreRecherche(lettre, ajout = false) { AJOUT = ajout; TXR = []; txQ = ''; $('#q').placeholder = ajout ? 'Un contrat TopstepX à ajouter : « russell », « livre », « taux », « blé », « ZN »…' : PH_Q; $('#voile').classList.add('on'); $('#q').value = lettre || ''; selRes = 0; filtreRecherche(); setTimeout(() => $('#q').focus(), 10); }
 function fermeRecherche() { $('#voile').classList.remove('on'); }
 function filtreRecherche() {
-  const q = sansAccent($('#q').value.trim());
-  const r = L.filter(x => !q || sansAccent(`${x.code} ${x.nom} ${x.famille} ${MOTS[x.code] || ''}`).includes(q));
-  selRes = Math.min(selRes, Math.max(0, r.length - 1));
-  $('#resultats').innerHTML = r.map((x, k) => `<div class="res ${k === selRes ? 'sel' : ''}" data-c="${esc(x.code)}"><b>${esc(x.code)}</b><span>${esc(x.nom)} · ${esc(x.famille)}</span><span class="v">${nb(x.dernier, x.dec)}</span><span class="v ${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</span></div>`).join('') || '<div class="res"><span>Aucun marché trouvé.</span></div>';
-  return r;
+  const brut = $('#q').value.trim(), q = sansAccent(brut), mots = brut.split(/\s+/).filter(Boolean).length;
+  const r = AJOUT ? [] : L.filter(x => !q || sansAccent(`${x.code} ${x.nom} ${x.famille} ${MOTS[x.code] || ''}`).includes(q));
+  if (brut.length >= 2 && mots <= 2) { if (txQ !== brut) { txQ = brut; clearTimeout(txMinuterie); txMinuterie = setTimeout(() => chercheTX(brut), 300); } }
+  else { TXR = []; txQ = ''; }
+  const aj = (AJOUT ? TXR : TXR.filter(x => !x.suivi && !L.some(y => y.code === x.code))).map(x => ({ ...x, aj: true })), tout = r.concat(aj);
+  selRes = Math.min(selRes, Math.max(0, tout.length - 1));
+  $('#resultats').innerHTML = r.map((x, k) => `<div class="res ${k === selRes ? 'sel' : ''}" data-c="${esc(x.code)}"><b>${esc(x.code)}</b><span>${esc(x.nom)} · ${esc(x.famille)}</span><span class="v">${nb(x.dernier, x.dec)}</span><span class="v ${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</span></div>`).join('')
+    + (aj.length ? `<div class="res-t">${AJOUT ? 'CHEZ TOPSTEPX' : 'À AJOUTER À TA LISTE · TOPSTEPX'}</div>` + aj.map((x, k) => `<div class="res aj ${r.length + k === selRes ? 'sel' : ''}" data-aj="${esc(x.code)}"><b>${esc(x.code)}</b><span>${esc(x.nom)} · ${esc(x.famille)}${x.tick ? ` · tick ${esc(String(x.tick).replace('.', ','))}${x.valeur_tick ? ` = ${nb(x.valeur_tick, 2)} $` : ''}` : ''}</span><span class="v"></span><span class="v ${x.suivi ? 'deja' : 'plus'}">${x.suivi ? '✓ suivi' : '+ Ajouter'}</span></div>`).join('') : '')
+    || `<div class="res"><span>${AJOUT ? (brut.length < 2 ? "Tape le nom d'un marché, en français ou en anglais, ou son code." : txQ === brut && !txAttente ? 'Aucun contrat trouvé chez TopstepX.' : 'Je cherche chez TopstepX…') : 'Aucun marché trouvé.'}</span></div>`;
+  return tout;
+}
+let AJOUT = false, TXR = [], txQ = '', txMinuterie = null, txAttente = false;
+async function chercheTX(t) {
+  txAttente = true;
+  try { const r = await api('/maison/graphique?contrats=' + encodeURIComponent(t)); if (txQ !== t) return; TXR = r.contrats || []; if (r.raison && AJOUT) toast(r.raison); }
+  catch (e) { /* hors liaison */ } finally { if (txQ === t) { txAttente = false; if ($('#voile').classList.contains('on')) filtreRecherche(); } }
+}
+async function ajouteMarche(c, ouvrir) {
+  toast(`Ajout de ${c}…`);
+  try { await suivi({ op: 'ajoute', code: c }); TXR = TXR.map(y => y.code === c ? { ...y, suivi: true } : y); await apresSuivi(); const x = L.find(y => y.code === c);
+    toast(`✓ ${c} ajouté à ta liste${x ? ` (${x.famille})` : ''}`); if (ouvrir) { fermeRecherche(); changeCode(c); } else if ($('#voile').classList.contains('on')) filtreRecherche(); }
+  catch (e) { toast(`✗ ${e.message}`); }
 }
 $('#sym').onclick = () => ouvreRecherche();
 $('#q').addEventListener('input', () => { selRes = 0; filtreRecherche(); });
@@ -1090,12 +1202,14 @@ $('#q').addEventListener('keydown', ev => {
   const r = filtreRecherche();
   if (ev.key === 'ArrowDown') { selRes = Math.min(r.length - 1, selRes + 1); filtreRecherche(); ev.preventDefault(); }
   else if (ev.key === 'ArrowUp') { selRes = Math.max(0, selRes - 1); filtreRecherche(); ev.preventDefault(); }
+  else if (ev.key === 'Enter' && r[selRes] && r[selRes].aj) { if (!r[selRes].suivi) ajouteMarche(r[selRes].code, !AJOUT); }
+  else if (ev.key === 'Enter' && AJOUT) { /* (en mode ajout, Entrée n'ajoute que le contrat choisi) */ }
   else if (ev.key === 'Enter' && r[selRes] && $('#q').value.trim().split(/\s+/).length <= 2) { fermeRecherche(); changeCode(r[selRes].code); }
   else if (ev.key === 'Enter' && /^(montre(-| )moi les fois|les fois o[uù]|combien de fois|quand est-ce que)/i.test($('#q').value.trim())) { const q = $('#q').value.trim(); fermeRecherche(); ouvrePasse(q); }
   else if (ev.key === 'Enter' && $('#q').value.trim()) { const q = $('#q').value.trim(); fermeRecherche(); commandeGraphique(q).then(ok => ok ? toast(`✓ ${ok}`) : copilote(q)).catch(() => copilote(q)); }
   else if (ev.key === 'Escape') fermeRecherche();
 });
-$('#resultats').addEventListener('click', ev => { const t = ev.target.closest('.res[data-c]'); if (t) { fermeRecherche(); changeCode(t.dataset.c); } });
+$('#resultats').addEventListener('click', ev => { const a = ev.target.closest('.res[data-aj]'); if (a) { const x = TXR.find(y => y.code === a.dataset.aj); if (x && !x.suivi) ajouteMarche(x.code, !AJOUT); return; } const t = ev.target.closest('.res[data-c]'); if (t) { fermeRecherche(); changeCode(t.dataset.c); } });
 $('#voile').addEventListener('click', ev => { if (ev.target.id === 'voile') fermeRecherche(); });
 /* les petits messages */
 function toast(t) { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; $('#toasts').appendChild(e); setTimeout(() => e.remove(), 2700); }
