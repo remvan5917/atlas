@@ -523,6 +523,15 @@ async function charge() {
 }
 setInterval(() => { $('#horloge').textContent = new Date().toLocaleTimeString('fr-FR'); if ($('#compte') && D) moment(); }, 1000);
 setInterval(seances, 30000);
+// la page se met à jour toute seule quand une nouvelle version est publiée (sauf si un graphique est ouvert ou une recherche en cours)
+let empreinte = '';
+async function versionPage() {
+  try {
+    const t = await (await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })).text(), e = t.length + ':' + t.slice(-400);
+    if (!empreinte) empreinte = e; else if (e !== empreinte && !grapheOuvert && !cherche) location.reload();
+  } catch (er) { /* hors ligne */ }
+}
+versionPage(); setInterval(versionPage, 3 * 60000);
 setInterval(charge, 8000);
 seances(); majVue(); charge();
 </script>
