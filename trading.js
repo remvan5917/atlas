@@ -386,6 +386,11 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
   }
   document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-td]'); if (!b) return; if (b.dataset.td === 'per') { S.tdPeriode = b.dataset.id; save(); ecranTrading(); } });
   function route(t, n) {
+    if (/\b(qu est ce que j ai rate|j ai rate quoi|quoi de neuf depuis|le rattrapage|rattrape moi|il s est passe quoi)\b/.test(n) && !/\b(ecole|film|serie|match)\b/.test(n)) return async () => {
+      const m = /\b(\d+)\s*(h|heures?)\b/.exec(n) ? +/\b(\d+)\s*(h|heures?)\b/.exec(n)[1] * 60 : /\b(\d+)\s*min/.exec(n) ? +/\b(\d+)\s*min/.exec(n)[1] : 120;
+      let r; try { r = await appel(`/maison/radar?rattrapage=${m}`, null, 20000); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas le radar."); }
+      return say(r.texte || "Rien à signaler sur tes marchés.");
+    };
     if (/\b(affiche|ouvre|montre|mets)\b.*\b(le |l )?(ecran )?radar\b|\bmode radar\b/.test(n)) return () => { ouvreRadar(); return say("J'ouvre l'écran du radar : les dépêches de tes marchés en direct, avec leurs incidences. Laisse-le ouvert à côté du graphique."); };
     if (/\b(le radar|mon radar|radar (de risque|des marches|trading)|quoi de neuf sur (les|mes) marches|les (nouvelles|depeches|news) (des|de mes|sur mes) marches|ce qui (est tombe|vient de tomber) sur (les|mes) marches)\b/.test(n)) return radar;
     if (/\b(mon trading|mon journal de trading|mes (stats|statistiques) de trading|statistiques de trading|tableau de bord (du )?trading|mes comptes (de trading|financés|finances|topstep)|mes objectifs de trading)\b/.test(n)) return monTrading;

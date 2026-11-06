@@ -82,6 +82,31 @@
   .tuile .marque { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--rouge); box-shadow: 0 0 10px var(--rouge); animation: clig 1.2s steps(2) infinite; }
   .tuile.bouge { animation: bouge 1.6s ease-in-out infinite; } @keyframes bouge { 50% { box-shadow: 0 0 0 1px var(--ambre) inset, 0 0 24px rgba(255, 176, 32, .25); } }
 
+  /* ---------- le climat (les moteurs de ses marchés) ---------- */
+  .climat { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: -6px 0 16px; }
+  .climat .lab { font: 700 10.5px var(--ui); letter-spacing: .2em; color: var(--tres-doux); margin-right: 4px; }
+  .clim { display: flex; align-items: center; gap: 8px; background: var(--p1); border: 1px solid var(--ligne); border-radius: 10px; padding: 6px 10px; }
+  .clim b { font: 600 11px var(--ui); color: var(--doux); } .clim .v { font: 600 13px var(--mono); } .clim .p { font: 500 11.5px var(--mono); } .clim svg { width: 54px; height: 18px; }
+  .climat .note { font-size: 11px; color: var(--tres-doux); }
+
+  /* ---------- le graphique d'un marché, avec ses nouvelles ---------- */
+  .voile { position: fixed; inset: 0; background: rgba(2, 4, 8, .72); backdrop-filter: blur(4px); z-index: 30; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .voile.on { display: flex; }
+  .boite { width: min(1200px, 100%); max-height: 92vh; overflow: auto; background: var(--p1); border: 1px solid var(--ligne2); border-radius: 18px; padding: 18px 20px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+  .boite .tete2 { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .boite .tete2 h2 { margin: 0; font: 750 20px var(--ui); } .boite .tete2 .px2 { font: 600 20px var(--mono); }
+  .boite .actions { margin-left: auto; display: flex; gap: 8px; }
+  .boite .actions button { background: var(--p3); border: 1px solid var(--ligne2); border-radius: 9px; padding: 7px 12px; font-weight: 600; font-size: 12.5px; }
+  .graphe { width: 100%; height: 420px; display: block; margin-top: 10px; }
+  .legende { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--doux); margin-top: 8px; } .legende i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .reps { margin-top: 12px; display: grid; gap: 4px; } .reps div { font-size: 12.5px; display: flex; gap: 10px; } .reps .t { font: 500 12px var(--mono); color: var(--doux); min-width: 46px; }
+
+  /* ---------- le rattrapage ---------- */
+  .rattrapage { display: none; border: 1px solid rgba(76, 201, 240, .35); background: linear-gradient(110deg, rgba(76, 201, 240, .12), var(--p1) 60%); border-radius: 14px; padding: 12px 16px; margin: 4px 0 12px; }
+  .rattrapage.on { display: flex; gap: 14px; align-items: flex-start; } .rattrapage .eti { font: 700 11px var(--ui); letter-spacing: .2em; color: var(--cyan); }
+  .rattrapage p { margin: 4px 0 0; font-size: 14.5px; } .rattrapage button { margin-left: auto; background: none; border: 1px solid var(--ligne2); border-radius: 8px; padding: 4px 10px; color: var(--doux); }
+  .chip.res { background: rgba(167, 139, 250, .16); color: #c4b5fd; }
+
   /* ---------- la grille ---------- */
   .grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
   .rail { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 68px; }
@@ -153,8 +178,10 @@
   <div class="liaison"><span class="point" id="point"></span><span id="liaison">connexion…</span></div>
 </div>
 
+<section class="rattrapage" id="rattrapage"><div><div class="eti">PENDANT TON ABSENCE</div><p id="ratt-txt"></p></div><button id="ratt-ok">J’ai vu</button></section>
 <section class="moment" id="moment"><div class="eti">CHARGEMENT</div></section>
 <section class="tuiles" id="tuiles"></section>
+<section class="climat" id="climat"></section>
 
 <div class="grille">
   <main>
@@ -165,9 +192,10 @@
     <div class="carte"><h3><span>AGENDA DU JOUR</span><span id="ag-n"></span></h3><div id="agenda"></div></div>
     <div class="carte"><h3><span>LE RADAR VISE-T-IL JUSTE ?</span></h3><div id="bilan"></div></div>
     <div class="carte"><h3><span>COULISSES</span></h3><div id="sys"></div></div>
-    <div class="carte touches"><kbd>J</kbd> <kbd>K</kbd> naviguer · <kbd>Entrée</kbd> déplier · <kbd>U</kbd> utile · <kbd>B</kbd> bruit · <kbd>1</kbd>–<kbd>6</kbd> un marché · <kbd>0</kbd> tous · <kbd>/</kbd> chercher · <kbd>M</kbd> son</div>
+    <div class="carte touches">Clic sur un marché : son graphique avec les nouvelles · <kbd>J</kbd> <kbd>K</kbd> naviguer · <kbd>Entrée</kbd> déplier · <kbd>U</kbd> utile · <kbd>B</kbd> bruit · <kbd>1</kbd>–<kbd>6</kbd> filtrer un marché · <kbd>0</kbd> tous · <kbd>/</kbd> chercher · <kbd>M</kbd> son · <kbd>Échap</kbd> fermer</div>
   </aside>
 </div>
+<div class="voile" id="voile"><div class="boite" id="boite"></div></div>
 <div class="perdue" id="perdue">Liaison perdue avec l'ordinateur de la maison — Tailscale est-il allumé ?</div>
 
 <script>
@@ -288,7 +316,7 @@ function tuiles() {
     const bouge = (D.mouvements || []).some(v => v.code === m && now - v.at < 5 * 60);
     let lat = '';
     if (p && x && p.prix_moyen && tk[m]) { const t = Math.round((x.dernier - p.prix_moyen) / tk[m] * (p.sens === 'short' ? -1 : 1)); lat = `<span class="${cl(t)}">${sg(t)} t · ${sg(Math.round(t * (vt[m] || 0) * (p.taille || 1)))} $</span>`; }
-    return `<button class="tuile ${p ? 'enpos' : ''} ${marche === m ? 'choisie' : ''} ${bouge ? 'bouge' : ''}" data-m="${m}" title="Touche ${k + 1} : seulement ce marché">
+    return `<button class="tuile ${p ? 'enpos' : ''} ${marche === m ? 'choisie' : ''} ${bouge ? 'bouge' : ''}" data-m="${m}" title="Clic : le graphique avec les nouvelles · touche ${k + 1} : filtrer le fil">
       ${nouv ? '<span class="marque"></span>' : ''}
       <div class="haut"><span class="code">${m}</span><span class="nomm">${NOMS[m]}</span></div>
       <div class="px">${x ? nb(x.dernier, DEC[m]) : '—'}</div>
@@ -347,7 +375,7 @@ function rail() {
     const dt = a.at - now, fi = (D.fiches || {})[`${a.at}-${a.titre}`];
     const fl = fi ? Object.entries(fi.marches).slice(0, 3).map(([m, x]) => `${m} ${x.p5_med != null ? `±${x.p5_med}` : x.amp60_med} t`).join(' · ') : '';
     return `<div class="ev ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}"><div class="q ${dt > 0 && dt < 15 * 60 ? 'proche' : ''}">${dt > 0 && dt < 3600 ? `${Math.ceil(dt / 60)} min` : hm(a.at)}</div>
-      <div class="x">${esc(a.pays)} · ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}<small>${a.prevision ? `cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}${fl ? `<br><span style="color:var(--ambre)">d’habitude : ${esc(fl)}</span>` : ''}</small></div></div>`;
+      <div class="x">${a.resultats ? `<span class="chip res">RÉSULTATS</span> ${esc(a.titre.replace('Résultats ', ''))}` : `${esc(a.pays)} · ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}`}<small>${a.moment ? `${esc(a.moment)} · ` : ''}${a.prevision ? `cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}${fl ? `<br><span style="color:var(--ambre)">d’habitude : ${esc(fl)}</span>` : ''}</small></div></div>`;
   }).join('') : '<div class="vide" style="padding:12px 0">Pas d’annonce importante aujourd’hui.</div>';
   const bl = D.bilan || {}, mk = MK.filter(m => (bl.critique || {})[m] || (bl.importante || {})[m]);
   $('#bilan').innerHTML = (mk.length ? mk.map(m => { const c = (bl.critique || {})[m], x = c || (bl.importante || {})[m];
@@ -359,7 +387,76 @@ function rail() {
     + `<div class="kv"><span>Cours</span><span>${t0 ? (t0.source === 'topstepx' ? 'TopstepX · direct' : 'différés') : '—'}</span></div><div class="kv"><span>Notifications</span><span>${D.ntfy ? 'ntfy · actives' : 'non réglées'}</span></div>`;
 }
 
-function tout() { if (!D) return; moment(); tuiles(); fil(); rail(); }
+
+/* ---------- le climat : le dollar, le taux à 10 ans, le VIX, le Brent ---------- */
+function climat() {
+  const c = D.climat || {}, l = ['DXY', 'US10', 'VIX', 'BRENT'].filter(k => c[k]);
+  $('#climat').innerHTML = l.length ? `<span class="lab">LE CLIMAT</span>` + l.map(k => { const x = c[k], up = (x.courbe || []).length > 1 && x.courbe[x.courbe.length - 1] >= x.courbe[0];
+    return `<div class="clim"><b>${esc(x.nom)}</b><span class="v">${nb(x.dernier, x.dec)}${k === 'US10' ? ' %' : ''}</span><span class="p ${cl(x.var_pct)}">${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %</span>${mini(x.courbe, up)}</div>`; }).join('')
+    + `<span class="note">cours différés, pour le contexte · les taux en direct (contrat 10 ans) sont surveillés pour les mouvements anormaux</span>` : '';
+}
+function mini(v, up) {
+  if (!v || v.length < 2) return '';
+  const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
+  return `<svg viewBox="0 0 100 18" preserveAspectRatio="none"><polyline points="${v.map((x, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(17 - (x - lo) / r * 16).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#22c55e' : '#ff4d4f'}" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+/* ---------- le graphique d'un marché, en barres, avec ses nouvelles ---------- */
+let grapheOuvert = '';
+const COUL = { critique: '#ff4d4f', importante: '#4cc9f0', chiffre: '#ffb020', mouvement: '#ffb020', annonce: '#a78bfa' };
+async function ouvreGraphe(code) {
+  grapheOuvert = code; $('#voile').classList.add('on');
+  if (!$('#boite').innerHTML) $('#boite').innerHTML = '<div class="vide">Chargement du graphique…</div>';
+  let g; try { const r = await fetch(`${ROOT}/maison/radar?graphe=${code}`, { cache: 'no-store' }); g = await r.json(); } catch (e) { $('#boite').innerHTML = '<div class="vide">Graphique indisponible (liaison).</div>'; return; }
+  if (grapheOuvert !== code) return;
+  if (!g.ok || !(g.barres || []).length) { $('#boite').innerHTML = '<div class="vide">Pas de cours pour ce marché.</div>'; return; }
+  const B = g.barres, W = 1160, H = 420, ml = 8, mr = 70, mt = 14, mb = 26, n = B.length;
+  const lo = Math.min(...B.map(b => b[3])), hi = Math.max(...B.map(b => b[2])), pad = (hi - lo) * .06 || 1, y0 = lo - pad, y1 = hi + pad;
+  const t0 = B[0][0], t1 = B[n - 1][0] + 300, X = t => ml + (t - t0) / (t1 - t0) * (W - ml - mr), Y = v => mt + (y1 - v) / (y1 - y0) * (H - mt - mb);
+  const w = Math.max(1.2, (W - ml - mr) / n * .55), dec = DEC[code] != null ? DEC[code] : 3;
+  let svg = '';
+  for (let k = 0; k <= 4; k++) { const v = y0 + (y1 - y0) * k / 4, y = Y(v); svg += `<line x1="${ml}" x2="${W - mr}" y1="${y}" y2="${y}" stroke="rgba(130,170,210,.08)"/><text x="${W - mr + 6}" y="${y + 4}" fill="#5c6a7a" font-size="11" font-family="JetBrains Mono, monospace">${nb(v, dec)}</text>`; }
+  for (let t = Math.ceil(t0 / 3600) * 3600; t < t1; t += 3 * 3600) svg += `<text x="${X(t)}" y="${H - 6}" fill="#5c6a7a" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace">${hm(t)}</text><line x1="${X(t)}" x2="${X(t)}" y1="${mt}" y2="${H - mb}" stroke="rgba(130,170,210,.05)"/>`;
+  // les repères d'abord (derrière les barres)
+  (g.reperes || []).forEach(r => { if (r.at < t0 || r.at > t1) return; const x = X(r.at), c = COUL[r.genre] || '#8d9bab';
+    svg += `<g><title>${hm(r.at)} · ${esc(r.titre)}</title><line x1="${x}" x2="${x}" y1="${mt + 8}" y2="${H - mb}" stroke="${c}" stroke-opacity=".55" stroke-dasharray="3 3"/><circle cx="${x}" cy="${mt + 6}" r="5" fill="${c}"/></g>`; });
+  // les barres (OHLC, sans bougies : son style)
+  B.forEach(b => { const x = X(b[0] + 150), up = b[4] >= b[1], c = up ? '#cfd8e3' : '#6b7a8c';
+    svg += `<line x1="${x}" x2="${x}" y1="${Y(b[2])}" y2="${Y(b[3])}" stroke="${c}" stroke-width="1"/><line x1="${x - w}" x2="${x}" y1="${Y(b[1])}" y2="${Y(b[1])}" stroke="${c}"/><line x1="${x}" x2="${x + w}" y1="${Y(b[4])}" y2="${Y(b[4])}" stroke="${c}"/>`; });
+  const der = B[n - 1][4], ouv = B[0][1], vt = Math.round((der - ouv) / g.pas);
+  svg += `<line x1="${ml}" x2="${W - mr}" y1="${Y(der)}" y2="${Y(der)}" stroke="#4cc9f0" stroke-opacity=".35" stroke-dasharray="2 4"/><rect x="${W - mr + 2}" y="${Y(der) - 9}" width="${mr - 4}" height="18" rx="4" fill="#4cc9f0"/><text x="${W - mr + 6}" y="${Y(der) + 4}" fill="#05070b" font-size="11" font-weight="700" font-family="JetBrains Mono, monospace">${nb(der, dec)}</text>`;
+  const reps = (g.reperes || []).filter(r => r.genre !== 'annonce' || r.at <= Date.now() / 1000).slice().reverse();
+  $('#boite').innerHTML = `<div class="tete2"><h2>${esc(code)} · ${esc(NOMS[code] || g.nom)}</h2><span class="px2">${nb(der, dec)}</span><span class="mono ${cl(vt)}">${sg(vt)} ticks depuis l’ouverture de la séance</span>
+    <div class="actions"><button id="g-filtre">${marche === code ? 'Tout le fil' : 'Filtrer le fil sur ce marché'}</button><button id="g-fermer">Fermer · Échap</button></div></div>
+    <svg class="graphe" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${svg}</svg>
+    <div class="legende"><span><i style="background:#ff4d4f"></i>critique</span><span><i style="background:#4cc9f0"></i>importante</span><span><i style="background:#ffb020"></i>chiffre ou mouvement anormal</span><span><i style="background:#a78bfa"></i>annonce de l’agenda</span><span>Barres de 5 minutes, cours ${g.source === 'topstepx' ? 'TopstepX en direct' : 'différés'}. Survole un repère pour le lire.</span></div>
+    ${reps.length ? `<div class="reps">${reps.map(r => `<div><span class="t">${hm(r.at)}</span><span style="color:${COUL[r.genre] || '#8d9bab'}">●</span><span>${esc(r.titre)}</span></div>`).join('')}</div>` : ''}`;
+  $('#g-fermer').onclick = fermeGraphe;
+  $('#g-filtre').onclick = () => { marche = marche === code ? '' : code; ecrit('radar-marche', marche); fermeGraphe(); tout(); };
+}
+function fermeGraphe() { grapheOuvert = ''; $('#voile').classList.remove('on'); $('#boite').innerHTML = ''; }
+$('#voile').addEventListener('click', ev => { if (ev.target.id === 'voile') fermeGraphe(); });
+setInterval(() => { if (grapheOuvert) ouvreGraphe(grapheOuvert); }, 30000);
+
+/* ---------- le rattrapage : ce qui s'est passé pendant qu'il n'était pas là ---------- */
+async function rattrape(minutes) {
+  if (!ROOT || minutes < 20) return;
+  try {
+    const r = await (await fetch(`${ROOT}/maison/radar?rattrapage=${Math.round(minutes)}`, { cache: 'no-store' })).json();
+    if (!r.texte) return;
+    $('#ratt-txt').textContent = r.texte; $('#rattrapage').classList.add('on');
+  } catch (e) { /* hors liaison */ }
+}
+$('#ratt-ok').addEventListener('click', () => $('#rattrapage').classList.remove('on'));
+let cacheAt = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cacheAt = Date.now(); ecrit('radar-vu-at', String(Date.now())); }
+  else if (cacheAt) { const m = (Date.now() - cacheAt) / 60000; cacheAt = null; rattrape(m); charge(); }
+});
+window.addEventListener('beforeunload', () => ecrit('radar-vu-at', String(Date.now())));
+{ const v = +lit('radar-vu-at', '0'); if (v) setTimeout(() => rattrape((Date.now() - v) / 60000), 1500); }
+
+function tout() { if (!D) return; moment(); tuiles(); climat(); fil(); rail(); }
 
 /* ---------- les interactions ---------- */
 function majVue() {
@@ -371,7 +468,7 @@ $('#vue').addEventListener('click', ev => {
   if (b.dataset.v === 'infos') { ecrit('radar-infos', lit('radar-infos', '0') === '1' ? '0' : '1'); charge(); } else { vue = b.dataset.v; ecrit('radar-vue', vue); }
   sel = -1; majVue(); tout();
 });
-$('#tuiles').addEventListener('click', ev => { const t = ev.target.closest('.tuile'); if (!t) return; marche = marche === t.dataset.m ? '' : t.dataset.m; ecrit('radar-marche', marche); sel = -1; tout(); });
+$('#tuiles').addEventListener('click', ev => { const t = ev.target.closest('.tuile'); if (!t) return; ouvreGraphe(t.dataset.m); });
 $('#b-son').addEventListener('click', () => { son = !son; ecrit('radar-son', son ? '1' : '0'); majVue(); bip(false); });
 $('#b-cherche').addEventListener('click', () => { const c = $('#cherche'); c.classList.toggle('on'); if (c.classList.contains('on')) $('#q').focus(); else { $('#q').value = ''; cherche = ''; charge(); } });
 let tq = 0; $('#q').addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { cherche = $('#q').value.trim(); charge(); }, 300); });
@@ -388,6 +485,7 @@ $('#fil').addEventListener('click', ev => {
 });
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT') { if (ev.key === 'Escape') ev.target.blur(); return; }
+  if (ev.key === 'Escape' && grapheOuvert) { fermeGraphe(); return; }
   if (!D) return;
   const l = liste(), k = ev.key, va = () => { fil(); const e = document.querySelector('.ligne.sel'); if (e) e.scrollIntoView({ block: 'nearest' }); };
   if (k === 'j' || k === 'ArrowDown') { sel = Math.min(l.length - 1, sel + 1); va(); ev.preventDefault(); }
