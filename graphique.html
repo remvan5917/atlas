@@ -322,7 +322,14 @@ $('#nouvelle').onclick = () => {
 // les lignes, communes à toutes les fenêtres : un tracé dans l'une apparaît aussitôt dans les autres
 const canal = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-lignes') : null;
 if (canal) canal.onmessage = async ev => { if (ev.data && ev.data.code === code && !brouillon) { await chargeLignes(); toutDessine(); } };
-setInterval(async () => { if (!brouillon && !choisie) await chargeLignes(); chargeTout(); }, 20000); setInterval(chargeListe, 30000);
+setInterval(async () => { if (!brouillon && !choisie) await chargeLignes(); chargeTout(); }, 20000);
+// la page se met à jour toute seule quand une nouvelle version est publiée (jamais pendant un tracé)
+let empreinte = '';
+async function versionPage() {
+  try { const t = await (await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })).text(), e = t.length + ':' + t.slice(-400);
+    if (!empreinte) empreinte = e; else if (e !== empreinte && !brouillon && !choisie) location.reload(); } catch (er) { /* hors ligne */ }
+}
+versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
 (async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; } await chargeLignes(); construit(); chargeListe(); })();
 </script>
 </body>
