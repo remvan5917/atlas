@@ -149,7 +149,7 @@
   .visite .bt { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--doux); } .visite .bt button { background: #1a2030; border: 1px solid #2f3850; color: #e6e9ef; border-radius: 7px; padding: 4px 9px; font: 600 11.5px 'Inter'; cursor: pointer; } .visite .bt label { display: flex; gap: 5px; align-items: center; cursor: pointer; }
   .visite .faits { display: none; margin-top: 8px; font: 500 11.5px/1.5 'Inter'; color: var(--tres-doux); } .visite .faits.on { display: block; }
   @media (max-width: 900px) { .visite { right: 10px; left: 10px; width: auto; } }
-  @media (max-width: 2240px) { #b-alertes-h, #lien-radar { font-size: 0 !important; gap: 0 !important; padding-left: 9px !important; padding-right: 9px !important; } #b-alertes-h .nb-al { font-size: 10px; } body.dev #etat { display: none; } .haut { gap: 6px !important; } .haut .horloges .horloge:nth-child(n+3) { display: none; } .haut .grp.masque-mobile .ico { width: 30px; min-width: 30px; } }  /* (en 1920 : Paris et New York ; Londres et Tokyo restent sur le mur de la veille) */
+  @media (max-width: 2240px) { #b-alertes-h, #lien-radar, #lien-term { font-size: 0 !important; gap: 0 !important; padding-left: 9px !important; padding-right: 9px !important; } #b-alertes-h .nb-al { font-size: 10px; } body.dev #etat { display: none; } .haut { gap: 6px !important; } .haut .horloges .horloge:nth-child(n+3) { display: none; } .haut .grp.masque-mobile .ico { width: 30px; min-width: 30px; } }  /* (en 1920 : Paris et New York ; Londres et Tokyo restent sur le mur de la veille) */
   @media (max-width: 600px) { .pane .titre { padding: 4px 8px !important; font-size: 11px !important; } .pane .titre .cotl, .pane .titre > span[style], .pane .titre .indl, .pane .titre > br:nth-of-type(2) { display: none !important; } }  /* (téléphone : le nom et les cours, rien qui cache les bougies) */
   .aide-k { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; background: rgba(5, 7, 12, .6); backdrop-filter: blur(3px); } .aide-k.on { display: grid; }
   .aide-k > div { width: min(860px, 94vw); max-height: 86vh; overflow: auto; background: var(--verre-fort); border: 1px solid var(--bord2); border-radius: 14px; padding: 16px 20px; columns: 2 300px; column-gap: 28px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
@@ -223,6 +223,23 @@
   .brief-c p { margin: 0; font: 500 13.5px/1.5 'Inter'; color: #dfe4ee; } .brief-c p b { color: #fff; } .brief-c.attend p { color: #3a4560; animation: vie 1.4s ease-in-out infinite; }
   .beta { display: grid; gap: 10px; padding: 7px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .beta:hover { background: rgba(255,255,255,.03); } .beta.t { font: 800 10px 'Inter'; letter-spacing: .1em; color: #8a91a0; cursor: default; } .beta small { color: #6f7787; font: 600 10px 'Inter'; margin-left: 4px; }
   @media (max-width: 700px) { .brief { grid-template-columns: 1fr; } .beta small { display: none; } }
+  body.role-terminal .app, body.role-terminal #visite, body.role-terminal #figc, body.role-terminal #mon-o, body.role-terminal .poche, body.role-terminal .ticket, body.role-terminal .toasts ~ .amb { display: none !important; }
+  body.role-terminal { background: #05070b; overflow: hidden; } body.role-terminal .role-badge { display: none; }
+  body.role-terminal .fn-p { display: flex !important; inset: 52px 0 0 250px; padding: 0; background: none; backdrop-filter: none; align-items: stretch; z-index: 20; }
+  body.role-terminal .fn-b { width: 100%; max-height: none; height: 100%; border: 0; border-left: 1px solid #1c2230; border-radius: 0; box-shadow: none; background: #07090e; } body.role-terminal #fn-x { display: none; } body.role-terminal #fn-c { padding: 18px 26px 40px; }
+  body.role-terminal .fn-t { padding: 14px 26px; } body.role-terminal .fn-t b { font-size: 22px; }
+  .term-g { position: fixed; left: 0; top: 0; bottom: 0; width: 250px; z-index: 21; background: #080b11; border-right: 1px solid #1c2230; display: flex; flex-direction: column; padding: 14px 12px; }
+  .term-logo { font: 800 14px 'Inter'; letter-spacing: .3em; color: var(--ambre); padding: 4px 6px 14px; } .term-logo span { color: #5b6b8c; letter-spacing: .2em; font-size: 11px; }
+  #term-q { background: #0d1119; border: 1px solid #2a3142; border-radius: 9px; color: #e6e9ef; padding: 9px 11px; font: 600 13px 'Inter'; margin-bottom: 10px; outline: none; } #term-q:focus { border-color: var(--ambre); }
+  #term-l { flex: 1; overflow-y: auto; scrollbar-width: thin; } .term-g .tg { font: 800 9.5px 'Inter'; letter-spacing: .2em; color: #5b6b8c; padding: 12px 8px 5px; }
+  .term-g .ti { display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 7px 8px; cursor: pointer; color: #c6ccd8; border-left: 2px solid transparent; }
+  .term-g .ti b { font: 800 12.5px 'JetBrains Mono', monospace; color: #e6e9ef; min-width: 52px; } .term-g .ti span { font: 500 12px 'Inter'; color: #8a91a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .term-g .ti:hover { background: #0f141e; } .term-g .ti.on { background: rgba(255,171,26,.1); border-left-color: var(--ambre); } .term-g .ti.on b { color: var(--ambre); } .term-g .ti.sel { outline: 1px solid rgba(255,171,26,.5); }
+  .term-aide { font: 500 11px/1.5 'Inter'; color: #5b6b8c; padding: 10px 6px 0; border-top: 1px solid #141a26; }
+  .term-h { position: fixed; left: 250px; right: 0; top: 0; height: 52px; z-index: 21; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: #080b11; border-bottom: 1px solid #1c2230; }
+  .term-m { flex: 1; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; } .term-m .tm { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; background: #0d1119; border: 1px solid #1c2230; border-radius: 8px; padding: 4px 10px; cursor: pointer; color: #e6e9ef; }
+  .term-m .tm b { font: 800 11.5px 'JetBrains Mono', monospace; } .term-m .tm span { font: 600 10px 'JetBrains Mono', monospace; } .term-m .tm .h { color: #19d38c; } .term-m .tm .r { color: #ff3d5a; } .term-m .tm.on { border-color: var(--ambre); background: rgba(255,171,26,.08); } .term-m .tm.on b { color: var(--ambre); }
+  #term-age { font: 600 11px 'Inter'; color: #5b6b8c; white-space: nowrap; } #term-h-t { font: 700 13px 'JetBrains Mono', monospace; color: #c6ccd8; } #term-r { background: #0d1119; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 8px; width: 34px; height: 30px; cursor: pointer; font-size: 15px; }
   .fn-l { margin: 5px 6px; color: #c6ccd8; cursor: pointer; } .fn-l b { font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
   .mov { display: grid; grid-template-columns: minmax(140px, 1.6fr) .8fr .7fr 1.6fr .8fr .8fr; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .mov:hover { background: rgba(255,255,255,.03); } .mov.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; cursor: default; } .mov small { color: #8a91a0; font: 600 11px 'Inter'; }
   .mov .jb { position: relative; height: 18px; background: #0f131c; border-radius: 5px; overflow: hidden; } .mov .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; } .mov .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; }
@@ -694,8 +711,8 @@
     <a class="lien trade-b" id="b-trade" data-tip="Trader depuis le graphique : place ton ordre, tire toi-même ton stop et ton objectif (T)"><svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>Trader</a>
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
-    <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v64</span></span>
+    <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v65</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -1341,7 +1358,7 @@ async function chargeLignes() {
 
 /* ---------- les panneaux, la liste, les touches ---------- */
 let panes = [];
-function construit() { if (ROLE === 'ensemble') return;
+function construit() { if (ROLE === 'ensemble' || ROLE === 'terminal') return;
   const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un') + (vue === 'trois' && DISPO === 'pp' ? ' pp' : '');
   g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas><div class="charge">Chargement…</div></div>`).join('');
   panes = [...g.querySelectorAll('.pane')].map((el, k) => new Pane(el, UTS()[k])); actif = Math.min(actif, panes.length - 1); majActif();
@@ -3160,7 +3177,7 @@ function suggestionsCmd(brut) { const t = brut.trim(), T = t.toUpperCase(); if (
 $('#resultats').addEventListener('click', ev => { const d = ev.target.closest('.res.fn'); if (!d) return; ev.stopPropagation(); const v = d.dataset.cmd; if (/\s$/.test(v)) { $('#q').value = v; $('#q').focus(); filtreRecherche(); } else lanceCmd(v); }, true);
 // le panneau des fonctions
 function ouvreFn(nom, sous, html) { if (CAPT) { CAPT[nom] = { sous, html }; return; } $('#fn-copi').hidden = nom === 'FONCTIONS' || nom === 'ÉTAT'; $('#fn-ret').hidden = !(MODE === 'poche' || MODE === 'nomade') || nom === 'FONCTIONS'; $('#fn-nom').textContent = nom; $('#fn-sous').textContent = sous; $('#fn-c').innerHTML = html; $('#fn-p').classList.add('on'); }
-const fermeFn = () => $('#fn-p').classList.remove('on');
+const fermeFn = () => { if (ROLE === 'terminal') return; $('#fn-p').classList.remove('on'); };
 $('#fn-x').onclick = fermeFn; $('#fn-p').addEventListener('click', ev => { if (ev.target.id === 'fn-p') fermeFn(); });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('#fn-p').classList.contains('on')) { fermeFn(); ev.stopPropagation(); } }, true);
 // ALRT : une horizontale avec alerte, au prix donné
@@ -3487,7 +3504,7 @@ FN_TEL.splice(11, 0, ['CMDTY', 'les matières premières'], ['CT', 'contango ou 
 let CAPT = null, BRIEF_EN = false;
 const BRIEF_L = [['MOV', 'Ce qui bouge', () => fnMov()], ['OMON', 'Le mouvement attendu', () => fnOmon()], ['CORR', 'Qui bouge avec qui', () => fnCorr('60')], ['FXC', 'Les devises', () => fnFxc('jour')],
   ['CMDTY', 'Les matières premières', () => fnCmdty()], ['CT', 'La structure du pétrole', () => fnCt('petrole')], ['GC', 'Les taux américains', () => fnGc()], ['WEI', 'Les indices du monde', () => fnWei()], ['PERF', 'Tes 30 derniers jours', () => fnPerf('30')]];
-async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; const res = {}, t0 = new Date();
+async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; for (let i = 0; i < 40 && !L.length; i++) await new Promise(r => setTimeout(r, 250)); const res = {}, t0 = new Date();
   const dessine = fini => { const ag = (AGENDA || []).filter(a => a.at > Date.now() / 1000 - 60).sort((a, b) => a.at - b.at)[0];
     const carte = (k, titre, txt) => `<div class="brief-c" data-brief="${k}"><div class="bt"><b>${k}</b><span>${esc(titre)}</span><em>ouvrir →</em></div><p>${txt}</p></div>`;
     ouvreFn('BRIEF', `le point du moment · ${t0.toLocaleString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}${fini ? '' : ' · je rassemble…'}${marcheFerme() ? ' · ' + marcheFerme() : ''}`,
@@ -3726,6 +3743,43 @@ document.addEventListener('keydown', ev => {
 document.addEventListener('keyup', ev => { const k = ev.key.toLowerCase(); if ((k === 'q' || k === 'v') && rec && rec.mode === k) arreteMicro(); });
 try { document.fonts.ready.then(() => setTimeout(toutDessine, 50)); } catch (e) { /* rien */ }
 versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
+/* ================= le TERMINAL : un écran dédié aux fonctions, sans rien taper (graphique.html#role=terminal) =================
+   à gauche les fonctions par thème (clic, ou ↑ ↓) ; en haut tes marchés (clic : le terminal ET tes graphiques changent) ; au centre la fonction
+   en grand, rafraîchie seule ; taper au clavier filtre directement les fonctions, Entrée ouvre. */
+const TERM_G = [['MON TRADING', ['BRIEF', 'PERF', 'RISK']], ['LES MARCHÉS', ['MOV', 'OMON', 'CORR', 'BETA', 'WEI', 'CMDTY', 'CT', 'FXC', 'GC']], ['LES INFOS', ['NEWS', 'CAL', 'ECO']], ['TON MARCHÉ', ['DES', 'SEAS', 'HP']], ['LE SYSTÈME', ['ETAT']]];
+const TERM_DEP = ['DES', 'SEAS', 'HP', 'BETA', 'OMON'], TERM_TXT = Object.fromEntries(FN_TEL);
+let TERM_K = lit('term-k', 'BRIEF'), TERM_AT = 0, TERM_CODE = null, TERM_SEL = -1;
+const termListe = () => { const q = sansAccent($('#term-q').value.trim()); return TERM_G.flatMap(([, l]) => l).filter(k => !q || sansAccent(k).includes(q) || sansAccent(TERM_TXT[k] || '').includes(q) || sansAccent((FONCTIONS.find(f => f[0] === k) || [])[1] || '').includes(q)); };
+function termNav() { const vis = new Set(termListe()), q = $('#term-q').value.trim();
+  $('#term-l').innerHTML = TERM_G.map(([g, l]) => { const m = l.filter(k => vis.has(k)); return m.length ? `<div class="tg">${g}</div>` + m.map(k => `<button class="ti ${k === TERM_K ? 'on' : ''} ${q && termListe()[TERM_SEL < 0 ? 0 : TERM_SEL] === k ? 'sel' : ''}" data-tk="${k}"><b>${k}</b><span>${esc(TERM_TXT[k] || '')}</span></button>`).join('') : ''; }).join('') || '<div class="tg">aucune fonction ne correspond</div>';
+  document.querySelectorAll('#term-l [data-tk]').forEach(b => b.onclick = () => { $('#term-q').value = ''; TERM_SEL = -1; termOuvre(b.dataset.tk); }); }
+function termChips() { const h = $('#term-m'); if (!h) return; h.innerHTML = L.map(x => `<button class="tm ${x.code === code ? 'on' : ''}" data-tc="${esc(x.code)}"><b>${esc(x.code)}</b><span class="${(x.pct || 0) >= 0 ? 'h' : 'r'}">${x.pct == null ? '' : (x.pct > 0 ? '+' : '') + nb(x.pct, 2) + ' %'}</span></button>`).join('');
+  h.querySelectorAll('[data-tc]').forEach(b => b.onclick = async () => { await changeCode(b.dataset.tc); termChips(); if (TERM_DEP.includes(TERM_K)) termOuvre(TERM_K, true); }); }
+async function termOuvre(k, rafraichit) { const f = FONCTIONS.find(z => z[0] === k); if (!f) return; TERM_K = k; ecrit('term-k', k); termNav(); const c = $('#fn-c'), y = rafraichit ? c.scrollTop : 0;
+  try { await f[2](''); } catch (e) { /* rien */ } if (rafraichit) c.scrollTop = y; else c.scrollTop = 0; TERM_AT = Date.now(); TERM_CODE = code; majTermAge(); }
+function majTermAge() { const e = $('#term-age'); if (!e) return; const s = TERM_AT ? Math.round((Date.now() - TERM_AT) / 1000) : null; e.textContent = s == null ? '' : `mis à jour il y a ${s < 60 ? s + ' s' : Math.round(s / 60) + ' min'}`; $('#term-h-t').textContent = new Date().toLocaleTimeString('fr-FR'); }
+if (ROLE === 'terminal') {
+  document.body.insertAdjacentHTML('beforeend', `<aside class="term-g"><div class="term-logo">ATLAS <span>TERMINAL</span></div><input id="term-q" placeholder="tape pour chercher…" autocomplete="off" spellcheck="false"><div id="term-l"></div>
+    <div class="term-aide">↑ ↓ choisir · Entrée ouvrir · Échap effacer<br>un clic sur un marché change aussi tes graphiques</div></aside>
+    <header class="term-h"><div id="term-m" class="term-m"></div><span id="term-age"></span><b id="term-h-t"></b><button id="term-r" title="Rafraîchir maintenant">↻</button></header>`);
+  try { $('#boot').remove(); } catch (e) { /* rien */ } BOOT.fini = true;
+  $('#term-q').addEventListener('input', () => { TERM_SEL = -1; termNav(); });
+  $('#term-r').onclick = () => termOuvre(TERM_K, true);
+  addEventListener('keydown', ev => { const t = ev.target, autre = t && t.tagName && /INPUT|TEXTAREA|SELECT/.test(t.tagName) && t.id !== 'term-q'; if (autre || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    const l = termListe();
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); ev.stopImmediatePropagation(); const i = Math.max(0, l.indexOf($('#term-q').value.trim() ? l[Math.max(0, TERM_SEL)] : TERM_K)), j = (i + (ev.key === 'ArrowDown' ? 1 : -1) + l.length) % l.length;
+      if ($('#term-q').value.trim()) { TERM_SEL = j; termNav(); } else termOuvre(l[j]); return; }
+    if (ev.key === 'Enter') { ev.preventDefault(); ev.stopImmediatePropagation(); const k = l[Math.max(0, TERM_SEL)]; if (k) { $('#term-q').value = ''; TERM_SEL = -1; termOuvre(k); $('#term-q').blur(); } return; }
+    if (ev.key === 'Escape') { ev.stopImmediatePropagation(); $('#term-q').value = ''; TERM_SEL = -1; termNav(); $('#term-q').blur(); return; }
+    if (ev.key.length === 1 || ev.key === 'Backspace') { ev.stopImmediatePropagation(); const q = $('#term-q'); if (document.activeElement !== q) { ev.preventDefault(); q.focus(); q.value = ev.key === 'Backspace' ? q.value.slice(0, -1) : q.value + ev.key; TERM_SEL = -1; termNav(); } } }, true);
+  document.title = (DEV ? 'ESSAI · ' : '') + 'Atlas · Terminal';
+  termNav(); termChips(); (async () => { for (let i = 0; i < 40 && !L.length; i++) await new Promise(r => setTimeout(r, 250)); termChips(); termOuvre(TERM_K); })();  // (d'abord tes marchés, puis la fonction)
+  setInterval(() => { majTermAge(); if (code !== TERM_CODE && TERM_CODE && TERM_DEP.includes(TERM_K)) termOuvre(TERM_K, true); }, 1000);
+  setInterval(() => { termChips(); if (!document.hidden && !marcheFerme() && Date.now() - TERM_AT > 60000 && document.activeElement !== $('#term-q')) termOuvre(TERM_K, true); }, 5000);
+}
+// depuis le graphique : ouvrir le terminal dans sa propre fenêtre
+{ const a = $('#lien-term'); if (a) a.href = 'graphique.html#role=terminal&f=t' + (ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : ''); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['TERM', 'le Terminal : toutes les fonctions dans un écran à part, sans rien taper', () => window.open($('#lien-term').href, 'atlas-terminal')]);
 (async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; }
   await chargeLignes(); nbLignesAvant = lignes.length; construit(); chargeListe(); setTimeout(() => verifieVisite('ouverture'), 4000); })();
 
