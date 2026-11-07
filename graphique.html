@@ -510,7 +510,7 @@
   .indic-b .al { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 16px; }
   .indic-b .al div { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; background: #0d1018; border: 1px solid var(--bord); border-radius: 9px; padding: 8px 10px; cursor: pointer; }
   .indic-b .al div:hover { border-color: var(--bord2); } .indic-b .al div.off { opacity: .5; } .indic-b .al div.vrai { box-shadow: inset 3px 0 0 var(--ambre); }
-  .indic-b .al.cfg div { grid-template-columns: 10px 1fr auto auto auto; } .indic-b .al.cfg i.pt { width: 10px; height: 10px; border-radius: 3px; display: block; }
+  .indic-b .al.cfg div { grid-template-columns: 10px 1fr auto auto auto auto; } .indic-b .al.cfg i.pt { width: 10px; height: 10px; border-radius: 3px; display: block; }
   .indic-b .al.cfg .st { font: 600 11px var(--mono); color: #c4c9d3; margin-top: 4px; display: block; } .indic-b .al.cfg .st .h { color: #19d38c; } .indic-b .al.cfg .st .r { color: #ff3d5a; }
   .indic-b .al.cfg em.la { font: 800 9.5px 'Inter'; letter-spacing: .1em; color: #160d00; background: var(--ambre); border-radius: 4px; padding: 2px 6px; margin-left: 8px; font-style: normal; vertical-align: 1px; }
   .pane .titre .indl .cfgt i { border-radius: 50%; } .pane .titre b.meth { color: var(--ambre); font-weight: 700; }
@@ -2586,8 +2586,8 @@ function majConfigs() {
   $('#config-h').textContent = `SUR ${code} · ${LIB[ut] || ut}`;
   $('#config-l').innerHTML = l.length ? l.map(cf => { const e = cf.eval, st = e && e.ok ? e.stats : null, du = dureeTxt(cf.suite * (DUREE[(e && e.ut) || ut] || 3600) / 60);
     const ligne = !cf.visible ? 'masquée : ni repères ni statistiques' : !e ? '…' : !e.ok ? (e.raison || 'pas de calcul') : st ? `<span>${st.n} fois depuis le ${new Date(e.depuis * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</span> · ensuite (${du}) <span class="h">${st.plus}↑</span> <span class="r">${st.moins}↓</span> · médiane ${st.mediane_fin > 0 ? '+' : ''}${st.mediane_fin} t · montée méd. <span class="h">+${st.mediane_haut} t</span> · baisse méd. <span class="r">${st.mediane_bas} t</span>` : 'jamais apparue sur cet historique';
-    return `<div class="${cf.visible ? '' : 'off'}${e && e.maintenant ? ' vrai' : ''}" data-id="${esc(cf.id)}"><i class="pt" style="background:${cf.couleur}"></i><span><b>${esc(cf.nom)}</b>${e && e.maintenant ? '<em class="la">LÀ MAINTENANT</em>' : ''}<small>« ${esc(cf.texte || '')} »${cf.ut ? ` · toujours en ${esc(LIB[cf.ut] || cf.ut)}` : ''}</small><span class="st">${ligne}</span></span>`
-      + `<button data-op="cas"${st ? '' : ' disabled'}>Les cas</button><button data-op="visible">${cf.visible ? 'Masquer' : 'Afficher'}</button><button data-op="efface">Effacer</button></div>`; }).join('')
+    return `<div class="${cf.visible ? '' : 'off'}${e && e.maintenant ? ' vrai' : ''}" data-id="${esc(cf.id)}"><i class="pt" style="background:${cf.couleur}"></i><span><b>${esc(cf.nom)}</b>${e && e.maintenant ? '<em class="la">LÀ MAINTENANT</em>' : ''}<small>« ${esc(cf.texte || '')} »${cf.ut ? ` · toujours en ${esc(LIB[cf.ut] || cf.ut)}` : ''}${Object.keys(cf.surv || {}).length ? ` · 🔔 te prévient sur ${Object.entries(cf.surv).map(([m, u]) => `${esc(m)} ${esc(LIB[u] || u)}`).join(', ')}` : ''}</small><span class="st">${ligne}</span></span>`
+      + `<button data-op="surveille" title="Te prévenir (voix, téléphone, halo) quand elle apparaît à la clôture d'une bougie sur ${esc(code)}">${(cf.surv || {})[code] ? '🔔 Prévenu' : 'Me prévenir'}</button><button data-op="cas"${st ? '' : ' disabled'}>Les cas</button><button data-op="visible">${cf.visible ? 'Masquer' : 'Afficher'}</button><button data-op="efface">Effacer</button></div>`; }).join('')
     : '<span class="vide">Aucune configuration pour l’instant : décris la tienne, au-dessus.</span>';
 }
 $('#config-l').addEventListener('click', async ev => {
@@ -2595,7 +2595,8 @@ $('#config-l').addEventListener('click', async ev => {
   if (b.dataset.op === 'cas') { const e = cf.eval, cas = e.cas.filter(c => c.chemin).slice().reverse(); ouvreConfigs(); $('#passe-p').classList.add('on'); $('#passe-q').value = '';
     $('#passe-m').textContent = ''; rendPasse({ titre: cf.nom, marche: code, ut: e.ut, suite: cf.suite, duree_min: cf.suite * (DUREE[e.ut] || 3600) / 60, cas, stats: e.stats, depuis: e.depuis, note: 'Des faits mesurés sur l’historique disponible, dans les deux sens : ce n’est pas une prévision.' }); return; }
   if (b.dataset.op === 'efface' && !confirm(`Effacer la configuration « ${cf.nom} » ?`)) return;
-  try { const r = await api('/maison/graphique', { action: 'config', op: b.dataset.op, id: cf.id }); if (r.ok === false) throw new Error(r.raison); CFG_AT = {}; await chargeConfigs(true); toast(b.dataset.op === 'efface' ? 'Configuration effacée' : cf.visible ? 'Configuration masquée' : 'Configuration affichée'); } catch (e) { toast(`✗ ${e.message}`); }
+  try { const r = await api('/maison/graphique', { action: 'config', op: b.dataset.op, id: cf.id, code, ut }); if (r.ok === false) throw new Error(r.raison); CFG_AT = {}; await chargeConfigs(true);
+    toast(b.dataset.op === 'efface' ? 'Configuration effacée' : b.dataset.op === 'surveille' ? ((cf.surv || {})[code] ? `Tu ne seras plus prévenu sur ${code}` : `🔔 Atlas te préviendra quand « ${cf.nom} » apparaîtra sur ${code} (à la clôture d'une bougie ${LIB[cf.ut || ut] || cf.ut || ut})`) : cf.visible ? 'Configuration masquée' : 'Configuration affichée'); } catch (e) { toast(`✗ ${e.message}`); }
 });
 async function creeConfig() {
   const t = $('#config-q').value.trim(); if (!t) return; $('#config-m').textContent = 'Atlas traduit ta configuration et la cherche dans l’historique…';
