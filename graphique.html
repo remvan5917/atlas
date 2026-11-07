@@ -154,6 +154,18 @@
   .pos-f { display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 100%; white-space: nowrap; font: 700 11.5px 'JetBrains Mono', monospace; color: #e6e9ef; border-left: 1px solid var(--bord); cursor: pointer; }
   .pos-f[hidden] { display: none; } .pos-f .s { padding: 2px 7px; border-radius: 5px; font: 800 10px 'Inter'; letter-spacing: .08em; } .pos-f .s.l { background: rgba(25, 211, 140, .18); color: #19d38c; } .pos-f .s.c { background: rgba(255, 61, 90, .18); color: #ff3d5a; }
   .pos-f .h { color: #19d38c; } .pos-f .r { color: #ff3d5a; } .pos-f .d { color: var(--tres-doux); font-weight: 600; } .pos-f .a { color: var(--ambre); }
+  .lien.trade-b { border-color: rgba(41, 98, 255, .55); } .lien.trade-b.on { background: #2962ff; color: #fff; border-color: #2962ff; }
+  .ticket { position: fixed; z-index: 48; left: 50%; bottom: 44px; transform: translateX(-50%); display: none; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 14px; background: rgba(11, 14, 21, .94); border: 1px solid #2f3850; box-shadow: 0 16px 40px rgba(0, 0, 0, .45); backdrop-filter: blur(10px); font: 600 12px 'Inter'; color: #e6e9ef; }
+  .ticket.on { display: flex; animation: monte .18s ease-out; } .ticket button { border: 0; border-radius: 9px; padding: 8px 14px; font: 800 12px 'Inter'; letter-spacing: .06em; cursor: pointer; color: #fff; background: #1a2030; }
+  .ticket .tk-g { display: flex; align-items: center; gap: 2px; background: #1a2030; border-radius: 9px; } .ticket .tk-g button { padding: 8px 10px; background: transparent; } .ticket .tk-g b { min-width: 26px; text-align: center; font: 800 14px 'JetBrains Mono', monospace; }
+  .ticket .tk-a { background: linear-gradient(180deg, #19c37d, #0f9c62); } .ticket .tk-v { background: linear-gradient(180deg, #ff4d63, #d92a43); } .ticket .tk-a.arme, .ticket .tk-v.arme { box-shadow: 0 0 0 2px #fff inset; }
+  .ticket .tk-go { background: #2962ff; } .ticket .tk-go:disabled { background: #2a3142; color: #8a91a0; cursor: default; } .ticket .tk-f { background: #3a2410; color: var(--ambre); } .ticket .tk-c { background: transparent; color: var(--doux); font-size: 15px; padding: 6px 8px; }
+  .ticket .tk-r { font: 700 11.5px 'JetBrains Mono', monospace; color: var(--doux); max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ticket .tk-r .r { color: #ff3d5a; } .ticket .tk-r .h { color: #19d38c; } .ticket .tk-r .a { color: var(--ambre); }
+  .treg { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 8px 0; } .treg label { display: flex; gap: 6px; align-items: center; cursor: pointer; } .treg select { background: #0d1018; color: #e6e9ef; border: 1px solid var(--bord2); border-radius: 7px; padding: 5px 8px; }
+  .indic-b p.regles { font-size: 11.5px; line-height: 1.5; color: var(--tres-doux); }
+  .tconf { position: fixed; inset: 0; z-index: 72; display: none; place-items: center; background: rgba(5, 7, 12, .5); } .tconf.on { display: grid; } .tconf > div { width: min(420px, 92vw); background: rgba(12, 15, 22, .98); border: 1px solid #2f3850; border-radius: 14px; padding: 16px 18px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+  .tconf .q { font: 800 10.5px 'Inter'; letter-spacing: .14em; color: #8fb0ff; } .tconf b { display: block; font: 800 18px 'Inter'; margin: 6px 0; } .tconf p { color: #c6ccd8; font: 600 12.5px/1.5 'JetBrains Mono', monospace; margin: 0 0 12px; }
+  .tconf .bt { display: flex; gap: 8px; } .tconf button { flex: 1; border: 0; border-radius: 9px; padding: 9px; font: 800 12px 'Inter'; cursor: pointer; } #tconf-ok { background: #2962ff; color: #fff; } #tconf-non { background: #1a2030; color: #e6e9ef; }
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -561,6 +573,7 @@
     <div class="horloges" id="horloges"></div>
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
+    <a class="lien trade-b" id="b-trade" data-tip="Trader depuis le graphique : place ton ordre, tire toi-même ton stop et ton objectif (T)"><svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>Trader</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
     <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v48</span></span>
@@ -681,6 +694,20 @@
   <p><kbd>M</kbd>mémoire du marché · <kbd>D</kbd>structure de Dow · <kbd>A</kbd>étude d'annonce · <kbd>B</kbd>Atlas présente</p>
   <p><kbd>R</kbd>replay (puis Coach dans sa barre) · <kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p>
   <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture · <kbd>Échap</kbd>fermer, revenir au curseur</p></div></div>
+<div class="ticket" id="ticket">
+  <div class="tk-g"><button id="tk-moins" title="Un contrat de moins">−</button><b id="tk-taille">1</b><button id="tk-plus" title="Un contrat de plus">+</button></div>
+  <button class="tk-a" id="tk-achat">ACHETER</button><button class="tk-v" id="tk-vente">VENDRE</button>
+  <span class="tk-r" id="tk-r"></span>
+  <button class="tk-go" id="tk-go" hidden>Envoyer</button><button class="tk-x" id="tk-x" hidden title="Abandonner ce brouillon (Échap)">✕</button>
+  <button class="tk-f" id="tk-ferme" hidden>Fermer la position</button>
+  <button class="tk-c" id="tk-reg" title="Réglages : allumer les ordres, compte, confirmation">⚙</button></div>
+<div class="indic-p" id="trade-p"><div class="indic-b">
+  <h3>TES ORDRES DEPUIS ATLAS</h3><p class="s">C'est toi qui passes tes ordres : tu poses l'entrée, tu tires ton stop et ton objectif sur le graphique. Atlas ne passe jamais d'ordre tout seul et ne te propose aucun niveau.</p>
+  <div class="treg"><label><input type="checkbox" id="tr-actif"> <b>Ordres allumés</b></label><select id="tr-compte"></select><label><input type="checkbox" id="tr-conf"> Demander une confirmation avant chaque envoi</label></div>
+  <p class="s" id="tr-m"></p>
+  <p class="s regles">Règles Topstep respectées : ordres par l'API permis sur le Combine et l'Express Funded, <b>jamais sur un compte Live funded</b> ; tout part de ton ordinateur ; pas de haute fréquence. Stop obligatoire ; un ordre dont le stop ferait dépasser ta limite du jour est refusé. Dans TopstepX, active <b>« Auto OCO Brackets »</b> : c'est ce qui permet à ton stop et à ton objectif de partir avec l'ordre. Fais tes premiers essais sur un compte d'entraînement.</p>
+  <h3>LES DERNIERS ORDRES</h3><div class="al" id="tr-j"></div></div></div>
+<div class="tconf" id="tconf"><div><div class="q">CONFIRMER L'ORDRE</div><b id="tconf-t"></b><p id="tconf-d"></p><div class="bt"><button id="tconf-ok">Envoyer · Entrée</button><button id="tconf-non">Annuler · Échap</button></div></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button></div><div class="faits" id="visite-f"></div></div>
 <div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
@@ -954,6 +981,7 @@ class Pane {
       if (ps.stop != null) { const ys = Y(ps.stop); if (ys >= 2 && ys <= ph - 2) { c.fillStyle = '#ff3d5a'; c.fillRect(pw + 1, ys - 6, 5, 12); c.fillRect(pw + 6, ys - .75, 8, 1.5); } }
       c.font = '700 10px "JetBrains Mono", monospace'; const tx = `${ps.sens === 'long' ? 'L' : 'S'}${ps.taille} ${t > 0 ? '+' : ''}${t}t`, tw = c.measureText(tx).width + 10;
       c.fillStyle = TH.nuit ? '#0d1018' : '#fff'; c.beginPath(); c.roundRect(pw + AX - tw - 2, ye - 8, tw, 16, 8); c.fill(); c.strokeStyle = col; c.lineWidth = 1.4; c.stroke(); c.fillStyle = col; c.fillText(tx, pw + AX - tw + 3, ye + 3.5); }
+    if (TRADE.on || TRADE.ordres.length) dessineTrade(this, { c, Y, pw, ph, AX, B, TH, dec });
     // le ruban des séances, tout en bas de l'axe du temps (intraday) : Asie gris, Londres bleu, New York ambre
     if (['5m', '15m', '30m', 'H1'].includes(this.ut)) { for (let k = i; k < j; k++) { const se = seanceDe(B[k][0]); if (!se) continue; c.fillStyle = se; c.fillRect(X(k) - bw / 2, H - 3, bw + .5, 3); } }
     // le compte à rebours de la bougie en cours, dans l'axe du temps, sous elle
@@ -1016,6 +1044,7 @@ class Pane {
     const zone = (x, y) => (this.pw && x >= this.pw ? 'prix' : this.ph && y >= this.ph ? 'temps' : 'graphe');
     cv.addEventListener('pointerdown', ev => { actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
       const z = zone(x, y);
+      if (z !== 'temps' && this.T && tradeDown(this, x, y)) return;
       if (REPLAY && REPLAY.choix && this.T) { demarreReplay(this.iT(x)); return; }
       this.inertie = null;
       // le dessin direct : Maj + glisser = une ligne de tendance (aimantée aux deux bouts) ; Alt + clic = une horizontale
@@ -1034,6 +1063,7 @@ class Pane {
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
     cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev); this.souris = [x, y];
+      if (tradeMove(this, x, y)) return;
       if (this.iT && panes.length > 1) { INSTANT = { t: this.iT(x), p: this }; panes.forEach(q => { if (q !== this) q.dessine(); }); }
       if (!glisse && optFig && !brouillon && outil === 'curseur') { const f = figureSous(this, x, y); if (f !== this.figSurvol) { this.figSurvol = f; if (f) montreBulle({ genre: 'figure', f }, ev.clientX, ev.clientY); else if (!this.survol) montreBulle(null); this.dessine(); } else if (f) placeBulle(ev.clientX, ev.clientY); if (f) { cv.style.cursor = 'pointer'; return; } }
       if (!glisse) { const m = (this.marques || []).find(k => Math.hypot(k.x - x, k.y - y) < 9), n = m ? m.n : null; if (n !== this.survol) { this.survol = n; montreBulle(n, ev.clientX, ev.clientY); } else if (n) placeBulle(ev.clientX, ev.clientY); }
@@ -1056,7 +1086,7 @@ class Pane {
         }
       }
       this.dessine(); });
-    cv.addEventListener('pointerup', ev => { const [x, y] = pos(ev); if (!brouillon || brouillon.direct) travail(false);
+    cv.addEventListener('pointerup', ev => { const [x, y] = pos(ev); if (tradeUp(this)) return; if (!brouillon || brouillon.direct) travail(false);
       if (brouillon && brouillon.direct && brouillon.pane === this) { if (Math.abs(this.T(brouillon.t2) - this.T(brouillon.t1)) < 6) { brouillon = null; toutDessine(); } else cliqueDessin(this, x, y); glisse = null; return; }
       if (glisse && glisse.mode === 'regle') { glisse = null; const r = this.regle; setTimeout(() => { if (this.regle === r) { this.regle = null; this.dessine(); } }, 5000); return; }
       if (glisse && glisse.mode === 'graphe' && !glisse.ligne && Math.abs(glisse.v || 0) > .25 && performance.now() - (glisse.lt || 0) < 80) {  // l'élan : le graphique continue de glisser, puis ralentit
@@ -2613,6 +2643,97 @@ async function chargePositions() {
 }
 $('#pos-f').onclick = () => { optPos = !optPos; ecrit('g-pos-axe', optPos ? '1' : '0'); toast(optPos ? 'Repères de ta position sur l’échelle des prix : affichés' : 'Repères de ta position : cachés (la ligne du bas reste)'); toutDessine(); };
 chargePositions(); setInterval(chargePositions, 5000);
+/* ================= trader depuis le graphique : c'est LUI qui pose l'entrée, tire son stop et son objectif ================= */
+// Atlas ne propose aucun niveau et ne passe jamais d'ordre tout seul. La maison vérifie tout (compte permis par Topstep, stop obligatoire,
+// limite du jour) et envoie l'ordre avec son stop et son objectif attachés ; ensuite on fait glisser les ordres posés pour les déplacer.
+var TRADE = { on: false, taille: Math.max(1, parseInt(lit('g-taille', '1'), 10) || 1), reg: { actif: false, confirmation: true }, brouillon: null, ordres: [], drag: null, envoi: false };
+function basculeTrade(on) { TRADE.on = on == null ? !TRADE.on : on; $('#b-trade').classList.toggle('on', TRADE.on); $('#ticket').classList.toggle('on', TRADE.on); if (!TRADE.on) TRADE.brouillon = null; if (TRADE.on) { chargeReglagesTrade(); chargeOrdresTrade(); } majTicket(); toutDessine(); }
+$('#b-trade').onclick = () => basculeTrade();
+async function chargeReglagesTrade(ecrit) { try { const r = await api('/maison/graphique', { action: 'ordre', op: 'reglages', ...(ecrit || {}) , ecrit: !!ecrit }); if (r.ok === false) throw new Error(r.raison); TRADE.reg = r; majReglagesTrade(); if (r.raison) $('#tr-m').textContent = r.raison; return r; } catch (e) { $('#tr-m').textContent = '✗ ' + e.message; } }
+function majReglagesTrade() { const r = TRADE.reg; $('#tr-actif').checked = !!r.actif; $('#tr-conf').checked = r.confirmation !== false;
+  $('#tr-compte').innerHTML = '<option value="">— ton compte —</option>' + (r.comptes || []).map(c => `<option value="${c.id}" ${c.id === r.compte ? 'selected' : ''} ${c.permis ? '' : 'disabled'}>${esc(c.nom)}${c.permis ? '' : ' (interdit par Topstep)'}</option>`).join('');
+  $('#tr-m').textContent = r.actif ? '✓ Allumés : tes ordres partent sur ce compte.' : 'Éteints : aucun ordre ne peut partir.'; majTicket(); }
+$('#tk-reg').onclick = async () => { $('#trade-p').classList.add('on'); await chargeReglagesTrade(); try { const r = await api('/maison/graphique', { action: 'ordre', op: 'journal' }); $('#tr-j').innerHTML = (r.journal || []).length ? r.journal.map(j => `<span class="j"><em>${quand(j.at)}</em>${j.ok ? '✓' : '✗'} ${esc(j.action)} ${esc(j.code || '')} ${esc(j.sens || '')} ${j.taille || ''} ${j.prix != null ? '→ ' + j.prix : ''}${j.erreur ? ' · ' + esc(j.erreur) : ''}</span>`).join('') : '<span class="vide">Aucun ordre encore.</span>'; } catch (e) { /* rien */ } };
+$('#trade-p').addEventListener('click', ev => { if (ev.target.id === 'trade-p') $('#trade-p').classList.remove('on'); });
+$('#tr-actif').onchange = ev => { if (ev.target.checked && !confirm('Allumer les ordres ? Tes ordres partiront vraiment sur le compte choisi.')) { ev.target.checked = false; return; } chargeReglagesTrade({ actif: ev.target.checked }); };
+$('#tr-compte').onchange = ev => chargeReglagesTrade({ compte: ev.target.value ? +ev.target.value : null });
+$('#tr-conf').onchange = ev => chargeReglagesTrade({ confirmation: ev.target.checked });
+$('#tk-moins').onclick = () => { TRADE.taille = Math.max(1, TRADE.taille - 1); ecrit('g-taille', TRADE.taille); majTicket(); toutDessine(); };
+$('#tk-plus').onclick = () => { TRADE.taille = Math.min(20, TRADE.taille + 1); ecrit('g-taille', TRADE.taille); majTicket(); toutDessine(); };
+const dernierCours = () => { const p = panes[actif] || panes[0], B = p && p.d && p.d.bougies; return B && B.length ? B[B.length - 1][4] : null; };
+const infoCode = () => { const p = panes[actif] || panes[0]; return { tk: (p && p.d && p.d.tick) || 1, dec: (p && p.d && p.d.dec) ?? 2, val: VAL_TICK[code] ?? null }; };
+function armer(sens) { if (!TRADE.on) basculeTrade(true); TRADE.brouillon = { sens, entree: null, sl: null, tp: null }; majTicket(); toutDessine(); toast(sens === 'achat' ? 'Achat : tire ton stop vers le bas depuis la ligne bleue, ton objectif vers le haut — glisse l’étiquette pour un ordre limite' : 'Vente : tire ton stop vers le haut depuis la ligne bleue, ton objectif vers le bas — glisse l’étiquette pour un ordre limite'); }
+$('#tk-achat').onclick = () => armer('achat'); $('#tk-vente').onclick = () => armer('vente');
+$('#tk-x').onclick = () => { TRADE.brouillon = null; majTicket(); toutDessine(); };
+function calcBrouillon() { const b = TRADE.brouillon; if (!b) return null; const { tk, val } = infoCode(), der = dernierCours(), e = b.entree ?? der, sg = b.sens === 'achat' ? 1 : -1;
+  const genre = b.entree == null ? 'marche' : (b.entree - der) * sg < 0 ? 'limite' : 'stop', tsl = b.sl != null ? Math.round((e - b.sl) / tk) * sg : null, ttp = b.tp != null ? Math.round((b.tp - e) / tk) * sg : null;
+  const rsk = tsl != null && val != null ? tsl * val * TRADE.taille : null, gain = ttp != null && val != null ? ttp * val * TRADE.taille : null, dll = POSD.dll || null, reste = dll ? dll + (POSD.pnl_jour || 0) : null;
+  return { e, genre, tsl, ttp, rsk, gain, R: tsl > 0 && ttp != null ? ttp / tsl : null, pct: rsk != null && reste ? rsk / reste * 100 : null, ok: tsl != null && tsl > 0 && (ttp == null || ttp > 0) }; }
+function majTicket() { const b = TRADE.brouillon, k = calcBrouillon(), pos = positionsDe(code)[0];
+  $('#tk-taille').textContent = TRADE.taille; $('#tk-achat').classList.toggle('arme', b && b.sens === 'achat'); $('#tk-vente').classList.toggle('arme', b && b.sens === 'vente');
+  $('#tk-go').hidden = $('#tk-x').hidden = !b; $('#tk-ferme').hidden = !pos;
+  if (!TRADE.reg.actif) $('#tk-r').innerHTML = '<span class="a">ordres éteints · ⚙ pour les allumer</span>';
+  else if (!b) $('#tk-r').innerHTML = pos ? `<span class="d">${esc(code)} · glisse tes ordres sur le graphique pour les déplacer</span>` : `<span class="d">${esc(code)} · choisis acheter ou vendre</span>`;
+  else $('#tk-r').innerHTML = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} · ${k.genre === 'marche' ? 'au marché' : k.genre + ' ' + nb(k.e, infoCode().dec)}${k.tsl != null ? ` · <span class="r">SL ${k.tsl} t${k.rsk != null ? ' −' + Math.round(k.rsk) + ' $' : ''}</span>` : ' · <span class="a">tire ton stop</span>'}${k.ttp != null ? ` · <span class="h">TP ${k.ttp} t${k.gain != null ? ' +' + Math.round(k.gain) + ' $' : ''}</span>` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}`;
+  $('#tk-go').disabled = !(b && k && k.ok && TRADE.reg.actif); $('#tk-go').textContent = b && k && k.ok ? `Envoyer ${b.sens === 'achat' ? 'l’achat' : 'la vente'}` : 'Envoyer'; }
+// le dessin : lignes fines, étiquettes collées au bord droit, et un ruban de risque étroit contre l'échelle (rien au milieu des bougies)
+function dessineTrade(p, g) { const { c, Y, pw, ph, AX, dec } = g, { tk, val } = infoCode(), der = dernierCours(); if (der == null) return; p.tradeHits = [];
+  const ligne = (prix, col, txt, tir, poignee) => { const y = Y(prix); if (!isFinite(y)) return null; const yy = Math.max(10, Math.min(ph - 10, y));
+    c.strokeStyle = col; c.lineWidth = 1.3; c.setLineDash(tir ? [6, 4] : []); c.beginPath(); c.moveTo(0, Math.round(yy) + .5); c.lineTo(pw, Math.round(yy) + .5); c.stroke(); c.setLineDash([]);
+    c.font = '700 11px Inter, sans-serif'; const tw = c.measureText(txt).width + 18, x0 = pw - tw - 20; c.fillStyle = col; c.beginPath(); c.roundRect(x0, yy - 10, tw, 20, 10); c.fill(); c.fillStyle = '#fff'; c.fillText(txt, x0 + 9, yy + 4);
+    c.fillStyle = col; c.fillRect(pw + 1, yy - 7, 6, 14); if (poignee) { c.fillStyle = '#fff'; for (let q = -1; q <= 1; q++) c.fillRect(x0 - 12, yy + q * 3 - .5, 8, 1.2); } return { y: yy, x0, tw }; };
+  const ruban = (a, b2, col) => { const y1 = Y(a), y2 = Y(b2); c.fillStyle = col; c.fillRect(pw - 8, Math.min(y1, y2), 5, Math.abs(y2 - y1)); };
+  // ses ordres posés (stop, objectif, ordre en attente) : on les fait glisser pour les déplacer
+  const pos = positionsDe(code)[0];
+  for (const o of TRADE.ordres) { if (o.prix == null) continue; const protege = pos && ((pos.sens === 'long') === (o.cote === 'vente'));
+    const estSL = protege && (pos.sens === 'long' ? o.prix < pos.prix_moyen : o.prix > pos.prix_moyen), col = !protege ? '#2962ff' : estSL ? '#ff3d5a' : '#19c37d';
+    const t = pos ? Math.round((o.prix - pos.prix_moyen) / tk) * (pos.sens === 'long' ? 1 : -1) : Math.round((o.prix - der) / tk);
+    const txt = !protege ? `${o.cote === 'achat' ? 'ACHAT' : 'VENTE'} ${o.taille} ${o.type === 1 ? 'limite' : 'stop'} · ${nb(o.prix, dec)}` : `${estSL ? 'SL' : 'TP'} ${t > 0 ? '+' : ''}${t} t${val != null ? ` · ${t * val * o.taille > 0 ? '+' : ''}${Math.round(t * val * o.taille)} $` : ''}`;
+    const prix = TRADE.drag && TRADE.drag.o === o ? TRADE.drag.prix : o.prix, h = ligne(prix, col, txt + '   ✕', false, true); if (h) p.tradeHits.push({ genre: 'ordre', o, y: h.y, x0: h.x0, tw: h.tw }); }
+  // le brouillon : c'est lui qui pose tout
+  const b = TRADE.brouillon; if (!b) return; const k = calcBrouillon(), sg = b.sens === 'achat' ? 1 : -1;
+  if (k.tsl != null && k.tsl > 0) ruban(k.e, b.sl, 'rgba(255,61,90,.55)'); if (k.ttp != null && k.ttp > 0) ruban(k.e, b.tp, 'rgba(25,195,125,.55)');
+  const he = ligne(k.e, '#2962ff', `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} · ${k.genre === 'marche' ? 'MARCHÉ' : k.genre.toUpperCase() + ' ' + nb(k.e, dec)}`, true, true);
+  if (he) p.tradeHits.push({ genre: 'entree', y: he.y, x0: he.x0, tw: he.tw });
+  if (b.sl != null) { const hs = ligne(b.sl, '#ff3d5a', `SL ${k.tsl} t${k.rsk != null ? ` · −${Math.round(k.rsk)} $` : ''}${k.pct != null ? ` · ${Math.round(k.pct)} % de ta limite` : ''}`, true, true); if (hs) p.tradeHits.push({ genre: 'sl', y: hs.y }); }
+  if (b.tp != null) { const ht = ligne(b.tp, '#19c37d', `TP ${k.ttp} t${k.gain != null ? ` · +${Math.round(k.gain)} $` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}`, true, true); if (ht) p.tradeHits.push({ genre: 'tp', y: ht.y }); }
+  if (b.sl == null && he) { c.font = '600 11px Inter, sans-serif'; const tt = sg > 0 ? '↓ tire ton stop · ↑ ton objectif' : '↑ tire ton stop · ↓ ton objectif', tw = c.measureText(tt).width + 16; c.fillStyle = 'rgba(41,98,255,.14)'; c.beginPath(); c.roundRect(he.x0 - tw - 26, he.y - 10, tw, 20, 10); c.fill(); c.fillStyle = '#5b8cff'; c.fillText(tt, he.x0 - tw - 18, he.y + 4); }
+}
+function tradeHit(p, x, y) { if (!p.tradeHits) return null; let m = null, d0 = 7; for (const h of p.tradeHits) { const d = Math.abs(h.y - y); if (d < d0) { d0 = d; m = h; } } return m; }
+function tradeDown(p, x, y) { if (!TRADE.on && !TRADE.ordres.length) return false; const h = tradeHit(p, x, y); if (!h) return false; const prix = p.iY(y);
+  if (h.genre === 'ordre') { if (x >= h.x0 + h.tw - 22 && x <= h.x0 + h.tw) { annuleOrdre(h.o); return true; } TRADE.drag = { genre: 'ordre', o: h.o, prix: h.o.prix, p }; return true; }
+  if (h.genre === 'entree') { const surEtiquette = x >= h.x0 - 14 && x <= h.x0 + h.tw; TRADE.drag = { genre: surEtiquette ? 'entree' : 'tire', y0: y, p }; return true; }
+  TRADE.drag = { genre: h.genre, p }; return true; }
+function tradeMove(p, x, y) { const d = TRADE.drag; if (!d) { if (TRADE.on || TRADE.ordres.length) { const h = tradeHit(p, x, y); p.cv.style.cursor = h ? 'ns-resize' : ''; return false; } return false; }
+  if (d.p !== p) return true; const { tk } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)], prix = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(infoCode().dec), b = TRADE.brouillon, der = dernierCours();
+  if (d.genre === 'ordre') d.prix = prix;
+  else if (b && d.genre === 'entree') b.entree = Math.abs(prix - der) < tk * 1.5 ? null : prix;
+  else if (b && d.genre === 'tire') { if (Math.abs(y - d.y0) > 4) { const sg = b.sens === 'achat' ? 1 : -1, e = b.entree ?? der; d.genre = (prix - e) * sg < 0 ? 'sl' : 'tp'; } }
+  if (b && d.genre === 'sl') b.sl = prix; if (b && d.genre === 'tp') b.tp = prix;
+  majTicket(); toutDessine(); return true; }
+function tradeUp(p) { const d = TRADE.drag; if (!d) return false; TRADE.drag = null; if (d.genre === 'ordre' && d.prix !== d.o.prix) deplaceOrdre(d.o, d.prix); else toutDessine(); if (TRADE.brouillon) sonne('pose'); return true; }
+async function chargeOrdresTrade() { if (!ROOT || (!TRADE.on && !positionsDe(code).length)) { if (TRADE.ordres.length) { TRADE.ordres = []; toutDessine(); } return; }
+  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ouverts', code }); if (r.ok && !TRADE.drag) { TRADE.ordres = r.ordres || []; toutDessine(); } } catch (e) { /* hors liaison */ } majTicket(); }
+setInterval(() => { if (!document.hidden) chargeOrdresTrade(); }, 4000);
+async function envoyer() { const b = TRADE.brouillon, k = calcBrouillon(); if (!b || !k || !k.ok || TRADE.envoi) return; const { dec } = infoCode();
+  const corps = { action: 'ordre', op: 'place', code, sens: b.sens, taille: TRADE.taille, genre: k.genre, prix: k.genre === 'marche' ? null : k.e, sl: b.sl, tp: b.tp };
+  if (TRADE.reg.confirmation !== false) { $('#tconf-t').textContent = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${code} · ${k.genre === 'marche' ? 'au marché' : k.genre + ' à ' + nb(k.e, dec)}`;
+    $('#tconf-d').innerHTML = `Stop ${nb(b.sl, dec)} · ${k.tsl} ticks${k.rsk != null ? ` · −${Math.round(k.rsk)} $` : ''}<br>${b.tp != null ? `Objectif ${nb(b.tp, dec)} · ${k.ttp} ticks${k.gain != null ? ` · +${Math.round(k.gain)} $` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}` : 'Sans objectif'}${k.pct != null ? `<br>${Math.round(k.pct)} % de ce qu’il te reste avant la limite du jour` : ''}`;
+    $('#tconf').classList.add('on'); TRADE.attente = corps; return; }
+  part(corps); }
+async function part(corps) { TRADE.envoi = true; $('#tk-go').disabled = true;
+  try { const r = await api('/maison/graphique', corps); if (!r.ok) throw new Error(r.raison || 'refusé'); TRADE.brouillon = null; sonne('pose'); toast(`✓ Ordre parti · stop ${r.ticks_sl} t${r.ticks_tp != null ? ` · objectif ${r.ticks_tp} t` : ''}`); }
+  catch (e) { toast(`✗ ${e.message}`); } TRADE.envoi = false; majTicket(); toutDessine(); setTimeout(chargeOrdresTrade, 800); setTimeout(chargePositions, 1200); }
+$('#tk-go').onclick = envoyer;
+$('#tconf-ok').onclick = () => { $('#tconf').classList.remove('on'); if (TRADE.attente) part(TRADE.attente); TRADE.attente = null; };
+$('#tconf-non').onclick = () => { $('#tconf').classList.remove('on'); TRADE.attente = null; };
+async function deplaceOrdre(o, prix) { const ancien = o.prix; o.prix = prix; toutDessine();
+  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'modifie', code, ordre: o.ordre, prix }); if (!r.ok) throw new Error(r.raison); toast(`✓ Ordre déplacé à ${nb(r.prix, infoCode().dec)}`); }
+  catch (e) { o.prix = ancien; toast(`✗ ${e.message}`); toutDessine(); } setTimeout(chargeOrdresTrade, 600); }
+async function annuleOrdre(o) { if (TRADE.reg.confirmation !== false && !confirm('Annuler cet ordre ?')) return;
+  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'annule', ordre: o.ordre }); if (!r.ok) throw new Error(r.raison); toast('✓ Ordre annulé'); } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargeOrdresTrade, 500); }
+$('#tk-ferme').onclick = async () => { if (TRADE.reg.confirmation !== false && !confirm(`Fermer ta position sur ${code} au marché ?`)) return;
+  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ferme', code }); if (!r.ok) throw new Error(r.raison); toast('✓ Position fermée'); } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargePositions, 800); setTimeout(chargeOrdresTrade, 800); };
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
@@ -2678,6 +2799,9 @@ document.addEventListener('keydown', ev => {
   if (k === 'h' && ev.shiftKey && !ev.repeat) { ouvrePasse(); return; }
   if (k === 'l' && ev.shiftKey && !ev.repeat) { ouvreAlertes(); return; }
   if (k === 'c' && ev.shiftKey && !ev.repeat) { ouvreConfigs(); return; }
+  if (k === 't' && !ev.shiftKey && !ev.repeat) { basculeTrade(); return; }
+  if (k === 'escape' && TRADE.brouillon) { TRADE.brouillon = null; majTicket(); toutDessine(); return; }
+  if (k === 'enter' && $('#tconf').classList.contains('on')) { $('#tconf-ok').click(); return; }
   if (ev.key === '?' && !ev.repeat) { $('#aide-k').classList.toggle('on'); return; }
   if (k === 'escape' && $('#aide-k').classList.contains('on')) { $('#aide-k').classList.remove('on'); return; }
   if (k === 'escape' && MARQUE_PASSE) { MARQUE_PASSE = null; toutDessine(); }
