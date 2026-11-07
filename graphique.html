@@ -146,6 +146,10 @@
   .visite .faits { display: none; margin-top: 8px; font: 500 11.5px/1.5 'Inter'; color: var(--tres-doux); } .visite .faits.on { display: block; }
   @media (max-width: 900px) { .visite { right: 10px; left: 10px; width: auto; } }
   @media (max-width: 2240px) { body.dev #etat { display: none; } .haut { gap: 6px !important; } .haut .horloges .horloge:nth-child(n+3) { display: none; } .haut .grp.masque-mobile .ico { width: 30px; min-width: 30px; } }  /* (en 1920 : Paris et New York ; Londres et Tokyo restent sur le mur de la veille) */
+  @media (max-width: 600px) { .pane .titre { padding: 4px 8px !important; font-size: 11px !important; } .pane .titre .cotl, .pane .titre > span[style], .pane .titre .indl, .pane .titre > br:nth-of-type(2) { display: none !important; } }  /* (téléphone : le nom et les cours, rien qui cache les bougies) */
+  .aide-k { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; background: rgba(5, 7, 12, .6); backdrop-filter: blur(3px); } .aide-k.on { display: grid; }
+  .aide-k > div { width: min(860px, 94vw); max-height: 86vh; overflow: auto; background: var(--verre-fort); border: 1px solid var(--bord2); border-radius: 14px; padding: 16px 20px; columns: 2 300px; column-gap: 28px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+  .aide-k h3 { column-span: all; margin: 0 0 8px; font: 800 11px 'Inter'; letter-spacing: .14em; color: var(--ambre); } .aide-k p { margin: 0 0 7px; font: 500 12.5px/1.45 'Inter'; color: #d5dae3; break-inside: avoid; } .aide-k kbd { display: inline-block; min-width: 18px; padding: 1px 6px; margin-right: 6px; border-radius: 5px; background: #1a2030; border: 1px solid #2f3850; font: 700 11px 'JetBrains Mono', monospace; color: #fff; text-align: center; }
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -662,6 +666,16 @@
   <h3>TES MISES EN PAGE</h3><p class="s">Une mise en page garde : un ou trois graphiques, leurs unités, le marché, la méthode, les indicateurs, les réglages (zigzag, zones, volume, nouvelles, figures, log, type de bougies) et la comparaison. Elle s'applique à cette fenêtre.</p>
   <div class="nl"><input id="pages-q" placeholder="Nom de la mise en page actuelle (ex. « Matin D1 H4 H1 », « Ichimoku or »)" autocomplete="off"><button class="go" id="pages-go">Enregistrer</button></div>
   <div class="al" id="pages-l"></div></div></div>
+<div class="aide-k" id="aide-k"><div><h3>LES RACCOURCIS · ? POUR FERMER</h3>
+  <p><kbd>/</kbd>chercher un marché, ou écrire une phrase : « préviens-moi quand… », « montre-moi les fois où… », « configuration : … », « compare avec l'or », « méthode ichimoku », « montre-moi les figures »</p>
+  <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
+  <p><kbd>L</kbd>ligne · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie</p>
+  <p><kbd>Maj</kbd>+ glisser : une tendance · <kbd>Alt</kbd>+ clic : une horizontale · double-clic sur un pivot : support / résistance · <kbd>Ctrl</kbd>+ glisser : la règle</p>
+  <p><kbd>I</kbd>indicateurs et méthodes · <kbd>Maj</kbd><kbd>C</kbd>configurations · <kbd>Maj</kbd><kbd>L</kbd>alertes · <kbd>Maj</kbd><kbd>H</kbd>interroger le passé</p>
+  <p><kbd>E</kbd>le copilote explique · <kbd>Q</kbd>maintenu : une question · <kbd>V</kbd>maintenu : une note au journal</p>
+  <p><kbd>M</kbd>mémoire du marché · <kbd>D</kbd>structure de Dow · <kbd>A</kbd>étude d'annonce · <kbd>B</kbd>Atlas présente</p>
+  <p><kbd>R</kbd>replay (puis Coach dans sa barre) · <kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p>
+  <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture · <kbd>Échap</kbd>fermer, revenir au curseur</p></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button></div><div class="faits" id="visite-f"></div></div>
 <div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
@@ -2115,6 +2129,12 @@ function calculeIndics(p, B, IND) {
   const N = B.length, memo = new Map();
   const ser = e => { const k = JSON.stringify(e); if (memo.has(k)) return memo.get(k); const v = ev(e); memo.set(k, v); return v; };
   const roul = (src, n, fn) => { const o = new Float64Array(N).fill(NaN); for (let k = n - 1; k < N; k++) { const w = []; for (let q = k - n + 1; q <= k; q++) w.push(src[q]); if (w.every(isFinite)) o[k] = fn(w); } return o; };
+  const glisse = (src, n, ecart) => {  // moyenne (ou écart-type) glissante en une passe : sommes courantes, vide si une valeur manque dans la fenêtre
+    const o = new Float64Array(N).fill(NaN); let sm = 0, s2 = 0, trous = 0;
+    for (let k = 0; k < N; k++) { const x = src[k]; if (isFinite(x)) { sm += x; s2 += x * x; } else trous++;
+      if (k >= n) { const y = src[k - n]; if (isFinite(y)) { sm -= y; s2 -= y * y; } else trous--; }
+      if (k >= n - 1 && !trous) { const m = sm / n; o[k] = ecart ? Math.sqrt(Math.max(0, s2 / n - m * m)) : m; } }
+    return o; };
   const ema = (src, n) => { const o = new Float64Array(N).fill(NaN), a = 2 / (n + 1); let pr = NaN; for (let k = 0; k < N; k++) { if (!isFinite(src[k])) continue; pr = isFinite(pr) ? pr + a * (src[k] - pr) : src[k]; o[k] = pr; } return o; };
   const jourCME = t => Math.floor((t + (7 * 3600) - (1440 - decalage('America/Chicago', t)) % 1440 * 60) / 86400);  // (la journée CME commence à 17 h à Chicago)
   const PL = { tokyo: ['Asia/Tokyo', 480, 900], londres: ['Europe/London', 420, 960], newyork: ['America/New_York', 480, 1020] };
@@ -2124,10 +2144,10 @@ function calculeIndics(p, B, IND) {
     if (e.op) { const a = ser(e.a), b = ser(e.b), o = new Float64Array(N); for (let k = 0; k < N; k++) o[k] = e.op === '+' ? a[k] + b[k] : e.op === '-' ? a[k] - b[k] : e.op === '*' ? a[k] * b[k] : b[k] ? a[k] / b[k] : NaN; return o; }
     const n = Math.max(1, Math.min(500, +e.n || 14)), S = e.src ? ser(e.src) : null;
     switch (e.f) {
-      case 'sma': return roul(S, n, w => w.reduce((x, y) => x + y, 0) / n);
+      case 'sma': return glisse(S, n, false);
       case 'ema': return ema(S, n);
       case 'wma': return roul(S, n, w => w.reduce((x, y, q) => x + y * (q + 1), 0) / (n * (n + 1) / 2));
-      case 'stdev': return roul(S, n, w => { const m = w.reduce((x, y) => x + y, 0) / n; return Math.sqrt(w.reduce((x, y) => x + (y - m) ** 2, 0) / n); });
+      case 'stdev': return glisse(S, n, true);
       case 'plus_haut': return roul(S, n, w => Math.max(...w));
       case 'plus_bas': return roul(S, n, w => Math.min(...w));
       case 'change': { const o = new Float64Array(N).fill(NaN); for (let k = n; k < N; k++) o[k] = S[k] - S[k - n]; return o; }
@@ -2492,6 +2512,7 @@ function montreVisite(r) {
   clearTimeout(visiteMinuteur); visiteMinuteur = setTimeout(() => { if (!e.matches(':hover')) e.classList.remove('on'); }, 60000);
   if (QUI_SONNE && lit('g-visite-voix', '0') === '1') dire(r.lignes.join(' '));
 }
+$('#aide-k').addEventListener('click', () => $('#aide-k').classList.remove('on'));
 $('#visite-x').onclick = () => $('#visite').classList.remove('on');
 $('#visite-plus').onclick = () => $('#visite-f').classList.toggle('on');
 $('#visite-voix').checked = lit('g-visite-voix', '0') === '1'; $('#visite-voix').onchange = ev => ecrit('g-visite-voix', ev.target.checked ? '1' : '0');
@@ -2603,6 +2624,8 @@ document.addEventListener('keydown', ev => {
   if (k === 'h' && ev.shiftKey && !ev.repeat) { ouvrePasse(); return; }
   if (k === 'l' && ev.shiftKey && !ev.repeat) { ouvreAlertes(); return; }
   if (k === 'c' && ev.shiftKey && !ev.repeat) { ouvreConfigs(); return; }
+  if (ev.key === '?' && !ev.repeat) { $('#aide-k').classList.toggle('on'); return; }
+  if (k === 'escape' && $('#aide-k').classList.contains('on')) { $('#aide-k').classList.remove('on'); return; }
   if (k === 'escape' && MARQUE_PASSE) { MARQUE_PASSE = null; toutDessine(); }
   if (k === 'a' && !ev.repeat) { ouvreEtude(); return; } if (k === 'r' && !ev.repeat) { choisirReplay(); return; }
   if (k === 'e' && !ev.repeat) copilote(); else if (k === 'm' && !ev.repeat) memoire(); else if (k === 'd' && !ev.repeat) ouvreDow();
