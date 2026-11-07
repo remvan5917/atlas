@@ -145,6 +145,7 @@
   .visite .bt { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--doux); } .visite .bt button { background: #1a2030; border: 1px solid #2f3850; color: #e6e9ef; border-radius: 7px; padding: 4px 9px; font: 600 11.5px 'Inter'; cursor: pointer; } .visite .bt label { display: flex; gap: 5px; align-items: center; cursor: pointer; }
   .visite .faits { display: none; margin-top: 8px; font: 500 11.5px/1.5 'Inter'; color: var(--tres-doux); } .visite .faits.on { display: block; }
   @media (max-width: 900px) { .visite { right: 10px; left: 10px; width: auto; } }
+  @media (max-width: 2240px) { body.dev #etat { display: none; } .haut { gap: 6px !important; } .haut .horloges .horloge:nth-child(n+3) { display: none; } .haut .grp.masque-mobile .ico { width: 30px; min-width: 30px; } }  /* (en 1920 : Paris et New York ; Londres et Tokyo restent sur le mur de la veille) */
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -533,10 +534,6 @@
       <button class="ico" id="vue-trois" data-tip="Trois graphiques (clique sur l'un, puis sur une unité)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg></button>
       <button class="ico" id="b-pages" data-tip="Tes mises en page : enregistrer et rappeler (vue, unités, marché, méthode, indicateurs, comparaison)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/></svg></button>
     </div>
-    <div class="grp">
-      <button class="ico txt" id="t-log" data-tip="Échelle logarithmique : les mêmes pourcentages font la même hauteur">log</button>
-      <button class="ico" id="b-cmp" data-tip="Comparer avec un autre marché : superposé en %, ou leur rapport / écart dans une sous-fenêtre"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-7 5 5"/><path d="M3 12l5 2 4-4 4 3 5-4" stroke-dasharray="2.5 2"/></svg></button>
-    </div>
     <div class="grp masque-mobile">
       <button class="ico" id="t-indic" data-tip="Indicateurs : les classiques, ou décris le tien en français (I)"><svg viewBox="0 0 24 24"><path d="M4 18c3-8 5-8 8-4s5 4 8-6"/><path d="M4 6h5M6.5 3.5v5" /></svg></button>
       <button class="ico" id="t-bougies" data-tip="Type de graphique : barres, bougies, Heikin Ashi, ligne"><svg viewBox="0 0 24 24"><path d="M8 4v16M16 6v12"/><rect x="6" y="8" width="4" height="7" rx="1"/><rect x="14" y="9" width="4" height="5" rx="1"/></svg></button>
@@ -544,6 +541,8 @@
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
       <button class="ico" id="t-nuit" data-tip="Mode nuit des graphiques : automatique le soir"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+      <button class="ico txt" id="t-log" data-tip="Échelle logarithmique : les mêmes pourcentages font la même hauteur">log</button>
+      <button class="ico" id="b-cmp" data-tip="Comparer avec un autre marché : superposé en %, ou leur rapport / écart dans une sous-fenêtre"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-7 5 5"/><path d="M3 12l5 2 4-4 4 3 5-4" stroke-dasharray="2.5 2"/></svg></button>
       <button class="ico" id="t-fig" data-tip="Figures repérées : triangles, canaux, doubles sommets, compressions — en pointillés, expliquées au survol"><svg viewBox="0 0 24 24"><path d="M3 18L12 5l9 13z" stroke-dasharray="3 2.4"/></svg></button>
       <button class="ico" id="t-news" data-tip="Les nouvelles du radar sur l'axe du temps (survole, clique pour l'explication)"><svg viewBox="0 0 24 24"><path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 9h4v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/></svg></button>
       <button class="ico" id="t-cot" data-tip="Positionnement des gros acteurs (rapport COT de la CFTC)"><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/></svg></button>
@@ -1661,7 +1660,7 @@ async function installeSalle() {
 // chaque fenêtre de la salle retient sa place (écran, position, taille) pour la prochaine installation
 function retiensPlace() { const r = ROLE || (document.title === 'Atlas · Structure' ? 'structure' : ''); if (!r) return; const p = JSON.parse(lit('g-salle-pos', '{}')); p[r] = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; ecrit('g-salle-pos', JSON.stringify(p)); }
 setInterval(retiensPlace, 5000); window.addEventListener('beforeunload', retiensPlace);
-if (DEV) { const et = $('#etat'); if (et) et.insertAdjacentHTML('beforebegin', '<span class="role-badge" style="background:#d61f3a;color:#fff">VERSION D’ESSAI</span>'); document.title = 'ESSAI · ' + document.title; }
+if (DEV) { const et = $('#etat'); document.body.classList.add('dev'); if (et) et.insertAdjacentHTML('beforebegin', '<span class="role-badge" style="background:#d61f3a;color:#fff">VERSION D’ESSAI</span>'); document.title = 'ESSAI · ' + document.title; }
 if (ROLE) { document.body.classList.add('role-' + ROLE); const et = $('#etat'); if (et) et.insertAdjacentHTML('beforebegin', `<span class="role-badge">${ROLE === 'lie' ? 'MARCHÉ LIÉ' : ROLE === 'ensemble' ? 'VUE D’ENSEMBLE' : 'STRUCTURE'}</span>`); }
 if (ROLE === 'ensemble') setTimeout(() => { if (!$('#dow').classList.contains('on')) ouvreDow(); }, 400);
 if (ROLE === 'lie') setTimeout(() => { if (vue !== 'trois') { vue = 'trois'; utsTrois = ['D1', 'H4', 'H1']; construit(); } }, 300);
