@@ -710,7 +710,7 @@
   <button class="tk-c" id="tk-reg" title="Réglages : allumer les ordres, compte, confirmation">⚙</button></div>
 <div class="indic-p" id="trade-p"><div class="indic-b">
   <h3>TES ORDRES DEPUIS ATLAS</h3><p class="s">C'est toi qui passes tes ordres : tu poses l'entrée, tu tires ton stop et ton objectif sur le graphique. Atlas ne passe jamais d'ordre tout seul et ne te propose aucun niveau.</p>
-  <div class="treg"><label><input type="checkbox" id="tr-actif"> <b>Ordres allumés</b></label><select id="tr-compte"></select><label><input type="checkbox" id="tr-conf"> Demander une confirmation avant chaque envoi</label></div>
+  <div class="treg"><label><input type="checkbox" id="tr-actif"> <b>Ordres allumés</b></label><select id="tr-compte"></select><label><input type="checkbox" id="tr-conf"> Demander une confirmation avant chaque envoi</label><label>Ta limite de perte du jour <input type="number" id="tr-dll" min="100" max="20000" step="50" style="width:90px;background:#0d1018;color:#e6e9ef;border:1px solid var(--bord2);border-radius:7px;padding:4px 6px"> $</label></div>
   <p class="s" id="tr-m"></p>
   <p class="s regles">Règles Topstep respectées : ordres par l'API permis sur le Combine et l'Express Funded, <b>jamais sur un compte Live funded</b> ; tout part de ton ordinateur ; pas de haute fréquence. Stop obligatoire ; un ordre dont le stop ferait dépasser ta limite du jour est refusé. Ton ordre part seul ; dès qu'il est exécuté, la maison pose ton stop et ton objectif (en une à deux secondes), puis annule celui qui reste quand l'autre est touché. <b>Garde la maison allumée tant que tu es en position.</b> Une seule entrée suivie à la fois par marché. Fais tes premiers essais sur un compte d'entraînement.</p>
   <h3>LES DERNIERS ORDRES</h3><div class="al" id="tr-j"></div></div></div>
@@ -2660,9 +2660,10 @@ var TRADE = { genre: ['marche', 'limite', 'stop'].includes(lit('g-tgenre', 'marc
 function basculeTrade(on) { TRADE.on = on == null ? !TRADE.on : on; $('#b-trade').classList.toggle('on', TRADE.on); $('#ticket').classList.toggle('on', TRADE.on); if (!TRADE.on) TRADE.brouillon = null; if (TRADE.on) { chargeReglagesTrade(); chargeOrdresTrade(); } majTicket(); toutDessine(); }
 $('#b-trade').onclick = () => basculeTrade();
 async function chargeReglagesTrade(ecrit) { try { const r = await api('/maison/graphique', { action: 'ordre', op: 'reglages', ...(ecrit || {}) , ecrit: !!ecrit }); if (r.ok === false) throw new Error(r.raison); TRADE.reg = r; majReglagesTrade(); if (r.raison) $('#tr-m').textContent = r.raison; return r; } catch (e) { $('#tr-m').textContent = '✗ ' + e.message; } }
-function majReglagesTrade() { const r = TRADE.reg; $('#tr-actif').checked = !!r.actif; $('#tr-conf').checked = r.confirmation !== false;
+function majReglagesTrade() { const r = TRADE.reg; $('#tr-actif').checked = !!r.actif; $('#tr-conf').checked = r.confirmation !== false; if (document.activeElement !== $('#tr-dll')) $('#tr-dll').value = r.dll || '';
   $('#tr-compte').innerHTML = '<option value="">— ton compte —</option>' + (r.comptes || []).map(c => `<option value="${c.id}" ${c.id === r.compte ? 'selected' : ''} ${c.permis ? '' : 'disabled'}>${esc(c.nom)}${c.permis ? '' : ' (interdit par Topstep)'}</option>`).join('');
-  $('#tr-m').textContent = r.actif ? '✓ Allumés : tes ordres partent sur ce compte.' : 'Éteints : aucun ordre ne peut partir.'; majTicket(); }
+  $('#tr-m').textContent = r.actif ? `✓ Allumés : tes ordres partent sur ce compte. Limite de perte du jour : ${Math.round(r.dll)} $.` : r.dll ? 'Éteints : aucun ordre ne peut partir.' : 'Éteints. Indique d’abord ta limite de perte du jour (celle de ton compte Topstep), puis allume-les.'; majTicket(); }
+$('#tr-dll').onchange = ev => chargeReglagesTrade({ dll: +ev.target.value });
 $('#tk-reg').onclick = async () => { $('#trade-p').classList.add('on'); await chargeReglagesTrade(); try { const r = await api('/maison/graphique', { action: 'ordre', op: 'journal' }); $('#tr-j').innerHTML = (r.journal || []).length ? r.journal.map(j => `<span class="j"><em>${quand(j.at)}</em>${j.ok ? '✓' : '✗'} ${esc(j.action)} ${esc(j.code || '')} ${esc(j.sens || '')} ${j.taille || ''} ${j.prix != null ? '→ ' + j.prix : ''}${j.erreur ? ' · ' + esc(j.erreur) : ''}</span>`).join('') : '<span class="vide">Aucun ordre encore.</span>'; } catch (e) { /* rien */ } };
 $('#trade-p').addEventListener('click', ev => { if (ev.target.id === 'trade-p') $('#trade-p').classList.remove('on'); });
 $('#tr-actif').onchange = ev => { if (ev.target.checked && !confirm('Allumer les ordres ? Tes ordres partiront vraiment sur le compte choisi.')) { ev.target.checked = false; return; } chargeReglagesTrade({ actif: ev.target.checked }); };
@@ -2704,10 +2705,10 @@ function dessineTrade(p, g) { const { c, Y, pw, ph, AX, dec } = g, { tk, val } =
   // ses ordres posés (stop, objectif, ordre en attente) : on les fait glisser pour les déplacer
   const pos = positionsDe(code)[0];
   for (const o of TRADE.ordres) { if (o.prix == null) continue; const protege = pos && ((pos.sens === 'long') === (o.cote === 'vente'));
-    const estSL = protege && (pos.sens === 'long' ? o.prix < pos.prix_moyen : o.prix > pos.prix_moyen), col = !protege ? '#2962ff' : estSL ? '#ff3d5a' : '#19c37d';
+    const estSL = protege && (o.role ? o.role === 'stop' : o.type === 4 || o.type === 5), col = !protege ? '#2962ff' : estSL ? '#ff3d5a' : '#19c37d';
     const t = pos ? Math.round((o.prix - pos.prix_moyen) / tk) * (pos.sens === 'long' ? 1 : -1) : Math.round((o.prix - der) / tk);
     const txt = !protege ? `${o.cote === 'achat' ? 'ACHAT' : 'VENTE'} ${o.taille} ${o.type === 1 ? 'limite' : 'stop'} · ${nb(o.prix, dec)}` : `${estSL ? 'SL' : 'TP'} ${t > 0 ? '+' : ''}${t} t${val != null ? ` · ${t * val * o.taille > 0 ? '+' : ''}${Math.round(t * val * o.taille)} $` : ''}`;
-    const prix = TRADE.drag && TRADE.drag.o === o ? TRADE.drag.prix : o.prix, h = ligne(prix, col, txt + '   ✕', false, true); if (h) p.tradeHits.push({ genre: 'ordre', o, y: h.y, x0: h.x0, tw: h.tw }); }
+    const croix = !(o.role === 'stop' && pos), prix = TRADE.drag && TRADE.drag.o === o ? TRADE.drag.prix : o.prix, h = ligne(prix, col, txt + (croix ? '   ✕' : ''), false, true); if (h) p.tradeHits.push({ genre: 'ordre', o, y: h.y, x0: h.x0, tw: h.tw, croix }); }
   // le brouillon : c'est lui qui pose tout
   const b = TRADE.brouillon; if (!b) return; const k = calcBrouillon(), sg = b.sens === 'achat' ? 1 : -1;
   if (k.attend) { const h = ligne(der, 'rgba(41,98,255,.55)', `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${k.genre.toUpperCase()} · clique à ton prix`, true, true); if (h) p.tradeHits.push({ genre: 'entree', y: h.y, x0: h.x0, tw: h.tw }); return; }
@@ -2723,17 +2724,17 @@ function tradeDown(p, x, y) { if (!TRADE.on && !TRADE.ordres.length) return fals
   if (b && TRADE.genre !== 'marche' && b.entree == null && x < p.pw && (!h || h.genre === 'entree')) { const { tk, dec } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)];
     b.entree = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(dec); suitCote(b); sonne('pose'); majTicket(); toutDessine(); return true; }
   if (!h) return false;
-  if (h.genre === 'ordre') { if (x >= h.x0 + h.tw - 22 && x <= h.x0 + h.tw) { annuleOrdre(h.o); return true; } TRADE.drag = { genre: 'ordre', o: h.o, prix: h.o.prix, p }; return true; }
+  if (h.genre === 'ordre') { if (h.croix && x >= h.x0 + h.tw - 22 && x <= h.x0 + h.tw) { annuleOrdre(h.o); return true; } TRADE.drag = { genre: 'ordre', o: h.o, prix: h.o.prix, p, y0: y }; return true; }
   if (h.genre === 'entree') { const surEtiquette = x >= h.x0 - 14 && x <= h.x0 + h.tw; TRADE.drag = { genre: surEtiquette ? 'entree' : 'tire', y0: y, p }; return true; }
   TRADE.drag = { genre: h.genre, p }; return true; }
 function tradeMove(p, x, y) { const d = TRADE.drag; if (!d) { if (TRADE.on || TRADE.ordres.length) { const h = tradeHit(p, x, y); p.cv.style.cursor = h ? 'ns-resize' : ''; return false; } return false; }
   if (d.p !== p) return true; const { tk } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)], prix = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(infoCode().dec), b = TRADE.brouillon, der = dernierCours();
-  if (d.genre === 'ordre') d.prix = prix;
+  if (d.genre === 'ordre') { if (Math.abs(y - d.y0) < 4 && !d.bouge) return true; d.bouge = true; d.prix = +(Math.round(p.iY(y) / tk) * tk).toFixed(infoCode().dec); }
   else if (b && d.genre === 'entree') { if (TRADE.genre === 'marche') { if (Math.abs(prix - der) >= tk * 1.5) { choisitGenre((prix - der) * (b.sens === 'achat' ? 1 : -1) < 0 ? 'limite' : 'stop'); b.entree = prix; } } else { b.entree = prix; suitCote(b); } }
   else if (b && d.genre === 'tire') { if (Math.abs(y - d.y0) > 4) { const sg = b.sens === 'achat' ? 1 : -1, e = b.entree ?? der; d.genre = (prix - e) * sg < 0 ? 'sl' : 'tp'; } }
   if (b && d.genre === 'sl') b.sl = prix; if (b && d.genre === 'tp') b.tp = prix;
   majTicket(); toutDessine(); return true; }
-function tradeUp(p) { const d = TRADE.drag; if (!d) return false; TRADE.drag = null; if (d.genre === 'ordre' && d.prix !== d.o.prix) deplaceOrdre(d.o, d.prix); else toutDessine(); if (TRADE.brouillon) sonne('pose'); return true; }
+function tradeUp(p) { const d = TRADE.drag; if (!d) return false; TRADE.drag = null; if (d.genre === 'ordre' && d.bouge && d.prix !== d.o.prix) deplaceOrdre(d.o, d.prix); else toutDessine(); if (TRADE.brouillon) sonne('pose'); return true; }
 async function chargeOrdresTrade() { if (!ROOT || (!TRADE.on && !positionsDe(code).length)) { if (TRADE.ordres.length) { TRADE.ordres = []; toutDessine(); } return; }
   try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ouverts', code }); if (r.ok && !TRADE.drag) { TRADE.ordres = r.ordres || []; toutDessine(); }
     for (const x of r.suivi || []) if (x.alerte && !TRADE.alertes_vues?.[x.code + x.alerte]) { (TRADE.alertes_vues ||= {})[x.code + x.alerte] = 1; halo('rouge'); sonne('critique'); toast(`✗ ${x.code} : ${x.alerte} — pose ton stop dans TopstepX`); } } catch (e) { /* hors liaison */ } majTicket(); }
