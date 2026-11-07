@@ -159,11 +159,12 @@
   .perdue.on { display: block; }
   .mention { margin-top: 18px; font-size: 11.5px; color: var(--tres-doux); text-align: center; }
 
+  .ag-j { font: 800 10.5px var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--ambre); padding: 10px 0 4px; border-bottom: 1px solid var(--ligne); margin-bottom: 2px; } .ag-j:first-child { padding-top: 2px; }
   @media (max-width: 1280px) { .tuiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 1080px) { .grille { grid-template-columns: 1fr; } .rail { position: static; } .seances { display: none; } }
   @media (max-width: 700px) {
     body { padding: 0 10px 20px; } .barre { gap: 10px; flex-wrap: wrap; } .tuiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .tuile .px { font-size: 19px; }
-    .horloge, #liaison { display: none; } .moment .gros { font-size: 20px; } .compte { font-size: 34px; }
+    .horloge, #liaison { display: none; } .lg { display: none; } #vue .pm { text-transform: capitalize; } .moment .gros { font-size: 20px; } .compte { font-size: 34px; }
     .ligne { grid-template-columns: 44px 4px minmax(0, 1fr) 14px; } .ligne .reac { display: none; } .detail { padding-left: 16px; }
   }
 
@@ -211,7 +212,7 @@
   <div class="horloge" id="horloge">--:--:--</div>
   <div class="seances" id="seances"></div>
   <div class="espace"></div>
-  <div class="segment" id="vue"><button data-v="tout">Tout</button><button data-v="critique">Critiques</button><button data-v="miens">Mes positions</button><button data-v="infos">+ Infos</button></div>
+  <div class="segment" id="vue"><button data-v="tout">Tout</button><button data-v="critique">Critiques</button><button data-v="miens"><span class="lg">Mes </span><span class="pm">positions</span></button><button data-v="infos">+ Infos</button></div>
   <div class="cherche" id="cherche"><input id="q" type="search" placeholder="Rechercher une nouvelle…" autocomplete="off"></div>
   <a class="rond" id="b-graphique" href="graphique.html" target="graphique" title="Le graphique (D1 · H4 · H1, tes lignes)" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></a>
   <button class="rond" id="b-cherche" title="Rechercher ( / )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
@@ -233,7 +234,7 @@
     <div class="mention">Des faits et des mécanismes, jamais un conseil d'achat ou de vente. Les réactions sont en ticks, sur les cours TopstepX. Ton avis (utile / bruit) apprend au radar ce qui compte pour toi.</div>
   </main>
   <aside class="rail">
-    <div class="carte"><h3><span>AGENDA DU JOUR</span><span id="ag-n"></span></h3><div id="agenda"></div></div>
+    <div class="carte"><h3><span>AGENDA</span><span id="ag-n"></span></h3><div id="agenda"></div></div>
     <div class="carte"><h3><span>LE RADAR VISE-T-IL JUSTE ?</span></h3><div id="bilan"></div></div>
     <div class="carte"><h3><span>COULISSES</span></h3><div id="sys"></div></div>
     <div class="carte touches">Clic sur un marché : son graphique avec les nouvelles · <kbd>J</kbd> <kbd>K</kbd> naviguer · <kbd>Entrée</kbd> déplier · <kbd>U</kbd> utile · <kbd>B</kbd> bruit · <kbd>1</kbd>–<kbd>6</kbd> filtrer un marché · <kbd>0</kbd> tous · <kbd>/</kbd> chercher · <kbd>M</kbd> son · <kbd>Échap</kbd> fermer</div>
@@ -344,7 +345,7 @@ function moment() {
     el.className = 'moment attente';
     el.innerHTML = `<div class="eti">PROCHAINE ANNONCE · ${hm(prochaine.at)} · ${esc(prochaine.pays)}</div>
       <div class="flex"><div class="compte mono ${dt < 15 * 60 ? 'proche' : ''}" id="compte">${h ? `${h}:` : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}</div>
-      <div><div class="gros" style="margin:0">${esc(prochaine.titre_fr && prochaine.titre_fr !== prochaine.titre ? prochaine.titre_fr : prochaine.titre)}</div>
+      <div><div class="gros" style="margin:0">${esc(titreAg(prochaine))}</div>
       <div class="sous mono">${prochaine.prevision ? `consensus ${esc(prochaine.prevision)}` : 'pas de consensus'}${prochaine.precedent ? ` · précédent ${esc(prochaine.precedent)}` : ''}</div></div></div>
       ${fi && Object.keys(fi.marches).length ? `<div class="fiche">${Object.entries(fi.marches).map(([mk, x]) => `<div class="f"><span class="code">${esc(mk)}</span><div class="val">${x.p5_med != null ? `±${x.p5_med}` : x.amp60_med} t</div><small>${x.p5_med != null ? `en 5 min · ${x.n5} fois` : `dans l'heure · max ${x.amp60_max}`}</small></div>`).join('')}<div class="f" style="background:none;border-style:dashed"><small>D’habitude, sur les ${fi.n} dernières fois :<br>la taille du mouvement, pas son sens.</small></div></div>` : ''}`;
     return;
@@ -378,7 +379,7 @@ function tuiles() {
       <div class="var ${x ? cl(x.var_ticks) : ''}">${x ? `${sg(x.var_ticks)} t · ${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %` : `<span style="color:var(--doux)">${fermeTxt()}</span>`}</div>
       ${courbe(x && x.heure)}
       ${p ? `<div class="pos"><span>${esc((p.sens || '').toUpperCase())} ×${esc(p.taille)}</span>${lat}</div>` : ''}
-      <div class="gbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg>Graphique et nouvelles</div>
+      <div class="gbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg><span>Graphique<span class="lg"> et nouvelles</span></span></div>
     </button>`;
   }).join('');
 }
@@ -395,7 +396,7 @@ function liste() {
 }
 function reacPrincipale(i) {
   const r = i.reaction || {}, m = (i.marches || []).find(x => r[x] && r[x]['+15'] != null) || (i.marches || []).find(x => r[x] && r[x]['+5'] != null);
-  if (!m) return '<span></span>'; const v = r[m]['+15'] != null ? r[m]['+15'] : r[m]['+5'];
+  if (!m) return '<span class="reac"></span>'; const v = r[m]['+15'] != null ? r[m]['+15'] : r[m]['+5'];
   return `<span class="reac ${cl(v)}" title="Réaction de ${m} en ticks (${r[m]['+15'] != null ? '+15' : '+5'} min)">${m} ${sg(v)} t</span>`;
 }
 function detail(i) {
@@ -423,16 +424,45 @@ function fil() {
   $('#fil').innerHTML = h;
 }
 
+/* ---------- l'agenda en français : les intitulés anglais du calendrier, les pays, les jours ---------- */
+const AG_FR = [[/ADP Non-Farm/i, 'emplois privés ADP'], [/Non-Farm Employment Change/i, 'créations d’emplois américaines (NFP)'], [/Average Hourly Earnings/i, 'salaire horaire moyen'],
+  [/Unemployment Claims/i, 'inscriptions au chômage'], [/Claimant Count/i, 'inscriptions au chômage'], [/Unemployment Rate/i, 'taux de chômage'], [/Employment Change/i, 'créations d’emplois'],
+  [/Core PCE Price Index/i, 'inflation PCE sous-jacente'], [/PCE Price Index/i, 'inflation PCE'], [/Core CPI/i, 'inflation sous-jacente (CPI)'], [/CPI/, 'inflation (CPI)'],
+  [/Core PPI/i, 'prix à la production sous-jacents'], [/PPI/, 'prix à la production'], [/Federal Funds Rate/i, 'décision de taux de la Fed'], [/FOMC Statement/i, 'communiqué de la Fed'],
+  [/FOMC Press Conference/i, 'conférence de presse de la Fed'], [/FOMC .*Minutes/i, 'compte rendu de la Fed'], [/Fed Chair|Powell/i, 'discours du président de la Fed'], [/FOMC Member/i, 'discours d’un membre de la Fed'],
+  [/Core Retail Sales/i, 'ventes au détail hors automobile'], [/Retail Sales/i, 'ventes au détail'], [/ISM Manufacturing Prices/i, 'prix ISM industrie'], [/ISM Manufacturing/i, 'indice ISM industrie'],
+  [/ISM Services|ISM Non-Manufacturing/i, 'indice ISM services'], [/Manufacturing PMI/i, 'PMI industrie'], [/Services PMI/i, 'PMI services'], [/JOLTS/i, 'offres d’emploi (JOLTS)'],
+  [/UoM Consumer Sentiment/i, 'confiance des consommateurs (Michigan)'], [/UoM Inflation Expectations/i, 'anticipations d’inflation (Michigan)'], [/CB Consumer Confidence/i, 'confiance des consommateurs (Conference Board)'],
+  [/Crude Oil Inventories/i, 'stocks de pétrole'], [/Natural Gas Storage/i, 'stocks de gaz naturel'], [/Main Refinancing Rate/i, 'décision de taux de la BCE'], [/ECB Press Conference/i, 'conférence de presse de la BCE'],
+  [/Lagarde/i, 'discours de Christine Lagarde (BCE)'], [/Official Bank Rate/i, 'décision de taux de la Banque d’Angleterre'], [/BOJ Policy Rate/i, 'décision de taux de la Banque du Japon'],
+  [/Monetary Policy Statement/i, 'communiqué de politique monétaire'], [/Core Durable Goods/i, 'commandes de biens durables hors transport'], [/Durable Goods/i, 'commandes de biens durables'],
+  [/Building Permits/i, 'permis de construire'], [/Housing Starts/i, 'mises en chantier'], [/Existing Home Sales/i, 'ventes de logements anciens'], [/New Home Sales/i, 'ventes de logements neufs'],
+  [/Pending Home Sales/i, 'promesses de ventes de logements'], [/Empire State/i, 'indice manufacturier de New York'], [/Philly Fed/i, 'indice manufacturier de Philadelphie'],
+  [/Trade Balance/i, 'balance commerciale'], [/Industrial Production/i, 'production industrielle'], [/Employment Cost Index/i, 'coût du travail'], [/Nonfarm Productivity/i, 'productivité'],
+  [/Unit Labor Costs/i, 'coûts salariaux unitaires'], [/Ifo Business Climate/i, 'climat des affaires Ifo'], [/ZEW Economic Sentiment/i, 'confiance ZEW'], [/Bank Holiday/i, 'jour férié'],
+  [/Treasury Currency Report/i, 'rapport du Trésor sur les devises'], [/Beige Book/i, 'Livre beige de la Fed'], [/Advance GDP|Prelim GDP|Final GDP|GDP/i, 'croissance (PIB)']];
+const PAYS_FR = { USD: 'États-Unis', EUR: 'Zone euro', GBP: 'Royaume-Uni', JPY: 'Japon', CNY: 'Chine', CAD: 'Canada', AUD: 'Australie', NZD: 'Nouvelle-Zélande', CHF: 'Suisse', ALL: 'Monde' };
+function paysFR(p) { return PAYS_FR[p] || p || ''; }
+function titreAg(a) { const t = a.titre || '', f = AG_FR.find(([r]) => r.test(t));
+  let x = f ? f[1] : (a.titre_fr && a.titre_fr !== t ? a.titre_fr : t);
+  if (f) { if (/\bm\/m\b/i.test(t)) x += ' (sur un mois)'; else if (/\by\/y\b/i.test(t)) x += ' (sur un an)'; else if (/\bq\/q\b/i.test(t)) x += ' (sur un trimestre)';
+    if (/\b(Prelim|Flash|Advance)\b/i.test(t)) x += ', première estimation'; else if (/\bRevised\b/i.test(t)) x += ', révisé'; }
+  return x.charAt(0).toUpperCase() + x.slice(1); }
+function jourAgenda(at) { const d = new Date(at * 1000), a = new Date(), j = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5),
+    nom = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return (j === 0 ? 'Aujourd’hui · ' : j === -1 ? 'Hier · ' : j === 1 ? 'Demain · ' : '') + nom; }
 /* ---------- le rail : agenda, bilan, coulisses ---------- */
 function rail() {
   const now = Date.now() / 1000, ag = (D.agenda || []).slice().sort((a, b) => a.at - b.at);
   $('#ag-n').textContent = ag.length ? `${ag.filter(a => a.at > now).length} à venir` : '';
+  let jourAv = '';
   $('#agenda').innerHTML = ag.length ? ag.map(a => {
+    const j = jourAgenda(a.at), tete = j !== jourAv ? `<div class="ag-j">${j}</div>` : ''; jourAv = j;
     const dt = a.at - now, fi = (D.fiches || {})[`${a.at}-${a.titre}`];
     const fl = fi ? Object.entries(fi.marches).slice(0, 3).map(([m, x]) => `${m} ${x.p5_med != null ? `±${x.p5_med}` : x.amp60_med} t`).join(' · ') : '';
-    return `<div class="ev ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}"><div class="q ${dt > 0 && dt < 15 * 60 ? 'proche' : ''}">${dt > 0 && dt < 3600 ? `${Math.ceil(dt / 60)} min` : hm(a.at)}</div>
-      <div class="x">${a.resultats ? `<span class="chip res">RÉSULTATS</span> ${esc(a.titre.replace('Résultats ', ''))}` : `${esc(a.pays)} · ${esc(a.titre_fr && a.titre_fr !== a.titre ? a.titre_fr : a.titre)}`}<small>${a.moment ? `${esc(a.moment)} · ` : ''}${a.prevision ? `cons. ${esc(a.prevision)}` : ''}${a.precedent ? ` · préc. ${esc(a.precedent)}` : ''}${fl ? `<br><span style="color:var(--ambre)">d’habitude : ${esc(fl)}</span>` : ''}</small></div></div>`;
-  }).join('') : '<div class="vide" style="padding:12px 0">Pas d’annonce importante aujourd’hui.</div>';
+    return tete + `<div class="ev ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}"><div class="q ${dt > 0 && dt < 15 * 60 ? 'proche' : ''}">${dt > 0 && dt < 3600 ? `${Math.ceil(dt / 60)} min` : hm(a.at)}</div>
+      <div class="x">${a.resultats ? `<span class="chip res">RÉSULTATS</span> ${esc(a.titre.replace('Résultats ', ''))}` : `${esc(paysFR(a.pays))} · ${esc(titreAg(a))}`}<small>${a.moment ? `${esc(a.moment)} · ` : ''}${a.prevision ? `attendu ${esc(a.prevision)}` : ''}${a.precedent ? `${a.prevision ? ' · ' : ''}précédent ${esc(a.precedent)}` : ''}${fl ? `<br><span style="color:var(--ambre)">d’habitude : ${esc(fl)}</span>` : ''}</small></div></div>`;
+  }).join('') : '<div class="vide" style="padding:12px 0">Pas d’annonce importante au programme.</div>';
   const bl = D.bilan || {}, mk = MK.filter(m => (bl.critique || {})[m] || (bl.importante || {})[m]);
   $('#bilan').innerHTML = (mk.length ? mk.map(m => { const c = (bl.critique || {})[m], x = c || (bl.importante || {})[m];
     return `<div class="kv"><span>${m} · ${c ? 'critiques' : 'importantes'}</span><span>${x.n >= 10 ? `${x.bouge} % <small style="color:var(--doux)">sur ${x.n}</small>` : `<small style="color:var(--doux)">pas encore assez (${x.n} / 10)</small>`}</span></div><div class="jauge"><i style="width:${x.n >= 10 ? x.bouge : 0}%"></i></div>`; }).join('')
@@ -629,7 +659,7 @@ function murTic() {
   if (murPublie()) return;
   const now = Date.now() / 1000, a = ((D && D.agenda) || []).filter(x => x.fort && x.at > now - 60).sort((x, y) => x.at - y.at)[0];
   if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60);
-    $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
+    $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc(paysFR(a.pays) + ' · ' + titreAg(a))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
   else $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b style="font-size:28px;opacity:.75">Aucun chiffre fort à venir pour l’instant</b></div>`;
 }
 function murDonnees() {
@@ -652,7 +682,7 @@ async function chargeMurPlus() { if (!ROOT || !document.body.classList.contains(
   murTuiles(); }
 function murTuiles() { if (!document.body.classList.contains('mode-mur')) return; const now = Date.now() / 1000, D2 = D || {};
   const contenu = k => {
-    if (k === 'agenda') { const l = (D2.agenda || []).filter(a => a.fort && a.at > now - 60).sort((a, b) => a.at - b.at).slice(0, 4); return l.length ? l.map(a => { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60); return `<div class="li"><time>${new Date(a.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</time><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}</span><span class="cd">${h >= 24 ? Math.floor(h / 24) + ' j' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ' min'}</span></div>`; }).join('') : `<div class="vide2">Aucun chiffre fort annoncé pour l’instant.</div>`; }
+    if (k === 'agenda') { const l = (D2.agenda || []).filter(a => a.fort && a.at > now - 60).sort((a, b) => a.at - b.at).slice(0, 4); return l.length ? l.map(a => { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60); return `<div class="li"><time>${new Date(a.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</time><span>${esc(paysFR(a.pays) + ' · ' + titreAg(a))}</span><span class="cd">${h >= 24 ? Math.floor(h / 24) + ' j' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ' min'}</span></div>`; }).join('') : `<div class="vide2">Aucun chiffre fort annoncé pour l’instant.</div>`; }
     if (k === 'flash') { const l = (D2.items || []).filter(i => i.urgence === 'critique').sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 4); return l.length ? l.map(i => `<div class="li"><time>${hm(i.publie || i.at)}</time><span>${esc(i.titre)}</span></div>`).join('') : '<div class="vide2">Aucun flash récent.</div>'; }
     if (k === 'chaleur') { const m = CHAL && (CHAL.marches || CHAL), ferme = /fermé|pause/.test(fermeTxt()); const l = !ferme && m && typeof m === 'object' ? Object.entries(m).filter(([c, v]) => v && v['15'] && typeof v['15'].z === 'number').sort((a, b) => Math.abs(b[1]['15'].z) - Math.abs(a[1]['15'].z)).slice(0, 4) : [];
       return l.length ? l.map(([c, v]) => `<div class="li"><span class="n">${esc(c)}</span><span>${v['15'].ticks > 0 ? '+' : ''}${v['15'].ticks} t en 15 min</span><span class="${v['15'].ticks >= 0 ? 'h' : 'r'}">${Math.abs(v['15'].z).toFixed(1).replace('.', ',')} × l’habitude</span></div>`).join('') : `<div class="vide2">${fermeTxt()}</div>`; }
