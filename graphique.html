@@ -616,6 +616,18 @@
   .pc-c { justify-content: flex-start; } .pc-c .pc-nw { margin-top: auto; } .pc-c svg.sp { flex: 1 1 90px; max-height: 34vh; min-height: 90px; }
   .pc-nav button { white-space: nowrap; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; padding: 12px 2px; }
   @media (max-width: 1200px) { #sym-nom { display: none !important; } .haut .sym { flex-shrink: 0 !important; } .haut .horloges, .haut .tilt, #grp-c { display: none !important; } .haut .sym { min-width: 0 !important; } .haut .sym .px { display: none; } .haut .grp.masque-mobile .ico { width: 25px !important; min-width: 25px !important; } }
+  /* audit : raccourci dans les info-bulles, la barre / visible, l'aide groupée, le cours figé */
+  [data-tip][data-rac]:hover::after { content: attr(data-tip) "   ·   " attr(data-rac); }
+  .cmd-b { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 6px; border-radius: 9px; border: 1px solid var(--bord); background: rgba(255, 255, 255, .03); color: var(--tres-doux, #77849a); font: 500 12px 'Inter'; cursor: pointer; white-space: nowrap; }
+  .cmd-b:hover { border-color: #3a4256; color: #e6e9ef; } .cmd-b kbd { padding: 1px 6px; border-radius: 5px; background: #1a2030; border: 1px solid #2f3850; font: 700 11px 'JetBrains Mono', monospace; color: #fff; }
+  @media (max-width: 2240px) { .cmd-b { font-size: 0; gap: 0; padding: 0 5px; } }
+  @media (min-width: 1101px) and (max-width: 2240px) { #b-presente, #b-simu-h { font-size: 0; gap: 0; padding-left: 10px; padding-right: 10px; } }  /* (icône seule : le bandeau tient en 1920) */
+  @media (max-width: 1100px) { .cmd-b { display: none; } }
+  .aide-k input#aide-q { column-span: all; display: block; width: 100%; box-sizing: border-box; margin: 0 0 12px; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--bord2); background: #0d1119; color: #fff; font: 500 13px 'Inter'; outline: none; }
+  .aide-k input#aide-q:focus { border-color: var(--ambre); }
+  .aide-k section { break-inside: avoid; margin-bottom: 10px; } .aide-k h4 { margin: 0 0 6px; font: 800 10px 'Inter'; letter-spacing: .14em; text-transform: uppercase; color: #8a91a0; }
+  .aide-k .aide-v { column-span: all; color: #8a91a0; } .aide-k mark { background: rgba(255, 171, 26, .25); color: #fff; border-radius: 3px; }
+  #sym-px.fige { opacity: .55; } #sym-px.fige::after { content: ' figé'; font: 700 9px 'Inter'; letter-spacing: .08em; color: var(--ambre); vertical-align: super; }
 </style>
 </head>
 <body>
@@ -626,6 +638,7 @@
     <div class="marque" aria-hidden="true"><i></i><span>ATLAS<small>MARCHÉS</small></span></div>
     <button class="grp-c" id="grp-c" data-tip="Groupe de liaison : les fenêtres de la même couleur changent de marché ensemble (clic : changer de couleur)"><i></i></button>
     <button class="sym" id="sym" data-tip="Changer de marché ( / )"><span class="ic" id="sym-ic">SIL</span><span><b id="sym-code">SIL</b><small id="sym-nom">Micro argent</small></span><span class="px num" id="sym-px"></span></button>
+    <button class="cmd-b" id="b-cmd" data-tip="Chercher un marché, une fonction (SIL D1, RISK, CAL…) ou demander en français"><kbd>/</kbd>chercher ou demander</button>
     <div class="seg" id="seg-ut"><button data-ut="5m">5m</button><button data-ut="15m">15m</button><button data-ut="30m">30m</button><button data-ut="H1">1h</button><button data-ut="H4">4h</button><button data-ut="D1">D</button><button data-ut="W">W</button><button data-ut="M">M</button></div>
     <div class="grp">
       <button class="ico" id="vue-un" data-tip="Un graphique"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
@@ -764,19 +777,35 @@
   <h3>TES MISES EN PAGE</h3><p class="s">Une mise en page garde : un ou trois graphiques, leurs unités, le marché, la méthode, les indicateurs, les réglages (zigzag, zones, volume, nouvelles, figures, log, type de bougies) et la comparaison. Elle s'applique à cette fenêtre.</p>
   <div class="nl"><input id="pages-q" placeholder="Nom de la mise en page actuelle (ex. « Matin D1 H4 H1 », « Ichimoku or »)" autocomplete="off"><button class="go" id="pages-go">Enregistrer</button></div>
   <div class="al" id="pages-l"></div></div></div>
-<div class="aide-k" id="aide-k"><div><h3>LES RACCOURCIS · ? POUR FERMER</h3>
-  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
+<div class="aide-k" id="aide-k"><div><h3>TOUTES LES TOUCHES · ? OU ÉCHAP POUR FERMER</h3><input id="aide-q" placeholder="Chercher : ligne, alerte, replay, ordre, copilote…" autocomplete="off">
+  <section><h4>Chercher et naviguer</h4>
+  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>CORR</b> · <b>MOV</b> · <b>SEAS</b> · <b>DES</b> · <b>ETAT</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
   <p><kbd>/</kbd>chercher un marché, ou écrire une phrase : « préviens-moi quand… », « montre-moi les fois où… », « configuration : … », « compare avec l'or », « méthode ichimoku », « montre-moi les figures »</p>
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
-  <p><kbd>L</kbd>ligne · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie</p>
+  <p><kbd>Échap</kbd>fermer une fenêtre, revenir au curseur</p></section>
+  <section><h4>Dessiner</h4>
+  <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie</p>
   <p><kbd>Maj</kbd>+ glisser : une tendance · <kbd>Alt</kbd>+ clic : une horizontale · double-clic sur un pivot : support / résistance · <kbd>Ctrl</kbd>+ glisser : la règle</p>
-  <p><kbd>I</kbd>indicateurs et méthodes · <kbd>Maj</kbd><kbd>C</kbd>configurations · <kbd>Maj</kbd><kbd>L</kbd>alertes · <kbd>Maj</kbd><kbd>H</kbd>interroger le passé</p>
+  <p>Fibonacci, zone de prix (rectangle, avec alerte), flèche, texte : dans la barre d'outils à gauche</p></section>
+  <section><h4>Analyser</h4>
+  <p><kbd>I</kbd>indicateurs et méthodes (Dow, Smart Money, Volume, Ichimoku)</p>
+  <p><kbd>Maj</kbd><kbd>C</kbd>tes configurations · <kbd>Maj</kbd><kbd>H</kbd>interroger le passé</p>
   <p>clic droit sur une bougie : « pourquoi cette bougie ? » (les dépêches, les marchés liés, la structure de ce moment-là)</p>
-  <p><kbd>E</kbd>le copilote explique · <kbd>Q</kbd>maintenu : une question · <kbd>V</kbd>maintenu : une note au journal</p>
-  <p><kbd>M</kbd>mémoire du marché · <kbd>D</kbd>structure de Dow · <kbd>A</kbd>étude d'annonce · <kbd>B</kbd>Atlas présente</p>
-  <p><kbd>R</kbd>replay (puis Coach dans sa barre) · <kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p>
-  <p><kbd>T</kbd>trader (ton ticket) · <kbd>Maj</kbd><kbd>S</kbd>simuler une position : clic l'entrée, tire ton stop puis ton objectif</p>
-  <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture · <kbd>Échap</kbd>fermer, revenir au curseur</p></div></div>
+  <p><kbd>M</kbd>mémoire du marché · <kbd>D</kbd>structure de Dow · <kbd>A</kbd>étude d'annonce</p></section>
+  <section><h4>Le copilote</h4>
+  <p><kbd>E</kbd>le copilote explique ce qui se passe · <kbd>Q</kbd>maintenu : une question à voix haute</p>
+  <p><kbd>V</kbd>maintenu : une note au journal · <kbd>B</kbd>Atlas présente tes marchés</p></section>
+  <section><h4>Alertes et ordres</h4>
+  <p><kbd>Maj</kbd><kbd>L</kbd>tes alertes en français (« préviens-moi quand le RSI passe sous 30 »)</p>
+  <p><kbd>T</kbd>trader : ton ticket (tu poses toi-même ton entrée, ton stop, ton objectif)</p>
+  <p><kbd>Maj</kbd><kbd>S</kbd>simuler une position : clic l'entrée, tire ton stop puis ton objectif</p></section>
+  <section><h4>Replay</h4>
+  <p><kbd>R</kbd>replay : clique le point de départ (puis Coach dans sa barre)</p>
+  <p><kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p></section>
+  <section><h4>Affichage</h4>
+  <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture du graphique</p>
+  <p><kbd>?</kbd>cette aide</p></section>
+  <p class="aide-v" id="aide-v" hidden></p></div></div>
 <div class="ticket" id="ticket">
   <div class="tk-g"><button id="tk-moins" title="Un contrat de moins">−</button><b id="tk-taille">1</b><button id="tk-plus" title="Un contrat de plus">+</button></div>
   <div class="tk-t" id="tk-type"><button data-g="marche">Marché</button><button data-g="limite">Limite</button><button data-g="stop">Stop</button></div>
@@ -2698,7 +2727,7 @@ function montreVisite(r) {
   clearTimeout(visiteMinuteur); visiteMinuteur = setTimeout(() => { if (!e.matches(':hover')) e.classList.remove('on'); }, 60000);
   if (QUI_SONNE && lit('g-visite-voix', '0') === '1') dire(r.lignes.join(' '));
 }
-$('#aide-k').addEventListener('click', () => $('#aide-k').classList.remove('on'));
+$('#aide-k').addEventListener('click', ev => { if (ev.target.id === 'aide-k') $('#aide-k').classList.remove('on'); });
 $('#visite-x').onclick = () => $('#visite').classList.remove('on');
 $('#visite-plus').onclick = () => $('#visite-f').classList.toggle('on');
 $('#visite-voix').checked = lit('g-visite-voix', '0') === '1'; $('#visite-voix').onchange = ev => ecrit('g-visite-voix', ev.target.checked ? '1' : '0');
@@ -3076,7 +3105,7 @@ const FONCTIONS = [
   ['TRADE', 'ton ticket d’ordre', () => basculeTrade(true)],
   ['SIMU', 'simuler une position en 3 clics', () => outilSimu(true)],
   ['FIG', 'les figures repérées', () => { if (!optFig) $('#t-fig').click(); }],
-  ['AIDE', 'toutes les touches et fonctions', () => $('#aide-k').classList.add('on')],
+  ['AIDE', 'toutes les touches et fonctions', () => ouvreAide()],
 ];
 let HIST_CMD = (() => { try { return JSON.parse(lit('g-cmd', '[]')) || []; } catch (e) { return []; } })(), histK = -1;
 const UTS_CMD = { '5m': '5m', '5': '5m', 'm5': '5m', '15m': '15m', '15': '15m', 'm15': '15m', '30m': '30m', '30': '30m', 'm30': '30m', 'h1': 'H1', '1h': 'H1', 'h4': 'H4', '4h': 'H4', 'd1': 'D1', 'd': 'D1', '1d': 'D1', 'w': 'W', 'w1': 'W', 'm': 'M', 'mn': 'M' };
@@ -3427,7 +3456,7 @@ document.addEventListener('keydown', ev => {
   if ((k === 'delete' || k === 'backspace') && SIMU_SEL) { effaceSimu(SIMU_SEL); return; }
   if (k === 'escape' && TRADE.brouillon) { TRADE.brouillon = null; majTicket(); toutDessine(); return; }
   if (k === 'enter' && $('#tconf').classList.contains('on')) { $('#tconf-ok').click(); return; }
-  if (ev.key === '?' && !ev.repeat) { $('#aide-k').classList.toggle('on'); return; }
+  if (ev.key === '?' && !ev.repeat) { ev.preventDefault(); if ($('#aide-k').classList.contains('on')) $('#aide-k').classList.remove('on'); else ouvreAide(); return; }
   if (k === 'escape' && $('#aide-k').classList.contains('on')) { $('#aide-k').classList.remove('on'); return; }
   if (k === 'escape' && MARQUE_PASSE) { MARQUE_PASSE = null; toutDessine(); }
   if (k === 'a' && !ev.repeat) { ouvreEtude(); return; } if (k === 'r' && !ev.repeat) { choisirReplay(); return; }
@@ -3439,6 +3468,25 @@ try { document.fonts.ready.then(() => setTimeout(toutDessine, 50)); } catch (e) 
 versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
 (async () => { if (!ROOT) { $('#etat').textContent = 'adresse de la maison inconnue : ouvre depuis Atlas'; $('#pt').className = 'pt ko'; return; }
   await chargeLignes(); nbLignesAvant = lignes.length; construit(); chargeListe(); setTimeout(() => verifieVisite('ouverture'), 4000); })();
+
+/* --- audit : le raccourci dans chaque info-bulle (« Indicateurs · I »), l'aide qui se cherche, la barre / visible, le cours figé --- */
+const RACC = [['#sym', '/'], ['#b-cmd', '/'], ['#t-indic', 'I'], ['#b-copilote', 'E'], ['#b-dow', 'D'], ['#b-etude', 'A'], ['#b-replay', 'R'], ['#b-alertes', 'Maj + L'], ['#b-alertes-h', 'Maj + L'],
+  ['#b-config', 'Maj + C'], ['#b-simu', 'Maj + S'], ['#b-simu-h', 'Maj + S'], ['#b-passe', 'Maj + H'], ['#b-memoire', 'M'], ['#b-journal', 'V maintenu'], ['#b-presente', 'B'], ['#b-trade', 'T'],
+  ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="efface"]', 'Suppr']];
+for (const [sel, k] of RACC) document.querySelectorAll(sel).forEach(b => { b.dataset.rac = k; if (b.dataset.tip) b.dataset.tip = b.dataset.tip.replace(/\s*\((?:Maj \+ [A-Z]|[A-Z]|Échap|Suppr|\s*\/\s*)\)/g, '').trim(); });
+const aideNorm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function filtreAide() { const q = aideNorm($('#aide-q').value.trim()), mots = q.split(/\s+/).filter(Boolean); let n = 0;
+  $('#aide-k').querySelectorAll('section').forEach(sec => { const titre = aideNorm(sec.querySelector('h4').textContent); let vus = 0;
+    sec.querySelectorAll('p').forEach(p => { const ok = !mots.length || mots.every(m => aideNorm(p.textContent).includes(m) || titre.includes(m)); p.hidden = !ok; if (ok) vus++; });
+    sec.hidden = !vus; n += vus; });
+  const v = $('#aide-v'); v.hidden = n > 0; if (!n) v.textContent = `Rien pour « ${$('#aide-q').value.trim()} ». Essaie la ligne de commande (touche /) : elle comprend aussi les phrases.`; }
+function ouvreAide() { $('#aide-k').classList.add('on'); $('#aide-q').value = ''; filtreAide(); setTimeout(() => $('#aide-q').focus(), 30); }
+$('#aide-q').addEventListener('input', filtreAide);
+$('#aide-q').addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Escape') { if ($('#aide-q').value) { $('#aide-q').value = ''; filtreAide(); } else $('#aide-k').classList.remove('on'); } });
+$('#b-cmd').addEventListener('click', () => ouvreRecherche());
+setInterval(() => { const sp = $('#sym-px'), b = $('#sym'); if (!sp || !b) return; const f = marcheFerme(), age = L_AT ? (Date.now() - L_AT) / 1000 : null, fg = !f && age != null && age > 60;
+  sp.classList.toggle('fige', fg);
+  b.dataset.tip = 'Changer de marché' + (f ? ` — ${f}` : age == null ? '' : fg ? ` — cours figé depuis ${age > 3600 ? Math.round(age / 3600) + ' h' : Math.round(age / 60) + ' min'}` : ` — cours de ${new Date(L_AT).toLocaleTimeString('fr-FR')}`); }, 1000);
 </script>
 </body>
 </html>
