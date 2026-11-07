@@ -218,6 +218,11 @@
   .wei.lien { cursor: pointer; } .wei.lien:hover { background: rgba(255,255,255,.03); }
   .ct, .hp { display: grid; gap: 10px; padding: 7px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; } .ct { grid-template-columns: 1.2fr 1fr 1fr 1fr; } .hp { grid-template-columns: 1.6fr repeat(4, 1fr) .9fr .8fr .9fr; cursor: pointer; } .hp:hover { background: rgba(255,255,255,.03); } .ct.t, .hp.t { font: 800 10px 'Inter'; letter-spacing: .1em; color: #8a91a0; cursor: default; } .ct small { color: #8a91a0; font: 600 10.5px 'Inter'; }
   @media (max-width: 700px) { .hp { grid-template-columns: 1.5fr 1fr .9fr .8fr; } .hp > :nth-child(2), .hp > :nth-child(3), .hp > :nth-child(4), .hp > :nth-child(8) { display: none; } .ct { grid-template-columns: 1.2fr 1fr 1fr; } .ct > :nth-child(4) { display: none; } }
+  .brief { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; margin: 0 6px; } .brief-c { background: #0d1119; border: 1px solid #1c2230; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: border-color .15s; } .brief-c:hover { border-color: rgba(255,171,26,.5); }
+  .brief-c .bt { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; } .brief-c .bt b { font: 800 12px 'JetBrains Mono', monospace; color: var(--ambre); letter-spacing: .06em; } .brief-c .bt span { font: 800 10px 'Inter'; letter-spacing: .14em; color: #8a91a0; text-transform: uppercase; flex: 1; } .brief-c .bt em { font: 600 11px 'Inter'; color: #5b6b8c; font-style: normal; }
+  .brief-c p { margin: 0; font: 500 13.5px/1.5 'Inter'; color: #dfe4ee; } .brief-c p b { color: #fff; } .brief-c.attend p { color: #3a4560; animation: vie 1.4s ease-in-out infinite; }
+  .beta { display: grid; gap: 10px; padding: 7px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .beta:hover { background: rgba(255,255,255,.03); } .beta.t { font: 800 10px 'Inter'; letter-spacing: .1em; color: #8a91a0; cursor: default; } .beta small { color: #6f7787; font: 600 10px 'Inter'; margin-left: 4px; }
+  @media (max-width: 700px) { .brief { grid-template-columns: 1fr; } .beta small { display: none; } }
   .fn-l { margin: 5px 6px; color: #c6ccd8; cursor: pointer; } .fn-l b { font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
   .mov { display: grid; grid-template-columns: minmax(140px, 1.6fr) .8fr .7fr 1.6fr .8fr .8fr; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .mov:hover { background: rgba(255,255,255,.03); } .mov.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; cursor: default; } .mov small { color: #8a91a0; font: 600 11px 'Inter'; }
   .mov .jb { position: relative; height: 18px; background: #0f131c; border-radius: 5px; overflow: hidden; } .mov .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; } .mov .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; }
@@ -690,7 +695,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v63</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v64</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -800,7 +805,7 @@
   <div class="al" id="pages-l"></div></div></div>
 <div class="aide-k" id="aide-k"><div><h3>TOUTES LES TOUCHES · ? OU ÉCHAP POUR FERMER</h3><input id="aide-q" placeholder="Chercher : ligne, alerte, replay, ordre, copilote…" autocomplete="off">
   <section><h4>Chercher et naviguer</h4>
-  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>CORR</b> · <b>MOV</b> · <b>SEAS</b> · <b>DES</b> · <b>WEI</b> · <b>OMON</b> · <b>ECO emploi</b> · <b>PERF</b> · <b>GC</b> · <b>FXC</b> · <b>CMDTY</b> · <b>CT pétrole</b> · <b>HP SIL</b> · <b>ETAT</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
+  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>CORR</b> · <b>MOV</b> · <b>SEAS</b> · <b>DES</b> · <b>WEI</b> · <b>OMON</b> · <b>ECO emploi</b> · <b>PERF</b> · <b>GC</b> · <b>FXC</b> · <b>BRIEF</b> · <b>BETA</b> · <b>CMDTY</b> · <b>CT pétrole</b> · <b>HP SIL</b> · <b>ETAT</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
   <p><kbd>/</kbd>chercher un marché, ou écrire une phrase : « préviens-moi quand… », « montre-moi les fois où… », « configuration : … », « compare avec l'or », « méthode ichimoku », « montre-moi les figures »</p>
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
   <p><kbd>Échap</kbd>fermer une fenêtre, revenir au curseur</p></section>
@@ -3154,7 +3159,7 @@ function suggestionsCmd(brut) { const t = brut.trim(), T = t.toUpperCase(); if (
   return out.length ? out.join('') + '<div class="res-t">MARCHÉS</div>' : ''; }
 $('#resultats').addEventListener('click', ev => { const d = ev.target.closest('.res.fn'); if (!d) return; ev.stopPropagation(); const v = d.dataset.cmd; if (/\s$/.test(v)) { $('#q').value = v; $('#q').focus(); filtreRecherche(); } else lanceCmd(v); }, true);
 // le panneau des fonctions
-function ouvreFn(nom, sous, html) { $('#fn-copi').hidden = nom === 'FONCTIONS' || nom === 'ÉTAT'; $('#fn-ret').hidden = !(MODE === 'poche' || MODE === 'nomade') || nom === 'FONCTIONS'; $('#fn-nom').textContent = nom; $('#fn-sous').textContent = sous; $('#fn-c').innerHTML = html; $('#fn-p').classList.add('on'); }
+function ouvreFn(nom, sous, html) { if (CAPT) { CAPT[nom] = { sous, html }; return; } $('#fn-copi').hidden = nom === 'FONCTIONS' || nom === 'ÉTAT'; $('#fn-ret').hidden = !(MODE === 'poche' || MODE === 'nomade') || nom === 'FONCTIONS'; $('#fn-nom').textContent = nom; $('#fn-sous').textContent = sous; $('#fn-c').innerHTML = html; $('#fn-p').classList.add('on'); }
 const fermeFn = () => $('#fn-p').classList.remove('on');
 $('#fn-x').onclick = fermeFn; $('#fn-p').addEventListener('click', ev => { if (ev.target.id === 'fn-p') fermeFn(); });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('#fn-p').classList.contains('on')) { fermeFn(); ev.stopPropagation(); } }, true);
@@ -3478,6 +3483,48 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0,
   ['CT', 'la structure par échéance : contango ou déport · CT pétrole · CT or · CT argent · CT gaz', a => fnCt(a)],
   ['HP', 'l’historique des cours en tableau, copiable · HP SIL · HP MNQ H4', a => fnHp(a)]);
 FN_TEL.splice(11, 0, ['CMDTY', 'les matières premières'], ['CT', 'contango ou déport'], ['HP', 'l’historique en tableau']);
+/* ================= BRIEF : le point du moment — l'essentiel de chaque fonction sur un seul écran, puis la synthèse du copilote ================= */
+let CAPT = null, BRIEF_EN = false;
+const BRIEF_L = [['MOV', 'Ce qui bouge', () => fnMov()], ['OMON', 'Le mouvement attendu', () => fnOmon()], ['CORR', 'Qui bouge avec qui', () => fnCorr('60')], ['FXC', 'Les devises', () => fnFxc('jour')],
+  ['CMDTY', 'Les matières premières', () => fnCmdty()], ['CT', 'La structure du pétrole', () => fnCt('petrole')], ['GC', 'Les taux américains', () => fnGc()], ['WEI', 'Les indices du monde', () => fnWei()], ['PERF', 'Tes 30 derniers jours', () => fnPerf('30')]];
+async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; const res = {}, t0 = new Date();
+  const dessine = fini => { const ag = (AGENDA || []).filter(a => a.at > Date.now() / 1000 - 60).sort((a, b) => a.at - b.at)[0];
+    const carte = (k, titre, txt) => `<div class="brief-c" data-brief="${k}"><div class="bt"><b>${k}</b><span>${esc(titre)}</span><em>ouvrir →</em></div><p>${txt}</p></div>`;
+    ouvreFn('BRIEF', `le point du moment · ${t0.toLocaleString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}${fini ? '' : ' · je rassemble…'}${marcheFerme() ? ' · ' + marcheFerme() : ''}`,
+      `<div class="brief">${ag ? carte('CAL', 'La prochaine annonce forte', `<b>${esc(ag.titre_fr || ag.titre)}</b> · ${new Date(ag.at * 1000).toLocaleString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}${ag.prevision ? ` · attendu ${esc(ag.prevision)}` : ''}${res.ECO ? `<br>${res.ECO}` : ''}`) : ''}
+      ${BRIEF_L.map(([k, titre]) => res[k] === undefined ? `<div class="brief-c attend"><div class="bt"><b>${k}</b><span>${esc(titre)}</span></div><p>…</p></div>` : res[k] ? carte(k, titre, res[k]) : '').join('')}</div>
+      <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Chaque carte reprend la phrase « À retenir » de sa fonction ; un clic l’ouvre en entier. « ✦ Explique-moi » : le copilote fait la synthèse de tout l’écran. Des faits, jamais un conseil.</p>`);
+    document.querySelectorAll('#fn-c [data-brief]').forEach(e => e.onclick = () => { const f = e.dataset.brief === 'CAL' ? () => fnCal() : (BRIEF_L.find(z => z[0] === e.dataset.brief) || [])[2]; if (f) f(); }); };
+  try { dessine(false);
+    const ag = (AGENDA || []).filter(a => a.at > Date.now() / 1000 - 60).sort((a, b) => a.at - b.at)[0];
+    if (ag) try { const e = await api('/maison/graphique?eco='), t = (e.types || []).find(x => x.n && x.prochaine && Math.abs(x.prochaine.at - ag.at) < 120);
+      if (t) { const d = await api(`/maison/graphique?eco=${t.cle}`), m = d.resume || {}, c = m[code] ? code : Object.keys(m)[0]; if (c) res.ECO = `les dernières fois (${m[c].n}), ${c} a fait d’habitude <b>${m[c].amp60_med} ticks</b> dans l’heure${VAL_TICK[c] != null ? ` (${Math.round(m[c].amp60_med * VAL_TICK[c])} $ par contrat)` : ''}, jusqu’à ${m[c].amp60_max}`; } } catch (e) { /* rien */ }
+    for (const [k, , f] of BRIEF_L) { if (!$('#fn-p').classList.contains('on') || $('#fn-nom').textContent !== 'BRIEF') break;  // (il a fermé ou ouvert autre chose : on s'arrête)
+      CAPT = {}; try { await f(); } catch (e) { /* cette carte-là manque */ } const h = CAPT[k] ? CAPT[k].html : ''; CAPT = null;
+      const m = /<div class="fn-retenir"><small>À RETENIR<\/small>([\s\S]*?)<\/div>/.exec(h); res[k] = m ? m[1] : ''; dessine(false); }
+    if ($('#fn-nom').textContent === 'BRIEF') dessine(true); }
+  finally { CAPT = null; BRIEF_EN = false; } }
+// BETA : de combien tes marchés bougent quand le dollar, le S&P 500, l'or ou le pétrole bougent de 1 %
+async function fnBeta(a) { const n = [20, 60, 120, 250].includes(parseInt(a, 10)) ? parseInt(a, 10) : 60; ouvreFn('BETA', 'les sensibilités · je calcule…', '<p style="color:#8a91a0">…</p>');
+  const refs = ['DXY', 'MES', 'MGC', 'MCL'].filter(c => L.some(x => x.code === c)), codes = L.map(x => x.code).filter(c => !['GC', 'NQ', 'CL'].includes(c)).slice(0, 14), R = {};
+  for (const c of [...new Set([...codes, ...refs])]) { try { const B = (await barresDe(c, 'D1')).bougies || [], m = {}; for (let i = 1; i < B.length; i++) m[jourDe(B[i][0])] = Math.log(B[i][4] / B[i - 1][4]); R[c] = m; } catch (e) { /* rien */ } }
+  const jours = [...new Set(Object.values(R).flatMap(m => Object.keys(m)))].sort().slice(-n);
+  const beta = (y, x) => { const j = jours.filter(d => R[y] && R[x] && R[y][d] != null && R[x][d] != null); if (j.length < 10) return null; const a1 = j.map(d => R[x][d]), b1 = j.map(d => R[y][d]), ma = a1.reduce((s, v) => s + v, 0) / j.length, mb = b1.reduce((s, v) => s + v, 0) / j.length;
+    let c = 0, va = 0, vb = 0; for (let i = 0; i < j.length; i++) { c += (a1[i] - ma) * (b1[i] - mb); va += (a1[i] - ma) ** 2; vb += (b1[i] - mb) ** 2; } return va && vb ? { b: c / va, r: c / Math.sqrt(va * vb) } : null; };
+  const NOMR = { DXY: 'le dollar', MES: 'le S&P 500', MGC: 'l’or', MCL: 'le pétrole' }, NOMA = { DXY: 'au dollar', MES: 'au S&P 500', MGC: 'à l’or', MCL: 'au pétrole' }, T = codes.map(c => ({ c, v: Object.fromEntries(refs.map(rf => [rf, c === rf ? null : beta(c, rf)])) }));
+  const fortes = T.flatMap(x => refs.map(rf => [x.c, rf, x.v[rf]])).filter(z => z[2] && Math.abs(z[2].r) >= .5 && z[0] !== 'VIX' && !(z[0] === 'MES' && z[1] === 'MES')).sort((p, q) => Math.abs(q[2].r) - Math.abs(p[2].r));
+  const moi = T.find(x => x.c === code), dx = moi && moi.v.DXY;
+  const ret = (dx ? `Quand le dollar a monté de 1 %, ton <b>${esc(code)}</b> a fait en moyenne <b>${pcT(dx.b)}</b> (lien ${nb(dx.r, 2)}) sur ${n} séances. ` : '') + (fortes.length ? `Les dépendances les plus nettes : ${fortes.slice(0, 3).map(([c, rf, v]) => `${esc(c)} lié ${NOMA[rf]} (${v.b > 0 ? '+' : ''}${nb(v.b, 2)} % pour 1 %)`).join(' · ')}.` : 'Aucune dépendance nette (lien sous 0,5) sur cette période.');
+  const ch = [20, 60, 120, 250].map(z => `<button class="fn-ch ${z === n ? 'on' : ''}" data-beta="${z}">${z} j</button>`).join('');
+  const cell = v => !v ? '<span style="color:#6f7787">—</span>' : `<span style="color:${Math.abs(v.r) < .3 ? '#6f7787' : v.b >= 0 ? '#19d38c' : '#ff3d5a'}">${v.b > 0 ? '+' : ''}${nb(v.b, 2)} <small>lien ${nb(v.r, 2)}</small></span>`;
+  ouvreFn('BETA', `pour 1 % de mouvement de la référence, le mouvement moyen de chaque marché · ${n} séances`, `<div class="fn-chs">${ch}</div>` + retenir(ret)
+    + `<div class="beta t" style="grid-template-columns:130px repeat(${refs.length},1fr)"><span>MARCHÉ</span>${refs.map(rf => `<span>SI ${NOMR[rf].toUpperCase()} +1 %</span>`).join('')}</div>`
+    + T.map(x => `<div class="beta" data-c="${x.c}" style="grid-template-columns:130px repeat(${refs.length},1fr)"><span><b>${esc(x.c)}</b></span>${refs.map(rf => x.c === rf ? '<span style="color:#3a4560">référence</span>' : cell(x.v[rf])).join('')}</div>`).join('')
+    + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px;line-height:1.5">« −1,80 » : quand la référence a monté de 1 %, ce marché a baissé de 1,80 % en moyenne le même jour. « Lien » : de −1 à +1, la régularité de cette relation (gris sous 0,3 : pas de vraie dépendance). Mesuré sur le passé, pas une prévision.</p>`);
+  document.querySelectorAll('#fn-c [data-beta]').forEach(b => b.onclick = () => fnBeta(b.dataset.beta)); document.querySelectorAll('#fn-c .beta[data-c]').forEach(e => e.onclick = () => { fermeFn(); changeCode(e.dataset.c); }); }
+FONCTIONS.splice(0, 0, ['BRIEF', 'le point du moment : l’essentiel de chaque fonction sur un écran, puis la synthèse du copilote', () => fnBrief()]);
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['BETA', 'de combien tes marchés bougent quand le dollar, le S&P 500, l’or ou le pétrole bougent de 1 % · BETA 120', a => fnBeta(a)]);
+FN_TEL.splice(0, 0, ['BRIEF', 'le point du moment']); FN_TEL.splice(9, 0, ['BETA', 'les sensibilités']);
 // changer de marché sans attendre : les graphiques de tes marchés préparés en arrière-plan (une seule fenêtre, doucement)
 let PRECH = false;
 async function precharge() { if (PRECH || document.hidden || FEN !== '1' || (ROLE && ROLE !== 'structure') || marcheFerme() || !L.length) return; PRECH = true;
