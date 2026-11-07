@@ -1002,19 +1002,18 @@ class Pane {
     // tes configurations : un petit triangle de leur couleur, gravé en haut de l'axe du temps, à chaque fois qu'elles sont apparues (rien sur les bougies)
     for (const cf of (CFGD[`${code}|${this.ut}`] || [])) { if (!cf.visible || !cf.eval || !cf.eval.ok) continue;
       for (const ca of cf.eval.cas) { if (REPLAY && ca.t + (DUREE[cf.eval.ut] || 3600) > REPLAY.t) continue; const x = T(ca.t); if (x < 2 || x > pw - 2) continue;  // (en replay : seulement les bougies déjà closes)
-        const n = ca._n || (ca._n = { genre: 'config', at: ca.t, fin: ca.t + cf.suite * (DUREE[cf.eval.ut] || 3600), cf, ca }), sel = this.survol && this.survol.genre === 'config' && this.survol.ca === ca, w = sel ? 5.5 : 3.6;
-        c.fillStyle = cf.couleur || '#12b8a6'; c.beginPath(); c.moveTo(x, ph + 1.5); c.lineTo(x + w, ph + 1.5 + w * 1.5); c.lineTo(x - w, ph + 1.5 + w * 1.5); c.closePath(); c.fill();
-        this.marques.push({ x, y: ph + 5, n }); } }
+        const n = ca._n || (ca._n = { genre: 'config', at: ca.t, fin: ca.t + cf.suite * (DUREE[cf.eval.ut] || 3600), cf, ca }), sel = this.survol && this.survol.genre === 'config' && this.survol.ca === ca, w = sel ? 4.5 : 2.8;
+        c.fillStyle = cf.couleur || '#12b8a6'; c.beginPath(); c.moveTo(x, ph + 1); c.lineTo(x + w, ph + 1 + w * 1.3); c.lineTo(x - w, ph + 1 + w * 1.3); c.closePath(); c.fill();
+        this.marques.push({ x, y: ph + 3, n }); } }
     if (opt.news && NOUV[code]) {
       const COUL = { critique: '#f0435a', importante: '#ffab1a', chiffre: '#3d7bff', mouvement: '#8b5cff', annonce: '#9aa1ad' }, RANG = { annonce: 0, chiffre: 1, mouvement: 2, importante: 3, critique: 4 };
-      const l = NOUV[code].filter(n => !(REPLAY && n.at > REPLAY.t)).map(n => ({ n, x: T(n.at) })).filter(o => o.x >= 2 && o.x <= pw - 2).sort((a, b2) => (RANG[a.n.genre] || 0) - (RANG[b2.n.genre] || 0));
-      for (const { n, x } of l) {
-        const sel = n === this.survol, crit = n.genre === 'critique', w = sel ? 5 : crit ? 3.5 : 2.5, h = sel ? 11 : crit ? 9 : 7;
-        if (crit || sel) { c.fillStyle = COUL[n.genre] || '#9aa1ad'; c.fillRect(x - 7, ph - .5, 14, 2); }  // (sur la ligne de l'axe : un trait de couleur, sans toucher au volume)
-        if (n.genre === 'annonce') { c.strokeStyle = COUL.annonce; c.lineWidth = 1.2; c.strokeRect(x - w / 2, ph + 2.5, w, h - 1); }
-        else { c.fillStyle = COUL[n.genre] || '#9aa1ad'; c.beginPath(); c.roundRect(x - w / 2, ph + 2, w, h, 1.5); c.fill(); }
-        this.marques.push({ x, y: ph + 7, n });
-      }
+      // des points fins sous l'axe (plus de trait rouge sur l'axe) ; ceux qui se touchent sont regroupés : la couleur du plus important, un anneau s'ils sont plusieurs
+      const l = NOUV[code].filter(n => !(REPLAY && n.at > REPLAY.t)).map(n => ({ n, x: T(n.at) })).filter(o => o.x >= 3 && o.x <= pw - 3).sort((a, b2) => a.x - b2.x), grp = [];
+      for (const o of l) { const gq = grp[grp.length - 1]; if (gq && o.x - gq.x1 < 7) { gq.l.push(o.n); gq.x1 = o.x; } else grp.push({ x0: o.x, x1: o.x, l: [o.n] }); }
+      for (const gq of grp) { const n = gq.l.reduce((m, z) => (RANG[z.genre] || 0) > (RANG[m.genre] || 0) ? z : m), x = (gq.x0 + gq.x1) / 2, y = ph + 7.5, sel = gq.l.includes(this.survol), r = sel ? 4 : n.genre === 'critique' ? 3.1 : 2.5, col = COUL[n.genre] || '#9aa1ad';
+        if (n.genre === 'annonce' && gq.l.length === 1) { c.strokeStyle = col; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); }
+        else { c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); if (gq.l.length > 1) { c.strokeStyle = col; c.globalAlpha = .45; c.lineWidth = 1; c.beginPath(); c.arc(x, y, r + 2.2, 0, 7); c.stroke(); c.globalAlpha = 1; } }
+        this.marques.push({ x, y, n }); }
     }
     // l'aimant : un petit rond là où la ligne va se poser
     if (this.souris && outil !== 'curseur' && outil !== 'efface' && opt.aimant) { const [ta, pa] = aimant(this, this.souris[0], this.souris[1]); c.strokeStyle = '#2962ff'; c.lineWidth = 1.5; c.beginPath(); c.arc(T(ta), Y(pa), 5, 0, 7); c.stroke(); }
