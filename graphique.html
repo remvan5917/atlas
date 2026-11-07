@@ -188,6 +188,9 @@
   .rk small { display: block; font: 800 10px 'Inter'; letter-spacing: .14em; color: #8a91a0; } .rk b { display: block; font: 800 28px 'JetBrains Mono', monospace; margin: 4px 0 8px; } .rk .h { color: #19d38c; } .rk .r { color: #ff3d5a; } .rk .a { color: var(--ambre); }
   .jg { height: 10px; border-radius: 6px; background: #1a2030; overflow: hidden; position: relative; } .jg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; } .rk p { margin: 8px 0 0; color: #9aa1ad; font-size: 12px; line-height: 1.45; }
   .rk-pos { display: grid; grid-template-columns: 90px 110px repeat(4, 1fr); gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; } .rk-pos.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; }
+  .grp-c { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #2f3850; background: #0d1018; display: grid; place-items: center; cursor: pointer; padding: 0; flex: 0 0 auto; align-self: center; } .grp-c i { width: 10px; height: 10px; border-radius: 50%; background: transparent; border: 1.5px dashed #59627a; }
+  .grp-c.g i { border: 0; box-shadow: 0 0 10px currentColor; background: currentColor; }
+  .frais { font: 700 10px 'JetBrains Mono', monospace; color: #8a91a0; } .frais.fige { color: var(--ambre); }
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -569,6 +572,7 @@
 <div class="app">
   <div class="haut">
     <div class="marque" aria-hidden="true"><i></i><span>ATLAS<small>MARCHÉS</small></span></div>
+    <button class="grp-c" id="grp-c" data-tip="Groupe de liaison : les fenêtres de la même couleur changent de marché ensemble (clic : changer de couleur)"><i></i></button>
     <button class="sym" id="sym" data-tip="Changer de marché ( / )"><span class="ic" id="sym-ic">SIL</span><span><b id="sym-code">SIL</b><small id="sym-nom">Micro argent</small></span><span class="px num" id="sym-px"></span></button>
     <div class="seg" id="seg-ut"><button data-ut="5m">5m</button><button data-ut="15m">15m</button><button data-ut="30m">30m</button><button data-ut="H1">1h</button><button data-ut="H4">4h</button><button data-ut="D1">D</button><button data-ut="W">W</button><button data-ut="M">M</button></div>
     <div class="grp">
@@ -638,7 +642,7 @@
   </div>
   <div class="graphes un" id="graphes"></div>
   <div class="liste">
-    <div class="tete"><b><i class="led"></i>MONITEUR</b><span>TopstepX · mis à jour en continu</span><button class="retracte" id="mon-x" title="Rentrer le moniteur (il reste sur ta vue d'ensemble)">▸</button></div>
+    <div class="tete"><b><i class="led"></i>MONITEUR</b><span class="frais" id="mon-frais">TopstepX</span><button class="retracte" id="mon-x" title="Rentrer le moniteur (il reste sur ta vue d'ensemble)">▸</button></div>
     <div class="fam" style="cursor:default">LIENS ENTRE MARCHÉS<i title="Chaque couple : ses deux courbes des 4 dernières heures. Clique pour agrandir, clique un nom pour ouvrir ce marché. Ambre : ils se séparent.">?</i></div>
     <div class="liens" id="liens"><div class="lien-m relache"><i></i><span>chargement…</span></div></div>
     <div class="cols-t"><span>MARCHÉ<button class="b-ml" id="b-maliste" data-tip="Ta liste : ajouter n'importe quel contrat TopstepX, retirer, réordonner, tes familles">MODIFIER</button></span><span>5 JOURS</span><span>PRIX · <button class="b-ml" id="b-moncol" data-tip="Ce que montre la petite ligne sous le prix : la variation en %, en ticks, l'amplitude du jour (par rapport à l'habitude) ou la distance à ta ligne la plus proche">VAR %</button></span></div>
@@ -1236,7 +1240,7 @@ if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev
 async function changeCode(c, diffuse = true) { if (c !== code) { vu(); setTimeout(() => verifieVisite('marche'), 1500); } setTimeout(() => { try { majPxDow(); } catch (e) { /* rien */ } }, 50); if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; POS = r.positions || []; if (!GLISSE && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#liste'))) majListe(r.familles || []); else FAMS = r.familles || FAMS; if (ROLE === 'ensemble') chargeTout(); try { majPxDow(); } catch (er) { /* rien */ } try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; L_AT = Date.now(); POS = r.positions || []; if (!GLISSE && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#liste'))) majListe(r.familles || []); else FAMS = r.familles || FAMS; if (ROLE === 'ensemble') chargeTout(); try { majPxDow(); } catch (er) { /* rien */ } try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
 function spark(v, up) {
   if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
@@ -2959,6 +2963,26 @@ async function fnCal() { ouvreFn('CAL', 'l’agenda des annonces', '<p style="co
   h += apres.length ? apres.map(ligne).join('') : '<p style="color:#8a91a0">Rien de prévu dans l’agenda pour l’instant (il se remplit pour la semaine qui vient).</p>';
   if (avant.length) { jour = ''; h += `<div class="fn-jour" style="color:#8a91a0;margin-top:10px">DÉJÀ PASSÉ</div>` + avant.slice(-12).reverse().map(ligne).join(''); }
   ouvreFn('CAL', `${apres.length} annonce${apres.length > 1 ? 's' : ''} à venir · l’étude de la réaction passée : touche A`, h); }
+/* ================= les fenêtres liées par couleur, et la fraîcheur de chaque chiffre ================= */
+// chaque fenêtre choisit une couleur ; changer de marché dans une fenêtre le change dans toutes celles de la même couleur (sur tous tes écrans)
+const GROUPES = [['', 'aucun'], ['#ffab1a', 'ambre'], ['#3d7bff', 'bleu'], ['#19c37d', 'vert'], ['#c05cff', 'violet']];
+var GROUPE = lit(K('g-groupe'), '');  // (aucun par défaut : ta salle à 4 écrans reste synchronisée comme avant ; les couleurs servent aux fenêtres en plus)
+const GRP_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-groupes' + (DEV ? '-dev' : '')) : null;
+function majGroupe() { const b = $('#grp-c'); b.classList.toggle('g', !!GROUPE); b.style.color = GROUPE || ''; b.dataset.tip = `Groupe de liaison : ${(GROUPES.find(g => g[0] === GROUPE) || GROUPES[0])[1]} — les fenêtres de la même couleur changent de marché ensemble (clic : changer)`; }
+$('#grp-c').onclick = () => { const k = GROUPES.findIndex(g => g[0] === GROUPE); GROUPE = GROUPES[(k + 1) % GROUPES.length][0]; ecrit(K('g-groupe'), GROUPE); majGroupe(); toast(GROUPE ? `Groupe ${(GROUPES.find(g => g[0] === GROUPE) || [])[1]} : cette fenêtre suit les autres de la même couleur` : 'Cette fenêtre n’est liée à aucune autre'); };
+majGroupe();
+if (GRP_BC) GRP_BC.onmessage = ev => { const m = ev.data || {}; if (!GROUPE || m.g !== GROUPE || m.de === FEN || !m.c) return; const cible = ROLE === 'lie' ? (FRERE[m.c] || m.c) : m.c; if (cible !== code) changeCode(cible, false); };
+const _changeCode0 = changeCode;
+changeCode = async function (c, diffuse = true) { const r = await _changeCode0(c, diffuse); if (diffuse && GROUPE && GRP_BC) GRP_BC.postMessage({ g: GROUPE, c, de: FEN }); return r; };
+// la fraîcheur : l'heure de la dernière mise à jour ; « figé » au-delà d'une minute (sauf marché fermé, dit tel quel)
+var L_AT = 0;
+function marcheFerme() { const d = new Date(), j = d.getDay(), h = d.getHours() + d.getMinutes() / 60; return j === 6 || (j === 0 && h < 23) || (j === 5 && h >= 23) ? 'marché fermé · reprise dimanche 23 h' : h >= 22 && h < 23 ? 'pause du soir · reprise 23 h' : ''; }
+function majFraicheur() { const e = $('#mon-frais'); if (!e) return; const f = marcheFerme(), age = L_AT ? (Date.now() - L_AT) / 1000 : null;
+  if (f) { e.textContent = `TopstepX · ${f}`; e.classList.remove('fige'); }
+  else if (age == null) { e.textContent = 'TopstepX · en attente'; e.classList.add('fige'); }
+  else if (age > 60) { e.textContent = `TopstepX · figé depuis ${age > 3600 ? Math.round(age / 3600) + ' h' : Math.round(age / 60) + ' min'}`; e.classList.add('fige'); }
+  else { e.textContent = `TopstepX · à jour ${new Date(L_AT).toLocaleTimeString('fr-FR')}`; e.classList.remove('fige'); } }
+setInterval(majFraicheur, 1000);
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
