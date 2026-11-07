@@ -707,7 +707,7 @@
   <h3>TES ORDRES DEPUIS ATLAS</h3><p class="s">C'est toi qui passes tes ordres : tu poses l'entrée, tu tires ton stop et ton objectif sur le graphique. Atlas ne passe jamais d'ordre tout seul et ne te propose aucun niveau.</p>
   <div class="treg"><label><input type="checkbox" id="tr-actif"> <b>Ordres allumés</b></label><select id="tr-compte"></select><label><input type="checkbox" id="tr-conf"> Demander une confirmation avant chaque envoi</label></div>
   <p class="s" id="tr-m"></p>
-  <p class="s regles">Règles Topstep respectées : ordres par l'API permis sur le Combine et l'Express Funded, <b>jamais sur un compte Live funded</b> ; tout part de ton ordinateur ; pas de haute fréquence. Stop obligatoire ; un ordre dont le stop ferait dépasser ta limite du jour est refusé. Dans TopstepX, active <b>« Auto OCO Brackets »</b> : c'est ce qui permet à ton stop et à ton objectif de partir avec l'ordre. Fais tes premiers essais sur un compte d'entraînement.</p>
+  <p class="s regles">Règles Topstep respectées : ordres par l'API permis sur le Combine et l'Express Funded, <b>jamais sur un compte Live funded</b> ; tout part de ton ordinateur ; pas de haute fréquence. Stop obligatoire ; un ordre dont le stop ferait dépasser ta limite du jour est refusé. Ton ordre part seul ; dès qu'il est exécuté, la maison pose ton stop et ton objectif (en une à deux secondes), puis annule celui qui reste quand l'autre est touché. <b>Garde la maison allumée tant que tu es en position.</b> Une seule entrée suivie à la fois par marché. Fais tes premiers essais sur un compte d'entraînement.</p>
   <h3>LES DERNIERS ORDRES</h3><div class="al" id="tr-j"></div></div></div>
 <div class="tconf" id="tconf"><div><div class="q">CONFIRMER L'ORDRE</div><b id="tconf-t"></b><p id="tconf-d"></p><div class="bt"><button id="tconf-ok">Envoyer · Entrée</button><button id="tconf-non">Annuler · Échap</button></div></div></div>
 <div class="bulle" id="bulle"></div>
@@ -2724,7 +2724,8 @@ function tradeMove(p, x, y) { const d = TRADE.drag; if (!d) { if (TRADE.on || TR
   majTicket(); toutDessine(); return true; }
 function tradeUp(p) { const d = TRADE.drag; if (!d) return false; TRADE.drag = null; if (d.genre === 'ordre' && d.prix !== d.o.prix) deplaceOrdre(d.o, d.prix); else toutDessine(); if (TRADE.brouillon) sonne('pose'); return true; }
 async function chargeOrdresTrade() { if (!ROOT || (!TRADE.on && !positionsDe(code).length)) { if (TRADE.ordres.length) { TRADE.ordres = []; toutDessine(); } return; }
-  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ouverts', code }); if (r.ok && !TRADE.drag) { TRADE.ordres = r.ordres || []; toutDessine(); } } catch (e) { /* hors liaison */ } majTicket(); }
+  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ouverts', code }); if (r.ok && !TRADE.drag) { TRADE.ordres = r.ordres || []; toutDessine(); }
+    for (const x of r.suivi || []) if (x.alerte && !TRADE.alertes_vues?.[x.code + x.alerte]) { (TRADE.alertes_vues ||= {})[x.code + x.alerte] = 1; halo('rouge'); sonne('critique'); toast(`✗ ${x.code} : ${x.alerte} — pose ton stop dans TopstepX`); } } catch (e) { /* hors liaison */ } majTicket(); }
 setInterval(() => { if (!document.hidden) chargeOrdresTrade(); }, 4000);
 async function envoyer() { const b = TRADE.brouillon, k = calcBrouillon(); if (!b || !k || !k.ok || TRADE.envoi) return; const { dec } = infoCode();
   const corps = { action: 'ordre', op: 'place', code, sens: b.sens, taille: TRADE.taille, genre: k.genre, prix: k.genre === 'marche' ? null : k.e, sl: b.sl, tp: b.tp };
