@@ -494,7 +494,9 @@
   .indic-b .al.cfg div { grid-template-columns: 10px 1fr auto auto auto; } .indic-b .al.cfg i.pt { width: 10px; height: 10px; border-radius: 3px; display: block; }
   .indic-b .al.cfg .st { font: 600 11px var(--mono); color: #c4c9d3; margin-top: 4px; display: block; } .indic-b .al.cfg .st .h { color: #19d38c; } .indic-b .al.cfg .st .r { color: #ff3d5a; }
   .indic-b .al.cfg em.la { font: 800 9.5px 'Inter'; letter-spacing: .1em; color: #160d00; background: var(--ambre); border-radius: 4px; padding: 2px 6px; margin-left: 8px; font-style: normal; vertical-align: 1px; }
-  .pane .titre .indl .cfgt i { border-radius: 50%; } .pane .titre .indl .cfgt.la { color: var(--ambre); }
+  .pane .titre .indl .cfgt i { border-radius: 50%; } .pane .titre b.meth { color: var(--ambre); font-weight: 700; }
+  .meths { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 8px 0 16px; } .meths button { text-align: left; background: #0d1018; border: 1px solid var(--bord); border-radius: 10px; padding: 10px 12px; color: #e6e9ef; font: 700 13px 'Inter'; cursor: pointer; }
+  .meths button small { display: block; font: 500 11px 'Inter'; color: var(--tres-doux); margin-top: 4px; line-height: 1.35; } .meths button.on { border-color: var(--ambre); box-shadow: inset 0 0 0 1px var(--ambre); } .meths button:hover { border-color: var(--bord2); } .pane .titre .indl .cfgt.la { color: var(--ambre); }
   .indic-b .al b { font: 600 13px 'Inter'; } .indic-b .al small { display: block; color: var(--tres-doux); font-size: 11px; font-weight: 500; margin-top: 2px; }
   .indic-b .al button { background: none; border: 1px solid var(--bord2); color: var(--doux); border-radius: 7px; padding: 4px 8px; font: 600 11px 'Inter'; cursor: pointer; } .indic-b .al button:hover { color: var(--ambre); border-color: var(--ambre); }
   .indic-b .al .vide { display: block; cursor: default; color: var(--tres-doux); font-size: 12px; } .indic-b .al .j { display: block; cursor: default; font-size: 12px; color: var(--doux); }
@@ -608,6 +610,7 @@
 <div class="pub" id="pub"><div class="q" id="pub-q"></div><div class="chiffres" id="pub-c"></div><div class="reac" id="pub-r"></div><button class="x" id="pub-x">×</button></div>
 <button class="onglet-mon" id="mon-o" title="Sortir le moniteur">MONITEUR</button>
 <div class="indic-p" id="indic-p"><div class="indic-b">
+  <h3>TA MÉTHODE</h3><p class="s">En un clic, le graphique, les alertes et le copilote suivent la méthode choisie.</p><div class="meths" id="meths"></div>
   <h3>DÉCRIS TON INDICATEUR</h3><p class="s">En français, comme tu le dirais. Atlas l'assemble avec des briques sûres et le range dans ta bibliothèque.</p>
   <div class="nl"><input id="indic-q" placeholder="ex. une moyenne mobile 20 et une 50, colore le fond quand la 20 passe au-dessus" autocomplete="off"><button class="go" id="indic-go">Créer</button></div>
   <div class="ex"><span>surligne les bougies dont le volume dépasse 2 fois la moyenne</span><span>le plus haut et le plus bas de la séance de Londres</span><span>un RSI 14 avec 30 et 70</span><span>marque quand le prix croise le VWAP vers le haut</span></div>
@@ -739,7 +742,7 @@ class Pane {
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
     const iY = y => hi - (y - HAUT) / (BASP - HAUT) * (hi - lo);
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
-    const IC = IND.length ? calculeIndics(this, B, IND) : [], HA = TYPE === 'heikin' ? heikin(this, B) : null;
+    const IC = IND.length ? calculeIndics(this, B, IND) : [], HA = TYPE === 'heikin' ? heikin(this, B) : null, MC = METHODE !== 'dow' ? calculeMethode(this, B) : null;
     const TH = theme(), coul = x => (!x || x === '#000' || x === '#000000' || x === '#0b0e15') ? TH.fg : x;
     c.clearRect(0, 0, W, H); c.fillStyle = TH.bg; c.fillRect(0, 0, W, H);
     // la grille pointillée
@@ -764,6 +767,7 @@ class Pane {
     if (opt.zones) (this.d.zones || []).forEach(z => { const x0 = Math.max(0, T(z.t)), y0 = Y(z.haut), y1 = Y(z.bas);
       c.fillStyle = TH.zone; c.fillRect(x0, y0, pw - x0, Math.max(1, y1 - y0)); c.strokeStyle = TH.zoneB; c.lineWidth = 1; c.strokeRect(x0 + .5, y0 + .5, pw - x0, Math.max(1, y1 - y0));
     });  // (sans étiquettes : son graphique reste épuré ; le prix des zones se lit au survol, sur l'axe)
+    if (MC) dessineMethode(MC, { c, X, Y, T, i, j, pw, ph, HAUT, BASP, TH, bw, B }, 'fond');
     // le volume (fines barres noires en bas)
     if (opt.vol) { const vm = Math.max(...v.map(b => b[5] || 0)) || 1, lv = opt.bougies ? Math.max(1, bw * .6) : Math.max(1, bw * .24);
       for (let k = i; k < j; k++) { const h = (B[k][5] || 0) / vm * volH; c.fillStyle = opt.bougies ? (B[k][4] >= B[k][1] ? TH.hausse : TH.fg) : TH.vol; c.fillRect(Math.round(X(k) - lv / 2), ph - BN - h, lv, h); } }
@@ -788,6 +792,7 @@ class Pane {
     // le zigzag (5, 10) : épais, la dernière jambe en tirets
     if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = TH.fg; c.lineWidth = 2.4; c.lineJoin = 'round';
       for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [6, 5] : []); c.beginPath(); c.moveTo(T(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(T(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]); }
+    if (MC) dessineMethode(MC, { c, X, Y, T, i, j, pw, ph, HAUT, BASP, TH, bw, B }, 'lignes');
     // les indicateurs : leurs lignes sur le prix, leurs marqueurs, et la sous-fenêtre des oscillateurs
     if (IC.length) {
       const trace = (v, couleur, style, Yf, y0, y1) => { c.strokeStyle = couleur; c.lineWidth = 1.5; c.setLineDash(style === 'tirets' ? [6, 4] : []); c.beginPath(); let en = false;
@@ -935,7 +940,7 @@ class Pane {
       c.fillStyle = '#3d4a66'; c.beginPath(); c.roundRect(mx - 54, ph + 2, 108, BT - 4, 5); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '600 10.5px Inter, sans-serif'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">Zigzag 5 10 · ${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${(ALERTES || []).filter(a => a.actif && a.marche === code && a.ut === this.ut).length ? `<div class="indl">${ALERTES.filter(a => a.actif && a.marche === code && a.ut === this.ut).slice(0, 3).map(a => `<span class="alt" title="Alerte : ${esc(a.texte)}"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>${esc(a.titre)}</span>`).join('')}</div>` : ''}${(() => { const l = (CFGD[`${code}|${this.ut}`] || []).filter(cf => cf.visible && cf.eval && cf.eval.ok); return l.length ? `<div class="indl">${l.slice(0, 4).map(cf => { const st = cf.eval.stats; return `<span class="cfgt${cf.eval.maintenant ? ' la' : ''}" title="Configuration : ${esc(cf.texte || cf.nom)}"><i style="background:${cf.couleur}"></i>${esc(cf.nom)}${st ? ` · ${st.n} fois · ${st.plus}↑ ${st.moins}↓` : ''}${cf.eval.maintenant ? ' · LÀ MAINTENANT' : ''}</span>`; }).join('')}</div>` : ''; })()}${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">${METHODE !== 'dow' ? `<b class="meth">${esc(METHODES[METHODE].nom)}</b> · ` : ''}${opt.zz ? 'Zigzag 5 10 · ' : ''}${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${(ALERTES || []).filter(a => a.actif && a.marche === code && a.ut === this.ut).length ? `<div class="indl">${ALERTES.filter(a => a.actif && a.marche === code && a.ut === this.ut).slice(0, 3).map(a => `<span class="alt" title="Alerte : ${esc(a.texte)}"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>${esc(a.titre)}</span>`).join('')}</div>` : ''}${(() => { const l = (CFGD[`${code}|${this.ut}`] || []).filter(cf => cf.visible && cf.eval && cf.eval.ok); return l.length ? `<div class="indl">${l.slice(0, 4).map(cf => { const st = cf.eval.stats; return `<span class="cfgt${cf.eval.maintenant ? ' la' : ''}" title="Configuration : ${esc(cf.texte || cf.nom)}"><i style="background:${cf.couleur}"></i>${esc(cf.nom)}${st ? ` · ${st.n} fois · ${st.plus}↑ ${st.moins}↓` : ''}${cf.eval.maintenant ? ' · LÀ MAINTENANT' : ''}</span>`; }).join('')}</div>` : ''; })()}${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
   }
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
@@ -1350,7 +1355,7 @@ async function copilote(question = '') {
   const p = panes[actif] || panes[0]; ouvreCopi('Copilote', 'Je regarde ton graphique…', question, true);
   let image = ''; try { image = p.cv.toDataURL('image/jpeg', 0.8); } catch (e) { /* rien */ }
   try {
-    const r = await api('/maison/copilote', { action: 'explique', code, ut: p ? p.ut : 'H1', question, image });
+    const r = await api('/maison/copilote', { action: 'explique', code, ut: p ? p.ut : 'H1', question, image, ecran: ecranTexte(p) });
     if (!r || r.ok === false) throw new Error((r && r.raison) || 'erreur');
     ouvreCopi(r.titre || 'Copilote', r.texte, question, false); dire(r.texte);
   } catch (e) { ouvreCopi('Copilote', "Je n'arrive pas à joindre la maison pour l'instant.", question, false); }
@@ -1537,6 +1542,7 @@ const VOIX_MARCHES = [[/\b(l ?or|gold)\b/, 'MGC'], [/\bargent|silver\b/, 'SIL'],
 const VOIX_UT = [[/\b(5|cinq) ?(minutes?|min|m)\b/, '5m'], [/\b(15|quinze) ?(minutes?|min|m)\b/, '15m'], [/\b(30|trente) ?(minutes?|min|m)\b/, '30m'], [/\bh ?4\b|\b(4|quatre) ?heures?\b/, 'H4'], [/\bh ?1\b|\b(une|1) ?heure\b|\bhoraire\b/, 'H1'], [/\bd ?1\b|\bdaily\b|\bjournalier\b|\ben jour\b/, 'D1'], [/\bhebdo|weekly|semaine\b/, 'W'], [/\bmensuel|monthly|en mois\b/, 'M']];
 async function commandeGraphique(texte) {
   const n = ' ' + sansAcc(texte) + ' ';
+  { const m = /\b(?:methode|mode) (dow|zigzag|smart money|smc|volume|vwap|ichimoku)\b/.exec(n); if (m) { const k = { dow: 'dow', zigzag: 'dow', 'smart money': 'smc', smc: 'smc', volume: 'volume', vwap: 'volume', ichimoku: 'ichimoku' }[m[1]]; choisirMethode(k); return `Méthode : ${METHODES[k].nom}`; } }
   if (/\binstalle (ma|la) salle\b/.test(n)) { installeSalle(); return 'Salle de marché'; }
   if (/\b(presente|presentes|raconte)(-| )?(moi )?(le|les|mes) marches?\b|\batlas presente\b|\bjournal des marches\b/.test(n)) { presente(); return 'Atlas présente'; }
   if (/\b(trois|3) graphiques\b/.test(n)) { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); return 'Trois graphiques'; }
@@ -2074,6 +2080,7 @@ function calculeIndics(p, B, IND) {
 }
 /* --- le panneau des indicateurs --- */
 function majPanneauIndic() {
+  majMethodes();
   $('#indic-cl').innerHTML = CLASSIQUES.map(x => `<button data-c="${x.id}">${esc(x.nom)}<small>${esc(x.aide)}${x.n ? ` · ${x.n}` : ''}</small></button>`).join('');
   $('#indic-a').innerHTML = INDICS.length ? INDICS.map((x, k) => `<div class="${x.visible === false ? 'off' : ''}"><i style="background:${(x.recette.lignes[0] || x.recette.zones[0] || x.recette.marqueurs[0] || {}).couleur || '#888'}"></i><div><b>${esc(x.recette.nom)}</b><small>${esc(x.texte ? '« ' + x.texte + ' »' : x.recette.explication || 'classique')}</small></div>`
     + `${x.n ? `<button data-k="${k}" data-a="n">période ${x.n}</button>` : '<span></span>'}<button data-k="${k}" data-a="vis">${x.visible === false ? 'afficher' : 'masquer'}</button><button data-k="${k}" data-a="sup">retirer</button></div>`).join('')
@@ -2154,6 +2161,114 @@ async function chargeAlertes() {
   catch (e) { /* hors liaison */ }
 }
 chargeAlertes(); setInterval(() => { if (!document.hidden) chargeAlertes(); }, 20000);
+/* ================= les méthodes en un clic ================= */
+// chaque méthode règle ce qui est affiché, les alertes du graphique et ce que regarde le copilote ; la sienne (Dow / zigzag) reste la référence
+const METHODES = {
+  dow: { nom: 'Dow / zigzag', aide: 'Ta méthode : la structure, le zigzag 5 10, tes lignes, les zones D1.', zz: true, zones: true },
+  smc: { nom: 'Smart Money', aide: 'Déséquilibres de prix (FVG), blocs d’ordres, chasses à la liquidité.', zz: true, zones: false },
+  volume: { nom: 'Volume', aide: 'Le VWAP de la séance et ses bandes à 1 et 2 écarts (ancré au dernier pivot en D1).', zz: true, zones: false },
+  ichimoku: { nom: 'Ichimoku', aide: 'Tenkan, Kijun, le nuage projeté 26 barres en avant, la Chikou.', zz: false, zones: false },
+};
+var METHODE = METHODES[lit('g-methode', 'dow')] ? lit('g-methode', 'dow') : 'dow', METAT = {}, MALERTE = {};
+const METH_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-methode' + (DEV ? '-dev' : '')) : null;
+function majMethodes() { const e = $('#meths'); if (e) e.innerHTML = Object.entries(METHODES).map(([k, m]) => `<button data-m="${k}" class="${k === METHODE ? 'on' : ''}">${esc(m.nom)}<small>${esc(m.aide)}</small></button>`).join(''); }
+function choisirMethode(m, distant) { if (!METHODES[m]) return; METHODE = m;
+  if (distant) { opt.zz = lit('g-zz', '1') === '1'; opt.zones = lit('g-zones-d1', '1') === '1'; }
+  else { const M = METHODES[m]; opt.zz = M.zz; opt.zones = M.zones; ecrit('g-methode', m); ecrit('g-zz', opt.zz ? '1' : '0'); ecrit('g-zones-d1', opt.zones ? '1' : '0'); if (METH_BC) METH_BC.postMessage(m); }
+  $('#t-zz').classList.toggle('on', opt.zz); $('#t-zones').classList.toggle('on', opt.zones); majMethodes(); toutDessine(); }
+if (METH_BC) METH_BC.onmessage = ev => choisirMethode(ev.data, true);
+$('#meths').addEventListener('click', ev => { const b = ev.target.closest('[data-m]'); if (b) { choisirMethode(b.dataset.m); toast(`Méthode : ${METHODES[b.dataset.m].nom}`); } });
+function idxDe(B, t) { let a = 0, z = B.length - 1; if (!B.length || t < B[0][0]) return -1; while (z - a > 1) { const m = (a + z) >> 1; if (B[m][0] <= t) a = m; else z = m; } return B[z][0] <= t ? z : a; }
+function atrSerie(B, n) { const o = new Float64Array(B.length); let r = 0; for (let k = 0; k < B.length; k++) { const b = B[k], tr = k ? Math.max(b[2] - b[3], Math.abs(b[2] - B[k - 1][4]), Math.abs(b[3] - B[k - 1][4])) : b[2] - b[3]; r = k < n ? (r * k + tr) / (k + 1) : (r * (n - 1) + tr) / n; o[k] = r; } return o; }
+function calculeMethode(p, B) {
+  const N = B.length; if (N < 3) return null; const d = B[N - 1], cle = `${METHODE}|${code}|${p.ut}|${N}|${d[0]}|${d[2]}|${d[3]}|${d[4]}|${(p.d.zigzag || []).length}`;
+  if (p._mc && p._mc.cle === cle) return p._mc.v;
+  let v = null; try { v = METHODE === 'smc' ? methSMC(p, B) : METHODE === 'volume' ? methVolume(p, B) : METHODE === 'ichimoku' ? methIchimoku(B) : null; } catch (e) { console.error(e); }
+  if (v) v.genre = METHODE; p._mc = { cle, v }; if (v && !REPLAY) alertesMethode(p, v, B); return v;
+}
+function methSMC(p, B) {
+  const N = B.length, a = atrSerie(B, 14), out = { fvg: [], ob: [], sweeps: [] };
+  // les déséquilibres de prix (FVG) : le trou entre la mèche de la bougie k-2 et celle de la bougie k ; comblé quand le prix le retraverse
+  for (let k = 2; k < N; k++) { const m = a[k] * .15;
+    if (B[k][3] - B[k - 2][2] > m) out.fvg.push({ sens: 1, t: B[k - 1][0], k: k - 1, haut: B[k][3], bas: B[k - 2][2] });
+    else if (B[k - 2][3] - B[k][2] > m) out.fvg.push({ sens: -1, t: B[k - 1][0], k: k - 1, haut: B[k - 2][3], bas: B[k][2] }); }
+  for (const f of out.fvg) for (let q = f.k + 2; q < N; q++) {
+    if (f.sens > 0) { if (B[q][3] <= f.bas) { f.fin = 1; break; } if (B[q][3] < f.haut) f.haut = B[q][3]; }
+    else { if (B[q][2] >= f.haut) { f.fin = 1; break; } if (B[q][2] > f.bas) f.bas = B[q][2]; } }
+  out.fvg = out.fvg.filter(f => !f.fin).slice(-8);
+  // les blocs d'ordres : la dernière bougie contraire avant l'élan qui casse la structure (un sommet / creux du zigzag confirmé)
+  const piv = (p.d.zigzag || []).filter(z => z[2] !== 'dernier').map(z => ({ k: idxDe(B, z[0]), prix: z[1], g: z[2] })).filter(z => z.k >= 0);
+  let hD = null, lD = null, pi = 0;
+  for (let k = 1; k < N; k++) {
+    while (pi < piv.length && piv[pi].k + 10 <= k) { if (piv[pi].g === 'h') hD = piv[pi]; else lD = piv[pi]; pi++; }
+    if (hD && !hD.casse && B[k][4] > hD.prix && B[k - 1][4] <= hD.prix) { hD.casse = 1; const k0 = lD ? lD.k : Math.max(0, k - 30); for (let q = k; q >= k0; q--) if (B[q][4] < B[q][1]) { out.ob.push({ sens: 1, t: B[q][0], kc: k, haut: B[q][2], bas: B[q][3] }); break; } }
+    if (lD && !lD.casse && B[k][4] < lD.prix && B[k - 1][4] >= lD.prix) { lD.casse = 1; const k0 = hD ? hD.k : Math.max(0, k - 30); for (let q = k; q >= k0; q--) if (B[q][4] > B[q][1]) { out.ob.push({ sens: -1, t: B[q][0], kc: k, haut: B[q][2], bas: B[q][3] }); break; } }
+  }
+  for (const o of out.ob) for (let q = o.kc + 1; q < N; q++) if (o.sens > 0 ? B[q][4] < o.bas : B[q][4] > o.haut) { o.fin = 1; break; }
+  out.ob = out.ob.filter(o => !o.fin).slice(-4);
+  // les chasses à la liquidité : une mèche au-delà d'un sommet / creux du zigzag, et la clôture revient en deçà
+  for (const z of piv) { const lim = Math.min(N, z.k + 300);
+    for (let q = z.k + 1; q < lim; q++) { const b = B[q];
+      if (z.g === 'h') { if (b[4] > z.prix) break; if (b[2] > z.prix) { out.sweeps.push({ sens: -1, prix: z.prix, t0: B[z.k][0], t: b[0] }); break; } }
+      else { if (b[4] < z.prix) break; if (b[3] < z.prix) { out.sweeps.push({ sens: 1, prix: z.prix, t0: B[z.k][0], t: b[0] }); break; } } } }
+  out.sweeps = out.sweeps.sort((x, y) => x.t - y.t).slice(-5);
+  return out;
+}
+function methVolume(p, B) {
+  const N = B.length, intra = !['D1', 'W', 'M'].includes(p.ut), vw = new Float64Array(N).fill(NaN), sd = new Float64Array(N).fill(NaN); let k0 = 0;
+  if (!intra) { const zz = (p.d.zigzag || []).filter(z => z[2] !== 'dernier'), z = zz[zz.length - 1]; k0 = z ? Math.max(0, idxDe(B, z[0])) : Math.max(0, N - 60); }
+  let j0 = null, pv = 0, vv = 0, p2 = 0;
+  for (let k = k0; k < N; k++) { const b = B[k], v = b[5] || 0, tp = (b[2] + b[3] + b[4]) / 3;
+    if (intra) { const jj = Math.floor((b[0] + 7 * 3600 - (1440 - decalage('America/Chicago', b[0])) % 1440 * 60) / 86400); if (jj !== j0) { j0 = jj; pv = vv = p2 = 0; } }  // (la journée CME, comme le VWAP des indicateurs)
+    pv += tp * v; vv += v; p2 += tp * tp * v; if (vv) { vw[k] = pv / vv; sd[k] = Math.sqrt(Math.max(0, p2 / vv - vw[k] * vw[k])); } }
+  return { vw, sd, ancre: intra ? null : B[k0][0] };
+}
+function methIchimoku(B) {
+  const N = B.length, mid = (k, n) => { if (k < n - 1) return NaN; let h = -Infinity, l = Infinity; for (let q = k - n + 1; q <= k; q++) { if (B[q][2] > h) h = B[q][2]; if (B[q][3] < l) l = B[q][3]; } return (h + l) / 2; };
+  const tk = new Float64Array(N), kj = new Float64Array(N), sa = new Float64Array(N + 26).fill(NaN), sb = new Float64Array(N + 26).fill(NaN);
+  for (let k = 0; k < N; k++) { tk[k] = mid(k, 9); kj[k] = mid(k, 26); sa[k + 26] = (tk[k] + kj[k]) / 2; sb[k + 26] = mid(k, 52); }
+  return { tk, kj, sa, sb };
+}
+function dessineMethode(M, g, couche) {
+  const { c, X, Y, T, i, j, pw, BASP, bw, B } = g; c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip();
+  const trace = (f, k0, k1, coul, w, tir) => { c.strokeStyle = coul; c.lineWidth = w; c.setLineDash(tir || []); c.beginPath(); let en = false;
+    for (let k = k0; k < k1; k++) { const v = f(k); if (!isFinite(v)) { en = false; continue; } const x = X(k), y = Y(v); if (!en) { c.moveTo(x, y); en = true; } else c.lineTo(x, y); } c.stroke(); c.setLineDash([]); };
+  if (M.genre === 'smc' && couche === 'fond') {  // (des zones pâles sous les bougies, prolongées à droite, comme ses zones S/R)
+    const boite = (o, coul, a) => { const x0 = Math.max(0, T(o.t)), y0 = Y(o.haut), y1 = Y(o.bas); if (x0 >= pw) return; c.fillStyle = coul + a; c.fillRect(x0, y0, pw - x0, Math.max(1, y1 - y0)); c.strokeStyle = coul + '50'; c.lineWidth = 1; c.strokeRect(Math.round(x0) + .5, Math.round(y0) + .5, pw - x0, Math.max(1, y1 - y0)); };
+    M.fvg.forEach(f => boite(f, f.sens > 0 ? '#14b887' : '#f23645', '14')); M.ob.forEach(o => boite(o, o.sens > 0 ? '#3d7bff' : '#ff8a00', '1a')); }
+  if (M.genre === 'smc' && couche === 'lignes') M.sweeps.forEach(s => { const x0 = T(s.t0), x1 = T(s.t); if (x1 < 0 || x0 > pw) return; c.strokeStyle = s.sens > 0 ? '#14b887' : '#f23645'; c.lineWidth = 1.2; c.setLineDash([2, 3]); c.beginPath(); c.moveTo(x0, Y(s.prix)); c.lineTo(x1 + bw * .6, Y(s.prix)); c.stroke(); c.setLineDash([]); });
+  if (M.genre === 'volume' && couche === 'lignes') { for (const m of [2, 1, -1, -2]) trace(k => M.vw[k] + m * M.sd[k], i, j, Math.abs(m) === 2 ? 'rgba(139,92,255,.6)' : 'rgba(139,92,255,.38)', 1, [5, 4]); trace(k => M.vw[k], i, j, '#8b5cff', 1.8); }
+  if (M.genre === 'ichimoku') { const kmax = Math.min(B.length + 26, i + Math.ceil(pw / bw) + 2);
+    if (couche === 'fond') for (let k = Math.max(i, 1); k < kmax; k++) { const a0 = M.sa[k - 1], b0 = M.sb[k - 1], a1 = M.sa[k], b1 = M.sb[k]; if (!(isFinite(a0) && isFinite(b0) && isFinite(a1) && isFinite(b1))) continue;
+      c.fillStyle = a1 >= b1 ? 'rgba(20,184,135,.11)' : 'rgba(242,54,69,.11)'; c.beginPath(); c.moveTo(X(k - 1), Y(a0)); c.lineTo(X(k), Y(a1)); c.lineTo(X(k), Y(b1)); c.lineTo(X(k - 1), Y(b0)); c.closePath(); c.fill(); }
+    else { trace(k => M.sa[k], i, kmax, 'rgba(20,184,135,.55)', 1); trace(k => M.sb[k], i, kmax, 'rgba(242,54,69,.55)', 1); trace(k => M.tk[k], i, j, '#3d7bff', 1.3); trace(k => M.kj[k], i, j, '#c2185b', 1.6);
+      trace(k => (B[k + 26] || [])[4], Math.max(0, i - 26), j - 26, 'rgba(130,140,160,.55)', 1); } }
+  c.restore();
+}
+function alertesMethode(p, M, B) {  // une fois quand ça DEVIENT vrai (pas au chargement), puis 30 minutes de silence pour ce niveau
+  if (!p.d) return; const b = B[B.length - 1], dec = p.d.dec, lib = `${code} ${LIB[p.ut] || p.ut}`, maint = Date.now(), k = B.length - 1;
+  const etat = (cle, dedans, txt) => { const kk = `${code}|${p.ut}|${cle}`, av = METAT[kk]; METAT[kk] = !!dedans;
+    if (av === false && dedans && !(MALERTE[kk] && maint - MALERTE[kk] < 1800000)) { MALERTE[kk] = maint; halo('ambre'); if (QUI_SONNE) sonne('ligne'); toast(`◆ ${lib} : ${txt}`); } };
+  if (M.genre === 'smc') { M.fvg.forEach(f => etat('fvg' + f.t, b[3] <= f.haut && b[2] >= f.bas, `le prix entre dans un déséquilibre ${f.sens > 0 ? 'haussier' : 'baissier'} (${nb(f.bas, dec)} – ${nb(f.haut, dec)})`));
+    M.ob.forEach(o => etat('ob' + o.t, b[3] <= o.haut && b[2] >= o.bas, `le prix revient dans un bloc d’ordres ${o.sens > 0 ? 'haussier' : 'baissier'} (${nb(o.bas, dec)} – ${nb(o.haut, dec)})`));
+    const s = M.sweeps[M.sweeps.length - 1]; if (s) etat('sw' + s.t, s.t >= b[0], `mèche au-delà ${s.sens > 0 ? 'du creux' : 'du sommet'} ${nb(s.prix, dec)}, la clôture revient en deçà`); }
+  if (M.genre === 'volume') { const v = M.vw[k], sd = M.sd[k]; if (isFinite(v) && sd > 0) { etat('v2h', b[2] >= v + 2 * sd, `le prix touche la bande haute du VWAP (2 écarts, ${nb(v + 2 * sd, dec)})`); etat('v2b', b[3] <= v - 2 * sd, `le prix touche la bande basse du VWAP (2 écarts, ${nb(v - 2 * sd, dec)})`); etat('vw', b[3] <= v && b[2] >= v, `le prix revient sur le VWAP (${nb(v, dec)})`); } }
+  if (M.genre === 'ichimoku') { const kj = M.kj[k], a = M.sa[k], bb = M.sb[k]; if (isFinite(kj)) { etat('kjh', b[4] > kj, `le prix passe au-dessus de la Kijun (${nb(kj, dec)})`); etat('kjb', b[4] < kj, `le prix passe sous la Kijun (${nb(kj, dec)})`); }
+    if (isFinite(a) && isFinite(bb)) etat('nuage', b[4] <= Math.max(a, bb) && b[4] >= Math.min(a, bb), `le prix entre dans le nuage (${nb(Math.min(a, bb), dec)} – ${nb(Math.max(a, bb), dec)})`); }
+}
+function ecranTexte(p) {  // ce que montre son écran, pour le copilote : la méthode, ses niveaux, ses indicateurs, ses configurations
+  try { const L = [], dec = p && p.d ? p.d.dec : 2, B = p && p.d ? p.d.bougies : null, M = METHODE !== 'dow' && p && B ? calculeMethode(p, B) : null;
+    L.push(`Méthode choisie : ${METHODES[METHODE].nom}.`);
+    const ind = indicsActifs().map(r => r.nom); if (ind.length) L.push('Indicateurs affichés : ' + ind.join(', ') + '.');
+    const cf = p ? (CFGD[`${code}|${p.ut}`] || []).filter(x => x.visible && x.eval && x.eval.ok) : []; if (cf.length) L.push('Ses configurations : ' + cf.map(x => `${x.nom}${x.eval.maintenant ? ' (PRÉSENTE sur la dernière bougie close)' : ''}${x.eval.stats ? ` — ${x.eval.stats.n} fois, ensuite ${x.eval.stats.plus} fois plus haut / ${x.eval.stats.moins} fois plus bas` : ''}`).join(' ; ') + '.');
+    if (M && B) { const k = B.length - 1, der = B[k][4], pos = (h, l) => der > h ? 'AU-DESSUS' : der < l ? 'EN DESSOUS' : 'DEDANS';
+      if (M.genre === 'smc') { L.push('Déséquilibres (FVG) non comblés : ' + (M.fvg.slice(-5).map(f => `${f.sens > 0 ? 'haussier' : 'baissier'} ${nb(f.bas, dec)}–${nb(f.haut, dec)} (prix ${pos(f.haut, f.bas)})`).join(' ; ') || 'aucun') + '.');
+        L.push('Blocs d’ordres actifs : ' + (M.ob.map(o => `${o.sens > 0 ? 'haussier' : 'baissier'} ${nb(o.bas, dec)}–${nb(o.haut, dec)} (prix ${pos(o.haut, o.bas)})`).join(' ; ') || 'aucun') + '.');
+        L.push('Chasses à la liquidité récentes : ' + (M.sweeps.map(s => `${s.sens > 0 ? 'sous le creux' : 'au-dessus du sommet'} ${nb(s.prix, dec)} le ${new Date(s.t * 1000).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`).join(' ; ') || 'aucune') + '.'); }
+      if (M.genre === 'volume' && isFinite(M.vw[k])) L.push(`VWAP ${M.ancre ? 'ancré au dernier pivot du zigzag' : 'de la séance'} ${nb(M.vw[k], dec)} ; bandes à 1 écart ${nb(M.vw[k] - M.sd[k], dec)} / ${nb(M.vw[k] + M.sd[k], dec)}, à 2 écarts ${nb(M.vw[k] - 2 * M.sd[k], dec)} / ${nb(M.vw[k] + 2 * M.sd[k], dec)} ; le prix est ${der >= M.vw[k] ? 'AU-DESSUS' : 'EN DESSOUS'} du VWAP.`);
+      if (M.genre === 'ichimoku' && isFinite(M.kj[k])) { const a = M.sa[k], bb = M.sb[k]; L.push(`Ichimoku : Tenkan ${nb(M.tk[k], dec)}, Kijun ${nb(M.kj[k], dec)} (prix ${der >= M.kj[k] ? 'AU-DESSUS' : 'EN DESSOUS'} de la Kijun)${isFinite(a) && isFinite(bb) ? `, nuage actuel ${nb(Math.min(a, bb), dec)}–${nb(Math.max(a, bb), dec)} (prix ${pos(Math.max(a, bb), Math.min(a, bb))}), nuage ${a >= bb ? 'vert' : 'rouge'}` : ''}.`); } }
+    return L.join('\n').slice(0, 1800); } catch (e) { return ''; }
+}
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
