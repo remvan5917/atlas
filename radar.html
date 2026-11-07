@@ -10,7 +10,7 @@
 <style>
   :root {
     --bg: #05070b; --p1: #0a0f16; --p2: #0e141d; --p3: #131b26; --ligne: rgba(130, 170, 210, .11); --ligne2: rgba(130, 170, 210, .2);
-    --texte: #e9eff6; --doux: #8d9bab; --tres-doux: #5c6a7a;
+    --texte: #e9eff6; --doux: #8d9bab; --tres-doux: #77849a;
     --cyan: #4cc9f0; --ambre: #ffb020; --rouge: #ff4d4f; --vert: #22c55e;
     --ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --mono: 'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace;
     color-scheme: dark;
@@ -199,6 +199,10 @@
   .mur-l .lt .li .h { color: #19d38c; margin-left: auto; } .mur-l .lt .li .r { color: #ff3d5a; margin-left: auto; } .mur-l .vide2 { color: #6f7787; font: 500 clamp(12px, .9vw, 16px) 'Inter', sans-serif; }
   body.mur-edit .mur-l .lt { cursor: grab; border-style: dashed; border-color: var(--ambre, #ffab1a); } .mur-l .lt .ot { position: absolute; top: 1vh; right: .8vw; display: none; background: #1a2030; border: 0; color: #ffab1a; border-radius: 6px; padding: 3px 8px; font: 700 11px 'Inter'; cursor: pointer; } body.mur-edit .mur-l .lt .ot { display: block; }
   .mur-add { display: none; gap: 8px; align-items: center; } body.mur-edit .mur-add { display: flex; } .mur-add button { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 7px; padding: 5px 10px; font: 700 11px 'Inter'; cursor: pointer; }
+  /* ===== tous les écrans (audit du 07/11) ===== */
+  .mur-l { flex: 0 0 auto !important; max-height: 34vh; } .mur-l .lt h4 { font-size: max(11px, 1.35vh) !important; } .mur-l .lt .li { font-size: max(13px, 1.9vh) !important; } .mur-l .lt .li time, .mur-l .lt .li .n { font-size: max(12px, 1.7vh) !important; }
+  .mur-l .lt .li .cd { font-size: max(15px, 2.4vh) !important; } .mur-l .vide2 { font-size: max(12px, 1.7vh) !important; } .mur-vide small { font-size: max(14px, 2.1vh) !important; }
+  @media (max-width: 700px) { .tuile .ouvre, .tuile button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .titre-section { flex-wrap: wrap; gap: 4px; } }
 </style>
 </head>
 <body>
@@ -263,9 +267,13 @@ let vue = lit('radar-vue', 'tout'), marche = lit('radar-marche', ''), son = lit(
 let D = null, ouverts = new Set(), sel = -1, premier = true, dernierOk = 0;
 let vus = new Set(); try { vus = new Set(JSON.parse(lit('radar-lus', '[]'))); } catch (e) { /* rien */ }
 const hm = s => { const d = new Date(s * 1000); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+// le dernier cours connu (la liste du graphique), pour les marchés fermés
+var DERN = {};
+async function chargeDerniers() { if (!ROOT) return; try { const r = await (await fetch(`${ROOT}/maison/graphique?liste=1`, { cache: 'no-store' })).json(); DERN = Object.fromEntries((r.liste || []).map(x => [x.code, x])); } catch (e) { /* rien */ } }
+chargeDerniers(); setInterval(chargeDerniers, 120000);
 // quand les cours manquent : on dit pourquoi (week-end, pause du soir) plutôt qu'un tiret muet
 function fermeTxt() { const d = new Date(), j = d.getDay(), h = d.getHours() + d.getMinutes() / 60;
-  if (j === 6 || (j === 0 && h < 23) || (j === 5 && h >= 23)) return 'marché fermé · reprise dimanche 23 h'; if (h >= 22 && h < 23) return 'pause du soir · reprise 23 h'; return 'en attente des cours'; }
+  if (j === 6 || (j === 0 && h < 23) || (j === 5 && h >= 23)) return innerWidth < 700 ? 'fermé · dim. 23 h' : 'marché fermé · reprise dimanche 23 h'; if (h >= 22 && h < 23) return 'pause du soir · reprise 23 h'; return 'en attente des cours'; }
 const nb = (x, dec) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 const sg = x => (x > 0 ? '+' : '') + x;
 const cl = x => (x > 0 ? 'h' : x < 0 ? 'b' : '');
@@ -366,7 +374,7 @@ function tuiles() {
     return `<button class="tuile ${p ? 'enpos' : ''} ${marche === m ? 'choisie' : ''} ${bouge ? 'bouge' : ''}" data-m="${m}" title="Clic : le graphique avec les nouvelles · touche ${k + 1} : filtrer le fil">
       ${nouv ? '<span class="marque"></span>' : ''}
       <div class="haut"><span class="code">${m}</span><span class="nomm">${NOMS[m]}</span></div>
-      <div class="px">${x ? nb(x.dernier, DEC[m]) : '—'}</div>
+      <div class="px">${x ? nb(x.dernier, DEC[m]) : DERN[m] ? `<span style="opacity:.75">${nb(DERN[m].dernier, DEC[m])}</span>` : '—'}</div>
       <div class="var ${x ? cl(x.var_ticks) : ''}">${x ? `${sg(x.var_ticks)} t · ${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %` : `<span style="color:var(--doux)">${fermeTxt()}</span>`}</div>
       ${courbe(x && x.heure)}
       ${p ? `<div class="pos"><span>${esc((p.sens || '').toUpperCase())} ×${esc(p.taille)}</span>${lat}</div>` : ''}

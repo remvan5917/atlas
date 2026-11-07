@@ -585,6 +585,18 @@
   .titre .alt { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; font-size: 10.5px; color: var(--ambre); opacity: .85; }
   .nb-al { margin-left: 6px; min-width: 16px; padding: 0 5px; border-radius: 9px; background: var(--ambre); color: #120c00; font: 800 10px 'Inter'; line-height: 16px; text-align: center; }
   .titre .alt svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+
+  /* ===== tous les écrans (audit du 07/11) ===== */
+  .haut { scrollbar-width: none; } .haut::-webkit-scrollbar { display: none; }
+  @media (max-width: 2240px) { body.dev .role-badge { font-size: 0 !important; padding: 3px 7px !important; } body.dev .role-badge::after { content: 'ESSAI'; font-size: 10px; letter-spacing: .1em; } }
+  .pane { container-type: inline-size; } .pane .titre { max-width: calc(100% - 150px); white-space: normal; }
+  @container (max-width: 620px) { .titre .indl ~ .indl { display: none !important; } .titre { max-width: calc(100% - 96px) !important; } }
+  @container (max-width: 380px) { .titre .indl, .titre .cotl, .titre > span[style] { display: none !important; } .titre { padding: 4px 8px !important; font-size: 11px !important; max-width: calc(100% - 70px) !important; } }
+  @media (max-height: 900px) { .outils { -webkit-mask-image: linear-gradient(#000 90%, transparent); mask-image: linear-gradient(#000 90%, transparent); } .outils button, .outils .ico { height: 32px; } }
+  .liste .tete { flex-wrap: wrap; row-gap: 2px; } .liste .tete .frais { flex-basis: 100%; order: 3; }
+  .pc-c { justify-content: flex-start; } .pc-c .pc-nw { margin-top: auto; } .pc-c svg.sp { flex: 1 1 90px; max-height: 34vh; min-height: 90px; }
+  .pc-nav button { white-space: nowrap; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; padding: 12px 2px; }
+  @media (max-width: 1200px) { #sym-nom { display: none !important; } .haut .sym { flex-shrink: 0 !important; } .haut .horloges, .haut .tilt, #grp-c { display: none !important; } .haut .sym { min-width: 0 !important; } .haut .sym .px { display: none; } .haut .grp.masque-mobile .ico { width: 25px !important; min-width: 25px !important; } }
 </style>
 </head>
 <body>
@@ -625,7 +637,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v53</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v54</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -859,7 +871,7 @@ class Pane {
     if (this.W < 120 || this.H < 80) { requestAnimationFrame(() => setTimeout(() => this.dessine(), 120)); return; }
     const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
     const IND = indicsActifs(), SPR = CMP && CMP.mode !== 'superpose' ? cmpEcart(this) : null, OSC = (IND.some(r => r.lignes.some(l => l.panneau === 'bas')) || SPR) && H > 320 ? Math.round((H - BT) * .2) : 0;
-    const pw = W - AX, ph = H - BT, BN = 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = Math.max(opt.cot ? 92 : 76, this.carteH || 0), BASP = ph - BN - volH - 8 - (OSC ? OSC + 12 : 0);
+    const pw = W - AX, ph = H - BT, BN = 0, volH = opt.vol ? Math.min((ph - BN) * .15, 140) : 0, dec = this.d.dec, HAUT = Math.max(opt.cot ? 92 : 76, this.carteH || 0), BASP = ph - BN - volH - 8 - (OSC ? OSC + 12 : 0);
     const CV = CMP && CMP.mode === 'superpose' ? cmpSerie(this, B, i, j) : null;
     let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2]));
     if (CV) for (let k = i; k < j; k++) if (isFinite(CV.v[k])) { lo = Math.min(lo, CV.v[k]); hi = Math.max(hi, CV.v[k]); }
@@ -980,7 +992,8 @@ class Pane {
       if (sel && l.genre !== 'horizontale' && l.genre !== 'texte') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = TH.bg; c.strokeStyle = coul(l.couleur); c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
       if (l.alerte === false) { /* (sans alerte : rien de plus) */ } };
     lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
-    lignes.filter(l => l.genre === 'horizontale').forEach(l => { const y = Y(l.p1); if (y < 0 || y > ph) return; c.fillStyle = coul(l.couleur); c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = TH.nuit ? TH.bg : '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
+    const ydl = Y(B[B.length - 1][4]);
+    lignes.filter(l => l.genre === 'horizontale').forEach(l => { let y = Y(l.p1); if (y < 0 || y > ph) return; if (Math.abs(y - ydl) < 21) y = y <= ydl ? ydl - 21 : ydl + 21; y = Math.max(11, Math.min(ph - 11, y)); c.fillStyle = coul(l.couleur); c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = TH.nuit ? TH.bg : '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
     // la mémoire du marché : l'éventail de ce qui a suivi les moments les plus ressemblants (des statistiques, pas une prévision)
     if (MEM && MEM.code === code && MEM.ut === this.ut && (MEM.eventail || []).length) {
       const x0 = T(MEM.t0), y0 = Y(MEM.dernier), a = MEM.atr_ticks * MEM.pas, ev = MEM.eventail;
@@ -3071,7 +3084,7 @@ $('#vue-pp').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), 'trois'); DISPO 
 // le mode « Portable » : un écran d'ordinateur portable — un grand graphique et deux petits, le moniteur rentré, tout pour le graphique
 MODES.splice(2, 0, ['portable', 'Portable', 'un écran d’ordinateur portable : un grand graphique et deux petits']);
 const _modeAuto0 = modeAuto;
-modeAuto = function () { const m = _modeAuto0(); if (m !== 'salle') return m; const w = innerWidth, sw = screen.width || w; return !matchMedia('(pointer: coarse)').matches && w >= 1100 && w <= 1700 && sw <= 1920 && (screen.height || 1080) <= 1200 ? 'portable' : 'salle'; };
+modeAuto = function () { const m = _modeAuto0(); if (m !== 'salle') return m; const w = innerWidth, sw = screen.width || w; return !matchMedia('(pointer: coarse)').matches && w >= 900 && w <= 1700 && sw <= 1920 && (screen.height || 1080) <= 1200 ? 'portable' : 'salle'; };
 const _appliqueMode0 = appliqueMode;
 appliqueMode = function () { const avant = MODE; _appliqueMode0(); const m = MODE_CHOIX === 'auto' ? modeAuto() : MODE_CHOIX; if (ROLE && ROLE !== 'structure') return;
   if (m === 'portable' && !document.body.classList.contains('m-portable')) { MODE = 'portable'; document.body.classList.add('m-portable'); document.body.classList.remove('m-poche', 'm-nomade');
