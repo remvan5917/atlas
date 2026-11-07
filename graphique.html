@@ -145,6 +145,8 @@
   .visite .bt { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--doux); } .visite .bt button { background: #1a2030; border: 1px solid #2f3850; color: #e6e9ef; border-radius: 7px; padding: 4px 9px; font: 600 11.5px 'Inter'; cursor: pointer; } .visite .bt label { display: flex; gap: 5px; align-items: center; cursor: pointer; }
   .visite .faits { display: none; margin-top: 8px; font: 500 11.5px/1.5 'Inter'; color: var(--tres-doux); } .visite .faits.on { display: block; }
   @media (max-width: 900px) { .visite { right: 10px; left: 10px; width: auto; } }
+  .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
+  #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
   .figc.on { display: block; } .figc .q { font: 700 10px 'Inter'; letter-spacing: .12em; color: #b39dff; } .figc b { display: block; font: 600 13.5px/1.4 'Inter'; margin-top: 4px; } .figc p { margin: 6px 0 10px; color: #c6ccd8; font-size: 12.5px; line-height: 1.5; }
   .figc .bt { display: flex; flex-wrap: wrap; gap: 6px; } .figc button { background: #1a2030; border: 1px solid #2f3850; color: #e6e9ef; border-radius: 7px; padding: 5px 9px; font: 600 11.5px 'Inter'; cursor: pointer; } .figc button:hover { border-color: #8b5cff; } .figc #figc-g { background: #8b5cff; border-color: #8b5cff; color: #fff; }
@@ -529,6 +531,11 @@
     <div class="grp">
       <button class="ico" id="vue-un" data-tip="Un graphique"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
       <button class="ico" id="vue-trois" data-tip="Trois graphiques (clique sur l'un, puis sur une unité)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg></button>
+      <button class="ico" id="b-pages" data-tip="Tes mises en page : enregistrer et rappeler (vue, unités, marché, méthode, indicateurs, comparaison)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/></svg></button>
+    </div>
+    <div class="grp">
+      <button class="ico txt" id="t-log" data-tip="Échelle logarithmique : les mêmes pourcentages font la même hauteur">log</button>
+      <button class="ico" id="b-cmp" data-tip="Comparer avec un autre marché : superposé en %, ou leur rapport / écart dans une sous-fenêtre"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-7 5 5"/><path d="M3 12l5 2 4-4 4 3 5-4" stroke-dasharray="2.5 2"/></svg></button>
     </div>
     <div class="grp masque-mobile">
       <button class="ico" id="t-indic" data-tip="Indicateurs : les classiques, ou décris le tien en français (I)"><svg viewBox="0 0 24 24"><path d="M4 18c3-8 5-8 8-4s5 4 8-6"/><path d="M4 6h5M6.5 3.5v5" /></svg></button>
@@ -648,6 +655,14 @@
   <div class="ex"><span>cassure du plus haut de Londres avec un volume fort</span><span>le prix casse son dernier sommet du zigzag</span><span>clôture sous le plus bas de la veille</span><span>RSI 14 sous 30 et prix sous le VWAP</span><span>croisement de la MM 20 au-dessus de la MM 50</span></div>
   <div class="msg" id="config-m"></div>
   <h3 id="config-h">SUR CE GRAPHIQUE</h3><div class="al cfg" id="config-l"></div><div id="config-r"></div></div></div>
+<div class="indic-p" id="cmp-p"><div class="indic-b">
+  <h3>COMPARER AVEC UN AUTRE MARCHÉ</h3><p class="s">Choisis la façon, puis le marché. « Superposé » : ses cours sur ton graphique, recalés en % sur la première bougie visible. « Rapport » et « écart » : une sous-fenêtre (ex. or ÷ argent).</p>
+  <div class="seg2" id="cmp-mode"><button data-m="superpose" class="on">Superposé en %</button><button data-m="rapport">Rapport A ÷ B</button><button data-m="ecart">Écart A − B</button></div>
+  <div class="cl" id="cmp-l"></div><div class="nl" style="justify-content:flex-end"><button class="go" id="cmp-off" style="background:#1a2030;color:#e6e9ef">Arrêter la comparaison</button></div></div></div>
+<div class="indic-p" id="pages-p"><div class="indic-b">
+  <h3>TES MISES EN PAGE</h3><p class="s">Une mise en page garde : un ou trois graphiques, leurs unités, le marché, la méthode, les indicateurs, les réglages (zigzag, zones, volume, nouvelles, figures, log, type de bougies) et la comparaison. Elle s'applique à cette fenêtre.</p>
+  <div class="nl"><input id="pages-q" placeholder="Nom de la mise en page actuelle (ex. « Matin D1 H4 H1 », « Ichimoku or »)" autocomplete="off"><button class="go" id="pages-go">Enregistrer</button></div>
+  <div class="al" id="pages-l"></div></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button></div><div class="faits" id="visite-f"></div></div>
 <div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
@@ -718,7 +733,7 @@ class Pane {
   async charge() {
     const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
     try { const kc = `${code}|${this.ut}`, cc = CACHE_D[kc];  /* (fin : la position est gardée d'un rechargement à l'autre) */
-      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); chargeConfigsBientot(); return true; }
+      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); chargeConfigsBientot(); if (CMP && CMP.code !== code) chargeCmp(this); else this.cmpD = this.cmpReel = null; return true; }
     catch (e) { if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
   }
   taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -739,15 +754,19 @@ class Pane {
     if (!this.d) return; this.taille();
     if (this.W < 120 || this.H < 80) { requestAnimationFrame(() => setTimeout(() => this.dessine(), 120)); return; }
     const c = this.ctx, W = this.W, H = this.H, AX = 70, BT = 24, { B, i, j } = this.vis(), v = B.slice(i, j); if (!v.length) { c.clearRect(0, 0, W, H); return; }
-    const IND = indicsActifs(), OSC = IND.some(r => r.lignes.some(l => l.panneau === 'bas')) && H > 320 ? Math.round((H - BT) * .2) : 0;
+    const IND = indicsActifs(), SPR = CMP && CMP.mode !== 'superpose' ? cmpEcart(this) : null, OSC = (IND.some(r => r.lignes.some(l => l.panneau === 'bas')) || SPR) && H > 320 ? Math.round((H - BT) * .2) : 0;
     const pw = W - AX, ph = H - BT, BN = 0, volH = opt.vol ? (ph - BN) * .15 : 0, dec = this.d.dec, HAUT = opt.cot ? 92 : 76, BASP = ph - BN - volH - 8 - (OSC ? OSC + 12 : 0);
-    let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2])); const pad = (hi - lo) * .05 || 1; lo -= pad; hi += pad;
+    const CV = CMP && CMP.mode === 'superpose' ? cmpSerie(this, B, i, j) : null;
+    let lo = Math.min(...v.map(b => b[3])), hi = Math.max(...v.map(b => b[2]));
+    if (CV) for (let k = i; k < j; k++) if (isFinite(CV.v[k])) { lo = Math.min(lo, CV.v[k]); hi = Math.max(hi, CV.v[k]); }
+    const pad = (hi - lo) * .05 || 1; lo -= pad; hi += pad;
     const cle = code + '|' + this.ut; const HAUTr = HAUT;
     if (this.y) { lo = this.y[0]; hi = this.y[1]; }
     else if (this._auto && this._auto.cle === cle) { const a = this._auto, nlo = a.lo + (lo - a.lo) * .28, nhi = a.hi + (hi - a.hi) * .28;  // (l'échelle rejoint sa cible en douceur)
       if (Math.abs(nlo - lo) + Math.abs(nhi - hi) > (hi - lo) * .0015) { lo = nlo; hi = nhi; this.dessine(); } }
     this._auto = { cle, lo, hi };
-    const n = Math.max(this.n, 10), bw = pw / n, X = k => (k - i + .5) * bw, Y = p => HAUT + (hi - p) / (hi - lo) * (BASP - HAUT);
+    const LOG = opt.log && lo > 0, LG = p => LOG ? Math.log(Math.max(p, 1e-9)) : p, lLo = LG(lo), lHi = LG(hi);  // (l'échelle logarithmique : les mêmes % font la même hauteur)
+    const n = Math.max(this.n, 10), bw = pw / n, X = k => (k - i + .5) * bw, Y = p => HAUT + (lHi - LG(p)) / (lHi - lLo) * (BASP - HAUT);
     const T = t => { // un instant → une abscisse (au-delà de la dernière bougie : on prolonge)
       const last = B.length - 1, dt = DUREE[this.ut];
       if (t >= B[last][0]) return X(last + (t - B[last][0]) / dt);
@@ -755,9 +774,9 @@ class Pane {
       let a = 0, z = last; while (z - a > 1) { const m = (a + z) >> 1; if (B[m][0] <= t) a = m; else z = m; } return X(a + (t - B[a][0]) / Math.max(1, B[z][0] - B[a][0]));
     };
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
-    const iY = y => hi - (y - HAUT) / (BASP - HAUT) * (hi - lo);
+    const iY = y => { const w = lHi - (y - HAUT) / (BASP - HAUT) * (lHi - lLo); return LOG ? Math.exp(w) : w; };
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
-    const IC = IND.length ? calculeIndics(this, B, IND) : [], HA = TYPE === 'heikin' ? heikin(this, B) : null, MC = METHODE !== 'dow' ? calculeMethode(this, B) : null;
+    const IC = [...(IND.length ? calculeIndics(this, B, IND) : []), ...(SPR ? [SPR] : [])], HA = TYPE === 'heikin' ? heikin(this, B) : null, MC = METHODE !== 'dow' ? calculeMethode(this, B) : null;
     const TH = theme(), coul = x => (!x || x === '#000' || x === '#000000' || x === '#0b0e15') ? TH.fg : x;
     c.clearRect(0, 0, W, H); c.fillStyle = TH.bg; c.fillRect(0, 0, W, H);
     // la grille pointillée
@@ -807,6 +826,8 @@ class Pane {
     // le zigzag (5, 10) : épais, la dernière jambe en tirets
     if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = TH.fg; c.lineWidth = 2.4; c.lineJoin = 'round';
       for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [6, 5] : []); c.beginPath(); c.moveTo(T(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(T(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]); }
+    if (CV) { c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip(); c.strokeStyle = '#00b3ff'; c.lineWidth = 1.7; c.beginPath(); let en = false;
+      for (let k = i; k < j; k++) { const v2 = CV.v[k]; if (!isFinite(v2)) { en = false; continue; } if (!en) { c.moveTo(X(k), Y(v2)); en = true; } else c.lineTo(X(k), Y(v2)); } c.stroke(); c.restore(); }
     if (MC) dessineMethode(MC, { c, X, Y, T, i, j, pw, ph, HAUT, BASP, TH, bw, B }, 'lignes');
     // les figures repérées : de fins pointillés violets, comme des lignes tracées à la main (rien sur les bougies) ; survol = l'explication
     this.figHits = [];
@@ -961,7 +982,7 @@ class Pane {
       c.fillStyle = '#3d4a66'; c.beginPath(); c.roundRect(mx - 54, ph + 2, 108, BT - 4, 5); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '600 10.5px Inter, sans-serif'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">${METHODE !== 'dow' ? `<b class="meth">${esc(METHODES[METHODE].nom)}</b> · ` : ''}${opt.zz ? 'Zigzag 5 10 · ' : ''}${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${(ALERTES || []).filter(a => a.actif && a.marche === code && a.ut === this.ut).length ? `<div class="indl">${ALERTES.filter(a => a.actif && a.marche === code && a.ut === this.ut).slice(0, 3).map(a => `<span class="alt" title="Alerte : ${esc(a.texte)}"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>${esc(a.titre)}</span>`).join('')}</div>` : ''}${optFig && !REPLAY && figuresDe(this, B).length ? `<div class="indl">${figuresDe(this, B).map(f => `<span title="${esc(f.texte)}"><i style="background:#8b5cff;border-radius:1px"></i>${esc(f.nom)}</span>`).join('')}</div>` : ''}${(() => { const l = REPLAY ? [] : (CFGD[`${code}|${this.ut}`] || []).filter(cf => cf.visible && cf.eval && cf.eval.ok); return l.length ? `<div class="indl">${l.slice(0, 4).map(cf => { const st = cf.eval.stats; return `<span class="cfgt${cf.eval.maintenant ? ' la' : ''}" title="Configuration : ${esc(cf.texte || cf.nom)}"><i style="background:${cf.couleur}"></i>${esc(cf.nom)}${st ? ` · ${st.n} fois · ${st.plus}↑ ${st.moins}↓` : ''}${cf.eval.maintenant ? ' · LÀ MAINTENANT' : ''}</span>`; }).join('')}</div>` : ''; })()}${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}${CV && CV.pct ? `<div class="indl"><span style="color:#00b3ff"><i style="background:#00b3ff"></i>${esc(CMP.code)} ${CV.pct.autre >= 0 ? '+' : ''}${nb(CV.pct.autre, 2)} % · ${esc(code)} ${CV.pct.moi >= 0 ? '+' : ''}${nb(CV.pct.moi, 2)} % depuis la 1re bougie visible</span></div>` : ''}<span style="color:#8a90a0;font-size:11px">${opt.log ? '<b class="meth">log</b> · ' : ''}${METHODE !== 'dow' ? `<b class="meth">${esc(METHODES[METHODE].nom)}</b> · ` : ''}${opt.zz ? 'Zigzag 5 10 · ' : ''}${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${(ALERTES || []).filter(a => a.actif && a.marche === code && a.ut === this.ut).length ? `<div class="indl">${ALERTES.filter(a => a.actif && a.marche === code && a.ut === this.ut).slice(0, 3).map(a => `<span class="alt" title="Alerte : ${esc(a.texte)}"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>${esc(a.titre)}</span>`).join('')}</div>` : ''}${optFig && !REPLAY && figuresDe(this, B).length ? `<div class="indl">${figuresDe(this, B).map(f => `<span title="${esc(f.texte)}"><i style="background:#8b5cff;border-radius:1px"></i>${esc(f.nom)}</span>`).join('')}</div>` : ''}${(() => { const l = REPLAY ? [] : (CFGD[`${code}|${this.ut}`] || []).filter(cf => cf.visible && cf.eval && cf.eval.ok); return l.length ? `<div class="indl">${l.slice(0, 4).map(cf => { const st = cf.eval.stats; return `<span class="cfgt${cf.eval.maintenant ? ' la' : ''}" title="Configuration : ${esc(cf.texte || cf.nom)}"><i style="background:${cf.couleur}"></i>${esc(cf.nom)}${st ? ` · ${st.n} fois · ${st.plus}↑ ${st.moins}↓` : ''}${cf.eval.maintenant ? ' · LÀ MAINTENANT' : ''}</span>`; }).join('')}</div>` : ''; })()}${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
   }
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
@@ -1566,6 +1587,8 @@ const VOIX_MARCHES = [[/\b(l ?or|gold)\b/, 'MGC'], [/\bargent|silver\b/, 'SIL'],
 const VOIX_UT = [[/\b(5|cinq) ?(minutes?|min|m)\b/, '5m'], [/\b(15|quinze) ?(minutes?|min|m)\b/, '15m'], [/\b(30|trente) ?(minutes?|min|m)\b/, '30m'], [/\bh ?4\b|\b(4|quatre) ?heures?\b/, 'H4'], [/\bh ?1\b|\b(une|1) ?heure\b|\bhoraire\b/, 'H1'], [/\bd ?1\b|\bdaily\b|\bjournalier\b|\ben jour\b/, 'D1'], [/\bhebdo|weekly|semaine\b/, 'W'], [/\bmensuel|monthly|en mois\b/, 'M']];
 async function commandeGraphique(texte) {
   const n = ' ' + sansAcc(texte) + ' ';
+  { const m = /\b(compare|superpose|comparer|superposer)(-| )?(le|la|les|avec|a|au|aux|l)? ?(.*)$/.exec(n); if (m) { const q = m[4] || ''; const v = VOIX_MARCHES.find(([re]) => re.test(' ' + q + ' ')); const cd = v ? v[1] : (L.find(x => new RegExp('\\b' + x.code.toLowerCase() + '\\b').test(q)) || {}).code;
+    if (cd && cd !== code) { const md = /\brapport|ratio\b/.test(n) ? 'rapport' : /\becart|spread|difference\b/.test(n) ? 'ecart' : 'superpose'; cmpMode = md; regleCmp({ code: cd, mode: md }); return `Comparé avec ${cd}`; } } }
   if (/\b(montre|affiche|cherche|repere)(-| )?(moi )?(les )?figures\b/.test(n)) { if (!optFig) $('#t-fig').click(); return 'Figures repérées'; }
   { const m = /\b(?:methode|mode) (dow|zigzag|smart money|smc|volume|vwap|ichimoku)\b/.exec(n); if (m) { const k = { dow: 'dow', zigzag: 'dow', 'smart money': 'smc', smc: 'smc', volume: 'volume', vwap: 'volume', ichimoku: 'ichimoku' }[m[1]]; choisirMethode(k); return `Méthode : ${METHODES[k].nom}`; } }
   if (/\binstalle (ma|la) salle\b/.test(n)) { installeSalle(); return 'Salle de marché'; }
@@ -1704,7 +1727,7 @@ function decoupe(d, ut, t) {
   const zz = (d.zigzag || []).filter(z => z[2] !== 'dernier' && z[0] + 10 * du <= t); if (B.length && zz.length) zz.push([B[B.length - 1][0], B[B.length - 1][4], 'dernier']);
   return { ...d, bougies: B, zigzag: zz, zones: [] };
 }
-function appliqueReplay() { panes.forEach(p => { if (p.dReel) p.d = REPLAY ? decoupe(p.dReel, p.ut, REPLAY.t) : p.dReel; p.fin = 0; }); toutDessine(); $('#rp-quand').textContent = REPLAY ? new Date(REPLAY.t * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
+function appliqueReplay() { panes.forEach(p => { if (p.dReel) p.d = REPLAY ? decoupe(p.dReel, p.ut, REPLAY.t) : p.dReel; if (p.cmpReel) p.cmpD = REPLAY ? decoupe(p.cmpReel, p.ut, REPLAY.t) : p.cmpReel; p.fin = 0; }); toutDessine(); $('#rp-quand').textContent = REPLAY ? new Date(REPLAY.t * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
 function pasReplay() { return Math.min(...panes.map(p => DUREE[p.ut] || 3600)); }
 function choisirReplay() { if (REPLAY && !REPLAY.choix) { quitteReplay(); return; } REPLAY = { choix: true, t: Date.now() / 1000, v: 1, jeu: null }; $('#b-replay').classList.add('on'); toast('Replay : clique sur le graphique à l’endroit où tu veux recommencer la séance'); }
 function demarreReplay(t) { REPLAY = { t: Math.floor(t / pasReplay()) * pasReplay(), v: 1, jeu: null, coach: false }; $('#rp-coach').classList.remove('on'); $('#replay').classList.add('on'); document.querySelectorAll('#replay [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === '1')); appliqueReplay(); toast('Espace : lecture / pause · ← → : bougie par bougie'); }
@@ -2453,6 +2476,49 @@ $('#visite-x').onclick = () => $('#visite').classList.remove('on');
 $('#visite-plus').onclick = () => $('#visite-f').classList.toggle('on');
 $('#visite-voix').checked = lit('g-visite-voix', '0') === '1'; $('#visite-voix').onchange = ev => ecrit('g-visite-voix', ev.target.checked ? '1' : '0');
 $('#visite-lire').onclick = () => { const r = $('#visite')._r; if (!r) return; const s0 = SON; SON = true; dire(r.lignes.join(' ')).finally(() => { SON = s0; }); };
+/* ================= l'échelle log, comparer deux marchés, les mises en page ================= */
+opt.log = lit('g-log', '0') === '1'; { const b = $('#t-log'); b.classList.toggle('on', opt.log); b.onclick = () => { opt.log = !opt.log; ecrit('g-log', opt.log ? '1' : '0'); b.classList.toggle('on', opt.log); panes.forEach(p => p.y = null); toutDessine(); }; }
+var CMP = (() => { try { return JSON.parse(lit(K('g-cmp'), 'null')); } catch (e) { return null; } })(), cmpMode = (CMP && CMP.mode) || 'superpose';
+function regleCmp(c) { CMP = c; ecrit(K('g-cmp'), JSON.stringify(c)); $('#b-cmp').classList.toggle('on', !!c); panes.forEach(p => { p.cmpD = p.cmpReel = null; p._sp = null; if (c && c.code !== code) chargeCmp(p); }); toutDessine(); majCmp(); }
+async function chargeCmp(p) { const c = CMP; if (!c) return; const k = `${c.code}|${p.ut}`, cc = CACHE_D[k];
+  try { const d = cc && Date.now() - cc.at < 15000 ? cc.d : await api(`/maison/graphique?code=${c.code}&ut=${p.ut}`); if (!cc || cc.d !== d) CACHE_D[k] = { at: Date.now(), d }; if (CMP !== c) return; p.cmpReel = d; p.cmpD = REPLAY ? decoupe(d, p.ut, REPLAY.t) : d; p._sp = null; p.dessine(); } catch (e) { /* hors liaison */ } }
+function aligne(p, B) {  // les clôtures de l'autre marché, bougie par bougie (vide si elle manque)
+  const o = (p.cmpD && p.cmpD.bougies) || [], cle = `${o.length}|${o.length ? o[o.length - 1][0] + ':' + o[o.length - 1][4] : 0}|${B.length}|${B.length ? B[B.length - 1][0] : 0}`;
+  if (p._al && p._al.cle === cle) return p._al.v; const du = DUREE[p.ut] || 3600, v = new Float64Array(B.length).fill(NaN);
+  if (o.length) for (let k = 0; k < B.length; k++) { const q = idxDe(o, B[k][0]); if (q >= 0 && B[k][0] - o[q][0] < du) v[k] = o[q][4]; }
+  p._al = { cle, v }; return v; }
+function cmpSerie(p, B, i, j) { if (!p.cmpD || CMP.code === code) return null; const al = aligne(p, B); let k0 = -1; for (let k = i; k < j; k++) if (isFinite(al[k])) { k0 = k; break; } if (k0 < 0) return null;
+  const bm = B[k0][4], bo = al[k0], v = new Float64Array(B.length).fill(NaN); for (let k = i; k < j; k++) if (isFinite(al[k])) v[k] = bm * al[k] / bo;
+  let kd = j - 1; while (kd > k0 && !isFinite(al[kd])) kd--; return { v, pct: { moi: (B[j - 1][4] / bm - 1) * 100, autre: (al[kd] / bo - 1) * 100 } }; }
+function cmpEcart(p) { if (!p.cmpD || !p.d || CMP.code === code) return null; const B = p.d.bougies, al = aligne(p, B), cle = `${CMP.mode}|${p._al && p._al.cle}`;
+  if (p._sp && p._sp.cle === cle) return p._sp.v; const v = new Float64Array(B.length).fill(NaN), kd = B.length - 1, inv = CMP.mode === 'rapport' && isFinite(al[kd]) && B[kd][4] < al[kd];  // (le plus grand au numérateur : or ÷ argent ≈ 78, pas 0,01)
+  for (let k = 0; k < B.length; k++) if (isFinite(al[k]) && al[k]) v[k] = CMP.mode === 'rapport' ? (inv ? al[k] / B[k][4] : B[k][4] / al[k]) : B[k][4] - al[k];
+  const nom = CMP.mode === 'rapport' ? (inv ? `${CMP.code} ÷ ${code}` : `${code} ÷ ${CMP.code}`) : `${code} − ${CMP.code}`, r = { nom, niveaux: [], lignes: [{ nom, v, couleur: '#00b3ff', style: 'plein', panneau: 'bas' }], zones: [], marqueurs: [] };
+  p._sp = { cle, v: r }; return r; }
+function majCmp() { document.querySelectorAll('#cmp-mode button').forEach(b => b.classList.toggle('on', b.dataset.m === cmpMode));
+  $('#cmp-l').innerHTML = L.filter(x => x.code !== code).map(x => `<button data-c="${esc(x.code)}" class="${CMP && CMP.code === x.code ? 'on' : ''}">${esc(x.code)}<small>${esc(x.nom)}</small></button>`).join(''); }
+$('#b-cmp').classList.toggle('on', !!CMP);
+$('#b-cmp').onclick = () => { const p = $('#cmp-p'), on = !p.classList.contains('on'); p.classList.toggle('on', on); if (on) majCmp(); };
+$('#cmp-p').addEventListener('click', ev => { if (ev.target.id === 'cmp-p') $('#cmp-p').classList.remove('on'); });
+$('#cmp-mode').addEventListener('click', ev => { const b = ev.target.closest('[data-m]'); if (!b) return; cmpMode = b.dataset.m; if (CMP) regleCmp({ ...CMP, mode: cmpMode }); majCmp(); });
+$('#cmp-l').addEventListener('click', ev => { const b = ev.target.closest('[data-c]'); if (!b) return; regleCmp({ code: b.dataset.c, mode: cmpMode }); $('#cmp-p').classList.remove('on'); toast(`Comparé avec ${b.dataset.c} · ${cmpMode === 'superpose' ? 'superposé en %' : cmpMode === 'rapport' ? 'rapport' : 'écart'}`); });
+$('#cmp-off').onclick = () => { regleCmp(null); $('#cmp-p').classList.remove('on'); toast('Comparaison arrêtée'); };
+// les mises en page : tout ce qui fait l'écran, enregistré sous un nom ; rappelée = appliquée à cette fenêtre
+function lisPages() { try { return JSON.parse(lit('g-pages', '[]')) || []; } catch (e) { return []; } }
+function majPages() { const l = lisPages(); $('#pages-l').innerHTML = l.length ? l.map((x, k) => `<div data-k="${k}"><span><b>${esc(x.nom)}</b><small>${esc(x.resume || '')}</small></span><button data-op="applique">Rappeler</button><button data-op="efface">Effacer</button></div>`).join('') : '<span class="vide">Aucune mise en page enregistrée : règle ton écran, donne-lui un nom au-dessus.</span>'; }
+$('#b-pages').onclick = () => { const p = $('#pages-p'), on = !p.classList.contains('on'); p.classList.toggle('on', on); if (on) { majPages(); setTimeout(() => $('#pages-q').focus(), 30); } };
+$('#pages-p').addEventListener('click', ev => { if (ev.target.id === 'pages-p') $('#pages-p').classList.remove('on'); });
+$('#pages-q').addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') $('#pages-go').click(); if (ev.key === 'Escape') $('#pages-p').classList.remove('on'); });
+$('#pages-go').onclick = () => { const nom = $('#pages-q').value.trim().slice(0, 40); if (!nom) { $('#pages-q').focus(); return; } const etat = {};
+  Object.assign(etat, { '§vue': vue, '§uts': JSON.stringify(utsTrois), '§ut': utSeul, '§code': code, '§cmp': JSON.stringify(CMP), 'g-methode': METHODE, 'g-zz': opt.zz ? '1' : '0', 'g-zones-d1': opt.zones ? '1' : '0', 'g-vol': opt.vol ? '1' : '0',
+    'g-news': opt.news ? '1' : '0', 'g-cot': opt.cot ? '1' : '0', 'g-figures': optFig ? '1' : '0', 'g-log': opt.log ? '1' : '0', 'g-type': TYPE, 'g-bougies': opt.bougies ? '1' : '0', 'g-indics': JSON.stringify(INDICS) });
+  const l = lisPages().filter(x => x.nom !== nom); l.push({ nom, etat, resume: `${vue === 'trois' ? 'trois graphiques ' + utsTrois.join(' / ') : 'un graphique ' + (panes[0] ? panes[0].ut : '')} · ${code} · ${METHODES[METHODE].nom}${INDICS.length ? ' · ' + INDICS.length + ' indicateur' + (INDICS.length > 1 ? 's' : '') : ''}${CMP ? ' · comparé à ' + CMP.code : ''}` });
+  ecrit('g-pages', JSON.stringify(l.slice(-20))); $('#pages-q').value = ''; majPages(); toast(`Mise en page « ${nom} » enregistrée`); };
+$('#pages-l').addEventListener('click', ev => { const d = ev.target.closest('[data-k]'), b = ev.target.closest('button[data-op]'); if (!d || !b) return; const l = lisPages(), x = l[+d.dataset.k]; if (!x) return;
+  if (b.dataset.op === 'efface') { l.splice(+d.dataset.k, 1); ecrit('g-pages', JSON.stringify(l)); majPages(); return; }
+  for (const [k, v] of Object.entries(x.etat)) ecrit(k.startsWith('§') ? K('g-' + k.slice(1)) : k, v);
+  try { new BroadcastChannel('atlas-indics' + (DEV ? '-dev' : '')).postMessage(1); } catch (e) { /* rien */ } if (METH_BC) METH_BC.postMessage(lit('g-methode', 'dow'));
+  location.reload(); });
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
