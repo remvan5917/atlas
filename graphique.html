@@ -2666,6 +2666,9 @@ const dernierCours = () => { const p = panes[actif] || panes[0], B = p && p.d &&
 const infoCode = () => { const p = panes[actif] || panes[0]; return { tk: (p && p.d && p.d.tick) || 1, dec: (p && p.d && p.d.dec) ?? 2, val: VAL_TICK[code] ?? null }; };
 function armer(sens) { if (!TRADE.on) basculeTrade(true); TRADE.brouillon = { sens, entree: null, sl: null, tp: null }; majTicket(); toutDessine();
   if (TRADE.genre !== 'marche') { toast(`${sens === 'achat' ? 'Achat' : 'Vente'} ${TRADE.genre} : clique sur le graphique à ton prix (ou glisse la ligne bleue), puis tire ton stop et ton objectif`); return; } toast(sens === 'achat' ? 'Achat : tire ton stop vers le bas depuis la ligne bleue, ton objectif vers le haut — glisse l’étiquette pour un ordre limite' : 'Vente : tire ton stop vers le haut depuis la ligne bleue, ton objectif vers le bas — glisse l’étiquette pour un ordre limite'); }
+function suitCote(b) {  // un achat au-dessus du cours, c'est un stop ; en dessous, une limite (l'inverse à la vente) : le type suit, on le dit
+  const der = dernierCours(); if (b.entree == null || der == null || TRADE.genre === 'marche') return; const g = (b.entree - der) * (b.sens === 'achat' ? 1 : -1) < 0 ? 'limite' : 'stop';
+  if (g !== TRADE.genre) { choisitGenre(g); toast(`${b.sens === 'achat' ? 'Achat' : 'Vente'} ${b.entree > der ? 'au-dessus' : 'en dessous'} du cours : c'est un ordre ${g}`); } }
 function choisitGenre(g) { TRADE.genre = g; ecrit('g-tgenre', g); document.querySelectorAll('#tk-type button').forEach(b => b.classList.toggle('on', b.dataset.g === g)); if (TRADE.brouillon && g === 'marche') TRADE.brouillon.entree = null; majTicket(); toutDessine(); }
 $('#tk-type').addEventListener('click', ev => { const b = ev.target.closest('[data-g]'); if (b) choisitGenre(b.dataset.g); }); choisitGenre(TRADE.genre);
 $('#tk-achat').onclick = () => armer('achat'); $('#tk-vente').onclick = () => armer('vente');
@@ -2710,7 +2713,7 @@ function dessineTrade(p, g) { const { c, Y, pw, ph, AX, dec } = g, { tk, val } =
 function tradeHit(p, x, y) { if (!p.tradeHits) return null; let m = null, d0 = 7; for (const h of p.tradeHits) { const d = Math.abs(h.y - y); if (d < d0) { d0 = d; m = h; } } return m; }
 function tradeDown(p, x, y) { if (!TRADE.on && !TRADE.ordres.length) return false; const h = tradeHit(p, x, y), b = TRADE.brouillon;
   if (b && TRADE.genre !== 'marche' && b.entree == null && x < p.pw && (!h || h.genre === 'entree')) { const { tk, dec } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)];
-    b.entree = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(dec); sonne('pose'); majTicket(); toutDessine(); return true; }
+    b.entree = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(dec); suitCote(b); sonne('pose'); majTicket(); toutDessine(); return true; }
   if (!h) return false;
   if (h.genre === 'ordre') { if (x >= h.x0 + h.tw - 22 && x <= h.x0 + h.tw) { annuleOrdre(h.o); return true; } TRADE.drag = { genre: 'ordre', o: h.o, prix: h.o.prix, p }; return true; }
   if (h.genre === 'entree') { const surEtiquette = x >= h.x0 - 14 && x <= h.x0 + h.tw; TRADE.drag = { genre: surEtiquette ? 'entree' : 'tire', y0: y, p }; return true; }
@@ -2718,7 +2721,7 @@ function tradeDown(p, x, y) { if (!TRADE.on && !TRADE.ordres.length) return fals
 function tradeMove(p, x, y) { const d = TRADE.drag; if (!d) { if (TRADE.on || TRADE.ordres.length) { const h = tradeHit(p, x, y); p.cv.style.cursor = h ? 'ns-resize' : ''; return false; } return false; }
   if (d.p !== p) return true; const { tk } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)], prix = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(infoCode().dec), b = TRADE.brouillon, der = dernierCours();
   if (d.genre === 'ordre') d.prix = prix;
-  else if (b && d.genre === 'entree') { if (TRADE.genre === 'marche') { if (Math.abs(prix - der) >= tk * 1.5) { choisitGenre((prix - der) * (b.sens === 'achat' ? 1 : -1) < 0 ? 'limite' : 'stop'); b.entree = prix; } } else b.entree = prix; }
+  else if (b && d.genre === 'entree') { if (TRADE.genre === 'marche') { if (Math.abs(prix - der) >= tk * 1.5) { choisitGenre((prix - der) * (b.sens === 'achat' ? 1 : -1) < 0 ? 'limite' : 'stop'); b.entree = prix; } } else { b.entree = prix; suitCote(b); } }
   else if (b && d.genre === 'tire') { if (Math.abs(y - d.y0) > 4) { const sg = b.sens === 'achat' ? 1 : -1, e = b.entree ?? der; d.genre = (prix - e) * sg < 0 ? 'sl' : 'tp'; } }
   if (b && d.genre === 'sl') b.sl = prix; if (b && d.genre === 'tp') b.tp = prix;
   majTicket(); toutDessine(); return true; }
