@@ -624,7 +624,7 @@
 <div class="toasts" id="toasts"></div>
 <div class="copi" id="copi"><div class="copi-t"><span class="onde"><i></i><i></i><i></i><i></i><i></i></span><b id="copi-titre">Copilote</b><button id="copi-x" aria-label="Fermer">×</button></div>
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
-  <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button></div></div>
+  <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button><button id="copi-appris" title="Ce qu'Atlas a appris de tes habitudes (reste sur cet ordinateur)" style="flex:0 0 auto">Ce que j'ai appris</button></div></div>
 <div class="amb asie" id="amb-asie"></div><div class="amb londres" id="amb-londres"></div><div class="amb ny" id="amb-ny"></div>
 <div class="pub" id="pub"><div class="q" id="pub-q"></div><div class="chiffres" id="pub-c"></div><div class="reac" id="pub-r"></div><button class="x" id="pub-x">×</button></div>
 <button class="onglet-mon" id="mon-o" title="Sortir le moniteur">MONITEUR</button>
@@ -2372,7 +2372,11 @@ function alertesMethode(p, M, B) {  // une fois quand ça DEVIENT vrai (pas au c
 function ecranTexte(p, enReplay) {  // ce que montre son écran, pour le copilote : la méthode, ses niveaux, ses indicateurs, ses configurations
   try { const L = [], dec = p && p.d ? p.d.dec : 2, B = p && p.d ? p.d.bougies : null, M = METHODE !== 'dow' && p && B ? calculeMethode(p, B) : null;
     L.push(`Méthode choisie : ${METHODES[METHODE].nom}.`);
-    const ind = indicsActifs().map(r => r.nom); if (ind.length) L.push('Indicateurs affichés : ' + ind.join(', ') + '.');
+    const ind = indicsActifs(); if (ind.length && p && B && B.length) { try { const IC = calculeIndics(p, B, ind), k = B.length - 1, der = B[k][4];
+        L.push('Indicateurs affichés (valeur sur la dernière bougie) : ' + IC.map(r => `${r.nom} : ` + r.lignes.map(l => { const v = l.v[k]; return isFinite(v) ? `${l.nom || r.nom} ${nb(v, l.panneau === 'prix' ? dec : 1)}${l.panneau === 'prix' ? ` (prix ${der >= v ? 'AU-DESSUS' : 'EN DESSOUS'})` : ''}` : ''; }).filter(Boolean).join(', ') + (r.niveaux && r.niveaux.length ? ` [niveaux ${r.niveaux.join(' / ')}]` : '')).join(' ; ') + '.'); } catch (e) { L.push('Indicateurs affichés : ' + ind.map(r => r.nom).join(', ') + '.'); } }
+    else if (ind.length) L.push('Indicateurs affichés : ' + ind.map(r => r.nom).join(', ') + '.');
+    const al = (ALERTES || []).filter(a => a.actif && a.marche === code); if (al.length) L.push('Ses alertes actives sur ce marché : ' + al.map(a => `${a.titre} (${a.ut})`).join(' ; ') + '.');
+    const hb = habitudesTexte(); if (hb) L.push(hb);
     const cf = p && !enReplay ? (CFGD[`${code}|${p.ut}`] || []).filter(x => x.visible && x.eval && x.eval.ok) : []; if (cf.length) L.push('Ses configurations : ' + cf.map(x => `${x.nom}${x.eval.maintenant ? ' (PRÉSENTE sur la dernière bougie close)' : ''}${x.eval.stats ? ` — ${x.eval.stats.n} fois, ensuite ${x.eval.stats.plus} fois plus haut / ${x.eval.stats.moins} fois plus bas` : ''}`).join(' ; ') + '.');
     if (optFig && p && B) { const fg = figuresDe(p, B); if (fg.length) L.push('Figures repérées sur son graphique : ' + fg.map(f => `${f.nom} — ${f.texte}`).join(' | ')); }
     if (M && B) { const k = B.length - 1, der = B[k][4], pos = (h, l) => der > h ? 'AU-DESSUS' : der < l ? 'EN DESSOUS' : 'DEDANS';
@@ -2381,7 +2385,7 @@ function ecranTexte(p, enReplay) {  // ce que montre son écran, pour le copilot
         L.push('Chasses à la liquidité récentes : ' + (M.sweeps.map(s => `${s.sens > 0 ? 'sous le creux' : 'au-dessus du sommet'} ${nb(s.prix, dec)} le ${new Date(s.t * 1000).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`).join(' ; ') || 'aucune') + '.'); }
       if (M.genre === 'volume' && isFinite(M.vw[k])) L.push(`VWAP ${M.ancre ? 'ancré au dernier pivot du zigzag' : 'de la séance'} ${nb(M.vw[k], dec)} ; bandes à 1 écart ${nb(M.vw[k] - M.sd[k], dec)} / ${nb(M.vw[k] + M.sd[k], dec)}, à 2 écarts ${nb(M.vw[k] - 2 * M.sd[k], dec)} / ${nb(M.vw[k] + 2 * M.sd[k], dec)} ; le prix est ${der >= M.vw[k] ? 'AU-DESSUS' : 'EN DESSOUS'} du VWAP.`);
       if (M.genre === 'ichimoku' && isFinite(M.kj[k])) { const a = M.sa[k], bb = M.sb[k]; L.push(`Ichimoku : Tenkan ${nb(M.tk[k], dec)}, Kijun ${nb(M.kj[k], dec)} (prix ${der >= M.kj[k] ? 'AU-DESSUS' : 'EN DESSOUS'} de la Kijun)${isFinite(a) && isFinite(bb) ? `, nuage actuel ${nb(Math.min(a, bb), dec)}–${nb(Math.max(a, bb), dec)} (prix ${pos(Math.max(a, bb), Math.min(a, bb))}), nuage ${a >= bb ? 'vert' : 'rouge'}` : ''}.`); } }
-    return L.join('\n').slice(0, 1800); } catch (e) { return ''; }
+    return L.join('\n').slice(0, 2400); } catch (e) { return ''; }
 }
 /* ================= les figures repérées et expliquées ================= */
 // à partir des sommets et creux CONFIRMÉS du zigzag (5, 10) : doubles sommets / creux, triangles, canaux, range, compression ;
@@ -2444,8 +2448,8 @@ function figureSous(p, x, y) { let mieux = null, dmin = 6;
 function ouvreFigure(f, x, y) { FIG_SEL = f; const e = $('#figc'); $('#figc-n').textContent = `${f.nom} · ${f.ut}`; $('#figc-t').textContent = f.texte; e.classList.add('on'); montreBulle(null);
   e.style.left = `${Math.min(innerWidth - 360, Math.max(10, x - 170))}px`; e.style.top = `${Math.min(innerHeight - e.offsetHeight - 10, y + 16)}px`; toutDessine(); }
 function fermeFigure() { FIG_SEL = null; $('#figc').classList.remove('on'); toutDessine(); }
-$('#figc-g').onclick = () => { const f = FIG_SEL; if (!f) return; for (const l of f.lignes) lignes.push({ id: idNeuf(), ...l, alerte: true }); sauve(); FIG_IGN.add(f.cle); ecrit('g-fig-ign', JSON.stringify([...FIG_IGN].slice(-300))); panes.forEach(q => q._fg = null); fermeFigure(); toast(`${f.nom} : gardée dans tes lignes (alertes actives)`); };
-$('#figc-i').onclick = () => { const f = FIG_SEL; if (!f) return; FIG_IGN.add(f.cle); ecrit('g-fig-ign', JSON.stringify([...FIG_IGN].slice(-300))); panes.forEach(q => q._fg = null); fermeFigure(); toast(`${f.nom} : ignorée`); };
+$('#figc-g').onclick = () => { const f = FIG_SEL; if (!f) return; { const H = lisHab(); H.figK[f.nom] = (H.figK[f.nom] || 0) + 1; ecrit('g-habitudes', JSON.stringify(H)); } for (const l of f.lignes) lignes.push({ id: idNeuf(), ...l, alerte: true }); sauve(); FIG_IGN.add(f.cle); ecrit('g-fig-ign', JSON.stringify([...FIG_IGN].slice(-300))); panes.forEach(q => q._fg = null); fermeFigure(); toast(`${f.nom} : gardée dans tes lignes (alertes actives)`); };
+$('#figc-i').onclick = () => { const f = FIG_SEL; if (!f) return; { const H = lisHab(); H.figI[f.nom] = (H.figI[f.nom] || 0) + 1; ecrit('g-habitudes', JSON.stringify(H)); } FIG_IGN.add(f.cle); ecrit('g-fig-ign', JSON.stringify([...FIG_IGN].slice(-300))); panes.forEach(q => q._fg = null); fermeFigure(); toast(`${f.nom} : ignorée`); };
 $('#figc-c').onclick = () => { const f = FIG_SEL; if (!f) return; fermeFigure(); copilote(`Explique-moi la figure « ${f.nom} » repérée en ${f.ut} : ${f.texte}`); };
 document.addEventListener('pointerdown', ev => { if (FIG_SEL && !ev.target.closest('#figc') && ev.target.tagName !== 'CANVAS') fermeFigure(); });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && FIG_SEL) fermeFigure(); });
@@ -2455,7 +2459,24 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && FIG_SEL)
 var VISITES = (() => { try { return JSON.parse(lit('g-visites', '{}')) || {}; } catch (e) { return {}; } })(), ACTIF_AT = Date.now(), VISITE_MONTREE = {}, visiteMinuteur = 0;
 const VISITE_ABS = 30 * 60;  // (une absence de 30 minutes)
 function gardeVisites() { try { const d = JSON.parse(lit('g-visites', '{}')) || {}; for (const k in VISITES) d[k] = Math.max(d[k] || 0, VISITES[k]); VISITES = d; ecrit('g-visites', JSON.stringify(d)); } catch (e) { /* rien */ } }
-function vu() { if (ROLE === 'ensemble' || REPLAY || document.hidden || Date.now() - ACTIF_AT > 5 * 60000) return; VISITES[code] = Math.floor(Date.now() / 1000); gardeVisites(); }
+function vu() { if (ROLE === 'ensemble' || REPLAY || document.hidden || Date.now() - ACTIF_AT > 5 * 60000) return; VISITES[code] = Math.floor(Date.now() / 1000); gardeVisites(); compteHabitudes(); }
+let dernierCompte = 0;
+function compteHabitudes() { const maint = Date.now(); if (maint - dernierCompte < 25000 || !panes.length) return; dernierCompte = maint; const H = lisHab(), m = .5;
+  H.m[code] = (H.m[code] || 0) + m; panes.forEach(p => H.u[p.ut] = (H.u[p.ut] || 0) + m / panes.length); H.meth[METHODE] = (H.meth[METHODE] || 0) + m; ecrit('g-habitudes', JSON.stringify(H)); }
+function lisHab() { try { const h = JSON.parse(lit('g-habitudes', '{}')) || {}; return { m: h.m || {}, u: h.u || {}, meth: h.meth || {}, figK: h.figK || {}, figI: h.figI || {} }; } catch (e) { return { m: {}, u: {}, meth: {}, figK: {}, figI: {} }; } }
+function habitudesTexte(long) {
+  const H = lisHab(), tri = o => Object.entries(o).sort((a, b) => b[1] - a[1]), tot = o => Object.values(o).reduce((a, b) => a + b, 0) || 1, out = [];
+  const tm = tot(H.m); if (tm >= 30) out.push('il regarde surtout ' + tri(H.m).slice(0, 4).map(([k, v]) => `${k} (${Math.round(v / tm * 100)} %)`).join(', '));
+  const tu = tot(H.u); if (tu >= 30) out.push('ses unités : ' + tri(H.u).slice(0, 3).map(([k, v]) => `${LIB[k] || k} (${Math.round(v / tu * 100)} %)`).join(', '));
+  const tmeth = tot(H.meth); if (tmeth >= 30) { const a = tri(H.meth).filter(([k, v]) => k !== 'dow' && v / tmeth > .15); if (a.length) out.push('il se sert aussi de la méthode ' + a.map(([k]) => METHODES[k] ? METHODES[k].nom : k).join(', ')); }
+  const ign = Object.keys(H.figI).filter(k => H.figI[k] >= 3 && !(H.figK[k] > 0)), gar = Object.keys(H.figK).filter(k => H.figK[k] >= 2);
+  if (gar.length) out.push('il garde volontiers les figures : ' + gar.join(', ')); if (ign.length) out.push('il ignore toujours les figures : ' + ign.join(', ') + ' (n’en parle pas sauf s’il le demande)');
+  if (!out.length) return long ? 'Je n’ai pas encore assez appris : je compte les marchés et les unités que tu regardes, et les figures que tu gardes ou ignores. Tout reste sur cet ordinateur.' : '';
+  return long ? 'Ce que j’ai appris : ' + out.join(' ; ') + '. Je m’en sers pour choisir de quoi te parler en premier ; tout reste sur cet ordinateur. Reclique ici pour tout oublier.' : 'SES HABITUDES (pour choisir de quoi parler en premier, jamais pour conseiller) : ' + out.join(' ; ') + '.';
+}
+$('#copi-appris').onclick = () => { const t = $('#copi-titre').textContent;
+  if (t === 'Ce que j’ai appris de toi' && Object.keys(lisHab().m).length) { if (confirm('Oublier tout ce qu’Atlas a appris de tes habitudes ?')) { ecrit('g-habitudes', '{}'); toast('Habitudes oubliées'); ouvreCopi('Ce que j’ai appris de toi', habitudesTexte(true), '', false); } return; }
+  ouvreCopi('Ce que j’ai appris de toi', habitudesTexte(true), '', false); };
 ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(e => document.addEventListener(e, () => { const avant = ACTIF_AT; ACTIF_AT = Date.now(); if (Date.now() - avant > VISITE_ABS * 1000) verifieVisite('retour'); }, { passive: true, capture: true }));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { ACTIF_AT = Date.now(); verifieVisite('retour'); } });
 setInterval(vu, 30000); addEventListener('beforeunload', vu);
