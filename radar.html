@@ -192,6 +192,13 @@
   .mur-f .dp .fl { font: 800 1.4vh var(--ui); letter-spacing: .14em; padding: .3vh .6vw; border-radius: 3px; background: #d61f3a; color: #fff; } .mur-f .dp .im { font: 800 1.4vh var(--ui); letter-spacing: .14em; padding: .3vh .6vw; border-radius: 3px; background: rgba(255, 176, 32, .18); color: var(--ambre); }
   .mur-vide { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 40vh; text-align: center; }
   .mur-vide b::first-letter { text-transform: uppercase; } .mur-vide b { display: block; font: 800 clamp(28px, 4vw, 64px) 'Inter', sans-serif; color: #e6e9ef; letter-spacing: -.01em; } .mur-vide small { font: 500 clamp(14px, 1.3vw, 22px) 'Inter', sans-serif; color: #8a91a0; }
+  .mur-g { flex: 1.25 !important; } .mur-l { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(22vw, 1fr)); gap: 1.4vh 1.2vw; min-height: 0; margin: 1.6vh 0 1.2vh; }
+  .mur-l .lt { position: relative; background: rgba(255, 255, 255, .03); border: 1px solid #1c2230; border-radius: 1.2vh; padding: 1.4vh 1.2vw; overflow: hidden; display: flex; flex-direction: column; gap: .9vh; }
+  .mur-l .lt h4 { margin: 0; font: 800 clamp(10px, .75vw, 14px) 'Inter', sans-serif; letter-spacing: .16em; color: var(--ambre, #ffab1a); } .mur-l .lt .li { display: flex; gap: .8vw; align-items: baseline; font: 600 clamp(12px, 1vw, 19px) 'Inter', sans-serif; color: #e6e9ef; }
+  .mur-l .lt .li time, .mur-l .lt .li .n { font: 700 clamp(11px, .9vw, 17px) 'JetBrains Mono', monospace; color: #8a91a0; white-space: nowrap; } .mur-l .lt .li .cd { font: 800 clamp(14px, 1.4vw, 26px) 'JetBrains Mono', monospace; color: #ff6b81; margin-left: auto; white-space: nowrap; }
+  .mur-l .lt .li .h { color: #19d38c; margin-left: auto; } .mur-l .lt .li .r { color: #ff3d5a; margin-left: auto; } .mur-l .vide2 { color: #6f7787; font: 500 clamp(12px, .9vw, 16px) 'Inter', sans-serif; }
+  body.mur-edit .mur-l .lt { cursor: grab; border-style: dashed; border-color: var(--ambre, #ffab1a); } .mur-l .lt .ot { position: absolute; top: 1vh; right: .8vw; display: none; background: #1a2030; border: 0; color: #ffab1a; border-radius: 6px; padding: 3px 8px; font: 700 11px 'Inter'; cursor: pointer; } body.mur-edit .mur-l .lt .ot { display: block; }
+  .mur-add { display: none; gap: 8px; align-items: center; } body.mur-edit .mur-add { display: flex; } .mur-add button { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 7px; padding: 5px 10px; font: 700 11px 'Inter'; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -229,7 +236,7 @@
   </aside>
 </div>
 <div class="voile" id="voile"><div class="boite" id="boite"></div></div>
-<div class="mur" id="mur"><div class="mur-h" id="mur-h"></div><div class="mur-c" id="mur-c"></div><div class="mur-g" id="mur-g"></div>
+<div class="mur" id="mur"><div class="mur-h" id="mur-h"></div><div class="mur-c" id="mur-c"></div><div class="mur-g" id="mur-g"></div><div class="mur-l" id="mur-l"></div>
   <div class="mur-f"><span class="t">● DÉPÊCHES</span><div class="v"><div class="p" id="mur-p"></div></div></div></div>
 <div class="perdue" id="perdue">Liaison perdue avec l'ordinateur de la maison — Tailscale est-il allumé ?</div>
 
@@ -610,7 +617,7 @@ function murPublie() {
 function murTic() {
   if (!document.body.classList.contains('mode-mur')) return;
   $('#mur-h').innerHTML = PLACES.map(([n, tz, ici]) => { const h = heureLa(tz); return `<div class="hl${ici ? ' ici' : ''}"><b>${ici ? h.txt + `<span style="opacity:.5;font-size:.55em">:${h.s}</span>` : h.txt}</b><small><i class="${ouverte(ici ? 'CME' : n) ? 'ouv' : ''}"></i>${ici ? 'PARIS · CME' : n}</small></div>`; }).join('')
-    + '<div class="esp"></div><div class="tm"><b>ATLAS · RADAR</b><button id="mur-x">Mode lecture · W</button></div>';
+    + `<div class="esp"></div><div class="tm"><b>ATLAS · RADAR</b><button id="mur-comp">${document.body.classList.contains('mur-edit') ? 'Terminé' : 'Composer'}</button> <button id="mur-x">Mode lecture · W</button></div>`;
   if (murPublie()) return;
   const now = Date.now() / 1000, a = ((D && D.agenda) || []).filter(x => x.fort && x.at > now - 60).sort((x, y) => x.at - y.at)[0];
   if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60);
@@ -618,7 +625,7 @@ function murTic() {
   else $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b style="font-size:28px;opacity:.75">Aucun chiffre fort à venir pour l’instant</b></div>`;
 }
 function murDonnees() {
-  if (!D || !document.body.classList.contains('mode-mur')) return;
+  if (!D || !document.body.classList.contains('mode-mur')) return; setTimeout(murTuiles, 0);
   const T = D.tableau || {}, C = D.climat || {}, now = Date.now() / 1000, recent = new Set((D.items || []).filter(i => i.urgence === 'critique' && now - (i.publie || i.at) < 5400).flatMap(i => i.marches || []));
   $('#mur-g').innerHTML = MUR_CODES.map(c => { const t = T[c], k = C[c]; const der = t ? t.dernier : k ? k.dernier : null, pct = t ? t.var_pct : k ? k.var_pct : null; if (der == null) return '';
     const dec = DEC[c] != null ? DEC[c] : 2, txt = nb(der, dec), html = `<div class="tuile-m${recent.has(c) ? ' crit' : ''}"><div class="c"><b>${c}</b><small>${esc(NOMS[c] || (k && k.nom) || c)}</small></div><div class="px">${odoM(murAv[c] || '', txt, der >= (murAv[c + 'v'] ?? der))}</div>`
@@ -628,13 +635,37 @@ function murDonnees() {
   const h = l.map(i => `<span class="dp"><time>${hm(i.publie || i.at)}</time>${i.urgence === 'critique' ? '<span class="fl">FLASH</span>' : '<span class="im">IMPORTANT</span>'}${esc(i.titre)}</span>`).join('') || '<span class="dp">Aucune dépêche importante pour l’instant.</span>';
   const pm = $('#mur-p'); if (pm.dataset.h !== h) { pm.dataset.h = h; pm.innerHTML = h + h; pm.style.setProperty('--duree', `${Math.max(60, l.length * 11)}s`); }
 }
-function modeMur(on) { document.body.classList.toggle('mode-mur', on); $('#b-mur').classList.toggle('on', on); ecrit('radar-mur', on ? '1' : '0'); if (on) { murTic(); murDonnees(); } }
+// le mur « Launchpad » : sous tes marchés, des tuiles d'information que tu choisis et ranges toi-même (bouton « Composer »)
+const TUILES = { agenda: 'PROCHAINS CHIFFRES', flash: 'DERNIERS FLASHS', chaleur: 'ÇA BOUGE', liens: 'LIENS ENTRE MARCHÉS' };
+let MUR_L = (() => { try { return JSON.parse(lit('mur-tuiles', 'null')) || ['agenda', 'flash', 'chaleur']; } catch (e) { return ['agenda', 'flash', 'chaleur']; } })(), CHAL = null, LIENS_M = null, glisseT = null;
+async function chargeMurPlus() { if (!ROOT || !document.body.classList.contains('mode-mur')) return;
+  try { if (MUR_L.includes('chaleur')) CHAL = await (await fetch(`${ROOT}/maison/graphique?chaleur=1`, { cache: 'no-store' })).json(); } catch (e) { /* rien */ }
+  try { if (MUR_L.includes('liens')) LIENS_M = (await (await fetch(`${ROOT}/maison/copilote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'liens' }) })).json()).liens || []; } catch (e) { /* rien */ }
+  murTuiles(); }
+function murTuiles() { if (!document.body.classList.contains('mode-mur')) return; const now = Date.now() / 1000, D2 = D || {};
+  const contenu = k => {
+    if (k === 'agenda') { const l = (D2.agenda || []).filter(a => a.fort && a.at > now - 60).sort((a, b) => a.at - b.at).slice(0, 4); return l.length ? l.map(a => { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60); return `<div class="li"><time>${new Date(a.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</time><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}</span><span class="cd">${h >= 24 ? Math.floor(h / 24) + ' j' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ' min'}</span></div>`; }).join('') : `<div class="vide2">Aucun chiffre fort annoncé pour l’instant.</div>`; }
+    if (k === 'flash') { const l = (D2.items || []).filter(i => i.urgence === 'critique').sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 4); return l.length ? l.map(i => `<div class="li"><time>${hm(i.publie || i.at)}</time><span>${esc(i.titre)}</span></div>`).join('') : '<div class="vide2">Aucun flash récent.</div>'; }
+    if (k === 'chaleur') { const m = CHAL && (CHAL.marches || CHAL), ferme = /fermé|pause/.test(fermeTxt()); const l = !ferme && m && typeof m === 'object' ? Object.entries(m).filter(([c, v]) => v && v['15'] && typeof v['15'].z === 'number').sort((a, b) => Math.abs(b[1]['15'].z) - Math.abs(a[1]['15'].z)).slice(0, 4) : [];
+      return l.length ? l.map(([c, v]) => `<div class="li"><span class="n">${esc(c)}</span><span>${v['15'].ticks > 0 ? '+' : ''}${v['15'].ticks} t en 15 min</span><span class="${v['15'].ticks >= 0 ? 'h' : 'r'}">${Math.abs(v['15'].z).toFixed(1).replace('.', ',')} × l’habitude</span></div>`).join('') : `<div class="vide2">${fermeTxt()}</div>`; }
+    if (k === 'liens') { const l = (LIENS_M || []).slice().sort((a, b) => (a.etat === 'inhabituel' ? -1 : 0) - (b.etat === 'inhabituel' ? -1 : 0) || Math.abs(b.corr) - Math.abs(a.corr)).slice(0, 4);
+      return l.length ? l.map(x => `<div class="li"><span class="n">${esc(x.a)} / ${esc(x.b)}</span><span>${x.etat === 'inhabituel' ? '<b style="color:#c05cff">se séparent</b>' : x.corr > 0 ? 'ensemble' : 'en miroir'}</span><span class="${x.corr >= 0 ? 'h' : 'r'}">${x.corr > 0 ? '+' : ''}${(x.corr || 0).toFixed(2).replace('.', ',')}</span></div>`).join('') : '<div class="vide2">Les liens arrivent…</div>'; }
+    return ''; };
+  $('#mur-l').innerHTML = MUR_L.map(k => `<div class="lt" draggable="true" data-k="${k}"><h4>${TUILES[k]}</h4>${contenu(k)}<button class="ot" data-ot="${k}">retirer</button></div>`).join('')
+    + `<div class="mur-add">${Object.keys(TUILES).filter(k => !MUR_L.includes(k)).map(k => `<button data-aj="${k}">+ ${TUILES[k].toLowerCase()}</button>`).join('')}</div>`; }
+function gardeMurL() { ecrit('mur-tuiles', JSON.stringify(MUR_L)); chargeMurPlus(); }
+$('#mur-l').addEventListener('click', ev => { const o = ev.target.closest('[data-ot]'), a = ev.target.closest('[data-aj]'); if (o) { MUR_L = MUR_L.filter(k => k !== o.dataset.ot); gardeMurL(); } if (a) { MUR_L.push(a.dataset.aj); gardeMurL(); } });
+$('#mur-l').addEventListener('dragstart', ev => { if (!document.body.classList.contains('mur-edit')) { ev.preventDefault(); return; } glisseT = ev.target.closest('.lt') && ev.target.closest('.lt').dataset.k; });
+$('#mur-l').addEventListener('dragover', ev => { if (glisseT) ev.preventDefault(); });
+$('#mur-l').addEventListener('drop', ev => { const t = ev.target.closest('.lt'); if (!glisseT || !t || t.dataset.k === glisseT) return; ev.preventDefault(); const l = MUR_L.filter(k => k !== glisseT); l.splice(l.indexOf(t.dataset.k), 0, glisseT); MUR_L = l; glisseT = null; gardeMurL(); });
+setInterval(murTuiles, 30000); setInterval(chargeMurPlus, 60000);
+function modeMur(on) { document.body.classList.toggle('mode-mur', on); $('#b-mur').classList.toggle('on', on); ecrit('radar-mur', on ? '1' : '0'); if (on) { murTic(); murDonnees(); chargeMurPlus(); } }
 $('#b-mur').onclick = () => modeMur(!document.body.classList.contains('mode-mur'));
 // dans la salle : un clic sur un marché du mur l'ouvre sur l'écran de structure ; la fenêtre retient sa place
 const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle' + (DEV ? '-dev' : '')) : null;
 $('#mur-g').addEventListener('click', ev => { const t = ev.target.closest('.tuile-m'); if (!t || !SALLE_BC) return; const c = t.querySelector('.c b').textContent; if (['DXY', 'VIX'].includes(c) || MK.includes(c)) SALLE_BC.postMessage({ t: 'code', c, de: 'radar' }); t.animate([{ boxShadow: 'inset 0 0 0 3px #ffb020' }, { boxShadow: 'none' }], { duration: 900 }); });
 if (diese.get('role') === 'veille') { const garde = () => { try { const p = JSON.parse(localStorage.getItem(PK + 'g-salle-pos') || '{}'); p.veille = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; localStorage.setItem(PK + 'g-salle-pos', JSON.stringify(p)); } catch (e) { /* rien */ } }; setInterval(garde, 5000); window.addEventListener('beforeunload', garde); document.title = 'Atlas · Veille'; }
-$('#mur').addEventListener('click', ev => { if (ev.target.id === 'mur-x') modeMur(false); });
+$('#mur').addEventListener('click', ev => { if (ev.target.id === 'mur-x') modeMur(false); if (ev.target.id === 'mur-comp') { document.body.classList.toggle('mur-edit'); murTic(); murTuiles(); } });
 setInterval(murTic, 1000);
 if (diese.get('mur') === '1' || lit('radar-mur', '0') === '1') modeMur(true);
 setInterval(() => { $('#horloge').textContent = new Date().toLocaleTimeString('fr-FR'); if ($('#compte') && D) moment(); }, 1000);
