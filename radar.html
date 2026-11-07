@@ -190,6 +190,8 @@
   .mur-f .v { flex: 1; overflow: hidden; position: relative; height: 100%; } .mur-f .p { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; white-space: nowrap; animation: defile-m var(--duree, 80s) linear infinite; } @keyframes defile-m { to { transform: translateX(-50%); } }
   .mur-f .dp { display: inline-flex; align-items: center; gap: 1vw; padding: 0 3vw; font: 500 2.3vh var(--ui); color: #d6dae2; } .mur-f .dp time { font: 700 2.1vh var(--mono); color: var(--ambre); }
   .mur-f .dp .fl { font: 800 1.4vh var(--ui); letter-spacing: .14em; padding: .3vh .6vw; border-radius: 3px; background: #d61f3a; color: #fff; } .mur-f .dp .im { font: 800 1.4vh var(--ui); letter-spacing: .14em; padding: .3vh .6vw; border-radius: 3px; background: rgba(255, 176, 32, .18); color: var(--ambre); }
+  .mur-vide { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 40vh; text-align: center; }
+  .mur-vide b::first-letter { text-transform: uppercase; } .mur-vide b { display: block; font: 800 clamp(28px, 4vw, 64px) 'Inter', sans-serif; color: #e6e9ef; letter-spacing: -.01em; } .mur-vide small { font: 500 clamp(14px, 1.3vw, 22px) 'Inter', sans-serif; color: #8a91a0; }
 </style>
 </head>
 <body>
@@ -254,6 +256,9 @@ let vue = lit('radar-vue', 'tout'), marche = lit('radar-marche', ''), son = lit(
 let D = null, ouverts = new Set(), sel = -1, premier = true, dernierOk = 0;
 let vus = new Set(); try { vus = new Set(JSON.parse(lit('radar-lus', '[]'))); } catch (e) { /* rien */ }
 const hm = s => { const d = new Date(s * 1000); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+// quand les cours manquent : on dit pourquoi (week-end, pause du soir) plutôt qu'un tiret muet
+function fermeTxt() { const d = new Date(), j = d.getDay(), h = d.getHours() + d.getMinutes() / 60;
+  if (j === 6 || (j === 0 && h < 23) || (j === 5 && h >= 23)) return 'marché fermé · reprise dimanche 23 h'; if (h >= 22 && h < 23) return 'pause du soir · reprise 23 h'; return 'en attente des cours'; }
 const nb = (x, dec) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 const sg = x => (x > 0 ? '+' : '') + x;
 const cl = x => (x > 0 ? 'h' : x < 0 ? 'b' : '');
@@ -355,7 +360,7 @@ function tuiles() {
       ${nouv ? '<span class="marque"></span>' : ''}
       <div class="haut"><span class="code">${m}</span><span class="nomm">${NOMS[m]}</span></div>
       <div class="px">${x ? nb(x.dernier, DEC[m]) : '—'}</div>
-      <div class="var ${x ? cl(x.var_ticks) : ''}">${x ? `${sg(x.var_ticks)} t · ${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %` : '&nbsp;'}</div>
+      <div class="var ${x ? cl(x.var_ticks) : ''}">${x ? `${sg(x.var_ticks)} t · ${x.var_pct > 0 ? '+' : ''}${nb(x.var_pct, 2)} %` : `<span style="color:var(--doux)">${fermeTxt()}</span>`}</div>
       ${courbe(x && x.heure)}
       ${p ? `<div class="pos"><span>${esc((p.sens || '').toUpperCase())} ×${esc(p.taille)}</span>${lat}</div>` : ''}
       <div class="gbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg>Graphique et nouvelles</div>
@@ -415,7 +420,7 @@ function rail() {
   }).join('') : '<div class="vide" style="padding:12px 0">Pas d’annonce importante aujourd’hui.</div>';
   const bl = D.bilan || {}, mk = MK.filter(m => (bl.critique || {})[m] || (bl.importante || {})[m]);
   $('#bilan').innerHTML = (mk.length ? mk.map(m => { const c = (bl.critique || {})[m], x = c || (bl.importante || {})[m];
-    return `<div class="kv"><span>${m} · ${c ? 'critiques' : 'importantes'}</span><span>${x.bouge} % <small style="color:var(--doux)">sur ${x.n}</small></span></div><div class="jauge"><i style="width:${x.bouge}%"></i></div>`; }).join('')
+    return `<div class="kv"><span>${m} · ${c ? 'critiques' : 'importantes'}</span><span>${x.n >= 10 ? `${x.bouge} % <small style="color:var(--doux)">sur ${x.n}</small>` : `<small style="color:var(--doux)">pas encore assez (${x.n} / 10)</small>`}</span></div><div class="jauge"><i style="width:${x.n >= 10 ? x.bouge : 0}%"></i></div>`; }).join('')
     + `<div style="font-size:11.5px;color:var(--doux);margin:4px 0 8px">Part des nouvelles suivies d’un vrai mouvement en 15 min.</div>` : '<div class="kv"><span>Les mesures arrivent au fil des nouvelles</span><span></span></div>')
     + `<div class="kv"><span>Tes avis</span><span>${(D.avis || {}).utile || 0} utiles · ${(D.avis || {}).bruit || 0} bruit</span></div>`;
   const t0 = Object.values(D.tableau || {})[0];
@@ -610,7 +615,7 @@ function murTic() {
   const now = Date.now() / 1000, a = ((D && D.agenda) || []).filter(x => x.fort && x.at > now - 60).sort((x, y) => x.at - y.at)[0];
   if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60);
     $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc((a.pays || '') + ' · ' + (a.titre_fr || a.titre))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
-  else $('#mur-c').innerHTML = '';
+  else $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b style="font-size:28px;opacity:.75">Aucun chiffre fort à venir pour l’instant</b></div>`;
 }
 function murDonnees() {
   if (!D || !document.body.classList.contains('mode-mur')) return;
@@ -618,7 +623,7 @@ function murDonnees() {
   $('#mur-g').innerHTML = MUR_CODES.map(c => { const t = T[c], k = C[c]; const der = t ? t.dernier : k ? k.dernier : null, pct = t ? t.var_pct : k ? k.var_pct : null; if (der == null) return '';
     const dec = DEC[c] != null ? DEC[c] : 2, txt = nb(der, dec), html = `<div class="tuile-m${recent.has(c) ? ' crit' : ''}"><div class="c"><b>${c}</b><small>${esc(NOMS[c] || (k && k.nom) || c)}</small></div><div class="px">${odoM(murAv[c] || '', txt, der >= (murAv[c + 'v'] ?? der))}</div>`
       + `<div class="vr ${pct >= 0 ? 'h' : 'b'}">${pct >= 0 ? '▲' : '▼'} ${nb(Math.abs(pct || 0), 2)} %${t && t.var_ticks != null ? ` · ${sg(t.var_ticks)} t` : ''}</div>${courbeM(t ? t.heure : k.courbe, (pct || 0) >= 0)}</div>`;
-    murAv[c] = txt; murAv[c + 'v'] = der; return html; }).join('');
+    murAv[c] = txt; murAv[c + 'v'] = der; return html; }).join('') || `<div class="mur-vide"><b>${fermeTxt()}</b><small>Les cours reviennent ici dès la réouverture ; les dépêches continuent de défiler en bas.</small></div>`;
   const l = (D.items || []).filter(i => i.urgence === 'critique' || i.urgence === 'importante').sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 14);
   const h = l.map(i => `<span class="dp"><time>${hm(i.publie || i.at)}</time>${i.urgence === 'critique' ? '<span class="fl">FLASH</span>' : '<span class="im">IMPORTANT</span>'}${esc(i.titre)}</span>`).join('') || '<span class="dp">Aucune dépêche importante pour l’instant.</span>';
   const pm = $('#mur-p'); if (pm.dataset.h !== h) { pm.dataset.h = h; pm.innerHTML = h + h; pm.style.setProperty('--duree', `${Math.max(60, l.length * 11)}s`); }
