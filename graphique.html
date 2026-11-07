@@ -672,6 +672,7 @@
   <p><kbd>L</kbd>ligne · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie</p>
   <p><kbd>Maj</kbd>+ glisser : une tendance · <kbd>Alt</kbd>+ clic : une horizontale · double-clic sur un pivot : support / résistance · <kbd>Ctrl</kbd>+ glisser : la règle</p>
   <p><kbd>I</kbd>indicateurs et méthodes · <kbd>Maj</kbd><kbd>C</kbd>configurations · <kbd>Maj</kbd><kbd>L</kbd>alertes · <kbd>Maj</kbd><kbd>H</kbd>interroger le passé</p>
+  <p>clic droit sur une bougie : « pourquoi cette bougie ? » (les dépêches, les marchés liés, la structure de ce moment-là)</p>
   <p><kbd>E</kbd>le copilote explique · <kbd>Q</kbd>maintenu : une question · <kbd>V</kbd>maintenu : une note au journal</p>
   <p><kbd>M</kbd>mémoire du marché · <kbd>D</kbd>structure de Dow · <kbd>A</kbd>étude d'annonce · <kbd>B</kbd>Atlas présente</p>
   <p><kbd>R</kbd>replay (puis Coach dans sa barre) · <kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p>
@@ -1064,6 +1065,9 @@ class Pane {
           this._insiste = 0; }
         this.fin = Math.max(-n1 * .8, this.fin + (n0 - n1) * (1 - k)); this.n = n1; }
       this.dessine(); }, { passive: false });
+    // « pourquoi cette bougie ? » : clic droit sur une bougie → le copilote explique ce mouvement avec les faits de ce moment-là
+    cv.addEventListener('contextmenu', ev => { const [x, y] = pos(ev); if (zone(x, y) !== 'graphe' || !this.d || REPLAY) return; ev.preventDefault();
+      const { B, i, j } = this.vis(), k = Math.min(j - 1, Math.max(i, Math.floor(x / this.bw + i))); if (!B[k]) return; pourquoiBougie(this, B[k][0]); });
     cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev);
       { const lt = this.T && proche(this, x, y); if (lt && lt.genre === 'texte') { const tx = prompt('Ton texte :', lt.texte || ''); if (tx != null) { lt.texte = tx.trim().slice(0, 80); if (!lt.texte) { choisie = lt; efface(); } else sauve(); } return; } }
       if (zone(x, y) === 'graphe' && this.T) { const pv = pivotProche(this, x, y);
@@ -2561,6 +2565,14 @@ $('#pages-l').addEventListener('click', ev => { const d = ev.target.closest('[da
   for (const [k, v] of Object.entries(x.etat)) ecrit(k.startsWith('§') ? K('g-' + k.slice(1)) : k, v);
   try { new BroadcastChannel('atlas-indics' + (DEV ? '-dev' : '')).postMessage(1); } catch (e) { /* rien */ } if (METH_BC) METH_BC.postMessage(lit('g-methode', 'dow'));
   location.reload(); });
+/* « pourquoi cette bougie ? » */
+async function pourquoiBougie(p, t) {
+  if (copiOccupe) return; copiOccupe = true; taisToi(); const du = DUREE[p.ut] || 3600, h = new Date(t * 1000).toLocaleString('fr-FR', ['D1', 'W', 'M'].includes(p.ut) ? { day: 'numeric', month: 'short' } : { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  MARQUE_PASSE = { t, fin: t + du, txt: `pourquoi ? · ${h}` }; toutDessine(); ouvreCopi(`Pourquoi cette bougie ? · ${h}`, 'Je rassemble les faits de ce moment-là…', '', true);
+  try { const r = await api('/maison/graphique', { action: 'pourquoi', code, ut: p.ut, t }); if (!r.ok) throw new Error(r.raison || 'erreur'); ouvreCopi(`${r.titre} · ${h}`, r.texte, '', false); dire(r.texte); }
+  catch (e) { ouvreCopi('Pourquoi cette bougie ?', `Je n’ai pas pu l’expliquer (${e.message}).`, '', false); }
+  copiOccupe = false;
+}
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
