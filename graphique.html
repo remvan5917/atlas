@@ -619,7 +619,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v51</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v52</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -2711,6 +2711,9 @@ chargePositions(); setInterval(chargePositions, 5000);
 /* ================= trader depuis le graphique : c'est LUI qui pose l'entrée, tire son stop et son objectif ================= */
 // Atlas ne propose aucun niveau et ne passe jamais d'ordre tout seul. La maison vérifie tout (compte permis par Topstep, stop obligatoire,
 // limite du jour) et envoie l'ordre avec son stop et son objectif attachés ; ensuite on fait glisser les ordres posés pour les déplacer.
+// règle Topstep : un ordre doit partir de ton propre appareil. Ouvert sur ton téléphone ou ta tablette (la maison jointe par Tailscale),
+// l'ordre passerait par ton PC : zone grise → pas d'envoi d'ordre depuis un autre appareil (consultation et alertes seulement)
+const ICI_PC = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(ROOT || '') || (/Linux x86_64|Win|Mac/.test(navigator.platform || '') && !/Android|iPhone|iPad|Mobile/.test(navigator.userAgent) && !matchMedia('(pointer: coarse)').matches);  // (ton PC, même s'il passe par l'adresse Tailscale)
 var TRADE = { genre: ['marche', 'limite', 'stop'].includes(lit('g-tgenre', 'marche')) ? lit('g-tgenre', 'marche') : 'marche', on: false, taille: Math.max(1, parseInt(lit('g-taille', '1'), 10) || 1), reg: { actif: false, confirmation: true }, brouillon: null, ordres: [], drag: null, envoi: false };
 function basculeTrade(on) { TRADE.on = on == null ? !TRADE.on : on; $('#b-trade').classList.toggle('on', TRADE.on); $('#ticket').classList.toggle('on', TRADE.on); if (!TRADE.on) TRADE.brouillon = null; if (TRADE.on) { chargeReglagesTrade(); chargeOrdresTrade(); } majTicket(); toutDessine(); }
 $('#b-trade').onclick = () => basculeTrade();
@@ -2744,12 +2747,13 @@ function calcBrouillon() { const b = TRADE.brouillon; if (!b) return null; const
 function majTicket() { const b = TRADE.brouillon, k = calcBrouillon(), pos = positionsDe(code)[0];
   $('#tk-taille').textContent = TRADE.taille; $('#tk-achat').classList.toggle('arme', b && b.sens === 'achat'); $('#tk-vente').classList.toggle('arme', b && b.sens === 'vente');
   $('#tk-go').hidden = $('#tk-x').hidden = !b; $('#tk-ferme').hidden = !pos;
-  if (!TRADE.reg.actif) $('#tk-r').innerHTML = '<span class="a">ordres éteints · ⚙ pour les allumer</span>';
+  if (!ICI_PC) $('#tk-r').innerHTML = '<span class="a">hors de ton PC : consultation seulement · tes ordres dans TopstepX</span>';
+  else if (!TRADE.reg.actif) $('#tk-r').innerHTML = '<span class="a">ordres éteints · ⚙ pour les allumer</span>';
   else if (!b) $('#tk-r').innerHTML = pos ? `<span class="d">${esc(code)} · glisse tes ordres sur le graphique pour les déplacer</span>` : `<span class="d">${esc(code)} · choisis acheter ou vendre</span>`;
   else if (k.attend) $('#tk-r').innerHTML = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${k.genre} · <span class="a">clique sur le graphique à ton prix</span>`;
   else if (k.mauvais) $('#tk-r').innerHTML = `<span class="a">${k.genre === 'limite' ? `un ordre limite ${b.sens === 'achat' ? 'à l’achat se place SOUS le' : 'à la vente se place AU-DESSUS du'} cours` : `un ordre stop ${b.sens === 'achat' ? 'à l’achat se place AU-DESSUS du' : 'à la vente se place SOUS le'} cours`}</span>`;
   else $('#tk-r').innerHTML = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} · ${k.genre === 'marche' ? 'au marché' : k.genre + ' ' + nb(k.e, infoCode().dec)}${k.tsl != null ? ` · <span class="r">SL ${k.tsl} t${k.rsk != null ? ' −' + Math.round(k.rsk) + ' $' : ''}</span>` : ' · <span class="a">tire ton stop</span>'}${k.ttp != null ? ` · <span class="h">TP ${k.ttp} t${k.gain != null ? ' +' + Math.round(k.gain) + ' $' : ''}</span>` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}`;
-  $('#tk-go').disabled = !(b && k && k.ok && TRADE.reg.actif); $('#tk-go').textContent = b && k && k.ok ? `Envoyer ${b.sens === 'achat' ? 'l’achat' : 'la vente'}` : 'Envoyer'; }
+  $('#tk-go').disabled = !(b && k && k.ok && TRADE.reg.actif && ICI_PC); $('#tk-go').textContent = b && k && k.ok ? `Envoyer ${b.sens === 'achat' ? 'l’achat' : 'la vente'}` : 'Envoyer'; }
 // le dessin : lignes fines, étiquettes collées au bord droit, et un ruban de risque étroit contre l'échelle (rien au milieu des bougies)
 function dessineTrade(p, g) { const { c, Y, pw, ph, AX, dec } = g, { tk, val } = infoCode(), der = dernierCours(); if (der == null) return; p.tradeHits = [];
   const ligne = (prix, col, txt, tir, poignee) => { const y = Y(prix); if (!isFinite(y)) return null; const yy = Math.max(10, Math.min(ph - 10, y));
@@ -2800,18 +2804,18 @@ async function envoyer() { const b = TRADE.brouillon, k = calcBrouillon(); if (!
     $('#tconf-d').innerHTML = `Stop ${nb(b.sl, dec)} · ${k.tsl} ticks${k.rsk != null ? ` · −${Math.round(k.rsk)} $` : ''}<br>${b.tp != null ? `Objectif ${nb(b.tp, dec)} · ${k.ttp} ticks${k.gain != null ? ` · +${Math.round(k.gain)} $` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}` : 'Sans objectif'}${k.pct != null ? `<br>${Math.round(k.pct)} % de ce qu’il te reste avant la limite du jour` : ''}`;
     $('#tconf').classList.add('on'); TRADE.attente = corps; return; }
   part(corps); }
-async function part(corps) { TRADE.envoi = true; $('#tk-go').disabled = true;
+async function part(corps) { if (!ICI_PC) { toast('Depuis cet appareil, passe tes ordres dans TopstepX : ici, Atlas sert à consulter (règle Topstep : l’ordre doit partir de ton appareil, pas transiter par ton PC)'); return; } TRADE.envoi = true; $('#tk-go').disabled = true;
   try { const r = await api('/maison/graphique', corps); if (!r.ok) throw new Error(r.raison || 'refusé'); TRADE.brouillon = null; sonne('pose'); toast(`✓ Ordre parti · stop ${r.ticks_sl} t${r.ticks_tp != null ? ` · objectif ${r.ticks_tp} t` : ''}`); }
   catch (e) { toast(`✗ ${e.message}`); } TRADE.envoi = false; majTicket(); toutDessine(); setTimeout(chargeOrdresTrade, 800); setTimeout(chargePositions, 1200); }
 $('#tk-go').onclick = envoyer;
 $('#tconf-ok').onclick = () => { $('#tconf').classList.remove('on'); if (TRADE.attente) part(TRADE.attente); TRADE.attente = null; };
 $('#tconf-non').onclick = () => { $('#tconf').classList.remove('on'); TRADE.attente = null; };
-async function deplaceOrdre(o, prix) { const ancien = o.prix; o.prix = prix; toutDessine();
+async function deplaceOrdre(o, prix) { if (!ICI_PC) { toast('Depuis cet appareil, modifie tes ordres dans TopstepX'); toutDessine(); return; } const ancien = o.prix; o.prix = prix; toutDessine();
   try { const r = await api('/maison/graphique', { action: 'ordre', op: 'modifie', code, ordre: o.ordre, prix }); if (!r.ok) throw new Error(r.raison); toast(`✓ Ordre déplacé à ${nb(r.prix, infoCode().dec)}`); }
   catch (e) { o.prix = ancien; toast(`✗ ${e.message}`); toutDessine(); } setTimeout(chargeOrdresTrade, 600); }
-async function annuleOrdre(o) { if (TRADE.reg.confirmation !== false && !confirm('Annuler cet ordre ?')) return;
+async function annuleOrdre(o) { if (!ICI_PC) { toast('Depuis cet appareil, modifie tes ordres dans TopstepX'); toutDessine(); return; } if (TRADE.reg.confirmation !== false && !confirm('Annuler cet ordre ?')) return;
   try { const r = await api('/maison/graphique', { action: 'ordre', op: 'annule', ordre: o.ordre }); if (!r.ok) throw new Error(r.raison); toast('✓ Ordre annulé'); } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargeOrdresTrade, 500); }
-$('#tk-ferme').onclick = async () => { if (TRADE.reg.confirmation !== false && !confirm(`Fermer ta position sur ${code} au marché ?`)) return;
+$('#tk-ferme').onclick = async () => { if (!ICI_PC) { toast('Depuis cet appareil, ferme ta position dans TopstepX'); return; } if (TRADE.reg.confirmation !== false && !confirm(`Fermer ta position sur ${code} au marché ?`)) return;
   try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ferme', code }); if (!r.ok) throw new Error(r.raison); toast('✓ Position fermée'); } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargePositions, 800); setTimeout(chargeOrdresTrade, 800); };
 /* ================= simuler une position (sans ordre) : ce qui s'est passé, et la fréquence « objectif avant stop » ================= */
 // mêmes gestes que le ticket : un clic pose l'entrée, on tire le stop (le sens de la traction choisit achat ou vente), puis l'objectif.
