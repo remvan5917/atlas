@@ -45,6 +45,7 @@
   /* ---- les graphiques ---- */
   .graphes { display: grid; gap: 2px; background: var(--ligne); min-height: 0; grid-column: 2; grid-row: 2; }
   .graphes.un { grid-template-columns: 1fr; } .graphes.trois { grid-template-columns: 1fr 1fr 1fr; }
+  .graphes.trois.pp { grid-template-columns: 2.3fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.trois.pp .pane:not(.grand) .titre .indl, .graphes.trois.pp .pane:not(.grand) .titre .cotl, .graphes.trois.pp .pane:not(.grand) .titre > span[style] { display: none !important; } .graphes.trois.pp .pane:not(.grand) .titre { padding: 4px 8px !important; font-size: 11px !important; } .graphes.trois.pp .pane { grid-column: 2; } .graphes.trois.pp .pane.grand { grid-column: 1; grid-row: 1 / 3; }
   .pane { position: relative; background: #fff; min-width: 0; min-height: 0; overflow: hidden; }
   .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
   .pane .titre { position: absolute; left: 10px; top: 8px; font: 500 12.5px 'Inter'; color: #131722; pointer-events: none; z-index: 2; white-space: nowrap; }
@@ -206,7 +207,11 @@
   .pc-nw { border-left: 3px solid #f0435a; padding: 6px 10px; background: rgba(240, 67, 90, .06); border-radius: 0 10px 10px 0; font: 600 13px/1.4 'Inter'; } .pc-nw time { display: block; font: 700 10.5px 'JetBrains Mono', monospace; color: #8a91a0; }
   .pc-pts { display: flex; justify-content: center; gap: 6px; padding: 6px; } .pc-pts i { width: 6px; height: 6px; border-radius: 50%; background: #2a3142; } .pc-pts i.on { background: var(--ambre); width: 18px; border-radius: 3px; }
   .pc-nav { display: flex; border-top: 1px solid #1c2230; background: rgba(6, 8, 12, .96); padding-bottom: env(safe-area-inset-bottom); } .pc-nav button { flex: 1; background: none; border: 0; color: #8a91a0; font: 700 11.5px 'Inter'; padding: 14px 4px; } .pc-nav button.on { color: var(--ambre); }
-  body.m-nomade .ico, body.m-nomade .seg button { min-width: 40px !important; min-height: 40px; } body.m-nomade .ticket button { padding: 12px 18px; font-size: 13px; } body.m-nomade .ticket { bottom: 24px; } body.m-nomade .liste { display: none; }
+  body.m-nomade .ico, body.m-nomade .seg button { min-width: 40px !important; min-height: 40px; } body.m-nomade .ticket button { padding: 12px 18px; font-size: 13px; } body.m-nomade .ticket { bottom: 24px; }
+  .tab-nav { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 47; background: rgba(6, 8, 12, .96); border-top: 1px solid #1c2230; padding-bottom: env(safe-area-inset-bottom); backdrop-filter: blur(8px); }
+  body.m-nomade .tab-nav { display: flex; } body.m-nomade .app { padding-bottom: 58px; } body.m-nomade .fil { display: none; } body.m-nomade .ticket { bottom: 70px; }
+  .tab-nav button { flex: 1; background: none; border: 0; color: #9aa1ad; font: 700 13px 'Inter'; padding: 16px 4px; } .tab-nav button:active { color: var(--ambre); background: rgba(255, 171, 26, .08); }
+  body.m-portable .graphes { gap: 6px; } body.m-portable .titre { font-size: 11.5px; }
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -593,6 +598,7 @@
     <div class="seg" id="seg-ut"><button data-ut="5m">5m</button><button data-ut="15m">15m</button><button data-ut="30m">30m</button><button data-ut="H1">1h</button><button data-ut="H4">4h</button><button data-ut="D1">D</button><button data-ut="W">W</button><button data-ut="M">M</button></div>
     <div class="grp">
       <button class="ico" id="vue-un" data-tip="Un graphique"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
+      <button class="ico" id="vue-pp" data-tip="Un grand graphique et deux petits (touche un petit : il devient le grand)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="12" height="14" rx="2"/><rect x="16.5" y="5" width="4.5" height="6.2" rx="1"/><rect x="16.5" y="12.8" width="4.5" height="6.2" rx="1"/></svg></button>
       <button class="ico" id="vue-trois" data-tip="Trois graphiques (clique sur l'un, puis sur une unité)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg></button>
       <button class="ico" id="b-pages" data-tip="Tes mises en page : enregistrer et rappeler (vue, unités, marché, méthode, indicateurs, comparaison)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/></svg></button>
     </div>
@@ -619,7 +625,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v52</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v53</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -812,6 +818,7 @@ const sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + nb(Math.abs(v), d)
 let lignes = [], choisie = null, brouillon = null, actif = 0, INSTANT = null; const CACHE_D = {};
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const UTS = () => vue === 'trois' ? utsTrois : [utSeul];
+var DISPO = lit(K('g-dispo'), 'colonnes');  // (en trois graphiques : trois colonnes, ou un grand et deux petits)
 const DUREE = { '5m': 300, '15m': 900, '30m': 1800, H1: 3600, H4: 14400, D1: 86400, W: 604800, M: 2629800 };
 const LIB = { '5m': '5m', '15m': '15m', '30m': '30m', H1: 'H1', H4: 'H4', D1: 'D1', W: 'W1', M: 'MN' };
 const MOIS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
@@ -1097,7 +1104,8 @@ class Pane {
     const pos = ev => { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
     const zone = (x, y) => (this.pw && x >= this.pw ? 'prix' : this.ph && y >= this.ph ? 'temps' : 'graphe');
     this.tp = new Map();  // (les doigts posés : deux doigts = pincer pour zoomer dans le temps)
-    cv.addEventListener('pointerdown', ev => { if (ev.pointerType === 'touch') { const [x0, y0] = pos(ev); this.tp.set(ev.pointerId, [x0, y0]); if (this.tp.size === 2) { glisse = null; const [a, b] = [...this.tp.values()]; this.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, n: this.n }; return; } }
+    cv.addEventListener('pointerdown', ev => { if (ev.pointerType === 'touch') { const [x0, y0] = pos(ev); this.tp.set(ev.pointerId, [x0, y0]); if (this.tp.size === 2) { glisse = null; clearTimeout(this.lp); this.loupe = false; const [a, b] = [...this.tp.values()]; this.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, n: this.n }; return; }
+        this.lp0 = [x0, y0]; clearTimeout(this.lp); this.lp = setTimeout(() => { this.loupe = true; glisse = null; this.souris = [x0, y0]; this.dessine(); try { navigator.vibrate && navigator.vibrate(12); } catch (e) { /* rien */ } }, 450); }
       actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
       const z = zone(x, y);
       if (z === 'graphe' && this.T && simuDown(this, x, y)) return;
@@ -1120,6 +1128,8 @@ class Pane {
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
     cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev);
+      if (ev.pointerType === 'touch' && this.lp0 && Math.hypot(x - this.lp0[0], y - this.lp0[1]) > 8) clearTimeout(this.lp);
+      if (this.loupe) { this.souris = [x, y]; this.dessine(); return; }
       if (this.pinch && this.tp.has(ev.pointerId)) { this.tp.set(ev.pointerId, [x, y]); const [a, b] = [...this.tp.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; this.n = Math.max(20, Math.min(1500, this.pinch.n * this.pinch.d / d)); this.dessine(); return; }
       this.souris = ev.pointerType === 'touch' ? null : [x, y];
       if (simuMove(this, x, y)) return;
@@ -1148,7 +1158,8 @@ class Pane {
       this.dessine(); });
     const lacheDoigt = ev => { this.tp.delete(ev.pointerId); if (this.tp.size < 2) this.pinch = null; };
     cv.addEventListener('pointercancel', lacheDoigt);
-    cv.addEventListener('pointerup', ev => { if (ev.pointerType === 'touch') { const etait = !!this.pinch; lacheDoigt(ev); if (etait) return; } const [x, y] = pos(ev); if (simuUp(this)) return; if (tradeUp(this)) return; if (!brouillon || brouillon.direct) travail(false);
+    cv.addEventListener('pointerup', ev => { if (ev.pointerType === 'touch') { clearTimeout(this.lp); if (this.loupe) { this.loupe = false; this.souris = null; lacheDoigt(ev); this.dessine(); return; }
+        const etait = !!this.pinch; lacheDoigt(ev); if (etait) return; const mt = performance.now(); if (mt - (this.tap || 0) < 320) { this.y = null; this.n = 120; this.fin = -6; this.dessine(); this.tap = 0; } else this.tap = mt; } const [x, y] = pos(ev); if (simuUp(this)) return; if (tradeUp(this)) return; if (!brouillon || brouillon.direct) travail(false);
       if (brouillon && brouillon.direct && brouillon.pane === this) { if (Math.abs(this.T(brouillon.t2) - this.T(brouillon.t1)) < 6) { brouillon = null; toutDessine(); } else cliqueDessin(this, x, y); glisse = null; return; }
       if (glisse && glisse.mode === 'regle') { glisse = null; const r = this.regle; setTimeout(() => { if (this.regle === r) { this.regle = null; this.dessine(); } }, 5000); return; }
       if (glisse && glisse.mode === 'graphe' && !glisse.ligne && Math.abs(glisse.v || 0) > .25 && performance.now() - (glisse.lt || 0) < 80) {  // l'élan : le graphique continue de glisser, puis ralentit
@@ -1157,7 +1168,7 @@ class Pane {
       }
       if (glisse && glisse.ligne) sauve(); glisse = null; });
     cv.addEventListener('pointerleave', () => { this.souris = null; if (INSTANT && INSTANT.p === this) { INSTANT = null; panes.forEach(q => { if (q !== this) q.dessine(); }); } if (this.survol || this.figSurvol) { this.survol = null; this.figSurvol = null; montreBulle(null); } this.dessine(); });
-    cv.addEventListener('wheel', ev => { ev.preventDefault(); travail(true); travail(false); const [x, y] = pos(ev), f = ev.deltaY > 0 ? 1.12 : 1 / 1.12;
+    cv.addEventListener('wheel', ev => { ev.preventDefault(); travail(true); travail(false); const [x, y] = pos(ev), f = ev.ctrlKey ? Math.exp(Math.max(-.25, Math.min(.25, ev.deltaY * .012))) : ev.deltaY > 0 ? 1.12 : 1 / 1.12;  // (pincer sur le pavé tactile = Ctrl + molette, en douceur)
       if (zone(x, y) === 'prix') { const lo = this.lo, hi = this.hi, mid = (lo + hi) / 2; this.y = [mid - (hi - lo) / 2 * f, mid + (hi - lo) / 2 * f]; }
       else { // zoomer dans le temps autour de la bougie pointée (elle reste sous la souris)
         const n0 = this.n, n1 = Math.min(1500, Math.max(15, n0 * f)), k = this.pw ? x / this.pw : 1;
@@ -1235,14 +1246,16 @@ async function chargeLignes() {
 /* ---------- les panneaux, la liste, les touches ---------- */
 let panes = [];
 function construit() { if (ROLE === 'ensemble') return;
-  const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un');
+  const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un') + (vue === 'trois' && DISPO === 'pp' ? ' pp' : '');
   g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas><div class="charge">Chargement…</div></div>`).join('');
   panes = [...g.querySelectorAll('.pane')].map((el, k) => new Pane(el, UTS()[k])); actif = Math.min(actif, panes.length - 1); majActif();
   majBoutonsUT();
-  $('#vue-un').classList.toggle('on', vue === 'un'); $('#vue-trois').classList.toggle('on', vue === 'trois');
+  $('#vue-un').classList.toggle('on', vue === 'un'); $('#vue-trois').classList.toggle('on', vue === 'trois' && DISPO !== 'pp'); $('#vue-pp').classList.toggle('on', vue === 'trois' && DISPO === 'pp');
   majSym(); chargeTout();
 }
-function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif)); majBoutonsUT(); }
+function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif));
+  if (vue === 'trois' && DISPO === 'pp') { const avant = panes.findIndex(p => p.el.classList.contains('grand')); if (avant !== actif) { panes.forEach((p, k) => p.el.classList.toggle('grand', k === actif)); setTimeout(() => panes.forEach(p => p.dessine()), 30); } }
+  majBoutonsUT(); }
 function majBoutonsUT() { const u = vue === 'trois' ? (utsTrois[actif] || '') : utSeul; document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', b.dataset.ut === u)); }
 function choisirUT(ut) {
   if (vue === 'trois') { utsTrois[actif] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = -6; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
@@ -3052,6 +3065,28 @@ document.querySelector('.pc-nav').addEventListener('click', ev => { const b = ev
   if (v === 'cartes') { document.body.classList.remove('pc-graph'); majPoche(); } else if (v === 'graph') { document.body.classList.add('pc-graph'); setTimeout(() => { panes.forEach(p => p.taille && p.dessine()); }, 60); } else if (v === 'risk') fnRisk(); else if (v === 'news') fnNews(code); });
 { const bv = document.querySelector('.pc-nav [data-v="voix"]'); bv.addEventListener('pointerdown', () => demarreMicro('q')); bv.addEventListener('pointerup', () => { if (rec && rec.mode === 'q') arreteMicro(); }); }
 setTimeout(appliqueMode, 300);
+/* ================= portable et tablette ================= */
+$('#vue-pp').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), 'trois'); DISPO = 'pp'; ecrit(K('g-dispo'), 'pp'); construit(); };
+{ const v3 = $('#vue-trois'), ancien = v3.onclick; v3.onclick = ev => { DISPO = 'colonnes'; ecrit(K('g-dispo'), 'colonnes'); if (ancien) ancien.call(v3, ev); else { vue = 'trois'; ecrit(K('g-vue'), 'trois'); construit(); } }; }
+// le mode « Portable » : un écran d'ordinateur portable — un grand graphique et deux petits, le moniteur rentré, tout pour le graphique
+MODES.splice(2, 0, ['portable', 'Portable', 'un écran d’ordinateur portable : un grand graphique et deux petits']);
+const _modeAuto0 = modeAuto;
+modeAuto = function () { const m = _modeAuto0(); if (m !== 'salle') return m; const w = innerWidth, sw = screen.width || w; return !matchMedia('(pointer: coarse)').matches && w >= 1100 && w <= 1700 && sw <= 1920 && (screen.height || 1080) <= 1200 ? 'portable' : 'salle'; };
+const _appliqueMode0 = appliqueMode;
+appliqueMode = function () { const avant = MODE; _appliqueMode0(); const m = MODE_CHOIX === 'auto' ? modeAuto() : MODE_CHOIX; if (ROLE && ROLE !== 'structure') return;
+  if (m === 'portable' && !document.body.classList.contains('m-portable')) { MODE = 'portable'; document.body.classList.add('m-portable'); document.body.classList.remove('m-poche', 'm-nomade');
+    if (lit(K('g-dispo-choisie'), '') !== '1') { vue = 'trois'; DISPO = 'pp'; construit(); }
+    if (lit(K('g-moniteur'), null) == null) moniteur(false, false); }
+  else if (m !== 'portable') document.body.classList.remove('m-portable');
+  if (m !== 'nomade') document.body.classList.remove('m-nomade-ok');
+  if (m === 'nomade') { const o = innerWidth > innerHeight ? 'paysage' : 'portrait'; if (!document.body.classList.contains('m-nomade-ok') || o !== appliqueMode.orient) { document.body.classList.add('m-nomade-ok'); if (lit(K('g-moniteur'), null) == null) moniteur(false, false); appliqueMode.orient = o; document.body.classList.add('m-nomade'); if (o === 'paysage') { vue = 'trois'; DISPO = 'pp'; } else vue = 'un'; construit(); } } };
+setTimeout(() => appliqueMode(), 350);
+['vue-un', 'vue-trois', 'vue-pp'].forEach(id => $('#' + id).addEventListener('click', () => ecrit(K('g-dispo-choisie'), '1')));
+// la barre du bas de la tablette : tout au pouce
+const TAB_NAV = [['/', 'Marchés', () => ouvreRecherche()], ['ut', 'D1 · H4 · H1', () => { const o = ['D1', 'H4', 'H1'], u = vue === 'trois' ? utsTrois[actif] : utSeul; choisirUT(o[(o.indexOf(u) + 1) % 3]); }], ['i', 'Indicateurs', () => ouvreIndic()], ['a', 'Alertes', () => ouvreAlertes()], ['r', 'Risque', () => fnRisk()], ['n', 'Dépêches', () => fnNews(code)], ['s', 'Simuler', () => outilSimu(true)]];
+{ const nv = document.createElement('nav'); nv.className = 'tab-nav'; nv.id = 'tab-nav'; nv.innerHTML = TAB_NAV.map(([k, n]) => `<button data-k="${k}">${n}</button>`).join('') + '<button data-k="v">🎙 Copilote</button>'; document.body.appendChild(nv);
+  nv.addEventListener('click', ev => { const b = ev.target.closest('[data-k]'); if (!b || b.dataset.k === 'v') return; const f = TAB_NAV.find(z => z[0] === b.dataset.k); if (f) f[2](); });
+  const bv = nv.querySelector('[data-k="v"]'); bv.addEventListener('pointerdown', () => demarreMicro('q')); bv.addEventListener('pointerup', () => { if (rec && rec.mode === 'q') arreteMicro(); }); }
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
