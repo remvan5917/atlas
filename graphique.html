@@ -197,6 +197,12 @@
   .fn-chs { display: flex; gap: 6px; margin: 0 6px 12px; } .fn-ch { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 8px; padding: 5px 11px; font: 700 11.5px 'Inter'; cursor: pointer; } .fn-ch.on { background: #2962ff; border-color: #2962ff; color: #fff; }
   .corr { display: grid; gap: 3px; margin: 0 6px; overflow-x: auto; } .corr span { font: 700 11px 'JetBrains Mono', monospace; text-align: center; padding: 8px 2px; border-radius: 5px; } .corr .ct { color: #8a91a0; font: 800 10.5px 'Inter'; letter-spacing: .06em; padding: 6px 2px; } .corr .ct.g { text-align: left; } .corr .cc { cursor: pointer; color: #fff; } .corr .cc:hover { outline: 1px solid #fff; }
   .fn-av { margin: 0 6px 12px; padding: 8px 12px; border-radius: 9px; background: rgba(255,171,26,.08); border: 1px solid rgba(255,171,26,.3); color: var(--ambre); font: 600 12px/1.45 'Inter'; }
+  .wei, .omon, .eco { display: grid; gap: 10px; padding: 8px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; } .wei.t, .omon.t, .eco.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; }
+  .wei { grid-template-columns: minmax(170px, 1.8fr) 1fr .8fr .8fr .8fr 90px; } .wei small, .omon small, .eco small { color: #8a91a0; font: 600 10.5px 'Inter'; } .wei .ouv { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #2a3142; margin-right: 8px; } .wei .ouv.on { background: #19d38c; box-shadow: 0 0 6px #19d38c; }
+  svg.mini { width: 90px; height: 24px; display: block; }
+  .omon { grid-template-columns: minmax(150px, 1.3fr) .9fr 1.5fr 1fr 1.3fr 1.2fr; } .omon[data-c] { cursor: pointer; } .omon[data-c]:hover { background: rgba(255,255,255,.03); } .omon .jb { display: block; position: relative; height: 18px; background: #0f131c; border-radius: 5px; overflow: hidden; margin-bottom: 3px; } .omon .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; opacity: .55; } .omon .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; font-size: 11px; }
+  .fn-ch.vide { opacity: .45; } .fn-ch small { opacity: .7; margin-left: 3px; }
+  @media (max-width: 700px) { .wei { grid-template-columns: 1.6fr 1fr .9fr; } .wei > :nth-child(n+4) { display: none; } .omon { grid-template-columns: 1.3fr .9fr 1.2fr; } .omon > :nth-child(3), .omon > :nth-child(4), .omon > :nth-child(6) { display: none; } }
   .fn-l { margin: 5px 6px; color: #c6ccd8; cursor: pointer; } .fn-l b { font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
   .mov { display: grid; grid-template-columns: minmax(140px, 1.6fr) .8fr .7fr 1.6fr .8fr .8fr; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .mov:hover { background: rgba(255,255,255,.03); } .mov.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; cursor: default; } .mov small { color: #8a91a0; font: 600 11px 'Inter'; }
   .mov .jb { position: relative; height: 18px; background: #0f131c; border-radius: 5px; overflow: hidden; } .mov .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; } .mov .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; }
@@ -669,7 +675,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v59</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v60</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -779,7 +785,7 @@
   <div class="al" id="pages-l"></div></div></div>
 <div class="aide-k" id="aide-k"><div><h3>TOUTES LES TOUCHES · ? OU ÉCHAP POUR FERMER</h3><input id="aide-q" placeholder="Chercher : ligne, alerte, replay, ordre, copilote…" autocomplete="off">
   <section><h4>Chercher et naviguer</h4>
-  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>CORR</b> · <b>MOV</b> · <b>SEAS</b> · <b>DES</b> · <b>ETAT</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
+  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>CORR</b> · <b>MOV</b> · <b>SEAS</b> · <b>DES</b> · <b>WEI</b> · <b>OMON</b> · <b>ECO emploi</b> · <b>ETAT</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
   <p><kbd>/</kbd>chercher un marché, ou écrire une phrase : « préviens-moi quand… », « montre-moi les fois où… », « configuration : … », « compare avec l'or », « méthode ichimoku », « montre-moi les figures »</p>
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
   <p><kbd>Échap</kbd>fermer une fenêtre, revenir au curseur</p></section>
@@ -3265,6 +3271,54 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0,
   ['MOV', 'ce qui bouge vraiment aujourd’hui, par rapport à son habitude', () => fnMov()],
   ['SEAS', 'la saisonnalité : mois par mois, jour par jour · SEAS MGC', a => fnSeas(a)],
   ['DES', 'la fiche du contrat : tick, mouvement moyen, coût d’un stop, horaires · DES SIL', a => fnDes(a)]);
+// petite courbe en ligne (pour les tableaux)
+const mini = (v, col) => { if (!v || v.length < 2) return ''; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1; return `<svg class="mini" viewBox="0 0 100 24" preserveAspectRatio="none"><polyline points="${v.map((y, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(22 - (y - lo) / r * 20).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`; };
+const pcHtml = v => v == null ? '<span style="color:#6f7787">—</span>' : `<span style="color:${v >= 0 ? '#19d38c' : '#ff3d5a'}">${v > 0 ? '+' : ''}${nb(v, 2)} %</span>`;
+// WEI : les indices du monde
+async function fnWei() { ouvreFn('WEI', 'les indices mondiaux · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+  try { r = await api('/maison/graphique?wei=1'); } catch (e) { ouvreFn('WEI', 'les indices mondiaux', '<p>Pas de liaison avec la maison.</p>'); return; }
+  const regs = ['Amériques', 'Europe', 'Asie'], l = r.indices || [];
+  ouvreFn('WEI', `les indices mondiaux · ${r.source} · ${new Date(r.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`,
+    `<div class="wei t"><span>INDICE</span><span>DERNIER</span><span>JOUR</span><span>5 JOURS</span><span>1 MOIS</span><span>1 MOIS</span></div>` + regs.map(g => `<div class="fn-jour">${g.toUpperCase()}</div>` + l.filter(x => x.region === g).map(x => x.erreur ? `<div class="wei"><span><b>${esc(x.nom)}</b> <small>${esc(x.pays)}</small></span><span style="color:#6f7787">indisponible</span></div>` :
+      `<div class="wei"><span><i class="ouv ${x.ouvert ? 'on' : ''}" title="${x.ouvert ? 'séance en cours' : 'séance fermée'}"></i><b>${esc(x.nom)}</b> <small>${esc(x.pays)}</small></span><span>${nb(x.dernier, x.dernier > 1000 ? 0 : 2)}</span>${pcHtml(x.pct)}${pcHtml(x.pct5)}${pcHtml(x.pct1m)}<span>${mini(x.spark, (x.pct1m ?? 0) >= 0 ? '#19d38c' : '#ff3d5a')}</span></div>`).join('')).join('')
+    + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Point vert : la séance de cet indice est ouverte. Cours différés de 15 minutes environ — tes contrats, eux, restent en direct sur TopstepX.</p>`); }
+// OMON : ce que les options attendent (volatilité implicite) face à ce que le marché fait vraiment (volatilité réalisée)
+async function fnOmon() { ouvreFn('OMON', 'la volatilité des options · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+  try { r = await api('/maison/graphique?omon=1'); } catch (e) { ouvreFn('OMON', 'la volatilité des options', '<p>Pas de liaison avec la maison.</p>'); return; }
+  const lignes = [];
+  for (const v of r.vol || []) { const c = (v.marches || []).find(z => L.some(x => x.code === z)); let att = null, atr = null, rv = null, tkv = null;
+    if (c && !v.erreur) try { const d = await barresDe(c, 'D1'), B = d.bougies || [], n = B.length, tk = d.tick || 1, px = B[n - 1][4]; tkv = VAL_TICK[c] ?? null;
+      att = px * v.iv / 100 / Math.sqrt(252) / tk; const tr = []; for (let i = Math.max(1, n - 14); i < n; i++) tr.push(Math.max(B[i][2], B[i - 1][4]) - Math.min(B[i][3], B[i - 1][4])); atr = tr.reduce((s, z) => s + z, 0) / tr.length / tk;
+      const rr = []; for (let i = Math.max(1, n - 20); i < n; i++) rr.push(Math.log(B[i][4] / B[i - 1][4])); const m = rr.reduce((s, z) => s + z, 0) / rr.length; rv = Math.sqrt(rr.reduce((s, z) => s + (z - m) ** 2, 0) / (rr.length - 1)) * Math.sqrt(252) * 100; } catch (e) { /* rien */ }
+    lignes.push({ v, c, att, atr, rv, tkv }); }
+  const niv = k => k >= 90 ? ['très haute', '#ff3d5a'] : k >= 70 ? ['haute', '#ffab1a'] : k <= 20 ? ['basse', '#5b8cff'] : ['normale', '#8a91a0'];
+  ouvreFn('OMON', `ce que les options attendent · ${r.source}`,
+    `<div class="omon t"><span>INDICE</span><span>IMPLICITE</span><span>SUR 1 AN</span><span>RÉALISÉE 20 J</span><span>MOUVEMENT ATTENDU / JOUR</span><span>FAIT D’HABITUDE (ATR)</span></div>` + lignes.map(({ v, c, att, atr, rv, tkv }) => { if (v.erreur) return `<div class="omon"><span><b>${esc(v.nom)}</b></span><span style="color:#6f7787">indisponible</span></div>`; const [nv, col] = v.rang1a == null ? ['historique insuffisant', '#2a3142'] : niv(v.rang1a);
+      return `<div class="omon" ${c ? `data-c="${c}"` : ''}><span><b>${esc(v.nom)}</b>${c ? ` <small>${c}</small>` : ''}</span><span><b style="font-size:15px">${nb(v.iv, 1)}</b> ${v.veille ? `<small style="color:${v.iv >= v.veille ? '#ff8a9a' : '#19d38c'}">${v.iv >= v.veille ? '▲' : '▼'} ${nb(Math.abs(v.iv - v.veille), 1)}</small>` : ''}</span>
+        <span><span class="jb"><i style="width:${v.rang1a ?? 0}%;background:${col}"></i><em>${v.rang1a != null ? v.rang1a + ' % · ' : ''}${nv}</em></span>${v.rang1a != null ? `<small>${nb(v.min1a, 1)} → ${nb(v.max1a, 1)}</small>` : ''}</span><span>${rv != null ? `${nb(rv, 1)} <small>${rv < v.iv ? 'sous l’implicite' : 'au-dessus'}</small>` : '—'}</span>
+        <span>${att != null ? `± ${Math.round(att)} t${tkv != null ? ` · ${Math.round(att * tkv)} $` : ''}` : '—'}</span><span>${atr != null ? `${Math.round(atr)} t${tkv != null ? ` · ${Math.round(atr * tkv)} $` : ''}` : '—'}</span></div>`; }).join('')
+    + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px;line-height:1.5">« Implicite » : le mouvement annuel que les prix des options supposent (en %). « Sur 1 an » : 95 % = plus haute que 95 % des jours de l’année. « Mouvement attendu / jour » : un écart-type d’une journée selon les options (environ 2 jours sur 3 restent dedans), à comparer au mouvement réellement fait d’habitude (ATR, haut − bas). L’euro-dollar n’a plus d’indice de volatilité publié. Des mesures, pas une prévision.</p>`);
+  document.querySelectorAll('#fn-c .omon[data-c]').forEach(e => e.onclick = () => { fermeFn(); changeCode(e.dataset.c); }); }
+// ECO : comment tes marchés ont réagi les dernières fois à la même annonce
+async function fnEco(a) { ouvreFn('ECO', 'la mémoire des annonces · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+  const q = sansAccent((a || '').toLowerCase()), alias = { emploi: 'nfp', nfp: 'nfp', fed: 'fomc', fomc: 'fomc', taux: 'fomc', cpi: 'cpi', inflation: 'cpi', ppi: 'ppi', pib: 'pib', gdp: 'pib', bce: 'bce', ecb: 'bce', pce: 'pce', ism: 'ism-ind', ventes: 'ventes', retail: 'ventes', chomage: 'chomage', jolts: 'jolts', petrole: 'petrole', michigan: 'michigan' };
+  let cle = alias[q.split(' ')[0]] || q || ''; try { r = await api(`/maison/graphique?eco=${encodeURIComponent(cle)}`); } catch (e) { ouvreFn('ECO', 'la mémoire des annonces', '<p>Pas de liaison avec la maison.</p>'); return; }
+  if (!r.cle) { const avec = (r.types || []).filter(t => t.n).sort((x, y) => y.n - x.n); if (!cle && avec.length) return fnEco(avec[0].cle); }
+  const types = (r.types || []).map(t => `<button class="fn-ch ${t.cle === r.cle ? 'on' : ''} ${t.n ? '' : 'vide'}" data-eco="${t.cle}" title="${t.n ? t.n + ' fois en mémoire' : 'pas encore en mémoire : le radar la mesure à chaque fois'}">${esc(t.nom.replace(/^(l'|la |les |le )/, ''))}${t.n ? ` <small>${t.n}</small>` : ''}</button>`).join('');
+  const C = ['MNQ', 'MYM', 'MGC', 'SIL', 'MCL', 'M6E'].filter(c => (r.resume || {})[c]), val = c => VAL_TICK[c] ?? null, pr = r.cle && (r.types.find(t => t.cle === r.cle) || {}).prochaine;
+  ouvreFn('ECO', r.cle ? `${r.nom} · ${(r.evts || []).length} fois en mémoire · la taille du mouvement, jamais son sens à venir` : 'la mémoire des annonces',
+    `<div class="fn-chs" style="flex-wrap:wrap">${types}</div>` + (!r.cle ? `<p class="fn-av">Cette annonce n’est pas encore en mémoire. Le radar mesure chaque annonce forte au moment où elle sort (5, 15 et 60 minutes) : la mémoire se remplit seule.</p>` :
+    (pr ? `<p class="fn-av">Prochaine fois : ${new Date(pr.at * 1000).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}${pr.prevision ? ` · attendu ${esc(pr.prevision)}` : ''}${pr.precedent ? ` · précédent ${esc(pr.precedent)}` : ''}</p>` : '')
+    + `<div class="rk">${C.map(c => { const x = r.resume[c]; return `<div><small>${c} · DANS L’HEURE</small><b>${x.amp60_med != null ? x.amp60_med + ' t' : '—'}</b><p>${x.amp60_med != null && val(c) != null ? `≈ ${Math.round(x.amp60_med * val(c))} $ par contrat · ` : ''}jusqu’à ${x.amp60_max ?? '—'} t (${x.n} fois)${x.n5 ? `<br>en 5 min : ${x.p5_med} t (${x.n5} mesure${x.n5 > 1 ? 's' : ''})` : ''}</p></div>`; }).join('')}</div>
+    <div class="fn-jour">FOIS PAR FOIS · AMPLITUDE DANS L’HEURE (HAUT − BAS, EN TICKS)</div><div class="eco t" style="grid-template-columns:150px repeat(${C.length},1fr)"><span>DATE</span>${C.map(c => `<span>${c}</span>`).join('')}</div>`
+    + (r.evts || []).map(e => `<div class="eco" style="grid-template-columns:150px repeat(${C.length},1fr)"><span>${new Date(e.at * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' })}${e.src === 'radar' ? ' <small title="mesuré par le radar sur les cours TopstepX">radar</small>' : ''}</span>${C.map(c => { const m = (e.m || {})[c], x = r.resume[c]; if (!m || m.amp60 == null) return '<span>—</span>'; const f = x.amp60_med ? m.amp60 / x.amp60_med : 1;
+        return `<span style="color:${f >= 1.5 ? 'var(--ambre)' : f <= .6 ? '#6f7787' : '#e6e9ef'}">${m.amp60}${m['+5'] != null ? ` <small style="color:${m['+5'] >= 0 ? '#19d38c' : '#ff3d5a'}">${m['+5'] > 0 ? '+' : ''}${m['+5']}</small>` : ''}</span>`; }).join('')}</div>`).join('')
+    + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px;line-height:1.5">En ambre : une fois et demie l’habitude ou plus. Le petit chiffre coloré : le mouvement à +5 minutes, quand le radar l’a mesuré. Sers-t’en pour la taille de ton stop autour de l’annonce ; le sens, lui, ne se répète pas.</p>`));
+  document.querySelectorAll('#fn-c [data-eco]').forEach(b => b.onclick = () => fnEco(b.dataset.eco)); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0,
+  ['WEI', 'les indices du monde : Amériques, Europe, Asie (jour, 5 jours, 1 mois)', () => fnWei()],
+  ['OMON', 'ce que les options attendent : volatilité implicite, mouvement attendu par jour en ticks', () => fnOmon()],
+  ['ECO', 'la réaction passée de tes marchés à une annonce · ECO emploi · ECO fed · ECO cpi', a => fnEco(a)]);
 // changer de marché sans attendre : les graphiques de tes marchés préparés en arrière-plan (une seule fenêtre, doucement)
 let PRECH = false;
 async function precharge() { if (PRECH || document.hidden || FEN !== '1' || (ROLE && ROLE !== 'structure') || marcheFerme() || !L.length) return; PRECH = true;
