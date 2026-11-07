@@ -250,6 +250,7 @@
   .dbf .h button { background: #0f1a2e; border: 1px solid #26365a; color: #b9ccff; border-radius: 7px; padding: 4px 10px; font: 700 11px 'Inter'; cursor: pointer; } .dbf .h button:hover { border-color: var(--ambre); } .dbf p { margin: 3px 0; font: 500 12.8px/1.5 'Inter'; color: #cfdaea; } .dbf p.r { color: #ff8a9a; }
   .reg { display: flex; flex-direction: column; gap: 9px; margin: 0 6px 10px; } .reg label { font: 500 13.5px 'Inter'; color: #dbe6f5; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .reg small { color: #6f86a6; } .reg input:not([type=checkbox]), .reg select { background: #0d1628; color: #e6e9ef; border: 1px solid #26365a; border-radius: 7px; padding: 5px 8px; font: 600 13px 'JetBrains Mono', monospace; }
   .reg button { align-self: flex-start; background: #2f7bff; color: #fff; border: 0; border-radius: 9px; padding: 9px 16px; font: 800 13px 'Inter'; cursor: pointer; margin-top: 4px; }
+  small.niv.proche { color: var(--alerte) !important; font-weight: 800; animation: vie 1.6s ease-in-out infinite; } .ligne-s small.niv + small.niv { display: block; }
   .fn-l { margin: 5px 6px; color: #c6ccd8; cursor: pointer; } .fn-l b { font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
   .mov { display: grid; grid-template-columns: minmax(140px, 1.6fr) .8fr .7fr 1.6fr .8fr .8fr; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #14213a; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .mov:hover { background: rgba(255,255,255,.03); } .mov.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; cursor: default; } .mov small { color: #8a91a0; font: 600 11px 'Inter'; }
   .mov .jb { position: relative; height: 18px; background: #0f1a2e; border-radius: 5px; overflow: hidden; } .mov .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; } .mov .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; }
@@ -722,7 +723,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v73</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v74</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -1172,6 +1173,7 @@ class Pane {
     if (SIMUS.some(z => z.code === code) || SIMU_OUTIL) dessineSimus(this, { c, Y, T, pw, ph, B, dec, bw });
     if (TRADE.on || TRADE.ordres.length) dessineTrade(this, { c, Y, pw, ph, AX, B, TH, dec });
     if (typeof TRADE_VU !== 'undefined' && TRADE_VU) dessineTradeVu(this, { c, Y });
+    if (typeof dessineNiveaux === 'function') dessineNiveaux(this, { c, Y, pw, ph, TH });
     // le ruban des séances, tout en bas de l'axe du temps (intraday) : Asie gris, Londres bleu, New York ambre
     if (['5m', '15m', '30m', 'H1'].includes(this.ut)) { for (let k = i; k < j; k++) { const se = seanceDe(B[k][0]); if (!se) continue; c.fillStyle = se; c.fillRect(X(k) - bw / 2, H - 3, bw + .5, 3); } }
     // le compte à rebours de la bougie en cours, dans l'axe du temps, sous elle
@@ -1424,9 +1426,14 @@ function spark(v, up) {
   return `<svg viewBox="0 0 54 22" preserveAspectRatio="none"><polyline points="${v.map((x, i) => `${(i * 54 / (v.length - 1)).toFixed(1)},${(20 - (x - lo) / r * 18).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#0aa37f' : '#f23645'}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 // la petite ligne sous le prix du moniteur : au choix (clic sur l'en-tête)
-const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'TA LIGNE']];
+const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'LIGNE / NIVEAU']];
 let COL_MON = COLS_MON.some(c => c[0] === lit('g-moncol', 'pct')) ? lit('g-moncol', 'pct') : 'pct';
-function colMon(x) {
+const nivTxt = n => n ? `${n.d > 0 ? '▼' : '▲'} ${Math.abs(n.d)} t · ${esc(n.auto ? n.court || 'niveau' : 'ta ligne')}` : '';
+function colMon(x) { const n = x.niveau, proche = n && n.etat === 'proche';
+  const flag = proche && COL_MON !== 'ligne' ? `<small class="niv proche" title="Le prix s’approche ${esc(n.nom)} (Atlas te l’a dit)">◉ ${nivTxt(n)}</small>` : '';
+  return colMon0(x) + flag; }
+function colMon0(x) {
+  if (COL_MON === 'ligne') return x.niveau ? `<small class="niv ${x.niveau.etat === 'proche' ? 'proche' : ''}" title="La ligne ou le niveau le plus proche du prix : ${esc(x.niveau.nom)}${x.niveau.auto ? ' (tracé par la plateforme)' : ' (ta ligne)'}">${nivTxt(x.niveau)}</small>` : '<small title="Aucune ligne ni niveau">—</small>';
   if (COL_MON === 'ticks' && x.ticks != null) return `<small class="${x.ticks >= 0 ? 'h' : 'r'}" title="Variation du jour en ticks">${x.ticks > 0 ? '+' : ''}${x.ticks} t</small>`;
   if (COL_MON === 'amp' && x.amp != null) { const r = x.amp_hab ? x.amp / x.amp_hab : null; return `<small class="${r != null && r >= 1.3 ? 'chaud' : ''}" title="Amplitude du jour (haut − bas) en ticks, et par rapport à l'amplitude habituelle (médiane des 20 derniers jours)">${x.amp} t${r != null ? ` · ${Math.round(r * 100)} %` : ''}</small>`; }
   if (COL_MON === 'ligne') return x.ligne ? `<small class="${Math.abs(x.ligne.d) <= 20 ? 'chaud' : ''}" title="Distance du prix à ta ligne la plus proche">ligne ${x.ligne.d > 0 ? '▼' : '▲'} ${Math.abs(x.ligne.d)} t</small>` : '<small title="Aucune ligne tracée sur ce marché">—</small>';
@@ -3678,7 +3685,7 @@ function cartePoche(x) { const ps = positionsDe(x.code)[0], dec = x.dec ?? 2, v 
     pos = `<div class="pc-pos"><div class="pc-encours">EN COURS</div><div class="l1" style="color:${t >= 0 ? '#19d38c' : '#ff3d5a'}">${ps.sens === 'long' ? 'LONG' : 'SHORT'} ${ps.taille} · ${t > 0 ? '+' : ''}${t} t${usd != null ? ` · ${usd > 0 ? '+' : ''}${Math.round(usd)} $` : ''}</div><div class="l2">${ds != null ? `stop à ${ds} t` : '<span style="color:#ff3d5a">sans stop</span>'}${reste != null ? ` · reste ${reste} $ avant la limite du jour` : ''}</div><div class="pc-act"><button data-pa="gere" data-c="${esc(x.code)}">Voir et gérer</button>${!ICI_PC && VOYAGE() ? `<button data-pa="ferme" data-c="${esc(x.code)}" class="f">Fermer</button>` : ''}</div></div>`; }
   return `<section class="pc-c" data-c="${esc(x.code)}"><div class="nm"><b>${esc(x.code)}</b>${esc(x.nom || '')}</div><div class="px">${nb(x.dernier, dec)}</div><div class="vr ${up ? 'h' : 'r'}">${up ? '▲' : '▼'} ${nb(Math.abs(x.pct || 0), 2)} %${x.ticks != null ? ` · ${x.ticks > 0 ? '+' : ''}${x.ticks} t` : ''}</div>
     <svg class="sp" viewBox="0 0 100 90" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${up ? '#19d38c' : '#ff3d5a'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>${pos}
-    <div class="pc-k"><div><small>AMPLITUDE DU JOUR</small><b class="${x.amp_hab && x.amp / x.amp_hab >= 1.3 ? 'a' : ''}">${x.amp != null ? x.amp + ' t' : '—'}</b></div><div><small>TA LIGNE LA PLUS PROCHE</small><b class="${x.ligne && Math.abs(x.ligne.d) <= 20 ? 'a' : ''}">${x.ligne ? `${x.ligne.d > 0 ? '▼' : '▲'} ${Math.abs(x.ligne.d)} t` : '—'}</b></div>
+    <div class="pc-k"><div><small>AMPLITUDE DU JOUR</small><b class="${x.amp_hab && x.amp / x.amp_hab >= 1.3 ? 'a' : ''}">${x.amp != null ? x.amp + ' t' : '—'}</b></div><div><small>LIGNE / NIVEAU LE PLUS PROCHE</small><b class="${x.niveau && x.niveau.etat === 'proche' ? 'a' : ''}">${x.niveau ? nivTxt(x.niveau) : '—'}</b></div>
       <div style="grid-column:1/-1"><small>PROCHAINE ANNONCE FORTE</small><b style="font-size:14px">${ann ? `${new Date(ann.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })} · ${esc(ann.titre_fr || ann.titre)}` : 'rien de prévu pour l’instant'}</b></div></div>
     ${nw ? `<div class="pc-nw"><time>${new Date((nw.publie || nw.at) * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</time>${esc(nw.titre)}</div>` : ''}</section>`; }
 function majPoche() { if (MODE !== 'poche') return; const l = L.length ? [...L].sort((a, b) => (positionsDe(b.code).length ? 1 : 0) - (positionsDe(a.code).length ? 1 : 0)) : [], c = $('#pc-cartes'); if (!l.length) { c.innerHTML = '<section class="pc-c"><div class="nm">Je charge tes marchés…</div></section>'; return; }
@@ -3856,6 +3863,20 @@ async function chargeStopStats(c) { if (STOP_ST[c] && Date.now() - STOP_ST[c].at
     STOP_ST[c] = { at: Date.now(), long: L1, short: S1, atr, n: B.length }; majTicket(); } catch (e) { STOP_ST[c] = { at: Date.now() - 3500000 }; } return STOP_ST[c]; }
 function stopBruit(tsl, sens) { const s = STOP_ST[code]; if (!s || !s.n) { if (!s) chargeStopStats(code); return null; } const l = sens === 'achat' ? s.long : s.short; let k = 0; while (k < l.length && l[k] < tsl) k++;
   return { jours: Math.round((l.length - k) / l.length * 10), ratio: s.atr ? tsl / s.atr : null, n: s.n }; }
+/* --- les niveaux tracés par la plateforme (veille, sommets et creux du zigzag, zones du daily) : de petits repères à droite, contre l'échelle --- */
+var NIV_AUTO = {}, optNiv = lit('g-niv', '1') === '1';
+async function chargeNiveaux(c) { const x = NIV_AUTO[c]; if (x && Date.now() - x.at < 300000) return; NIV_AUTO[c] = { at: Date.now(), l: (x && x.l) || [] };
+  try { const r = await api(`/maison/graphique?niveaux=${encodeURIComponent(c)}`); NIV_AUTO[c] = { at: Date.now(), l: r.niveaux || [], seuil: r.seuil }; toutDessine(); } catch (e) { /* hors liaison */ } }
+function dessineNiveaux(p, g) { if (!optNiv || ROLE === 'ensemble') return; const x = NIV_AUTO[code]; if (!x) { chargeNiveaux(code); return; } if (Date.now() - x.at > 300000) chargeNiveaux(code);
+  const { c, Y, pw, ph, TH } = g; c.save(); c.font = '600 9.5px Inter, sans-serif'; c.textAlign = 'right';
+  const W = p.W || pw + 70, fond = TH && TH.nuit ? '#0b1426' : '#ffffff', encre = TH && TH.nuit ? '#8fb3d9' : '#33507a';
+  for (const n of x.l) { if (/^S\/R/.test(n.court)) continue;  // (les zones du daily sont déjà dessinées)
+    const y = Y(n.prix); if (!isFinite(y) || y < 8 || y > ph - 8) continue;
+    c.fillStyle = encre; c.fillRect(pw + 1, Math.round(y), 7, 1.5);  // (un petit trait dans l'échelle des prix, rien sur les bougies)
+    const yDer = p.d && p.d.bougies && p.d.bougies.length ? Y(p.d.bougies[p.d.bougies.length - 1][4]) : -99; if (Math.abs(y - yDer) < 13) continue;  // (sous l'étiquette du prix en cours : le trait seul)
+    const tw = c.measureText(n.court).width + 6; c.fillStyle = fond; c.fillRect(W - tw - 2, y - 6, tw, 12); c.fillStyle = encre; c.fillText(n.court, W - 5, y + 3.5); }
+  c.restore(); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['NIV', 'afficher / cacher les niveaux tracés par la plateforme (veille, sommets, zones) sur le graphique', () => { optNiv = !optNiv; ecrit('g-niv', optNiv ? '1' : '0'); toutDessine(); toast(optNiv ? 'Niveaux de la plateforme : affichés (à droite, contre l’échelle)' : 'Niveaux de la plateforme : cachés (les alertes continuent)'); }]);
 /* --- le rejeu de tes trades : sur tes graphiques, l'entrée, la sortie et le stop ; « rejouer » lance le replay juste avant l'entrée --- */
 var TRADE_VU = null;
 function dessineTradeVu(p, g) { const t = TRADE_VU; if (!t || t.instr !== code || !p.T) return; const { c, Y } = g, x1 = p.T(t.at), x2 = t.fin ? p.T(t.fin) : null, y1 = Y(t.prix), y2 = t.sortie != null ? Y(t.sortie) : null, gain = (t.pnl || 0) >= 0;
