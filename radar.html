@@ -76,7 +76,7 @@
   .tuile .code { font: 700 13px var(--mono); letter-spacing: .06em; } .tuile .nomm { font-size: 11px; color: var(--doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tuile .px { font: 600 24px/1.2 var(--mono); margin-top: 6px; letter-spacing: -.01em; }
   .tuile .var { font: 500 12px var(--mono); }
-  .tuile svg.spark { display: block; width: 100%; height: 34px; margin-top: 6px; }
+  .tuile svg.spark { display: block; width: 100%; height: 34px; margin-top: 6px; } .tuile svg.spark.sp-vide { height: 0; margin: 0; padding: 0; }
   .tuile .pos { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; font: 600 11.5px var(--mono); padding: 5px 8px; border-radius: 8px; background: rgba(255, 176, 32, .1); color: var(--ambre); }
   .tuile.enpos { border-color: rgba(255, 176, 32, .5); }
   .tuile .gbtn { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 11.5px var(--ui); color: var(--cyan); border: 1px solid rgba(76, 201, 240, .3); border-radius: 8px; padding: 5px 0; background: rgba(76, 201, 240, .06); }
@@ -358,7 +358,7 @@ function moment() {
 /* ---------- les tuiles des marchés ---------- */
 let nGrad = 0;
 function courbe(v) {
-  if (!v || v.length < 2) return '<svg class="spark"></svg>';
+  if (!v || v.length < 2) return '<svg class="spark sp-vide"></svg>';
   const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1, c = v[v.length - 1] >= v[0] ? '#22c55e' : '#ff4d4f', id = 'g' + (nGrad++);
   const pts = v.map((x, i) => `${(i * 100 / (v.length - 1)).toFixed(2)},${(32 - (x - lo) / r * 28).toFixed(2)}`).join(' ');
   return `<svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".28"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient></defs>
