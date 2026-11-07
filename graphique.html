@@ -139,6 +139,9 @@
   .lien-m .ph { grid-column: 2 / 4; color: #ffd37a; font-size: 11.5px; line-height: 1.4; }
   .salle-btn { display: block; width: calc(100% - 28px); margin: 10px 14px 12px; padding: 10px; border-radius: 10px; border: 0; color: #fff; font: 700 13px 'Inter'; background: linear-gradient(135deg, #2962ff, #7c4dff); box-shadow: 0 6px 20px rgba(124, 77, 255, .4); }
   .bulle { position: fixed; z-index: 55; width: 330px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .97); border: 1px solid #2f3850; box-shadow: 0 16px 40px rgba(0, 0, 0, .45); color: var(--texte); pointer-events: none; display: none; }
+  .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
+  .figc.on { display: block; } .figc .q { font: 700 10px 'Inter'; letter-spacing: .12em; color: #b39dff; } .figc b { display: block; font: 600 13.5px/1.4 'Inter'; margin-top: 4px; } .figc p { margin: 6px 0 10px; color: #c6ccd8; font-size: 12.5px; line-height: 1.5; }
+  .figc .bt { display: flex; flex-wrap: wrap; gap: 6px; } .figc button { background: #1a2030; border: 1px solid #2f3850; color: #e6e9ef; border-radius: 7px; padding: 5px 9px; font: 600 11.5px 'Inter'; cursor: pointer; } .figc button:hover { border-color: #8b5cff; } .figc #figc-g { background: #8b5cff; border-color: #8b5cff; color: #fff; }
   .bulle.on { display: block; animation: monte .15s ease-out; } .bulle .g { font: 700 10px 'Inter'; letter-spacing: .12em; padding: 2px 7px; border-radius: 5px; } .bulle .q { display: flex; gap: 8px; align-items: center; color: var(--doux); font-size: 11px; margin-bottom: 6px; }
   .bulle b { display: block; font: 600 13.5px/1.4 'Inter'; } .bulle p { margin: 6px 0 0; color: #c6ccd8; font-size: 12.5px; line-height: 1.5; } .bulle .inc { color: #b9c3ff; }
   .bulle .reac { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; } .bulle .reac div { text-align: center; background: var(--cadre3); border-radius: 7px; padding: 5px 0; font: 700 12.5px 'Inter'; }
@@ -525,6 +528,7 @@
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
       <button class="ico" id="t-nuit" data-tip="Mode nuit des graphiques : automatique le soir"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+      <button class="ico" id="t-fig" data-tip="Figures repérées : triangles, canaux, doubles sommets, compressions — en pointillés, expliquées au survol"><svg viewBox="0 0 24 24"><path d="M3 18L12 5l9 13z" stroke-dasharray="3 2.4"/></svg></button>
       <button class="ico" id="t-news" data-tip="Les nouvelles du radar sur l'axe du temps (survole, clique pour l'explication)"><svg viewBox="0 0 24 24"><path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 9h4v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/></svg></button>
       <button class="ico" id="t-cot" data-tip="Positionnement des gros acteurs (rapport COT de la CFTC)"><svg viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4-5"/></svg></button>
       <button class="ico" id="t-aimant" data-tip="Aimant : coller tes lignes sur les rebonds du zigzag"><svg viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4M6 8h4M14 8h4"/></svg></button>
@@ -636,6 +640,7 @@
   <div class="msg" id="config-m"></div>
   <h3 id="config-h">SUR CE GRAPHIQUE</h3><div class="al cfg" id="config-l"></div><div id="config-r"></div></div></div>
 <div class="bulle" id="bulle"></div>
+<div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
   <div class="tiers" id="tv-tiers"><div class="n" id="tv-nom"></div><br><div class="s" id="tv-titre"></div></div><div class="stt" id="tv-stt"></div></div>
@@ -793,6 +798,12 @@ class Pane {
     if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = TH.fg; c.lineWidth = 2.4; c.lineJoin = 'round';
       for (let k = 1; k < zz.length; k++) { c.setLineDash(zz[k][2] === 'dernier' ? [6, 5] : []); c.beginPath(); c.moveTo(T(zz[k - 1][0]), Y(zz[k - 1][1])); c.lineTo(T(zz[k][0]), Y(zz[k][1])); c.stroke(); } c.setLineDash([]); }
     if (MC) dessineMethode(MC, { c, X, Y, T, i, j, pw, ph, HAUT, BASP, TH, bw, B }, 'lignes');
+    // les figures repérées : de fins pointillés violets, comme des lignes tracées à la main (rien sur les bougies) ; survol = l'explication
+    this.figHits = [];
+    if (optFig && !REPLAY) { c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip();
+      for (const f of figuresDe(this, B)) { const sel = this.figSurvol === f || FIG_SEL === f; c.strokeStyle = sel ? '#7c4dff' : 'rgba(139,92,255,.8)'; c.lineWidth = sel ? 2.2 : 1.4;
+        for (const sg of f.segs) { const x1 = T(sg[0]), y1 = Y(sg[1]), x2 = T(sg[2]), y2 = Y(sg[3]); c.setLineDash(sg[4] ? [2, 4] : [6, 4]); c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); this.figHits.push({ f, x1, y1, x2, y2 }); } }
+      c.setLineDash([]); c.restore(); }
     // les indicateurs : leurs lignes sur le prix, leurs marqueurs, et la sous-fenêtre des oscillateurs
     if (IC.length) {
       const trace = (v, couleur, style, Yf, y0, y1) => { c.strokeStyle = couleur; c.lineWidth = 1.5; c.setLineDash(style === 'tirets' ? [6, 4] : []); c.beginPath(); let en = false;
@@ -940,7 +951,7 @@ class Pane {
       c.fillStyle = '#3d4a66'; c.beginPath(); c.roundRect(mx - 54, ph + 2, 108, BT - 4, 5); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = '600 10.5px Inter, sans-serif'; c.fillText(lab, mx, ph + 16); c.textAlign = 'left'; }
     // le titre (OHLC de la bougie survolée, ou de la dernière)
     const kk = this.souris ? Math.min(j - 1, Math.max(i, Math.floor(this.souris[0] / bw + i))) : B.length - 1, b = B[kk], ch = b[4] - (B[kk - 1] || b)[4];
-    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">${METHODE !== 'dow' ? `<b class="meth">${esc(METHODES[METHODE].nom)}</b> · ` : ''}${opt.zz ? 'Zigzag 5 10 · ' : ''}${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${(ALERTES || []).filter(a => a.actif && a.marche === code && a.ut === this.ut).length ? `<div class="indl">${ALERTES.filter(a => a.actif && a.marche === code && a.ut === this.ut).slice(0, 3).map(a => `<span class="alt" title="Alerte : ${esc(a.texte)}"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>${esc(a.titre)}</span>`).join('')}</div>` : ''}${(() => { const l = (CFGD[`${code}|${this.ut}`] || []).filter(cf => cf.visible && cf.eval && cf.eval.ok); return l.length ? `<div class="indl">${l.slice(0, 4).map(cf => { const st = cf.eval.stats; return `<span class="cfgt${cf.eval.maintenant ? ' la' : ''}" title="Configuration : ${esc(cf.texte || cf.nom)}"><i style="background:${cf.couleur}"></i>${esc(cf.nom)}${st ? ` · ${st.n} fois · ${st.plus}↑ ${st.moins}↓` : ''}${cf.eval.maintenant ? ' · LÀ MAINTENANT' : ''}</span>`; }).join('')}</div>` : ''; })()}${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
+    this.el.querySelector('.titre').innerHTML = `<b>${esc(this.d.nom)} · ${esc(LIB[this.ut] || this.ut)}</b><br><span class="ohlc">O<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[1], dec)}</span> H<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[2], dec)}</span> B<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[3], dec)}</span> C<span class="${ch >= 0 ? 'h' : 'r'}">${nb(b[4], dec)}</span> <span class="${ch >= 0 ? 'h' : 'r'}">${ch >= 0 ? '+' : ''}${nb(ch, dec)}</span></span>${opt.cot && COTD[code] && COTD[code].ok ? `<div class="cotl"><span>COT fonds</span><i><b style="left:${COTD[code].fonds.indice}%"></b></i><span${COTD[code].extreme ? ' class="ext"' : ''}>${COTD[code].fonds.indice}/100${COTD[code].extreme ? ' · extrême' : ''}</span></div>` : '<br>'}<span style="color:#8a90a0;font-size:11px">${METHODE !== 'dow' ? `<b class="meth">${esc(METHODES[METHODE].nom)}</b> · ` : ''}${opt.zz ? 'Zigzag 5 10 · ' : ''}${this.d.source === 'topstepx' ? 'TopstepX' : 'différé'}${opt.zones ? ' · zones S/R D1' : ''}${opt.aimant ? ' · aimant' : ''}</span>${(ALERTES || []).filter(a => a.actif && a.marche === code && a.ut === this.ut).length ? `<div class="indl">${ALERTES.filter(a => a.actif && a.marche === code && a.ut === this.ut).slice(0, 3).map(a => `<span class="alt" title="Alerte : ${esc(a.texte)}"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>${esc(a.titre)}</span>`).join('')}</div>` : ''}${optFig && !REPLAY && figuresDe(this, B).length ? `<div class="indl">${figuresDe(this, B).map(f => `<span title="${esc(f.texte)}"><i style="background:#8b5cff;border-radius:1px"></i>${esc(f.nom)}</span>`).join('')}</div>` : ''}${(() => { const l = (CFGD[`${code}|${this.ut}`] || []).filter(cf => cf.visible && cf.eval && cf.eval.ok); return l.length ? `<div class="indl">${l.slice(0, 4).map(cf => { const st = cf.eval.stats; return `<span class="cfgt${cf.eval.maintenant ? ' la' : ''}" title="Configuration : ${esc(cf.texte || cf.nom)}"><i style="background:${cf.couleur}"></i>${esc(cf.nom)}${st ? ` · ${st.n} fois · ${st.plus}↑ ${st.moins}↓` : ''}${cf.eval.maintenant ? ' · LÀ MAINTENANT' : ''}</span>`; }).join('')}</div>` : ''; })()}${IND.length ? `<div class="indl">${IND.map(r => `<span><i style="background:${(r.lignes[0] || r.zones[0] || r.marqueurs[0] || {}).couleur || '#888'}"></i>${esc(r.nom)}</span>`).join('')}</div>` : ''}`;
   }
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
@@ -957,6 +968,7 @@ class Pane {
       if (z === 'graphe' && this.T && ev.altKey) { const [t, pr] = aimant(this, x, y), l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`Horizontale à ${nb(pr, this.d.dec)} · alerte active`); return; }
       // la règle : Ctrl + glisser (ou le bouton du milieu) = ticks, dollars, barres, durée
       if (z === 'graphe' && this.T && (ev.ctrlKey || ev.metaKey || ev.button === 1)) { ev.preventDefault(); const t = this.iT(x), pr = this.iY(y); this.regle = { t1: t, p1: pr, t2: t, p2: pr }; glisse = { mode: 'regle' }; return; }
+      if (this.figSurvol && outil === 'curseur' && !proche(this, x, y)) { ouvreFigure(this.figSurvol, ev.clientX, ev.clientY); return; }
       if (this.survol && outil === 'curseur' && this.survol.genre === 'config') { const n = this.survol; MARQUE_PASSE = { t: n.at, fin: n.fin, txt: `${n.cf.nom} · ${quand(n.at)} · ${n.ca.fin > 0 ? '+' : ''}${n.ca.fin} t ensuite` }; this.survol = null; montreBulle(null); toutDessine(); return; }
       if (this.survol && outil === 'curseur') { const n = this.survol; copilote(`Explique-moi la nouvelle « ${n.titre} » de ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} et comment le marché a réagi.`); return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
@@ -967,6 +979,7 @@ class Pane {
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
     cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev); this.souris = [x, y];
       if (this.iT && panes.length > 1) { INSTANT = { t: this.iT(x), p: this }; panes.forEach(q => { if (q !== this) q.dessine(); }); }
+      if (!glisse && optFig && !brouillon && outil === 'curseur') { const f = figureSous(this, x, y); if (f !== this.figSurvol) { this.figSurvol = f; if (f) montreBulle({ genre: 'figure', f }, ev.clientX, ev.clientY); else if (!this.survol) montreBulle(null); this.dessine(); } else if (f) placeBulle(ev.clientX, ev.clientY); if (f) { cv.style.cursor = 'pointer'; return; } }
       if (!glisse) { const m = (this.marques || []).find(k => Math.hypot(k.x - x, k.y - y) < 9), n = m ? m.n : null; if (n !== this.survol) { this.survol = n; montreBulle(n, ev.clientX, ev.clientY); } else if (n) placeBulle(ev.clientX, ev.clientY); }
       cv.style.cursor = glisse ? (glisse.mode === 'prix' ? 'ns-resize' : glisse.mode === 'temps' ? 'ew-resize' : 'grabbing') : zone(x, y) === 'prix' ? 'ns-resize' : zone(x, y) === 'temps' ? 'ew-resize' : outil === 'curseur' ? 'default' : 'crosshair';
       if (brouillon && brouillon.pane === this) majBrouillon(this, x, y);
@@ -995,7 +1008,7 @@ class Pane {
         const roule = () => { if (this.inertie !== jeton || Math.abs(v) < .02 || !this.bw) return; this.fin = Math.min(Math.max(0, nbB - 10), Math.max(-this.n * .8, this.fin + v * 16 / this.bw)); v *= .93; this.dessine(); requestAnimationFrame(roule); }; roule();
       }
       if (glisse && glisse.ligne) sauve(); glisse = null; });
-    cv.addEventListener('pointerleave', () => { this.souris = null; if (INSTANT && INSTANT.p === this) { INSTANT = null; panes.forEach(q => { if (q !== this) q.dessine(); }); } if (this.survol) { this.survol = null; montreBulle(null); } this.dessine(); });
+    cv.addEventListener('pointerleave', () => { this.souris = null; if (INSTANT && INSTANT.p === this) { INSTANT = null; panes.forEach(q => { if (q !== this) q.dessine(); }); } if (this.survol || this.figSurvol) { this.survol = null; this.figSurvol = null; montreBulle(null); } this.dessine(); });
     cv.addEventListener('wheel', ev => { ev.preventDefault(); travail(true); travail(false); const [x, y] = pos(ev), f = ev.deltaY > 0 ? 1.12 : 1 / 1.12;
       if (zone(x, y) === 'prix') { const lo = this.lo, hi = this.hi, mid = (lo + hi) / 2; this.y = [mid - (hi - lo) / 2 * f, mid + (hi - lo) / 2 * f]; }
       else { // zoomer dans le temps autour de la bougie pointée (elle reste sous la souris)
@@ -1542,6 +1555,7 @@ const VOIX_MARCHES = [[/\b(l ?or|gold)\b/, 'MGC'], [/\bargent|silver\b/, 'SIL'],
 const VOIX_UT = [[/\b(5|cinq) ?(minutes?|min|m)\b/, '5m'], [/\b(15|quinze) ?(minutes?|min|m)\b/, '15m'], [/\b(30|trente) ?(minutes?|min|m)\b/, '30m'], [/\bh ?4\b|\b(4|quatre) ?heures?\b/, 'H4'], [/\bh ?1\b|\b(une|1) ?heure\b|\bhoraire\b/, 'H1'], [/\bd ?1\b|\bdaily\b|\bjournalier\b|\ben jour\b/, 'D1'], [/\bhebdo|weekly|semaine\b/, 'W'], [/\bmensuel|monthly|en mois\b/, 'M']];
 async function commandeGraphique(texte) {
   const n = ' ' + sansAcc(texte) + ' ';
+  if (/\b(montre|affiche|cherche|repere)(-| )?(moi )?(les )?figures\b/.test(n)) { if (!optFig) $('#t-fig').click(); return 'Figures repérées'; }
   { const m = /\b(?:methode|mode) (dow|zigzag|smart money|smc|volume|vwap|ichimoku)\b/.exec(n); if (m) { const k = { dow: 'dow', zigzag: 'dow', 'smart money': 'smc', smc: 'smc', volume: 'volume', vwap: 'volume', ichimoku: 'ichimoku' }[m[1]]; choisirMethode(k); return `Méthode : ${METHODES[k].nom}`; } }
   if (/\binstalle (ma|la) salle\b/.test(n)) { installeSalle(); return 'Salle de marché'; }
   if (/\b(presente|presentes|raconte)(-| )?(moi )?(le|les|mes) marches?\b|\batlas presente\b|\bjournal des marches\b/.test(n)) { presente(); return 'Atlas présente'; }
@@ -1623,6 +1637,7 @@ async function chargeNouvelles() { const k = code; if (document.hidden && NOUV[k
 const GENRES = { critique: ['CRITIQUE', '#f23645'], importante: ['IMPORTANTE', '#ffb020'], chiffre: ['CHIFFRE PUBLIÉ', '#2962ff'], mouvement: ['MOUVEMENT ANORMAL', '#7c4dff'], annonce: ['ANNONCE PRÉVUE', '#8b93a3'] };
 function montreBulle(n, x, y) {
   const b = $('#bulle'); if (!n) { b.classList.remove('on'); toutDessine(); return; }
+  if (n.genre === 'figure') { b.innerHTML = `<div class="q"><span class="g" style="background:#8b5cff22;color:#b39dff">FIGURE</span>${esc(n.f.ut)}</div><b>${esc(n.f.nom)}</b><p>${esc(n.f.texte)}</p><div class="astuce">clic : la garder, l’ignorer, ou l’explication du copilote</div>`; b.classList.add('on'); placeBulle(x, y); return; }
   if (n.genre === 'config') { const cf = n.cf, ca = n.ca, st = cf.eval.stats, du = dureeTxt(cf.suite * (DUREE[cf.eval.ut] || 3600) / 60);
     b.innerHTML = `<div class="q"><span class="g" style="background:${cf.couleur}22;color:${cf.couleur}">CONFIGURATION</span>${new Date(n.at * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
       <b>${esc(cf.nom)}</b>${cf.explication ? `<p>${esc(cf.explication)}</p>` : ''}
@@ -2261,6 +2276,7 @@ function ecranTexte(p) {  // ce que montre son écran, pour le copilote : la mé
     L.push(`Méthode choisie : ${METHODES[METHODE].nom}.`);
     const ind = indicsActifs().map(r => r.nom); if (ind.length) L.push('Indicateurs affichés : ' + ind.join(', ') + '.');
     const cf = p ? (CFGD[`${code}|${p.ut}`] || []).filter(x => x.visible && x.eval && x.eval.ok) : []; if (cf.length) L.push('Ses configurations : ' + cf.map(x => `${x.nom}${x.eval.maintenant ? ' (PRÉSENTE sur la dernière bougie close)' : ''}${x.eval.stats ? ` — ${x.eval.stats.n} fois, ensuite ${x.eval.stats.plus} fois plus haut / ${x.eval.stats.moins} fois plus bas` : ''}`).join(' ; ') + '.');
+    if (optFig && p && B) { const fg = figuresDe(p, B); if (fg.length) L.push('Figures repérées sur son graphique : ' + fg.map(f => `${f.nom} — ${f.texte}`).join(' | ')); }
     if (M && B) { const k = B.length - 1, der = B[k][4], pos = (h, l) => der > h ? 'AU-DESSUS' : der < l ? 'EN DESSOUS' : 'DEDANS';
       if (M.genre === 'smc') { L.push('Déséquilibres (FVG) non comblés : ' + (M.fvg.slice(-5).map(f => `${f.sens > 0 ? 'haussier' : 'baissier'} ${nb(f.bas, dec)}–${nb(f.haut, dec)} (prix ${pos(f.haut, f.bas)})`).join(' ; ') || 'aucun') + '.');
         L.push('Blocs d’ordres actifs : ' + (M.ob.map(o => `${o.sens > 0 ? 'haussier' : 'baissier'} ${nb(o.bas, dec)}–${nb(o.haut, dec)} (prix ${pos(o.haut, o.bas)})`).join(' ; ') || 'aucun') + '.');
@@ -2269,6 +2285,72 @@ function ecranTexte(p) {  // ce que montre son écran, pour le copilote : la mé
       if (M.genre === 'ichimoku' && isFinite(M.kj[k])) { const a = M.sa[k], bb = M.sb[k]; L.push(`Ichimoku : Tenkan ${nb(M.tk[k], dec)}, Kijun ${nb(M.kj[k], dec)} (prix ${der >= M.kj[k] ? 'AU-DESSUS' : 'EN DESSOUS'} de la Kijun)${isFinite(a) && isFinite(bb) ? `, nuage actuel ${nb(Math.min(a, bb), dec)}–${nb(Math.max(a, bb), dec)} (prix ${pos(Math.max(a, bb), Math.min(a, bb))}), nuage ${a >= bb ? 'vert' : 'rouge'}` : ''}.`); } }
     return L.join('\n').slice(0, 1800); } catch (e) { return ''; }
 }
+/* ================= les figures repérées et expliquées ================= */
+// à partir des sommets et creux CONFIRMÉS du zigzag (5, 10) : doubles sommets / creux, triangles, canaux, range, compression ;
+// des faits mesurés (prix, écarts en ticks), jamais « ça va casser » ; désactivées par défaut (son graphique reste épuré)
+var optFig = lit('g-figures', '0') === '1', FIG_IGN = new Set((() => { try { return JSON.parse(lit('g-fig-ign', '[]')); } catch (e) { return []; } })()), FIG_SEL = null;
+{ const b = $('#t-fig'); b.classList.toggle('on', optFig); b.onclick = () => { optFig = !optFig; ecrit('g-figures', optFig ? '1' : '0'); b.classList.toggle('on', optFig); if (!optFig) fermeFigure(); toast(optFig ? 'Figures repérées : affichées' : 'Figures repérées : masquées'); toutDessine(); }; }
+const valLigne = (t1, p1, t2, p2, t) => t2 === t1 ? p1 : p1 + (p2 - p1) * (t - t1) / (t2 - t1);
+function figuresDe(p, B) {
+  if (!p.d || B.length < 60) return []; const N = B.length, zz0 = p.d.zigzag || [], cle = `${code}|${p.ut}|${N}|${B[N - 1][0]}|${B[N - 1][4]}|${zz0.length}|${FIG_IGN.size}`;
+  if (p._fg && p._fg.cle === cle) return p._fg.v;
+  let v = []; try { v = detecteFigures(p, B).filter(f => !FIG_IGN.has(f.cle)).slice(0, 3); } catch (e) { console.error(e); }
+  p._fg = { cle, v }; return v;
+}
+function detecteFigures(p, B) {
+  const N = B.length, a = atrSerie(B, 14), atr = a[N - 1] || 1, tk = p.d.tick || 1, dec = p.d.dec, dt = DUREE[p.ut] || 3600, ut = LIB[p.ut] || p.ut, der = B[N - 1][4], tN = B[N - 1][0];
+  const ti = t => Math.round((t - tN) / tk), tks = x => Math.round(x / tk), jour = t => new Date(t * 1000).toLocaleString('fr-FR', ['D1', 'W', 'M'].includes(p.ut) ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const piv = (p.d.zigzag || []).filter(z => z[2] === 'h' || z[2] === 'l').map(z => ({ t: z[0], p: z[1], g: z[2] })), out = [], base = `${code}|${p.ut}|`;
+  if (piv.length < 4) return out;
+  const H = piv.filter(z => z.g === 'h'), L = piv.filter(z => z.g === 'l'), dern = piv.slice(-4);
+  // 1. double sommet / double creux : les deux derniers sommets (creux) à moins de 0,35 ATR, avec un vrai creux (sommet) entre les deux
+  for (const g of ['h', 'l']) { const S = g === 'h' ? H : L; if (S.length < 2) continue; const s1 = S[S.length - 2], s2 = S[S.length - 1];
+    if (!dern.includes(s2) || Math.abs(s1.p - s2.p) > .35 * atr) continue;
+    const entre = piv.filter(z => z.g !== g && z.t > s1.t && z.t < s2.t); if (!entre.length) continue; const cou = g === 'h' ? entre.reduce((m, z) => z.p < m.p ? z : m) : entre.reduce((m, z) => z.p > m.p ? z : m);
+    if (Math.abs(s2.p - cou.p) < 1.5 * atr) continue;
+    const k2 = idxDe(B, s2.t), casse = B.slice(k2 + 1).find(b => g === 'h' ? b[4] < cou.p : b[4] > cou.p);
+    if (casse && idxDe(B, casse[0]) < N - 30) continue;  // (complétée il y a longtemps : plus d'actualité)
+    const nom = g === 'h' ? 'Double sommet' : 'Double creux', mot = g === 'h' ? 'sommets' : 'creux';
+    out.push({ cle: base + g + 'double' + s1.t, nom, ut, segs: [[s1.t, s1.p, s2.t, s2.p, 1], [cou.t, cou.p, tN + 6 * dt, cou.p]],
+      texte: `Deux ${mot} presque égaux : ${nb(s1.p, dec)} (${jour(s1.t)}) et ${nb(s2.p, dec)} (${jour(s2.t)}), ${Math.abs(tks(s2.p - s1.p))} ticks d’écart. ${g === 'h' ? 'Le creux' : 'Le sommet'} entre les deux, ${nb(cou.p, dec)}, est la ligne de cou. ` + (casse ? `Clôture ${g === 'h' ? 'sous' : 'au-dessus de'} la ligne de cou le ${jour(casse[0])} : la figure est complétée.` : `Le prix est à ${Math.abs(tks(der - cou.p))} ticks de la ligne de cou ; tant qu’elle n’est pas franchie en clôture, la figure n’est pas complétée.`),
+      lignes: [{ genre: 'horizontale', t1: cou.t, p1: cou.p }, { genre: 'horizontale', t1: s1.t, p1: (s1.p + s2.p) / 2 }] }); }
+  // 2. triangle / canal / range : les deux derniers sommets et les deux derniers creux, qui se chevauchent dans le temps
+  if (H.length >= 2 && L.length >= 2) { const h1 = H[H.length - 2], h2 = H[H.length - 1], l1 = L[L.length - 2], l2 = L[L.length - 1];
+    const t0 = Math.max(h1.t, l1.t), t1 = Math.min(h2.t, l2.t);
+    if (t1 > t0 && dern.includes(h2) && dern.includes(l2)) {
+      const sh = (h2.p - h1.p) / ((h2.t - h1.t) / dt) / atr, sl = (l2.p - l1.p) / ((l2.t - l1.t) / dt) / atr, plat = .012;  // (pente en ATR par bougie)
+      let nom = null, fin = tN + 12 * dt, txt = '';
+      if (sh < -plat && sl > plat) nom = 'Triangle symétrique'; else if (Math.abs(sh) <= plat && sl > plat) nom = 'Triangle ascendant'; else if (sh < -plat && Math.abs(sl) <= plat) nom = 'Triangle descendant';
+      else if (sh > plat && sl > plat && sh / sl > .5 && sh / sl < 2) nom = 'Canal haussier'; else if (sh < -plat && sl < -plat && sh / sl > .5 && sh / sl < 2) nom = 'Canal baissier';
+      else if (Math.abs(sh) <= plat && Math.abs(sl) <= plat) nom = 'Range';
+      if (nom) { const hN = valLigne(h1.t, h1.p, h2.t, h2.p, tN), lN = valLigne(l1.t, l1.p, l2.t, l2.p, tN);
+        if (nom.startsWith('Triangle')) { const dS = (sh - sl) * atr / dt; if (dS < 0) { const ta = tN + (hN - lN) / -dS; fin = Math.min(tN + 40 * dt, Math.max(tN + dt, ta)); txt = ` Les deux lignes se rejoignent vers le ${jour(ta)}.`; } }
+        const dedans = der <= hN + .1 * atr && der >= lN - .1 * atr, sortie = der > hN ? `Le prix est ${tks(der - hN)} ticks au-dessus de la ligne du haut.` : der < lN ? `Le prix est ${tks(lN - der)} ticks sous la ligne du bas.` : `Le prix est à ${tks(hN - der)} ticks de la ligne du haut et ${tks(der - lN)} ticks de celle du bas.`;
+        if (dedans || Math.abs(der - (der > hN ? hN : lN)) < 1.5 * atr) {
+          const desc = nom.startsWith('Canal') ? `Sommets (${nb(h1.p, dec)} puis ${nb(h2.p, dec)}) et creux (${nb(l1.p, dec)} puis ${nb(l2.p, dec)}) ${nom.endsWith('haussier') ? 'montent' : 'descendent'} ensemble, à pente proche ; largeur actuelle ${tks(hN - lN)} ticks.`
+            : nom === 'Range' ? `Sommets (${nb(h1.p, dec)}, ${nb(h2.p, dec)}) et creux (${nb(l1.p, dec)}, ${nb(l2.p, dec)}) à plat : le prix tourne dans ${tks(hN - lN)} ticks.`
+            : `Sommets ${sh < -plat ? 'descendants' : 'à plat'} (${nb(h1.p, dec)} puis ${nb(h2.p, dec)}) et creux ${sl > plat ? 'montants' : 'à plat'} (${nb(l1.p, dec)} puis ${nb(l2.p, dec)}) : l’écart se resserre, ${tks(hN - lN)} ticks aujourd’hui.`;
+          out.push({ cle: base + 'tc' + h1.t + '|' + l1.t, nom, ut, segs: [[h1.t, h1.p, fin, valLigne(h1.t, h1.p, h2.t, h2.p, fin)], [l1.t, l1.p, fin, valLigne(l1.t, l1.p, l2.t, l2.p, fin)]], texte: `${desc} ${sortie}${txt}`,
+            lignes: [{ genre: 'droite', t1: h1.t, p1: h1.p, t2: h2.t, p2: h2.p }, { genre: 'droite', t1: l1.t, p1: l1.p, t2: l2.t, p2: l2.p }] }); } } } }
+  // 3. compression : les 12 dernières bougies bien plus calmes que d'habitude
+  { const amp = k => B[k][2] - B[k][3], n = 12; if (N > 60) { let r = 0, u = 0; for (let k = N - n; k < N; k++) r += amp(k); for (let k = N - 62; k < N - n; k++) u += amp(k); r /= n; u /= 50;
+    if (u > 0 && r / u < .55) { let hi = -Infinity, lo = Infinity; for (let k = N - n; k < N; k++) { hi = Math.max(hi, B[k][2]); lo = Math.min(lo, B[k][3]); }
+      out.push({ cle: base + 'comp' + B[N - n][0], nom: 'Compression', ut, segs: [[B[N - n][0], hi, tN + 3 * dt, hi], [B[N - n][0], lo, tN + 3 * dt, lo]],
+        texte: `Les ${n} dernières bougies font ${tks(r)} ticks en moyenne, ${Math.round(r / u * 100)} % de l’habitude (${tks(u)} ticks sur les 50 d’avant). Haut ${nb(hi, dec)}, bas ${nb(lo, dec)}, ${tks(hi - lo)} ticks.`,
+        lignes: [{ genre: 'horizontale', t1: B[N - n][0], p1: hi }, { genre: 'horizontale', t1: B[N - n][0], p1: lo }] }); } } }
+  return out;
+}
+function figureSous(p, x, y) { let mieux = null, dmin = 6;
+  for (const h of p.figHits || []) { const dx = h.x2 - h.x1, dy = h.y2 - h.y1, L2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((x - h.x1) * dx + (y - h.y1) * dy) / L2)), d = Math.hypot(x - (h.x1 + u * dx), y - (h.y1 + u * dy)); if (d < dmin) { dmin = d; mieux = h.f; } }
+  return mieux; }
+function ouvreFigure(f, x, y) { FIG_SEL = f; const e = $('#figc'); $('#figc-n').textContent = `${f.nom} · ${f.ut}`; $('#figc-t').textContent = f.texte; e.classList.add('on'); montreBulle(null);
+  e.style.left = `${Math.min(innerWidth - 360, Math.max(10, x - 170))}px`; e.style.top = `${Math.min(innerHeight - e.offsetHeight - 10, y + 16)}px`; toutDessine(); }
+function fermeFigure() { FIG_SEL = null; $('#figc').classList.remove('on'); toutDessine(); }
+$('#figc-g').onclick = () => { const f = FIG_SEL; if (!f) return; for (const l of f.lignes) lignes.push({ id: idNeuf(), ...l, alerte: true }); sauve(); FIG_IGN.add(f.cle); ecrit('g-fig-ign', JSON.stringify([...FIG_IGN].slice(-300))); panes.forEach(q => q._fg = null); fermeFigure(); toast(`${f.nom} : gardée dans tes lignes (alertes actives)`); };
+$('#figc-i').onclick = () => { const f = FIG_SEL; if (!f) return; FIG_IGN.add(f.cle); ecrit('g-fig-ign', JSON.stringify([...FIG_IGN].slice(-300))); panes.forEach(q => q._fg = null); fermeFigure(); toast(`${f.nom} : ignorée`); };
+$('#figc-c').onclick = () => { const f = FIG_SEL; if (!f) return; fermeFigure(); copilote(`Explique-moi la figure « ${f.nom} » repérée en ${f.ut} : ${f.texte}`); };
+document.addEventListener('pointerdown', ev => { if (FIG_SEL && !ev.target.closest('#figc') && ev.target.tagName !== 'CANVAS') fermeFigure(); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && FIG_SEL) fermeFigure(); });
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
