@@ -245,7 +245,7 @@ const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison
 if (/^\/salle(-dev)?\//.test(location.pathname)) ROOT = location.origin;
 if (ROOT && !/^\/salle(-dev)?\//.test(location.pathname)) document.getElementById('b-graphique').href = 'graphique.html#maison=' + encodeURIComponent(ROOT);
 const MK = ['M6E', 'MNQ', 'MYM', 'MGC', 'SIL', 'MCL'];
-const NOMS = { M6E: 'Euro-dollar', MNQ: 'Nasdaq 100', MYM: 'Dow Jones', MGC: 'Or', SIL: 'Argent', MCL: 'Pétrole WTI' };
+const NOMS = new Proxy({ M6E: 'Euro-dollar', MNQ: 'Nasdaq 100', MYM: 'Dow Jones', MGC: 'Or', SIL: 'Argent', MCL: 'Pétrole WTI', ZN: 'Taux US 10 ans', DXY: 'Dollar index', VIX: 'VIX' }, { get: (o, k) => o[k] ?? k });  // (un code inconnu s'affiche tel quel, jamais « undefined »)
 const DEC = { M6E: 5, MNQ: 2, MYM: 0, MGC: 1, SIL: 3, MCL: 2 };
 const DEV = location.pathname.startsWith('/salle-dev/'), PK = DEV ? 'dev:' : '';
 const lit = (k, d) => { try { const v = localStorage.getItem(PK + k); return v == null ? d : v; } catch (e) { return d; } };
@@ -462,7 +462,7 @@ async function ouvreGraphe(code) {
   const der = B[n - 1][4], ouv = B[0][1], vt = Math.round((der - ouv) / g.pas);
   svg += `<line x1="${ml}" x2="${W - mr}" y1="${Y(der)}" y2="${Y(der)}" stroke="#4cc9f0" stroke-opacity=".35" stroke-dasharray="2 4"/><rect x="${W - mr + 2}" y="${Y(der) - 9}" width="${mr - 4}" height="18" rx="4" fill="#4cc9f0"/><text x="${W - mr + 6}" y="${Y(der) + 4}" fill="#05070b" font-size="11" font-weight="700" font-family="JetBrains Mono, monospace">${nb(der, dec)}</text>`;
   const reps = (g.reperes || []).filter(r => r.genre !== 'annonce' || r.at <= Date.now() / 1000).slice().reverse();
-  $('#boite').innerHTML = `<div class="tete2"><h2>${esc(code)} · ${esc(NOMS[code] || g.nom)}</h2><span class="px2">${nb(der, dec)}</span><span class="mono ${cl(vt)}">${sg(vt)} ticks depuis l’ouverture de la séance</span>
+  $('#boite').innerHTML = `<div class="tete2"><h2>${esc(code)} · ${esc(code in NOMS ? NOMS[code] : g.nom || code)}</h2><span class="px2">${nb(der, dec)}</span><span class="mono ${cl(vt)}">${sg(vt)} ticks depuis l’ouverture de la séance</span>
     <div class="actions"><button id="g-filtre">${marche === code ? 'Tout le fil' : 'Filtrer le fil sur ce marché'}</button><button id="g-fermer">Fermer · Échap</button></div></div>
     <svg class="graphe" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${svg}</svg>
     <div class="legende"><span><i style="background:#ff4d4f"></i>critique</span><span><i style="background:#4cc9f0"></i>importante</span><span><i style="background:#ffb020"></i>chiffre ou mouvement anormal</span><span><i style="background:#a78bfa"></i>annonce de l’agenda</span><span>Barres de 5 minutes, cours ${g.source === 'topstepx' ? 'TopstepX en direct' : 'différés'}. Survole un repère pour le lire.</span></div>
