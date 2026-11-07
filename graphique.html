@@ -158,6 +158,7 @@
   .ticket { position: fixed; z-index: 48; left: 50%; bottom: 44px; transform: translateX(-50%); display: none; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 14px; background: rgba(11, 14, 21, .94); border: 1px solid #2f3850; box-shadow: 0 16px 40px rgba(0, 0, 0, .45); backdrop-filter: blur(10px); font: 600 12px 'Inter'; color: #e6e9ef; }
   .ticket.on { display: flex; animation: monte .18s ease-out; } .ticket button { border: 0; border-radius: 9px; padding: 8px 14px; font: 800 12px 'Inter'; letter-spacing: .06em; cursor: pointer; color: #fff; background: #1a2030; }
   .ticket .tk-g { display: flex; align-items: center; gap: 2px; background: #1a2030; border-radius: 9px; } .ticket .tk-g button { padding: 8px 10px; background: transparent; } .ticket .tk-g b { min-width: 26px; text-align: center; font: 800 14px 'JetBrains Mono', monospace; }
+  .ticket .tk-t { display: flex; gap: 2px; background: #1a2030; border-radius: 9px; padding: 2px; } .ticket .tk-t button { padding: 6px 9px; background: transparent; color: var(--doux); font-weight: 700; letter-spacing: 0; } .ticket .tk-t button.on { background: #2962ff; color: #fff; }
   .ticket .tk-a { background: linear-gradient(180deg, #19c37d, #0f9c62); } .ticket .tk-v { background: linear-gradient(180deg, #ff4d63, #d92a43); } .ticket .tk-a.arme, .ticket .tk-v.arme { box-shadow: 0 0 0 2px #fff inset; }
   .ticket .tk-go { background: #2962ff; } .ticket .tk-go:disabled { background: #2a3142; color: #8a91a0; cursor: default; } .ticket .tk-f { background: #3a2410; color: var(--ambre); } .ticket .tk-c { background: transparent; color: var(--doux); font-size: 15px; padding: 6px 8px; }
   .ticket .tk-r { font: 700 11.5px 'JetBrains Mono', monospace; color: var(--doux); max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ticket .tk-r .r { color: #ff3d5a; } .ticket .tk-r .h { color: #19d38c; } .ticket .tk-r .a { color: var(--ambre); }
@@ -696,6 +697,7 @@
   <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture · <kbd>Échap</kbd>fermer, revenir au curseur</p></div></div>
 <div class="ticket" id="ticket">
   <div class="tk-g"><button id="tk-moins" title="Un contrat de moins">−</button><b id="tk-taille">1</b><button id="tk-plus" title="Un contrat de plus">+</button></div>
+  <div class="tk-t" id="tk-type"><button data-g="marche">Marché</button><button data-g="limite">Limite</button><button data-g="stop">Stop</button></div>
   <button class="tk-a" id="tk-achat">ACHETER</button><button class="tk-v" id="tk-vente">VENDRE</button>
   <span class="tk-r" id="tk-r"></span>
   <button class="tk-go" id="tk-go" hidden>Envoyer</button><button class="tk-x" id="tk-x" hidden title="Abandonner ce brouillon (Échap)">✕</button>
@@ -2646,7 +2648,7 @@ chargePositions(); setInterval(chargePositions, 5000);
 /* ================= trader depuis le graphique : c'est LUI qui pose l'entrée, tire son stop et son objectif ================= */
 // Atlas ne propose aucun niveau et ne passe jamais d'ordre tout seul. La maison vérifie tout (compte permis par Topstep, stop obligatoire,
 // limite du jour) et envoie l'ordre avec son stop et son objectif attachés ; ensuite on fait glisser les ordres posés pour les déplacer.
-var TRADE = { on: false, taille: Math.max(1, parseInt(lit('g-taille', '1'), 10) || 1), reg: { actif: false, confirmation: true }, brouillon: null, ordres: [], drag: null, envoi: false };
+var TRADE = { genre: ['marche', 'limite', 'stop'].includes(lit('g-tgenre', 'marche')) ? lit('g-tgenre', 'marche') : 'marche', on: false, taille: Math.max(1, parseInt(lit('g-taille', '1'), 10) || 1), reg: { actif: false, confirmation: true }, brouillon: null, ordres: [], drag: null, envoi: false };
 function basculeTrade(on) { TRADE.on = on == null ? !TRADE.on : on; $('#b-trade').classList.toggle('on', TRADE.on); $('#ticket').classList.toggle('on', TRADE.on); if (!TRADE.on) TRADE.brouillon = null; if (TRADE.on) { chargeReglagesTrade(); chargeOrdresTrade(); } majTicket(); toutDessine(); }
 $('#b-trade').onclick = () => basculeTrade();
 async function chargeReglagesTrade(ecrit) { try { const r = await api('/maison/graphique', { action: 'ordre', op: 'reglages', ...(ecrit || {}) , ecrit: !!ecrit }); if (r.ok === false) throw new Error(r.raison); TRADE.reg = r; majReglagesTrade(); if (r.raison) $('#tr-m').textContent = r.raison; return r; } catch (e) { $('#tr-m').textContent = '✗ ' + e.message; } }
@@ -2662,18 +2664,23 @@ $('#tk-moins').onclick = () => { TRADE.taille = Math.max(1, TRADE.taille - 1); e
 $('#tk-plus').onclick = () => { TRADE.taille = Math.min(20, TRADE.taille + 1); ecrit('g-taille', TRADE.taille); majTicket(); toutDessine(); };
 const dernierCours = () => { const p = panes[actif] || panes[0], B = p && p.d && p.d.bougies; return B && B.length ? B[B.length - 1][4] : null; };
 const infoCode = () => { const p = panes[actif] || panes[0]; return { tk: (p && p.d && p.d.tick) || 1, dec: (p && p.d && p.d.dec) ?? 2, val: VAL_TICK[code] ?? null }; };
-function armer(sens) { if (!TRADE.on) basculeTrade(true); TRADE.brouillon = { sens, entree: null, sl: null, tp: null }; majTicket(); toutDessine(); toast(sens === 'achat' ? 'Achat : tire ton stop vers le bas depuis la ligne bleue, ton objectif vers le haut — glisse l’étiquette pour un ordre limite' : 'Vente : tire ton stop vers le haut depuis la ligne bleue, ton objectif vers le bas — glisse l’étiquette pour un ordre limite'); }
+function armer(sens) { if (!TRADE.on) basculeTrade(true); TRADE.brouillon = { sens, entree: null, sl: null, tp: null }; majTicket(); toutDessine();
+  if (TRADE.genre !== 'marche') { toast(`${sens === 'achat' ? 'Achat' : 'Vente'} ${TRADE.genre} : clique sur le graphique à ton prix (ou glisse la ligne bleue), puis tire ton stop et ton objectif`); return; } toast(sens === 'achat' ? 'Achat : tire ton stop vers le bas depuis la ligne bleue, ton objectif vers le haut — glisse l’étiquette pour un ordre limite' : 'Vente : tire ton stop vers le haut depuis la ligne bleue, ton objectif vers le bas — glisse l’étiquette pour un ordre limite'); }
+function choisitGenre(g) { TRADE.genre = g; ecrit('g-tgenre', g); document.querySelectorAll('#tk-type button').forEach(b => b.classList.toggle('on', b.dataset.g === g)); if (TRADE.brouillon && g === 'marche') TRADE.brouillon.entree = null; majTicket(); toutDessine(); }
+$('#tk-type').addEventListener('click', ev => { const b = ev.target.closest('[data-g]'); if (b) choisitGenre(b.dataset.g); }); choisitGenre(TRADE.genre);
 $('#tk-achat').onclick = () => armer('achat'); $('#tk-vente').onclick = () => armer('vente');
 $('#tk-x').onclick = () => { TRADE.brouillon = null; majTicket(); toutDessine(); };
 function calcBrouillon() { const b = TRADE.brouillon; if (!b) return null; const { tk, val } = infoCode(), der = dernierCours(), e = b.entree ?? der, sg = b.sens === 'achat' ? 1 : -1;
-  const genre = b.entree == null ? 'marche' : (b.entree - der) * sg < 0 ? 'limite' : 'stop', tsl = b.sl != null ? Math.round((e - b.sl) / tk) * sg : null, ttp = b.tp != null ? Math.round((b.tp - e) / tk) * sg : null;
+  const genre = TRADE.genre, cote = b.entree == null ? null : (b.entree - der) * sg < 0 ? 'limite' : 'stop', mauvais = genre !== 'marche' && cote && cote !== genre, attend = genre !== 'marche' && b.entree == null, tsl = b.sl != null ? Math.round((e - b.sl) / tk) * sg : null, ttp = b.tp != null ? Math.round((b.tp - e) / tk) * sg : null;
   const rsk = tsl != null && val != null ? tsl * val * TRADE.taille : null, gain = ttp != null && val != null ? ttp * val * TRADE.taille : null, dll = POSD.dll || null, reste = dll ? dll + (POSD.pnl_jour || 0) : null;
-  return { e, genre, tsl, ttp, rsk, gain, R: tsl > 0 && ttp != null ? ttp / tsl : null, pct: rsk != null && reste ? rsk / reste * 100 : null, ok: tsl != null && tsl > 0 && (ttp == null || ttp > 0) }; }
+  return { e, genre, mauvais, attend, tsl, ttp, rsk, gain, R: tsl > 0 && ttp != null ? ttp / tsl : null, pct: rsk != null && reste ? rsk / reste * 100 : null, ok: !attend && !mauvais && tsl != null && tsl > 0 && (ttp == null || ttp > 0) }; }
 function majTicket() { const b = TRADE.brouillon, k = calcBrouillon(), pos = positionsDe(code)[0];
   $('#tk-taille').textContent = TRADE.taille; $('#tk-achat').classList.toggle('arme', b && b.sens === 'achat'); $('#tk-vente').classList.toggle('arme', b && b.sens === 'vente');
   $('#tk-go').hidden = $('#tk-x').hidden = !b; $('#tk-ferme').hidden = !pos;
   if (!TRADE.reg.actif) $('#tk-r').innerHTML = '<span class="a">ordres éteints · ⚙ pour les allumer</span>';
   else if (!b) $('#tk-r').innerHTML = pos ? `<span class="d">${esc(code)} · glisse tes ordres sur le graphique pour les déplacer</span>` : `<span class="d">${esc(code)} · choisis acheter ou vendre</span>`;
+  else if (k.attend) $('#tk-r').innerHTML = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${k.genre} · <span class="a">clique sur le graphique à ton prix</span>`;
+  else if (k.mauvais) $('#tk-r').innerHTML = `<span class="a">${k.genre === 'limite' ? `un ordre limite ${b.sens === 'achat' ? 'à l’achat se place SOUS le' : 'à la vente se place AU-DESSUS du'} cours` : `un ordre stop ${b.sens === 'achat' ? 'à l’achat se place AU-DESSUS du' : 'à la vente se place SOUS le'} cours`}</span>`;
   else $('#tk-r').innerHTML = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} · ${k.genre === 'marche' ? 'au marché' : k.genre + ' ' + nb(k.e, infoCode().dec)}${k.tsl != null ? ` · <span class="r">SL ${k.tsl} t${k.rsk != null ? ' −' + Math.round(k.rsk) + ' $' : ''}</span>` : ' · <span class="a">tire ton stop</span>'}${k.ttp != null ? ` · <span class="h">TP ${k.ttp} t${k.gain != null ? ' +' + Math.round(k.gain) + ' $' : ''}</span>` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}`;
   $('#tk-go').disabled = !(b && k && k.ok && TRADE.reg.actif); $('#tk-go').textContent = b && k && k.ok ? `Envoyer ${b.sens === 'achat' ? 'l’achat' : 'la vente'}` : 'Envoyer'; }
 // le dessin : lignes fines, étiquettes collées au bord droit, et un ruban de risque étroit contre l'échelle (rien au milieu des bougies)
@@ -2692,22 +2699,26 @@ function dessineTrade(p, g) { const { c, Y, pw, ph, AX, dec } = g, { tk, val } =
     const prix = TRADE.drag && TRADE.drag.o === o ? TRADE.drag.prix : o.prix, h = ligne(prix, col, txt + '   ✕', false, true); if (h) p.tradeHits.push({ genre: 'ordre', o, y: h.y, x0: h.x0, tw: h.tw }); }
   // le brouillon : c'est lui qui pose tout
   const b = TRADE.brouillon; if (!b) return; const k = calcBrouillon(), sg = b.sens === 'achat' ? 1 : -1;
+  if (k.attend) { const h = ligne(der, 'rgba(41,98,255,.55)', `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${k.genre.toUpperCase()} · clique à ton prix`, true, true); if (h) p.tradeHits.push({ genre: 'entree', y: h.y, x0: h.x0, tw: h.tw }); return; }
   if (k.tsl != null && k.tsl > 0) ruban(k.e, b.sl, 'rgba(255,61,90,.55)'); if (k.ttp != null && k.ttp > 0) ruban(k.e, b.tp, 'rgba(25,195,125,.55)');
-  const he = ligne(k.e, '#2962ff', `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} · ${k.genre === 'marche' ? 'MARCHÉ' : k.genre.toUpperCase() + ' ' + nb(k.e, dec)}`, true, true);
+  const he = ligne(k.e, k.mauvais ? '#ffab1a' : '#2962ff', `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} · ${k.genre === 'marche' ? 'MARCHÉ' : k.genre.toUpperCase() + ' ' + nb(k.e, dec)}${k.mauvais ? ' · mauvais côté du cours' : ''}`, true, true);
   if (he) p.tradeHits.push({ genre: 'entree', y: he.y, x0: he.x0, tw: he.tw });
   if (b.sl != null) { const hs = ligne(b.sl, '#ff3d5a', `SL ${k.tsl} t${k.rsk != null ? ` · −${Math.round(k.rsk)} $` : ''}${k.pct != null ? ` · ${Math.round(k.pct)} % de ta limite` : ''}`, true, true); if (hs) p.tradeHits.push({ genre: 'sl', y: hs.y }); }
   if (b.tp != null) { const ht = ligne(b.tp, '#19c37d', `TP ${k.ttp} t${k.gain != null ? ` · +${Math.round(k.gain)} $` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}`, true, true); if (ht) p.tradeHits.push({ genre: 'tp', y: ht.y }); }
   if (b.sl == null && he) { c.font = '600 11px Inter, sans-serif'; const tt = sg > 0 ? '↓ tire ton stop · ↑ ton objectif' : '↑ tire ton stop · ↓ ton objectif', tw = c.measureText(tt).width + 16; c.fillStyle = 'rgba(41,98,255,.14)'; c.beginPath(); c.roundRect(he.x0 - tw - 26, he.y - 10, tw, 20, 10); c.fill(); c.fillStyle = '#5b8cff'; c.fillText(tt, he.x0 - tw - 18, he.y + 4); }
 }
 function tradeHit(p, x, y) { if (!p.tradeHits) return null; let m = null, d0 = 7; for (const h of p.tradeHits) { const d = Math.abs(h.y - y); if (d < d0) { d0 = d; m = h; } } return m; }
-function tradeDown(p, x, y) { if (!TRADE.on && !TRADE.ordres.length) return false; const h = tradeHit(p, x, y); if (!h) return false; const prix = p.iY(y);
+function tradeDown(p, x, y) { if (!TRADE.on && !TRADE.ordres.length) return false; const h = tradeHit(p, x, y), b = TRADE.brouillon;
+  if (b && TRADE.genre !== 'marche' && b.entree == null && x < p.pw && (!h || h.genre === 'entree')) { const { tk, dec } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)];
+    b.entree = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(dec); sonne('pose'); majTicket(); toutDessine(); return true; }
+  if (!h) return false;
   if (h.genre === 'ordre') { if (x >= h.x0 + h.tw - 22 && x <= h.x0 + h.tw) { annuleOrdre(h.o); return true; } TRADE.drag = { genre: 'ordre', o: h.o, prix: h.o.prix, p }; return true; }
   if (h.genre === 'entree') { const surEtiquette = x >= h.x0 - 14 && x <= h.x0 + h.tw; TRADE.drag = { genre: surEtiquette ? 'entree' : 'tire', y0: y, p }; return true; }
   TRADE.drag = { genre: h.genre, p }; return true; }
 function tradeMove(p, x, y) { const d = TRADE.drag; if (!d) { if (TRADE.on || TRADE.ordres.length) { const h = tradeHit(p, x, y); p.cv.style.cursor = h ? 'ns-resize' : ''; return false; } return false; }
   if (d.p !== p) return true; const { tk } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)], prix = +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(infoCode().dec), b = TRADE.brouillon, der = dernierCours();
   if (d.genre === 'ordre') d.prix = prix;
-  else if (b && d.genre === 'entree') b.entree = Math.abs(prix - der) < tk * 1.5 ? null : prix;
+  else if (b && d.genre === 'entree') { if (TRADE.genre === 'marche') { if (Math.abs(prix - der) >= tk * 1.5) { choisitGenre((prix - der) * (b.sens === 'achat' ? 1 : -1) < 0 ? 'limite' : 'stop'); b.entree = prix; } } else b.entree = prix; }
   else if (b && d.genre === 'tire') { if (Math.abs(y - d.y0) > 4) { const sg = b.sens === 'achat' ? 1 : -1, e = b.entree ?? der; d.genre = (prix - e) * sg < 0 ? 'sl' : 'tp'; } }
   if (b && d.genre === 'sl') b.sl = prix; if (b && d.genre === 'tp') b.tp = prix;
   majTicket(); toutDessine(); return true; }
