@@ -203,6 +203,10 @@
   .omon { grid-template-columns: minmax(150px, 1.3fr) .9fr 1.5fr 1fr 1.3fr 1.2fr; } .omon[data-c] { cursor: pointer; } .omon[data-c]:hover { background: rgba(255,255,255,.03); } .omon .jb { display: block; position: relative; height: 18px; background: #0f131c; border-radius: 5px; overflow: hidden; margin-bottom: 3px; } .omon .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; opacity: .55; } .omon .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; font-size: 11px; }
   .fn-ch.vide { opacity: .45; } .fn-ch small { opacity: .7; margin-left: 3px; }
   @media (max-width: 700px) { .wei { grid-template-columns: 1.6fr 1fr .9fr; } .wei > :nth-child(n+4) { display: none; } .omon { grid-template-columns: 1.3fr .9fr 1.2fr; } .omon > :nth-child(3), .omon > :nth-child(4), .omon > :nth-child(6) { display: none; } }
+  svg.cbe { width: calc(100% - 12px); height: auto; margin: 0 6px; display: block; } .leg { display: flex; flex-wrap: wrap; gap: 14px; margin: 6px 8px 4px; font: 600 11px 'Inter'; color: #8a91a0; } .leg i { display: inline-block; width: 18px; height: 0; margin-right: 6px; vertical-align: middle; }
+  .fxf, .pf { display: grid; gap: 10px; padding: 7px 6px; border-bottom: 1px solid #141a26; align-items: center; font: 600 12.5px 'JetBrains Mono', monospace; } .fxf { grid-template-columns: 50px 1fr 80px 150px; } .pf { grid-template-columns: minmax(150px, 1.4fr) .7fr .9fr 1.4fr .8fr; } .fxf small, .pf span:nth-child(2), .pf span:nth-child(3) { color: #8a91a0; font: 600 11px 'Inter'; }
+  .barre-c { position: relative; height: 14px; background: #0f131c; border-radius: 4px; } .barre-c::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; border-left: 1px solid #3a4560; } .barre-c i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+  @media (max-width: 700px) { .pf { grid-template-columns: 1.3fr 1fr .8fr; } .pf > :nth-child(2), .pf > :nth-child(3) { display: none; } .fxf { grid-template-columns: 44px 1fr 72px; } .fxf small { display: none; } }
   .fn-l { margin: 5px 6px; color: #c6ccd8; cursor: pointer; } .fn-l b { font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
   .mov { display: grid; grid-template-columns: minmax(140px, 1.6fr) .8fr .7fr 1.6fr .8fr .8fr; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .mov:hover { background: rgba(255,255,255,.03); } .mov.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; cursor: default; } .mov small { color: #8a91a0; font: 600 11px 'Inter'; }
   .mov .jb { position: relative; height: 18px; background: #0f131c; border-radius: 5px; overflow: hidden; } .mov .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; } .mov .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; }
@@ -675,7 +679,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v60</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v61</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -785,7 +789,7 @@
   <div class="al" id="pages-l"></div></div></div>
 <div class="aide-k" id="aide-k"><div><h3>TOUTES LES TOUCHES · ? OU ÉCHAP POUR FERMER</h3><input id="aide-q" placeholder="Chercher : ligne, alerte, replay, ordre, copilote…" autocomplete="off">
   <section><h4>Chercher et naviguer</h4>
-  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>CORR</b> · <b>MOV</b> · <b>SEAS</b> · <b>DES</b> · <b>WEI</b> · <b>OMON</b> · <b>ECO emploi</b> · <b>ETAT</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
+  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>CORR</b> · <b>MOV</b> · <b>SEAS</b> · <b>DES</b> · <b>WEI</b> · <b>OMON</b> · <b>ECO emploi</b> · <b>PERF</b> · <b>GC</b> · <b>FXC</b> · <b>ETAT</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
   <p><kbd>/</kbd>chercher un marché, ou écrire une phrase : « préviens-moi quand… », « montre-moi les fois où… », « configuration : … », « compare avec l'or », « méthode ichimoku », « montre-moi les figures »</p>
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
   <p><kbd>Échap</kbd>fermer une fenêtre, revenir au curseur</p></section>
@@ -3319,6 +3323,76 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0,
   ['WEI', 'les indices du monde : Amériques, Europe, Asie (jour, 5 jours, 1 mois)', () => fnWei()],
   ['OMON', 'ce que les options attendent : volatilité implicite, mouvement attendu par jour en ticks', () => fnOmon()],
   ['ECO', 'la réaction passée de tes marchés à une annonce · ECO emploi · ECO fed · ECO cpi', a => fnEco(a)]);
+// une courbe SVG simple (plusieurs séries, axes discrets) pour les fonctions
+function courbeSvg(series, { h = 200, labels = [], unite = '', zero = false } = {}) { const W = 760, H = h, pg = 44, pd = 14, ph = 18, pb = labels.length ? 26 : 10, toutes = series.flatMap(s => s.v.filter(x => x != null));
+  if (!toutes.length) return ''; let lo = Math.min(...toutes, zero ? 0 : Infinity), hi = Math.max(...toutes, zero ? 0 : -Infinity); const m = (hi - lo) * .08 || 1; lo -= m; hi += m; const n = Math.max(...series.map(s => s.v.length));
+  const X = i => pg + i * (W - pg - pd) / Math.max(1, n - 1), Y = v => ph + (hi - v) / (hi - lo) * (H - ph - pb), pas = (hi - lo) / 4;
+  let g = ''; for (let k = 0; k <= 4; k++) { const v = lo + k * pas; g += `<line x1="${pg}" x2="${W - pd}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1c2230"/><text x="${pg - 6}" y="${Y(v) + 4}" text-anchor="end" fill="#6f7787" font-size="10.5" font-family="JetBrains Mono">${nb(v, Math.abs(hi - lo) < 5 ? 2 : 0)}${unite}</text>`; }
+  if (zero && lo < 0 && hi > 0) g += `<line x1="${pg}" x2="${W - pd}" y1="${Y(0)}" y2="${Y(0)}" stroke="#3a4560" stroke-dasharray="4 3"/>`;
+  labels.forEach((t, i) => { if (t) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" fill="#8a91a0" font-size="10.5" font-family="Inter" font-weight="700">${esc(t)}</text>`; });
+  const lignes = series.map(s => { const pts = s.v.map((v, i) => v == null ? null : `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(' '); return `<polyline points="${pts}" fill="none" stroke="${s.c}" stroke-width="${s.w || 2}" ${s.tir ? 'stroke-dasharray="5 4"' : ''} stroke-linejoin="round"/>` + (s.pts ? s.v.map((v, i) => v == null ? '' : `<circle cx="${X(i)}" cy="${Y(v)}" r="3" fill="${s.c}"/>`).join('') : ''); }).join('');
+  return `<svg class="cbe" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}${lignes}</svg>`; }
+const leg = l => `<div class="leg">${l.map(([t, c, tir]) => `<span><i style="background:${tir ? 'transparent' : c};border-top:2px ${tir ? 'dashed' : 'solid'} ${c}"></i>${esc(t)}</span>`).join('')}</div>`;
+// GC : la courbe des taux américains
+async function fnGc() { ouvreFn('GC', 'la courbe des taux américains · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+  try { r = await api('/maison/graphique?gc=1'); if (r.erreur) throw new Error(r.erreur); } catch (e) { ouvreFn('GC', 'la courbe des taux', `<p>${esc(e.message || 'Pas de liaison avec la maison.')}</p>`); return; }
+  const C = r.courbes, t = C.aujourdhui.taux, E = r.echeances, i2 = E.indexOf('2 a'), i10 = E.indexOf('10 a'), i3m = E.indexOf('3 m'), d = s => new Date(s).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  const ecart = (c, a, b) => c.taux[b] != null && c.taux[a] != null ? (c.taux[b] - c.taux[a]) * 100 : null, s210 = ecart(C.aujourdhui, i2, i10), s310 = ecart(C.aujourdhui, i3m, i10);
+  const ch = k => C[k] && C[k].taux[i10] != null ? Math.round((t[i10] - C[k].taux[i10]) * 100) : null, bp = v => v == null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v)} pb`;
+  const S = r.serie || [];
+  ouvreFn('GC', `${r.source} · dernière séance : ${d(C.aujourdhui.date)}`,
+    `<div class="rk"><div><small>10 ANS</small><b>${nb(t[i10], 2)} %</b><p>sur une semaine ${bp(ch('semaine'))} · un mois ${bp(ch('mois'))} · un an ${bp(ch('an'))}</p></div>
+      <div><small>2 ANS</small><b>${nb(t[i2], 2)} %</b><p>le plus sensible à la Fed</p></div>
+      <div><small>ÉCART 10 ANS − 2 ANS</small><b class="${s210 < 0 ? 'r' : ''}">${bp(s210)}</b><p>${s210 < 0 ? 'courbe inversée : le court terme paie plus que le long' : 'courbe positive : le long terme paie plus'}</p></div>
+      <div><small>ÉCART 10 ANS − 3 MOIS</small><b class="${s310 < 0 ? 'r' : ''}">${bp(s310)}</b><p>celui que suit la Fed de New York</p></div></div>
+    <div class="fn-jour">LA COURBE · DU PLUS COURT AU PLUS LONG</div>${courbeSvg([{ v: C.an.taux, c: '#3a4560', w: 1.5, tir: true }, { v: C.mois.taux, c: '#5b6b8c', w: 1.5 }, { v: C.semaine.taux, c: '#8aa0d0', w: 1.5 }, { v: t, c: '#ffab1a', w: 2.6, pts: true }], { labels: E, unite: ' %' })}
+    ${leg([[`aujourd’hui (${d(C.aujourdhui.date)})`, '#ffab1a'], ['il y a une semaine', '#8aa0d0'], ['il y a un mois', '#5b6b8c'], ['il y a un an', '#3a4560', true]])}
+    <div class="fn-jour">SUR UN AN · L’ÉCART 10 ANS − 2 ANS (EN POINTS DE BASE)</div>${courbeSvg([{ v: S.map(x => x.a10 != null && x.a2 != null ? (x.a10 - x.a2) * 100 : null), c: '#5b8cff', w: 2 }], { h: 150, zero: true, labels: S.map((x, i) => i % 52 === 0 ? new Date(x.d).toLocaleDateString('fr-FR', { month: 'short' }) : '') })}
+    <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px;line-height:1.5">1 point de base = 0,01 %. Taux de clôture officiels, publiés le soir : pas de cours pendant la séance. Des mesures, pas une prévision.</p>`); }
+// FXC : les devises les unes contre les autres
+async function fnFxc(a) { const per = ['jour', 'sem', 'mois'].includes(a) ? a : 'jour'; ouvreFn('FXC', 'les devises · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+  try { r = await api('/maison/graphique?fxc=1'); } catch (e) { ouvreFn('FXC', 'les devises', '<p>Pas de liaison avec la maison.</p>'); return; }
+  const D = (r.devises || []).filter(x => x[per] != null), tri = D.slice().sort((x, y) => y[per] - x[per]), mx = Math.max(.05, ...D.map(x => Math.abs(x[per])));
+  const ch = [['jour', 'jour'], ['sem', '5 jours'], ['mois', '1 mois']].map(([k, t]) => `<button class="fn-ch ${k === per ? 'on' : ''}" data-fx="${k}">${t}</button>`).join('');
+  const cell = (x, y) => { const v = x === y ? null : (1 + x[per] / 100) / (1 + y[per] / 100) * 100 - 100; return `<span class="cc" style="background:${v == null ? '#141a26' : v >= 0 ? `rgba(25,211,140,${(.12 + Math.min(1, Math.abs(v) / mx) * .7).toFixed(2)})` : `rgba(255,61,90,${(.12 + Math.min(1, Math.abs(v) / mx) * .7).toFixed(2)})`}" title="${x.dev} contre ${y.dev}">${v == null ? '' : (v > 0 ? '+' : '') + nb(v, 2)}</span>`; };
+  ouvreFn('FXC', `la force de chaque devise · ${r.source}`, `<div class="fn-chs">${ch}</div><div class="fn-jour">DE LA PLUS FORTE À LA PLUS FAIBLE (CONTRE LE DOLLAR)</div>
+    ${tri.map(x => `<div class="fxf"><b>${x.dev}</b><span class="barre-c"><i style="${x[per] >= 0 ? 'left:50%' : `right:50%`};width:${Math.abs(x[per]) / mx * 50}%;background:${x[per] >= 0 ? '#19d38c' : '#ff3d5a'}"></i></span><span style="color:${x[per] >= 0 ? '#19d38c' : '#ff3d5a'}">${x[per] > 0 ? '+' : ''}${nb(x[per], 2)} %</span><small>${x.paire ? `${x.paire} ${nb(x.cours, x.cours > 20 ? 2 : 4)}` : 'référence'}</small></div>`).join('')}
+    <div class="fn-jour">LA MATRICE · LA DEVISE DE LA LIGNE CONTRE CELLE DE LA COLONNE</div><div class="corr" style="grid-template-columns:52px repeat(${tri.length},minmax(46px,1fr))"><span></span>${tri.map(x => `<span class="ct">${x.dev}</span>`).join('')}${tri.map(x => `<span class="ct g">${x.dev}</span>` + tri.map(y => cell(x, y)).join('')).join('')}</div>
+    <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Ton M6E, c’est la case EUR / USD. Cours différés. Des mesures, pas une prévision.</p>`);
+  document.querySelectorAll('#fn-c [data-fx]').forEach(b => b.onclick = () => fnFxc(b.dataset.fx)); }
+// PERF : tes trades en chiffres (ton journal TopstepX, lu par la maison ; rien ne sort de chez toi)
+let PERF_P = 'tout';
+async function fnPerf(a) { if (['7', '30', '90', 'tout'].includes(a)) PERF_P = a; ouvreFn('PERF', 'tes trades en chiffres · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+  try { r = await api('/maison/graphique?perf=1'); } catch (e) { ouvreFn('PERF', 'tes trades', '<p>Pas de liaison avec la maison.</p>'); return; }
+  const now = Date.now() / 1000, T = (r.trades || []).filter(x => PERF_P === 'tout' || x.at > now - (+PERF_P) * 86400), n = T.length;
+  const ch = [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours'], ['tout', 'tout']].map(([k, t]) => `<button class="fn-ch ${k === PERF_P ? 'on' : ''}" data-pf="${k}">${t}</button>`).join('');
+  if (!n) { ouvreFn('PERF', 'tes trades en chiffres', `<div class="fn-chs">${ch}</div><p style="margin:6px">Aucun trade fermé sur cette période.</p>`); document.querySelectorAll('#fn-c [data-pf]').forEach(b => b.onclick = () => fnPerf(b.dataset.pf)); return; }
+  const g = T.filter(x => x.pnl > 0), p = T.filter(x => x.pnl <= 0), som = l => l.reduce((s, x) => s + x.pnl, 0), net = som(T), mg = g.length ? som(g) / g.length : 0, mp = p.length ? som(p) / p.length : 0, pf = som(p) ? som(g) / -som(p) : null;
+  let eq = 0, pic = 0, dd = 0; const courbe = [0]; T.forEach(x => { eq += x.pnl; courbe.push(eq); pic = Math.max(pic, eq); dd = Math.min(dd, eq - pic); });
+  const R = T.filter(x => x.risque > 0).map(x => x.pnl / x.risque), mR = R.length ? R.reduce((s, x) => s + x, 0) / R.length : null, duree = T.filter(x => x.fin).map(x => (x.fin - x.at) / 60).sort((x, y) => x - y), dmed = duree.length ? duree[duree.length >> 1] : null;
+  const usd = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${nb(Math.abs(Math.round(v)), 0)} $`, col = v => v > 0 ? 'h' : v < 0 ? 'r' : '';
+  const groupe = (cle, ordre) => { const m = {}; T.forEach(x => { const k = cle(x); (m[k] ||= []).push(x); }); return (ordre || Object.keys(m)).filter(k => m[k]).map(k => ({ k, n: m[k].length, net: som(m[k]), reussite: Math.round(m[k].filter(x => x.pnl > 0).length / m[k].length * 100) })); };
+  const tableau = (titre, l) => { const mx = Math.max(1, ...l.map(x => Math.abs(x.net))); return `<div class="fn-jour">${titre}</div>` + l.map(x => `<div class="pf"><b>${esc(x.k)}</b><span>${x.n} trade${x.n > 1 ? 's' : ''}</span><span>${x.reussite} % gagnants</span><span class="barre-c"><i style="${x.net >= 0 ? 'left:50%' : 'right:50%'};width:${Math.abs(x.net) / mx * 50}%;background:${x.net >= 0 ? '#19d38c' : '#ff3d5a'}"></i></span><span class="${col(x.net)}" style="color:${x.net >= 0 ? '#19d38c' : '#ff3d5a'}">${usd(x.net)}</span></div>`).join(''); };
+  const hParis = x => { const q = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(x.at * 1000)); return +q.find(z => z.type === 'hour').value + +q.find(z => z.type === 'minute').value / 60; }, tranche = h => h < 9 ? 'nuit · avant 9 h' : h < 14 ? 'matin · 9 h – 14 h' : h < 15.5 ? 'avant l’ouverture US · 14 h – 15 h 30' : h < 18 ? 'ouverture US · 15 h 30 – 18 h' : 'soir · après 18 h';
+  const el = T.filter(x => x.stop_elargi), nel = T.filter(x => !x.stop_elargi);
+  ouvreFn('PERF', `${n} trade${n > 1 ? 's' : ''} fermé${n > 1 ? 's' : ''} · ton journal TopstepX · des faits sur toi, pas un conseil`,
+    `<div class="fn-chs">${ch}</div><div class="rk"><div><small>RÉSULTAT NET</small><b class="${col(net)}">${usd(net)}</b><p>frais TopstepX déduits</p></div>
+      <div><small>GAGNANTS</small><b>${Math.round(g.length / n * 100)} %</b><p>${g.length} gagnants · ${p.length} perdants</p></div>
+      <div><small>GAIN MOYEN / PERTE MOYENNE</small><b>${usd(mg)} · ${usd(mp)}</b><p>${mp ? `rapport ${nb(mg / -mp, 2)}` : ''}</p></div>
+      <div><small>PAR TRADE (ESPÉRANCE)</small><b class="${col(net / n)}">${usd(net / n)}</b><p>${pf != null ? `facteur de profit ${nb(pf, 2)}` : ''}${mR != null ? ` · en moyenne ${mR > 0 ? '+' : ''}${nb(mR, 2)} R (gain ÷ risque au stop)` : ''}</p></div>
+      <div><small>PIRE RECUL</small><b class="r">${usd(dd)}</b><p>du plus haut de ta courbe au plus bas qui a suivi</p></div>
+      <div><small>DURÉE MÉDIANE</small><b>${dmed == null ? '—' : dmed < 90 ? Math.round(dmed) + ' min' : nb(dmed / 60, 1) + ' h'}</b><p>de l’entrée à la sortie</p></div></div>
+    <div class="fn-jour">TA COURBE (RÉSULTAT CUMULÉ, TRADE APRÈS TRADE)</div>${courbeSvg([{ v: courbe, c: net >= 0 ? '#19d38c' : '#ff3d5a', w: 2.2 }], { h: 160, zero: true })}
+    ${tableau('PAR MARCHÉ', groupe(x => x.instr).sort((x, y) => y.net - x.net))}${tableau('PAR SENS', groupe(x => x.sens === 'long' ? 'achat (long)' : 'vente (short)'))}
+    ${tableau('PAR MOMENT DE LA JOURNÉE (HEURE DE PARIS, À L’ENTRÉE)', groupe(x => tranche(hParis(x)), ['nuit · avant 9 h', 'matin · 9 h – 14 h', 'avant l’ouverture US · 14 h – 15 h 30', 'ouverture US · 15 h 30 – 18 h', 'soir · après 18 h']))}
+    ${tableau('PAR JOUR', groupe(x => ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][new Date(x.at * 1000).getDay()], ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'dimanche']))}
+    ${el.length ? tableau('STOP ÉLARGI PENDANT LE TRADE, OU PAS', [{ k: 'stop élargi', n: el.length, net: som(el), reussite: Math.round(el.filter(x => x.pnl > 0).length / el.length * 100) }, { k: 'stop gardé', n: nel.length, net: som(nel), reussite: nel.length ? Math.round(nel.filter(x => x.pnl > 0).length / nel.length * 100) : 0 }]) : ''}
+    <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">${n < 30 ? `Seulement ${n} trades : les écarts entre groupes peuvent tenir au hasard. ` : ''}Lu dans le journal de la maison (rempli depuis TopstepX) ; rien ne sort de chez toi.</p>`);
+  document.querySelectorAll('#fn-c [data-pf]').forEach(b => b.onclick = () => fnPerf(b.dataset.pf)); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0,
+  ['PERF', 'tes trades en chiffres : gagnants, espérance, pire recul, par marché, par heure, stop élargi · PERF 30', a => fnPerf(a)],
+  ['GC', 'la courbe des taux américains (officielle, Trésor) et l’écart 10 ans − 2 ans', () => fnGc()],
+  ['FXC', 'la force des devises et leur matrice (EUR, USD, JPY, GBP…) · FXC sem', a => fnFxc(a)]);
 // changer de marché sans attendre : les graphiques de tes marchés préparés en arrière-plan (une seule fenêtre, doucement)
 let PRECH = false;
 async function precharge() { if (PRECH || document.hidden || FEN !== '1' || (ROLE && ROLE !== 'structure') || marcheFerme() || !L.length) return; PRECH = true;
