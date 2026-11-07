@@ -247,6 +247,13 @@
 
 <script>
 'use strict';
+/* la salle installée par la maison (sa propre fenêtre Chrome, profil vide au départ) : avant tout, elle reprend les réglages de ton Chrome habituel ;
+   et ton Chrome habituel, lui, dépose ses réglages à la maison pour la prochaine installation (jamais tes accès TopstepX) */
+(() => { if (!/^\/salle(-dev)?\//.test(location.pathname)) return;
+  try { if (localStorage.length < 3 && !localStorage.getItem('salle-profil')) { const x = new XMLHttpRequest(); x.open('GET', '/maison/graphique?action=salle&op=etat', false); x.send();
+      const c = (JSON.parse(x.responseText || '{}').cles) || {}; for (const k in c) localStorage.setItem(k, c[k]); localStorage.setItem('salle-profil', '1'); }
+    else if (!localStorage.getItem('salle-profil') && Date.now() - (+localStorage.getItem('salle-depot') || 0) > 600000) { const c = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!/txd/.test(k)) c[k] = localStorage.getItem(k); }
+      localStorage.setItem('salle-depot', String(Date.now())); fetch('/maison/graphique', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'salle', op: 'depot', etat: c }) }).catch(() => {}); } } catch (e) { /* rien */ } })();
 /* L'écran Radar d'Atlas, pensé comme un poste de trader : en haut « le moment » (la seule chose qui compte maintenant), ses 6 marchés en direct
    (avec sa position et son résultat latent), le fil des nouvelles qui comptent (compact, dépliable), l'agenda avec la fiche de chaque annonce,
    et le bilan du radar. Des faits et des mécanismes, jamais un conseil. Tout vient de l'ordinateur de la maison (cours TopstepX). */
@@ -702,7 +709,7 @@ $('#b-mur').onclick = () => modeMur(!document.body.classList.contains('mode-mur'
 // dans la salle : un clic sur un marché du mur l'ouvre sur l'écran de structure ; la fenêtre retient sa place
 const SALLE_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-salle' + (DEV ? '-dev' : '')) : null;
 $('#mur-g').addEventListener('click', ev => { const t = ev.target.closest('.tuile-m'); if (!t || !SALLE_BC) return; const c = t.querySelector('.c b').textContent; if (['DXY', 'VIX'].includes(c) || MK.includes(c)) SALLE_BC.postMessage({ t: 'code', c, de: 'radar' }); t.animate([{ boxShadow: 'inset 0 0 0 3px #ffb020' }, { boxShadow: 'none' }], { duration: 900 }); });
-if (diese.get('role') === 'veille') { const garde = () => { try { const p = JSON.parse(localStorage.getItem(PK + 'g-salle-pos') || '{}'); p.veille = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; localStorage.setItem(PK + 'g-salle-pos', JSON.stringify(p)); } catch (e) { /* rien */ } }; setInterval(garde, 5000); window.addEventListener('beforeunload', garde); document.title = 'Atlas · Veille'; }
+if (diese.get('role') === 'veille') { const garde = () => { try { const p = JSON.parse(localStorage.getItem(PK + 'g-salle-pos') || '{}'); p.veille = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; localStorage.setItem(PK + 'g-salle-pos', JSON.stringify(p)); } catch (e) { /* rien */ } }; setInterval(garde, 5000); window.addEventListener('beforeunload', garde); document.title = (location.pathname.startsWith('/salle-dev/') ? 'ESSAI · ' : '') + 'Atlas · Veille'; }
 $('#mur').addEventListener('click', ev => { if (ev.target.id === 'mur-x') modeMur(false); if (ev.target.id === 'mur-comp') { document.body.classList.toggle('mur-edit'); murTic(); murTuiles(); } });
 setInterval(murTic, 1000);
 if (diese.get('mur') === '1' || lit('radar-mur', '0') === '1') modeMur(true);

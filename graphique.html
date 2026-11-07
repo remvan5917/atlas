@@ -712,7 +712,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v65</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v66</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -744,7 +744,7 @@
     <span class="ressort"></span>
       <button class="ico outil-d" id="photo" data-tip="Capture du graphique en image (P)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <button class="ico outil-d" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-      <button class="ico outil-d" id="b-salle" data-tip="Installe ma salle : tes 4 écrans (structure, marché lié, vue d'ensemble, veille)"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="2.5" y="13.5" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="13.5" width="8.5" height="6.5" rx="1.2"/></svg></button>
+      <button class="ico outil-d" id="b-salle" data-tip="Installe ma salle : tes 4 écrans (graphiques, Terminal, vue d'ensemble, Radar), chacun à sa place, en plein écran · à la voix : « Atlas, installe ma salle »"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="2.5" y="13.5" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="13.5" width="8.5" height="6.5" rx="1.2"/></svg></button>
       <button class="ico outil-d" id="b-mur" data-tip="Le Radar en mode mur : pour un autre écran, lisible de loin"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h3M7 12h6M14 9h3"/></svg></button>
       <button class="ico outil-d" id="b-sons" data-tip="Les sons de la salle (ligne touchée, nouvelle critique, ligne posée)"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button>
       <button class="ico outil-d" id="nouvelle" data-tip="Nouvelle fenêtre, pour un autre écran"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="12" rx="2"/><path d="M8 7V5h13v12h-5"/></svg></button>
@@ -896,6 +896,13 @@
 <div class="pouls" id="pouls"><video id="pouls-v" muted playsinline></video><canvas id="pouls-c"></canvas><div class="bas2"><b id="bpm">--</b><small>estimation · local</small></div></div>
 <script>
 'use strict';
+/* la salle installée par la maison (sa propre fenêtre Chrome, profil vide au départ) : avant tout, elle reprend les réglages de ton Chrome habituel ;
+   et ton Chrome habituel, lui, dépose ses réglages à la maison pour la prochaine installation (jamais tes accès TopstepX) */
+(() => { if (!/^\/salle(-dev)?\//.test(location.pathname)) return;
+  try { if (localStorage.length < 3 && !localStorage.getItem('salle-profil')) { const x = new XMLHttpRequest(); x.open('GET', '/maison/graphique?action=salle&op=etat', false); x.send();
+      const c = (JSON.parse(x.responseText || '{}').cles) || {}; for (const k in c) localStorage.setItem(k, c[k]); localStorage.setItem('salle-profil', '1'); }
+    else if (!localStorage.getItem('salle-profil') && Date.now() - (+localStorage.getItem('salle-depot') || 0) > 600000) { const c = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!/txd/.test(k)) c[k] = localStorage.getItem(k); }
+      localStorage.setItem('salle-depot', String(Date.now())); fetch('/maison/graphique', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'salle', op: 'depot', etat: c }) }).catch(() => {}); } } catch (e) { /* rien */ } })();
 /* Le graphique d'Atlas, dans son style TradingView : fond blanc, barres OHLC noires, zigzag (5, 10) épais, volume en bas, l'unité de temps
    en grand ; D1 / H4 / H1 (un ou trois côte à côte), les zones S/R H4, ses lignes tracées à la main (et leurs alertes, sur l'ordinateur de la
    maison), sa liste de suivi. Les cours viennent de TopstepX (en direct). Jamais un signal ni un conseil : le dessin est à lui. */
@@ -1859,7 +1866,7 @@ async function commandeGraphique(texte) {
     if (cd && cd !== code) { const md = /\brapport|ratio\b/.test(n) ? 'rapport' : /\becart|spread|difference\b/.test(n) ? 'ecart' : 'superpose'; cmpMode = md; regleCmp({ code: cd, mode: md }); return `Comparé avec ${cd}`; } } }
   if (/\b(montre|affiche|cherche|repere)(-| )?(moi )?(les )?figures\b/.test(n)) { if (!optFig) $('#t-fig').click(); return 'Figures repérées'; }
   { const m = /\b(?:methode|mode) (dow|zigzag|smart money|smc|volume|vwap|ichimoku)\b/.exec(n); if (m) { const k = { dow: 'dow', zigzag: 'dow', 'smart money': 'smc', smc: 'smc', volume: 'volume', vwap: 'volume', ichimoku: 'ichimoku' }[m[1]]; choisirMethode(k); return `Méthode : ${METHODES[k].nom}`; } }
-  if (/\binstalle (ma|la) salle\b/.test(n)) { installeSalle(); return 'Salle de marché'; }
+  if (/\binstalle (ma|la) salle\b/.test(n)) { installeSalleMaison(); return 'Salle de marché'; }
   if (/\b(presente|presentes|raconte)(-| )?(moi )?(le|les|mes) marches?\b|\batlas presente\b|\bjournal des marches\b/.test(n)) { presente(); return 'Atlas présente'; }
   if (/\b(trois|3) graphiques\b/.test(n)) { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); return 'Trois graphiques'; }
   if (/\b(un seul|1) graphique\b/.test(n)) { vue = 'un'; ecrit(K('g-vue'), vue); construit(); return 'Un graphique'; }
@@ -1902,9 +1909,10 @@ async function chargeCommandes() {
 setInterval(chargeCommandes, 2000); chargeCommandes();
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { chargeLiens(); chargeEtat(); } });
 /* --- « installe ma salle de marché » : une fenêtre par écran (le graphique ici, le radar, et ton deuxième marché) --- */
-const ROLES_SALLE = [['lie', 'Marché lié'], ['ensemble', 'Vue d’ensemble'], ['veille', 'Veille (Radar)']];
+const ROLES_SALLE = [['terminal', 'Terminal'], ['ensemble', 'Vue d’ensemble'], ['veille', 'Veille (Radar)']];  // (le Terminal a pris la place du marché lié, choix de Rémy du 07/11)
 function urlRole(role) { const m = ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : '';
   if (role === 'veille') return `radar.html#mur=1&role=veille${m}`;
+  if (role === 'terminal') return `${location.pathname}#role=terminal&f=t${m}`;
   const f = role === 'lie' ? '2' : '3'; if (role === 'lie' && lit('g-vue-2', '') === '') { ecrit('g-vue-2', 'trois'); ecrit('g-uts-2', JSON.stringify(['D1', 'H4', 'H1'])); }
   return `${location.pathname}#f=${f}&role=${role}&code=${encodeURIComponent(code)}${m}`; }
 async function installeSalle() {
@@ -2287,7 +2295,13 @@ function guetteTouches() {
 }
 let nbLignesAvant = null;
 /* --- le mur de salle : c'est le Radar en mode mur (un seul écran secondaire) --- */
-$('#b-salle').onclick = installeSalle;
+async function installeSalleMaison() { if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(ROOT || '')) return installeSalle();  // (hors de ce PC : l'ancienne façon, fenêtres du navigateur)
+  toast('J’installe ta salle sur tes écrans…');
+  try { const r = await api('/maison/graphique', { action: 'salle', op: 'installe', dev: DEV }); if (!r || r.ok === false) throw new Error(r && r.raison);
+    $('#copi').classList.add('salle'); ouvreCopi('Ta salle', r.message || 'Ta salle est installée.', '', false);
+    if (!r.retenue) { $('#copi-txt').insertAdjacentHTML('beforeend', '<button class="salle-btn" id="salle-ret">Retenir ma salle</button>'); $('#salle-ret').onclick = async () => { const q = await api('/maison/graphique', { action: 'salle', op: 'retiens', dev: DEV }); ouvreCopi('Ta salle', q.message || 'C’est retenu.', '', false); }; } }
+  catch (e) { toast('La maison n’a pas pu installer la salle : je l’ouvre dans le navigateur'); installeSalle(); } }
+$('#b-salle').onclick = installeSalleMaison;
 $('#b-mur').onclick = () => { const m = ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
 
 /* ================= le tableau du chiffre en direct · la cloche des ouvertures ================= */
