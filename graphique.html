@@ -177,7 +177,7 @@
   @media (max-width: 1450px) { .haut .seg button { padding-left: 7px !important; padding-right: 7px !important; } .haut .marque span { display: none; } .haut .sym > svg, .haut .sym .spk, #sym-spark { display: none !important; } #b-presente { display: none !important; } .haut .grp.masque-mobile .ico { width: 27px !important; min-width: 27px !important; } }
   .res.fn b { font-family: 'JetBrains Mono', monospace; color: var(--ambre); min-width: 92px; } .res.fn span { color: #c6ccd8; } .res.fn small { margin-left: auto; color: var(--tres-doux); font: 600 10.5px 'JetBrains Mono', monospace; }
   .res-t.fnt { color: var(--ambre); }
-  .fn-p { position: fixed; inset: 0; z-index: 64; display: none; align-items: flex-start; justify-content: center; padding-top: 7vh; background: rgba(4, 6, 10, .62); backdrop-filter: blur(4px); } .fn-p.on { display: flex; }
+  .fn-p { position: fixed; inset: 0; z-index: 70; display: none; align-items: flex-start; justify-content: center; padding-top: 7vh; background: rgba(4, 6, 10, .62); backdrop-filter: blur(4px); } .fn-p.on { display: flex; }
   .fn-b { width: min(1180px, 96vw); max-height: 84vh; display: flex; flex-direction: column; background: #07090e; border: 1px solid #2a3142; border-top: 3px solid var(--ambre); border-radius: 10px; box-shadow: 0 40px 100px rgba(0, 0, 0, .7); overflow: hidden; }
   .fn-t { display: flex; align-items: baseline; gap: 14px; padding: 12px 16px; border-bottom: 1px solid #1c2230; } .fn-t b { font: 800 18px 'JetBrains Mono', monospace; color: var(--ambre); letter-spacing: .04em; } .fn-t span { color: #8a91a0; font: 600 12px 'Inter'; flex: 1; }
   .fn-t button { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 7px; padding: 5px 10px; font: 700 11px 'Inter'; cursor: pointer; }
@@ -191,6 +191,16 @@
   .rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px; } .rk > div { background: #0d1018; border: 1px solid #1c2230; border-radius: 10px; padding: 12px 14px; }
   .rk small { display: block; font: 800 10px 'Inter'; letter-spacing: .14em; color: #8a91a0; } .rk b { display: block; font: 800 28px 'JetBrains Mono', monospace; margin: 4px 0 8px; } .rk .h { color: #19d38c; } .rk .r { color: #ff3d5a; } .rk .a { color: var(--ambre); }
   .jg { height: 10px; border-radius: 6px; background: #1a2030; overflow: hidden; position: relative; } .jg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; } .rk p { margin: 8px 0 0; color: #9aa1ad; font-size: 12px; line-height: 1.45; }
+  .fn-chs { display: flex; gap: 6px; margin: 0 6px 12px; } .fn-ch { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 8px; padding: 5px 11px; font: 700 11.5px 'Inter'; cursor: pointer; } .fn-ch.on { background: #2962ff; border-color: #2962ff; color: #fff; }
+  .corr { display: grid; gap: 3px; margin: 0 6px; overflow-x: auto; } .corr span { font: 700 11px 'JetBrains Mono', monospace; text-align: center; padding: 8px 2px; border-radius: 5px; } .corr .ct { color: #8a91a0; font: 800 10.5px 'Inter'; letter-spacing: .06em; padding: 6px 2px; } .corr .ct.g { text-align: left; } .corr .cc { cursor: pointer; color: #fff; } .corr .cc:hover { outline: 1px solid #fff; }
+  .fn-av { margin: 0 6px 12px; padding: 8px 12px; border-radius: 9px; background: rgba(255,171,26,.08); border: 1px solid rgba(255,171,26,.3); color: var(--ambre); font: 600 12px/1.45 'Inter'; }
+  .fn-l { margin: 5px 6px; color: #c6ccd8; cursor: pointer; } .fn-l b { font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
+  .mov { display: grid; grid-template-columns: minmax(140px, 1.6fr) .8fr .7fr 1.6fr .8fr .8fr; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .mov:hover { background: rgba(255,255,255,.03); } .mov.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; cursor: default; } .mov small { color: #8a91a0; font: 600 11px 'Inter'; }
+  .mov .jb { position: relative; height: 18px; background: #0f131c; border-radius: 5px; overflow: hidden; } .mov .jb i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; } .mov .jb em { position: relative; font-style: normal; padding-left: 7px; line-height: 18px; }
+  .seas { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; margin: 0 6px 6px; } .seas.j { grid-template-columns: repeat(5, 1fr); } .seas > div { text-align: center; padding: 6px 2px; border-radius: 8px; border: 1px solid transparent; } .seas > div.ici { border-color: var(--ambre); }
+  .seas .bar { position: relative; height: 96px; } .seas.j .bar { height: 96px; } .seas .bar i { position: absolute; left: 22%; right: 22%; border-radius: 3px; } .seas:not(.j) .bar::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid #2a3142; }
+  .seas b { display: block; font: 700 11.5px 'JetBrains Mono', monospace; margin-top: 4px; } .seas small { display: block; font: 800 10px 'Inter'; letter-spacing: .1em; color: #8a91a0; } .seas em { display: block; font: 600 10.5px 'JetBrains Mono', monospace; color: #8a91a0; font-style: normal; }
+  @media (max-width: 700px) { .seas { grid-template-columns: repeat(6, 1fr); } .mov { grid-template-columns: 1.4fr .9fr 1.4fr; } .mov > :nth-child(3), .mov > :nth-child(5), .mov > :nth-child(6) { display: none; } }
   .rk-pos { display: grid; grid-template-columns: 90px 110px repeat(4, 1fr); gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; } .rk-pos.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; }
   .grp-c { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #2f3850; background: #0d1018; display: grid; place-items: center; cursor: pointer; padding: 0; flex: 0 0 auto; align-self: center; } .grp-c i { width: 10px; height: 10px; border-radius: 50%; background: transparent; border: 1.5px dashed #59627a; }
   .grp-c.g i { border: 0; box-shadow: 0 0 10px currentColor; background: currentColor; }
@@ -643,7 +653,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v56</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v57</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -860,7 +870,7 @@ class Pane {
   async charge() {
     const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
     try { const kc = `${code}|${this.ut}`, cc = CACHE_D[kc];  /* (fin : la position est gardée d'un rechargement à l'autre) */
-      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); chargeConfigsBientot(); if (CMP && CMP.code !== code) chargeCmp(this); else this.cmpD = this.cmpReel = null; return true; }
+      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { if (cc && (!this.d || this.d.code !== code)) { this.d = REPLAY ? decoupe(cc.d, this.ut, REPLAY.t) : cc.d; if (ch) ch.style.display = 'none'; this.dessine(); } this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); chargeConfigsBientot(); if (CMP && CMP.code !== code) chargeCmp(this); else this.cmpD = this.cmpReel = null; return true; }
     catch (e) {  // en voyage, sans la maison : les bougies directement chez TopstepX, depuis cet appareil
       if (!ICI_PC && TXD_PRET()) try { this.dReel = await txdGraphique(code, this.ut); CACHE_D[`${code}|${this.ut}`] = { at: Date.now(), d: this.dReel }; this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (ch) ch.style.display = 'none'; this.dessine(); return true; } catch (e2) { /* rien */ }
       if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
@@ -3118,6 +3128,77 @@ async function fnRisk() { ouvreFn('RISK', 'ton risque en ce moment · lecture se
     ${pos.length ? `<div class="rk-pos t"><span>MARCHÉ</span><span>SENS</span><span>EN COURS</span><span>STOP</span><span>COÛT DU STOP</span><span>COMPTE</span></div>` + lignesP.map(({ ps, t, usd, rs }) => `<div class="rk-pos"><span>${esc(ps.instr)}</span><span class="${ps.sens === 'long' ? 'h' : 'r'}" style="color:${ps.sens === 'long' ? '#19d38c' : '#ff3d5a'}">${ps.sens === 'long' ? 'LONG' : 'SHORT'} ${ps.taille}</span><span style="color:${usd >= 0 ? '#19d38c' : '#ff3d5a'}">${t > 0 ? '+' : ''}${t} t · ${usd > 0 ? '+' : ''}${Math.round(usd)} $</span><span>${ps.stop != null ? nb(ps.stop, 3) : '<span style="color:#ff3d5a">aucun</span>'}</span><span style="color:${rs != null && rs < 0 ? '#ff3d5a' : '#19d38c'}">${rs != null ? (rs > 0 ? '+' : '') + Math.round(rs) + ' $' : '—'}</span><span style="color:#8a91a0">${esc(ps.compte || '')}</span></div>`).join('') : ''}
     ${lies.length ? `<div class="fn-jour">TES POSITIONS LIÉES</div>${lies.map(x => `<p style="margin:4px 6px;color:#c6ccd8">${esc(x)}</p>`).join('')}` : ''}
     <p style="margin:14px 6px 0;color:#6f7787;font-size:11.5px">Des chiffres, pas un conseil : les règles Topstep sont celles que suit la maison ; vérifie-les sur ton tableau de bord Topstep.</p>`); }
+/* ================= niveau Bloomberg : CORR, MOV, SEAS, DES (des faits mesurés sur l'historique, jamais une prévision) ================= */
+async function barresDe(c, ut) { const k = `${c}|${ut}`, cc = CACHE_D[k]; if (cc && Date.now() - cc.at < 120000) return cc.d; const d = await api(`/maison/graphique?code=${c}&ut=${ut}`); CACHE_D[k] = { at: Date.now(), d }; return d; }
+const jourDe = t => new Date(t * 1000 + 7200e3).toISOString().slice(0, 10);  // (la journée CME : on décale de 2 h pour que la séance du soir compte le lendemain)
+function correlation(a, b) { const n = a.length; if (n < 5) return null; const ma = a.reduce((s, x) => s + x, 0) / n, mb = b.reduce((s, x) => s + x, 0) / n; let sab = 0, sa = 0, sb = 0;
+  for (let i = 0; i < n; i++) { sab += (a[i] - ma) * (b[i] - mb); sa += (a[i] - ma) ** 2; sb += (b[i] - mb) ** 2; } return sa && sb ? sab / Math.sqrt(sa * sb) : null; }
+const couleurCorr = r => r == null ? '#141a26' : r >= 0 ? `rgba(25,211,140,${(.12 + Math.abs(r) * .75).toFixed(2)})` : `rgba(255,61,90,${(.12 + Math.abs(r) * .75).toFixed(2)})`;
+// CORR : qui bouge avec qui (rendements journaliers)
+let CORR_N = 60;
+async function fnCorr(a) { const n = parseInt(a, 10); if ([20, 60, 120, 250].includes(n)) CORR_N = n; ouvreFn('CORR', 'les liens entre tes marchés · je calcule…', '<p style="color:#8a91a0">Je rassemble les clôtures journalières…</p>');
+  const codes = L.map(x => x.code).slice(0, 14), R = {};
+  for (const c of codes) { try { const B = (await barresDe(c, 'D1')).bougies || [], m = {}; for (let i = 1; i < B.length; i++) m[jourDe(B[i][0])] = Math.log(B[i][4] / B[i - 1][4]); R[c] = m; } catch (e) { /* ce marché-là manque */ } }
+  const ok = codes.filter(c => R[c]), jours = [...new Set(ok.flatMap(c => Object.keys(R[c])))].sort().slice(-CORR_N);
+  const M = ok.map(x => ok.map(y => { if (x === y) return 1; const j = jours.filter(d => R[x][d] != null && R[y][d] != null); return correlation(j.map(d => R[x][d]), j.map(d => R[y][d])); }));
+  const paires = []; const MICRO = { GC: 'MGC', NQ: 'MNQ', CL: 'MCL', ES: 'MES', YM: 'MYM' }, meme = (x, y) => MICRO[x] === y || MICRO[y] === x; ok.forEach((x, i) => ok.forEach((y, k) => { if (k > i && M[i][k] != null && !meme(x, y)) paires.push([x, y, M[i][k]]); })); paires.sort((p, q) => Math.abs(q[2]) - Math.abs(p[2]));
+  const ch = [20, 60, 120, 250].map(z => `<button class="fn-ch ${z === CORR_N ? 'on' : ''}" data-corr="${z}">${z} j</button>`).join('');
+  ouvreFn('CORR', `rendements journaliers sur ${CORR_N} séances · vert : ils montent ensemble · rouge : ils s'opposent`,
+    `<div class="fn-chs">${ch}</div><div class="corr" style="grid-template-columns:64px repeat(${ok.length},minmax(34px,1fr))"><span></span>${ok.map(c => `<span class="ct">${esc(c)}</span>`).join('')}
+      ${ok.map((x, i) => `<span class="ct g">${esc(x)}</span>` + ok.map((y, k) => `<span class="cc" data-a="${x}" data-b="${y}" style="background:${couleurCorr(i === k ? null : M[i][k])}" title="${x} / ${y}">${i === k ? '' : M[i][k] == null ? '—' : nb(M[i][k], 2)}</span>`).join('')).join('')}</div>
+    <div class="fn-jour">LES LIENS LES PLUS FORTS</div>${paires.slice(0, 6).map(([x, y, r]) => `<p class="fn-l" data-a="${x}" data-b="${y}"><b>${esc(x)} · ${esc(y)}</b> ${r > 0 ? '+' : ''}${nb(r, 2)} — ${Math.abs(r) >= .7 ? (r > 0 ? 'presque le même marché : deux positions dans le même sens additionnent le risque' : 'ils s’opposent nettement') : Math.abs(r) >= .4 ? (r > 0 ? 'ils vont souvent dans le même sens' : 'ils vont souvent en sens contraire') : 'lien faible'}</p>`).join('')}
+    <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">(Un micro et son grand frère — MGC et GC — sont le même marché : ils ne sont pas dans ce classement.) Clique une case : le graphique des deux marchés (rapport). Un lien passé ne dit rien de la suite.</p>`);
+  document.querySelectorAll('#fn-c [data-corr]').forEach(b => b.onclick = () => fnCorr(b.dataset.corr));
+  document.querySelectorAll('#fn-c [data-a]').forEach(e => { if (e.dataset.a !== e.dataset.b) e.onclick = () => { fermeFn(); lanceCmd(`${e.dataset.a}/${e.dataset.b}`); }; }); }
+// MOV : ce qui bouge vraiment aujourd'hui (par rapport à son habitude)
+async function fnMov() { ouvreFn('MOV', 'ce qui bouge aujourd’hui · je calcule…', '<p style="color:#8a91a0">…</p>'); const rows = [];
+  for (const x of L) { let p5 = null, p20 = null; try { const B = (await barresDe(x.code, 'D1')).bougies || [], n = B.length; if (n > 21) { p5 = (B[n - 1][4] / B[n - 6][4] - 1) * 100; p20 = (B[n - 1][4] / B[n - 21][4] - 1) * 100; } } catch (e) { /* rien */ }
+    rows.push({ ...x, p5, p20, force: x.amp_hab ? x.amp / x.amp_hab : null }); }
+  rows.sort((a, b) => (b.force ?? 0) - (a.force ?? 0)); const mx = Math.max(1.5, ...rows.map(r => r.force || 0)), pc = v => v == null ? '<span>—</span>' : `<span style="color:${v >= 0 ? '#19d38c' : '#ff3d5a'}">${v > 0 ? '+' : ''}${nb(v, 2)} %</span>`;
+  ouvreFn('MOV', `classés par l’amplitude du jour comparée à leur habitude · ${marcheFerme() || 'mis à jour ' + new Date().toLocaleTimeString('fr-FR')}`,
+    `<div class="mov t"><span>MARCHÉ</span><span>JOUR</span><span>EN TICKS</span><span>AMPLITUDE / HABITUDE</span><span>5 JOURS</span><span>20 JOURS</span></div>` + rows.map(r => `<div class="mov" data-c="${esc(r.code)}"><span><b>${esc(r.code)}</b> <small>${esc(r.nom || '')}</small></span>${pc(r.pct)}<span>${r.ticks != null ? (r.ticks > 0 ? '+' : '') + r.ticks + ' t' : '—'}</span>
+      <span class="jb"><i style="width:${r.force ? Math.min(100, r.force / mx * 100) : 0}%;background:${r.force >= 1.3 ? 'var(--ambre)' : '#3a4560'}"></i><em>${r.force ? '× ' + nb(r.force, 1) : '—'}</em></span>${pc(r.p5)}${pc(r.p20)}</div>`).join('')
+    + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">« × 1,5 » : le marché a déjà parcouru une fois et demie son amplitude habituelle d’une journée. Clique une ligne pour l’ouvrir.</p>`);
+  document.querySelectorAll('#fn-c .mov[data-c]').forEach(e => e.onclick = () => { fermeFn(); changeCode(e.dataset.c); }); }
+// SEAS : la saisonnalité (mois de l'année, jour de la semaine) sur tout l'historique disponible
+async function fnSeas(a) { const c = (a || '').trim().toUpperCase() && L.some(x => x.code === (a || '').trim().toUpperCase()) ? a.trim().toUpperCase() : code; ouvreFn('SEAS', `${c} · je calcule…`, '<p style="color:#8a91a0">…</p>');
+  let B = []; try { B = (await barresDe(c, 'D1')).bougies || []; } catch (e) { ouvreFn('SEAS', c, '<p>Pas de liaison avec la maison.</p>'); return; }
+  const tk = (CACHE_D[`${c}|D1`].d.tick) || 1, finMois = {}; B.forEach(b => { const d = new Date(b[0] * 1000 + 7200e3); finMois[`${d.getUTCFullYear()}-${d.getUTCMonth()}`] = b[4]; });
+  const cles = Object.keys(finMois).sort((p, q) => { const [ya, ma] = p.split('-').map(Number), [yb, mb] = q.split('-').map(Number); return ya - yb || ma - mb; }), mois = Array.from({ length: 12 }, () => []);
+  for (let i = 1; i < cles.length; i++) mois[+cles[i].split('-')[1]].push((finMois[cles[i]] / finMois[cles[i - 1]] - 1) * 100);
+  const jsem = Array.from({ length: 5 }, () => ({ r: [], a: [] })); for (let i = 1; i < B.length; i++) { const w = new Date(B[i][0] * 1000 + 7200e3).getUTCDay(); if (w >= 1 && w <= 5) { jsem[w - 1].r.push((B[i][4] / B[i - 1][4] - 1) * 100); jsem[w - 1].a.push((B[i][2] - B[i][3]) / tk); } }
+  const moy = v => v.length ? v.reduce((s, x) => s + x, 0) / v.length : null, mx = Math.max(.01, ...mois.map(v => Math.abs(moy(v) || 0))), mxa = Math.max(1, ...jsem.map(j => moy(j.a) || 0)), ici = new Date().getMonth();
+  const an = cles.length ? `${cles[0].split('-')[0]} à ${cles[cles.length - 1].split('-')[0]}` : '';
+  ouvreFn('SEAS', `${c} · ${an} · ${B.length} séances · ce qui s’est passé, pas ce qui va se passer`,
+    `${new Set(cles.map(k => k.split('-')[0])).size < 5 ? `<p class="fn-av">⚠ Seulement ${new Set(cles.map(k => k.split('-')[0])).size} ans d’historique chez TopstepX : chaque mois ne compte qu’une ou deux années. Ces chiffres décrivent ces années-là, rien de plus.</p>` : ''}<div class="fn-jour">MOIS PAR MOIS · VARIATION MOYENNE ET PART DES ANNÉES EN HAUSSE</div><div class="seas">${mois.map((v, m) => { const a2 = moy(v), h = v.filter(x => x > 0).length;
+      return `<div class="${m === ici ? 'ici' : ''}"><div class="bar"><i style="height:${a2 == null ? 0 : Math.abs(a2) / mx * 46}px;${a2 >= 0 ? 'bottom:50%' : 'top:50%'};background:${a2 >= 0 ? '#19d38c' : '#ff3d5a'}"></i></div><b>${a2 == null ? '—' : (a2 > 0 ? '+' : '') + nb(a2, 1) + ' %'}</b><small>${MOIS[m]}</small><em>${v.length ? `${h}/${v.length} ↑` : ''}</em></div>`; }).join('')}</div>
+    <div class="fn-jour">JOUR DE LA SEMAINE · AMPLITUDE MOYENNE (TICKS) ET VARIATION MOYENNE</div><div class="seas j">${['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'].map((n, k) => { const ra = moy(jsem[k].r), aa = moy(jsem[k].a);
+      return `<div class="${new Date().getDay() === k + 1 ? 'ici' : ''}"><div class="bar"><i style="height:${aa ? aa / mxa * 92 : 0}px;bottom:0;background:#3a4560"></i></div><b>${aa ? Math.round(aa) + ' t' : '—'}</b><small>${n}</small><em style="color:${ra >= 0 ? '#19d38c' : '#ff3d5a'}">${ra == null ? '' : (ra > 0 ? '+' : '') + nb(ra, 2) + ' %'}</em></div>`; }).join('')}</div>
+    <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Le mois en cours est encadré. Peu d’années = chiffre fragile : regarde le « 7/10 ↑ » avant la moyenne.</p>`); }
+// DES : la fiche du contrat
+async function fnDes(a) { const c = (a || '').trim().toUpperCase() && L.some(x => x.code === (a || '').trim().toUpperCase()) ? a.trim().toUpperCase() : code, x = L.find(z => z.code === c) || {}; ouvreFn('DES', c, '<p style="color:#8a91a0">…</p>');
+  let d = null; try { d = await barresDe(c, 'D1'); } catch (e) { ouvreFn('DES', c, '<p>Pas de liaison avec la maison.</p>'); return; }
+  const B = d.bougies || [], n = B.length, tk = d.tick || 1, v = VAL_TICK[c] ?? null, dec = d.dec ?? 2, der = n ? B[n - 1][4] : null;
+  const tr = []; for (let i = Math.max(1, n - 14); i < n; i++) tr.push(Math.max(B[i][2], B[i - 1][4]) - Math.min(B[i][3], B[i - 1][4])); const atr = tr.length ? tr.reduce((s, z) => s + z, 0) / tr.length / tk : null;
+  const an = B.slice(-252), h52 = an.length ? Math.max(...an.map(b => b[2])) : null, l52 = an.length ? Math.min(...an.map(b => b[3])) : null, hT = n ? Math.max(...B.map(b => b[2])) : null, lT = n ? Math.min(...B.map(b => b[3])) : null;
+  const usd = t => v != null && t != null ? Math.round(t * v) + ' $' : '—', ligne = (k, val, p = '') => `<div><small>${k}</small><b>${val}</b>${p ? `<p>${p}</p>` : ''}</div>`;
+  ouvreFn('DES', `${c} · ${x.nom || d.nom || ''} · ${x.famille || ''}`,
+    `<div class="rk">${ligne('DERNIER COURS', der != null ? nb(der, dec) : '—', d.source ? 'source : ' + esc(d.source) : '')}${ligne('LE TICK', `${nb(tk, Math.max(0, (String(tk).split('.')[1] || '').length))} = ${v != null ? nb(v, 2) + ' $' : '?'}`, 'par contrat')}
+      ${ligne('MOUVEMENT MOYEN D’UNE JOURNÉE (ATR 14)', atr != null ? `${Math.round(atr)} t · ${usd(atr)}` : '—', 'par contrat')}${ligne('UN STOP DE 10 / 20 / 40 TICKS', v != null ? `${usd(10)} · ${usd(20)} · ${usd(40)}` : '—', 'par contrat')}
+      ${ligne('PLUS HAUT / PLUS BAS SUR 1 AN', h52 != null ? `${nb(h52, dec)} · ${nb(l52, dec)}` : '—', h52 != null && der != null ? `à ${Math.round((h52 - der) / tk)} t du haut, ${Math.round((der - l52) / tk)} t du bas` : '')}
+      ${ligne('PLUS HAUT / PLUS BAS DE L’HISTORIQUE', hT != null ? `${nb(hT, dec)} · ${nb(lT, dec)}` : '—', n ? `${n} séances depuis le ${new Date(B[0][0] * 1000).toLocaleDateString('fr-FR')}` : '')}
+      ${ligne('HORAIRES (HEURE DE PARIS)', 'dim. 23 h → ven. 23 h', 'pause chaque jour de 23 h à minuit · CME Globex')}${ligne('AUJOURD’HUI', x.amp != null ? `${x.amp} t parcourus` : '—', x.amp_hab ? `habitude : ${Math.round(x.amp_hab)} t (× ${nb(x.amp / x.amp_hab, 1)})` : '')}</div>`); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0,
+  ['CORR', 'qui bouge avec qui : la matrice des corrélations de tes marchés · CORR 20 / 60 / 250', a => fnCorr(a)],
+  ['MOV', 'ce qui bouge vraiment aujourd’hui, par rapport à son habitude', () => fnMov()],
+  ['SEAS', 'la saisonnalité : mois par mois, jour par jour · SEAS MGC', a => fnSeas(a)],
+  ['DES', 'la fiche du contrat : tick, mouvement moyen, coût d’un stop, horaires · DES SIL', a => fnDes(a)]);
+// changer de marché sans attendre : les graphiques de tes marchés préparés en arrière-plan (une seule fenêtre, doucement)
+let PRECH = false;
+async function precharge() { if (PRECH || document.hidden || FEN !== '1' || (ROLE && ROLE !== 'structure') || marcheFerme() || !L.length) return; PRECH = true;
+  try { for (const x of L) for (const ut of UTS()) { if (x.code === code) continue; const k = `${x.code}|${ut}`, cc = CACHE_D[k]; if (cc && Date.now() - cc.at < 240000) continue;
+      try { CACHE_D[k] = { at: Date.now(), d: await api(`/maison/graphique?code=${x.code}&ut=${ut}`) }; } catch (e) { return; } await new Promise(r => setTimeout(r, 1500)); } } finally { PRECH = false; } }
+setTimeout(precharge, 20000); setInterval(precharge, 300000);
 // NEWS : tout le fil du radar, cherchable ; un clic = le graphique à l'heure de la dépêche
 let NEWS_F = { q: '', m: '', g: '' };
 async function fnNews(a) { const t = (a || '').trim(), c = t && L.some(x => x.code === t.toUpperCase()) ? t.toUpperCase() : ''; NEWS_F = { q: c ? '' : t, m: c, g: '' };
