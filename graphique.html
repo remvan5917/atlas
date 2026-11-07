@@ -892,7 +892,7 @@ const SANTE = { maison: null, lat: null };
 async function api(chemin, corps) {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000), t0 = performance.now();
   try { const r = await fetch(`${ROOT}${chemin}`, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl.signal });
-    if (!r.ok) throw new Error(r.status); const j = await r.json(); if (!corps && /liste=1/.test(chemin)) SANTE.lat = Math.round(performance.now() - t0); SANTE.maison = true; if (typeof boot === 'function') boot('maison', true); return j; }
+    if (!r.ok) throw new Error(r.status); const j = await r.json(); try { if (j && Array.isArray(j.agenda)) j.agenda.forEach(x => { if (x && x.titre && !x.resultats) x.titre_fr = titreAg(x); }); } catch (er) { /* rien */ } if (!corps && /liste=1/.test(chemin)) SANTE.lat = Math.round(performance.now() - t0); SANTE.maison = true; if (typeof boot === 'function') boot('maison', true); return j; }
   catch (e) { SANTE.maison = false; throw e; } finally { clearTimeout(tm); }
 }
 
@@ -3487,6 +3487,29 @@ $('#b-cmd').addEventListener('click', () => ouvreRecherche());
 setInterval(() => { const sp = $('#sym-px'), b = $('#sym'); if (!sp || !b) return; const f = marcheFerme(), age = L_AT ? (Date.now() - L_AT) / 1000 : null, fg = !f && age != null && age > 60;
   sp.classList.toggle('fige', fg);
   b.dataset.tip = 'Changer de marché' + (f ? ` — ${f}` : age == null ? '' : fg ? ` — cours figé depuis ${age > 3600 ? Math.round(age / 3600) + ' h' : Math.round(age / 60) + ' min'}` : ` — cours de ${new Date(L_AT).toLocaleTimeString('fr-FR')}`); }, 1000);
+
+/* --- l'agenda en français (même table que le radar) --- */
+var AG_FR = [[/ADP Non-Farm/i, 'emplois privés ADP'], [/Non-Farm Employment Change/i, 'créations d’emplois américaines (NFP)'], [/Average Hourly Earnings/i, 'salaire horaire moyen'],
+  [/Unemployment Claims/i, 'inscriptions au chômage'], [/Claimant Count/i, 'inscriptions au chômage'], [/Unemployment Rate/i, 'taux de chômage'], [/Employment Change/i, 'créations d’emplois'],
+  [/Core PCE Price Index/i, 'inflation PCE sous-jacente'], [/PCE Price Index/i, 'inflation PCE'], [/Core CPI/i, 'inflation sous-jacente (CPI)'], [/CPI/, 'inflation (CPI)'],
+  [/Core PPI/i, 'prix à la production sous-jacents'], [/PPI/, 'prix à la production'], [/Federal Funds Rate/i, 'décision de taux de la Fed'], [/FOMC Statement/i, 'communiqué de la Fed'],
+  [/FOMC Press Conference/i, 'conférence de presse de la Fed'], [/FOMC .*Minutes/i, 'compte rendu de la Fed'], [/Fed Chair|Powell/i, 'discours du président de la Fed'], [/FOMC Member/i, 'discours d’un membre de la Fed'],
+  [/Core Retail Sales/i, 'ventes au détail hors automobile'], [/Retail Sales/i, 'ventes au détail'], [/ISM Manufacturing Prices/i, 'prix ISM industrie'], [/ISM Manufacturing/i, 'indice ISM industrie'],
+  [/ISM Services|ISM Non-Manufacturing/i, 'indice ISM services'], [/Manufacturing PMI/i, 'PMI industrie'], [/Services PMI/i, 'PMI services'], [/JOLTS/i, 'offres d’emploi (JOLTS)'],
+  [/UoM Consumer Sentiment/i, 'confiance des consommateurs (Michigan)'], [/UoM Inflation Expectations/i, 'anticipations d’inflation (Michigan)'], [/CB Consumer Confidence/i, 'confiance des consommateurs (Conference Board)'],
+  [/Crude Oil Inventories/i, 'stocks de pétrole'], [/Natural Gas Storage/i, 'stocks de gaz naturel'], [/Main Refinancing Rate/i, 'décision de taux de la BCE'], [/ECB Press Conference/i, 'conférence de presse de la BCE'],
+  [/Lagarde/i, 'discours de Christine Lagarde (BCE)'], [/Official Bank Rate/i, 'décision de taux de la Banque d’Angleterre'], [/BOJ Policy Rate/i, 'décision de taux de la Banque du Japon'],
+  [/Monetary Policy Statement/i, 'communiqué de politique monétaire'], [/Core Durable Goods/i, 'commandes de biens durables hors transport'], [/Durable Goods/i, 'commandes de biens durables'],
+  [/Building Permits/i, 'permis de construire'], [/Housing Starts/i, 'mises en chantier'], [/Existing Home Sales/i, 'ventes de logements anciens'], [/New Home Sales/i, 'ventes de logements neufs'],
+  [/Pending Home Sales/i, 'promesses de ventes de logements'], [/Empire State/i, 'indice manufacturier de New York'], [/Philly Fed/i, 'indice manufacturier de Philadelphie'],
+  [/Trade Balance/i, 'balance commerciale'], [/Industrial Production/i, 'production industrielle'], [/Employment Cost Index/i, 'coût du travail'], [/Nonfarm Productivity/i, 'productivité'],
+  [/Unit Labor Costs/i, 'coûts salariaux unitaires'], [/Ifo Business Climate/i, 'climat des affaires Ifo'], [/ZEW Economic Sentiment/i, 'confiance ZEW'], [/Bank Holiday/i, 'jour férié'],
+  [/Treasury Currency Report/i, 'rapport du Trésor sur les devises'], [/Beige Book/i, 'Livre beige de la Fed'], [/Advance GDP|Prelim GDP|Final GDP|GDP/i, 'croissance (PIB)']];
+function titreAg(a) { const t = a.titre || '', f = AG_FR.find(([r]) => r.test(t));
+  let x = f ? f[1] : (a.titre_fr && a.titre_fr !== t ? a.titre_fr : t);
+  if (f) { if (/\bm\/m\b/i.test(t)) x += ' (sur un mois)'; else if (/\by\/y\b/i.test(t)) x += ' (sur un an)'; else if (/\bq\/q\b/i.test(t)) x += ' (sur un trimestre)';
+    if (/\b(Prelim|Flash|Advance)\b/i.test(t)) x += ', première estimation'; else if (/\bRevised\b/i.test(t)) x += ', révisé'; }
+  return x.charAt(0).toUpperCase() + x.slice(1); }
 </script>
 </body>
 </html>
