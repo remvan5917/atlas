@@ -145,7 +145,7 @@
   .visite .bt { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--doux); } .visite .bt button { background: #1a2030; border: 1px solid #2f3850; color: #e6e9ef; border-radius: 7px; padding: 4px 9px; font: 600 11.5px 'Inter'; cursor: pointer; } .visite .bt label { display: flex; gap: 5px; align-items: center; cursor: pointer; }
   .visite .faits { display: none; margin-top: 8px; font: 500 11.5px/1.5 'Inter'; color: var(--tres-doux); } .visite .faits.on { display: block; }
   @media (max-width: 900px) { .visite { right: 10px; left: 10px; width: auto; } }
-  @media (max-width: 2240px) { body.dev #etat { display: none; } .haut { gap: 6px !important; } .haut .horloges .horloge:nth-child(n+3) { display: none; } .haut .grp.masque-mobile .ico { width: 30px; min-width: 30px; } }  /* (en 1920 : Paris et New York ; Londres et Tokyo restent sur le mur de la veille) */
+  @media (max-width: 2240px) { #b-alertes-h, #lien-radar { font-size: 0 !important; gap: 0 !important; padding-left: 9px !important; padding-right: 9px !important; } #b-alertes-h .nb-al { font-size: 10px; } body.dev #etat { display: none; } .haut { gap: 6px !important; } .haut .horloges .horloge:nth-child(n+3) { display: none; } .haut .grp.masque-mobile .ico { width: 30px; min-width: 30px; } }  /* (en 1920 : Paris et New York ; Londres et Tokyo restent sur le mur de la veille) */
   @media (max-width: 600px) { .pane .titre { padding: 4px 8px !important; font-size: 11px !important; } .pane .titre .cotl, .pane .titre > span[style], .pane .titre .indl, .pane .titre > br:nth-of-type(2) { display: none !important; } }  /* (téléphone : le nom et les cours, rien qui cache les bougies) */
   .aide-k { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; background: rgba(5, 7, 12, .6); backdrop-filter: blur(3px); } .aide-k.on { display: grid; }
   .aide-k > div { width: min(860px, 94vw); max-height: 86vh; overflow: auto; background: var(--verre-fort); border: 1px solid var(--bord2); border-radius: 14px; padding: 16px 20px; columns: 2 300px; column-gap: 28px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
@@ -167,6 +167,8 @@
   .tconf { position: fixed; inset: 0; z-index: 72; display: none; place-items: center; background: rgba(5, 7, 12, .5); } .tconf.on { display: grid; } .tconf > div { width: min(420px, 92vw); background: rgba(12, 15, 22, .98); border: 1px solid #2f3850; border-radius: 14px; padding: 16px 18px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
   .tconf .q { font: 800 10.5px 'Inter'; letter-spacing: .14em; color: #8fb0ff; } .tconf b { display: block; font: 800 18px 'Inter'; margin: 6px 0; } .tconf p { color: #c6ccd8; font: 600 12.5px/1.5 'JetBrains Mono', monospace; margin: 0 0 12px; }
   .tconf .bt { display: flex; gap: 8px; } .tconf button { flex: 1; border: 0; border-radius: 9px; padding: 9px; font: 800 12px 'Inter'; cursor: pointer; } #tconf-ok { background: #2962ff; color: #fff; } #tconf-non { background: #1a2030; color: #e6e9ef; }
+  .simu-aide { position: fixed; z-index: 49; top: 100px; left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 12px; padding: 9px 12px 9px 16px; border-radius: 12px; background: rgba(41, 98, 255, .96); color: #fff; font: 600 13px 'Inter'; box-shadow: 0 14px 34px rgba(0, 0, 0, .4); }
+  .simu-aide.on { display: flex; animation: monte .18s ease-out; } .simu-aide b { font: 800 11px 'Inter'; letter-spacing: .1em; background: rgba(255, 255, 255, .2); padding: 3px 8px; border-radius: 6px; } .simu-aide button { border: 0; background: rgba(0, 0, 0, .25); color: #fff; border-radius: 8px; padding: 5px 9px; font: 700 11px 'Inter'; cursor: pointer; }
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -575,6 +577,7 @@
     <div class="compte" id="compte" data-tip="La prochaine annonce à fort impact"></div>
     <a class="lien presente" id="b-presente" data-tip="Atlas te présente tes marchés, comme un journal télévisé (B)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>Atlas présente</a>
     <a class="lien trade-b" id="b-trade" data-tip="Trader depuis le graphique : place ton ordre, tire toi-même ton stop et ton objectif (T)"><svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>Trader</a>
+    <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
     <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v48</span></span>
@@ -712,6 +715,7 @@
   <p class="s regles">Règles Topstep respectées : ordres par l'API permis sur le Combine et l'Express Funded, <b>jamais sur un compte Live funded</b> ; tout part de ton ordinateur ; pas de haute fréquence. Stop obligatoire ; un ordre dont le stop ferait dépasser ta limite du jour est refusé. Ton ordre part seul ; dès qu'il est exécuté, la maison pose ton stop et ton objectif (en une à deux secondes), puis annule celui qui reste quand l'autre est touché. <b>Garde la maison allumée tant que tu es en position.</b> Une seule entrée suivie à la fois par marché. Fais tes premiers essais sur un compte d'entraînement.</p>
   <h3>LES DERNIERS ORDRES</h3><div class="al" id="tr-j"></div></div></div>
 <div class="tconf" id="tconf"><div><div class="q">CONFIRMER L'ORDRE</div><b id="tconf-t"></b><p id="tconf-d"></p><div class="bt"><button id="tconf-ok">Envoyer · Entrée</button><button id="tconf-non">Annuler · Échap</button></div></div></div>
+<div class="simu-aide" id="simu-aide"><b id="simu-e"></b><span id="simu-t"></span><button id="simu-stop">Annuler · Échap</button></div>
 <div class="bulle" id="bulle"></div>
 <div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button></div><div class="faits" id="visite-f"></div></div>
 <div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
@@ -2761,8 +2765,12 @@ var SIMUS = (() => { try { return JSON.parse(lit('g-simus', '[]')) || []; } catc
 const SIMU_BC = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-simus' + (DEV ? '-dev' : '')) : null;
 if (SIMU_BC) SIMU_BC.onmessage = () => { try { SIMUS = JSON.parse(lit('g-simus', '[]')) || []; } catch (e) { /* rien */ } toutDessine(); };
 function gardeSimus() { ecrit('g-simus', JSON.stringify(SIMUS.slice(-60))); if (SIMU_BC) SIMU_BC.postMessage(1); toutDessine(); }
-function outilSimu(on) { SIMU_OUTIL = on == null ? !SIMU_OUTIL : on; $('#b-simu').classList.toggle('on', SIMU_OUTIL); if (SIMU_OUTIL) toast('Simulation : clique ton entrée sur le graphique, puis tire ton stop (vers le bas = achat), puis ton objectif'); toutDessine(); }
-$('#b-simu').onclick = () => outilSimu();
+var SIMU_POSE = null;  // la pose en trois clics : entrée, stop, objectif (le stop et l'objectif suivent la souris jusqu'au clic)
+function aideSimu() { const a = $('#simu-aide'), on = SIMU_OUTIL || !!SIMU_POSE; a.classList.toggle('on', on); $('#b-simu').classList.toggle('on', on); $('#b-simu-h').classList.toggle('on', on); if (!on) return;
+  const e = !SIMU_POSE ? 1 : SIMU_POSE.etape === 'sl' ? 2 : 3; $('#simu-e').textContent = `ÉTAPE ${e} / 3`;
+  $('#simu-t').textContent = e === 1 ? 'Clique ton entrée sur le graphique' : e === 2 ? 'Bouge la souris : ton stop suit (en dessous = achat, au-dessus = vente) · clique pour le poser' : 'Ton objectif suit la souris, de l’autre côté · clique pour le poser (Entrée : sans objectif)'; }
+function outilSimu(on) { SIMU_OUTIL = on == null ? !(SIMU_OUTIL || SIMU_POSE) : on; if (!SIMU_OUTIL && SIMU_POSE) { if (SIMU_POSE.sm.sl == null) SIMUS = SIMUS.filter(z => z !== SIMU_POSE.sm); SIMU_POSE = null; gardeSimus(); } aideSimu(); toutDessine(); }
+$('#b-simu').onclick = () => outilSimu(); $('#b-simu-h').onclick = () => outilSimu(); $('#simu-stop').onclick = () => outilSimu(false);
 function effaceSimu(sm) { SIMUS = SIMUS.filter(z => z !== sm); SIMU_SEL = null; gardeSimus(); toast('Simulation effacée'); }
 // la suite réelle après l'entrée : quoi en premier, quand, jusqu'où dans ton sens et contre toi (même bougie : on compte le stop, par prudence)
 function suiteSimu(sm, B) { const k0 = idxDe(B, sm.t); if (k0 < 0 || sm.sl == null) return null; const sg = sm.sens === 'achat' ? 1 : -1; let mfe = 0, mae = 0;
@@ -2806,13 +2814,20 @@ function dessineSimus(p, g) { const { c, Y, T, pw, ph, B, dec } = g, { tk, val }
 }
 function simuHit(p, x, y) { let m = null, d0 = 7; for (const h of p.simuHits || []) { if (h.w != null) { if (x >= h.x && x <= h.x + h.w && Math.abs(y - h.y) < 10) return h; continue; } if (x < h.x0 - 4 || x > h.x1 + 4) continue; const d = Math.abs(h.y - y); if (d < d0) { d0 = d; m = h; } } return m; }
 const prixAimante = (p, x, y) => { const { tk, dec } = infoCode(), [ta, pa] = opt.aimant ? aimant(p, x, y) : [0, p.iY(y)]; return [ta, +(Math.round((Math.abs(pa - p.iY(y)) < 6 * tk ? pa : p.iY(y)) / tk) * tk).toFixed(dec)]; };
-function simuDown(p, x, y) { const h = simuHit(p, x, y);
+function simuDown(p, x, y) {
+  if (SIMU_POSE) { const sm = SIMU_POSE.sm; if (SIMU_POSE.etape === 'sl' && sm.sl != null) { SIMU_POSE.etape = 'tp'; sonne('pose'); aideSimu(); return true; } if (SIMU_POSE.etape === 'tp' && sm.tp != null) { SIMU_POSE = null; SIMU_SEL = sm; sonne('pose'); gardeSimus(); aideSimu(); return true; } return true; }
+  const h = simuHit(p, x, y);
   if (h && h.genre === 'efface') { effaceSimu(h.sm); return true; }
   if (h && h.genre === 'ordre') { const sm = h.sm; if (!TRADE.on) basculeTrade(true); TRADE.brouillon = { sens: sm.sens, entree: null, sl: sm.sl, tp: sm.tp }; const der = dernierCours(); if (Math.abs(sm.e - der) >= (infoCode().tk * 1.5)) { choisitGenre((sm.e - der) * (sm.sens === 'achat' ? 1 : -1) < 0 ? 'limite' : 'stop'); TRADE.brouillon.entree = sm.e; } else choisitGenre('marche'); majTicket(); toutDessine(); toast('La simulation est dans ton ticket : vérifie, puis envoie'); return true; }
   if (h) { SIMU_SEL = h.sm; SIMU_DRAG = { sm: h.sm, genre: h.genre === 'entree' ? (h.sm.sl != null && h.sm.tp != null ? 'entree' : 'tire') : h.genre, y0: y }; toutDessine(); return true; }
-  if (SIMU_OUTIL) { const [ta, pa] = prixAimante(p, x, y), sm = { id: idNeuf(), code, t: p.iT(x), e: pa, sl: null, tp: null, sens: 'achat', taille: TRADE.taille }; SIMUS.push(sm); SIMU_SEL = sm; SIMU_DRAG = { sm, genre: 'tire', y0: y }; outilSimu(false); sonne('pose'); toutDessine(); return true; }
+  if (SIMU_OUTIL) { const [ta, pa] = prixAimante(p, x, y), sm = { id: idNeuf(), code, t: p.iT(x), e: pa, sl: null, tp: null, sens: 'achat', taille: TRADE.taille }; SIMUS.push(sm); SIMU_SEL = sm; SIMU_OUTIL = false; SIMU_POSE = { sm, etape: 'sl' }; sonne('pose'); aideSimu(); toutDessine(); return true; }
   if (SIMU_SEL) { SIMU_SEL = null; toutDessine(); } return false; }
-function simuMove(p, x, y) { const d = SIMU_DRAG; if (!d) { if ((p.simuHits || []).length && !TRADE.drag) { const h = simuHit(p, x, y); if (h) { p.cv.style.cursor = h.w != null ? 'pointer' : 'ns-resize'; return false; } } return false; }
+function simuMove(p, x, y) { const d = SIMU_DRAG;
+  if (!d && SIMU_POSE) { const [ta, prix] = prixAimante(p, x, y), sm = SIMU_POSE.sm;
+    if (SIMU_POSE.etape === 'sl' && prix !== sm.e) { sm.sens = prix < sm.e ? 'achat' : 'vente'; sm.sl = prix; if (sm.tp != null && (sm.tp - sm.e) * (sm.sens === 'achat' ? 1 : -1) <= 0) sm.tp = null; }
+    if (SIMU_POSE.etape === 'tp' && (prix - sm.e) * (sm.sens === 'achat' ? 1 : -1) > 0) sm.tp = prix;
+    sm._fq = null; p.cv.style.cursor = 'crosshair'; toutDessine(); return true; }
+  if (!d) { if ((p.simuHits || []).length && !TRADE.drag) { const h = simuHit(p, x, y); if (h) { p.cv.style.cursor = h.w != null ? 'pointer' : 'ns-resize'; return false; } } return false; }
   const [ta, prix] = prixAimante(p, x, y), sm = d.sm;
   if (d.genre === 'tire' && Math.abs(y - d.y0) > 4) { if (sm.sl == null) { sm.sens = prix < sm.e ? 'achat' : 'vente'; d.genre = 'sl'; } else d.genre = (prix - sm.e) * (sm.sens === 'achat' ? 1 : -1) < 0 ? 'sl' : 'tp'; }
   if (d.genre === 'entree') { const dl = prix - sm.e; sm.e = prix; if (sm.sl != null) sm.sl = +(sm.sl + dl).toFixed(infoCode().dec); if (sm.tp != null) sm.tp = +(sm.tp + dl).toFixed(infoCode().dec); }
@@ -2888,7 +2903,9 @@ document.addEventListener('keydown', ev => {
   if (k === 'c' && ev.shiftKey && !ev.repeat) { ouvreConfigs(); return; }
   if (k === 't' && !ev.shiftKey && !ev.repeat) { basculeTrade(); return; }
   if (k === 's' && ev.shiftKey && !ev.repeat) { outilSimu(); return; }
-  if (k === 'escape' && (SIMU_OUTIL || SIMU_SEL)) { SIMU_OUTIL = false; SIMU_SEL = null; $('#b-simu').classList.remove('on'); toutDessine(); return; }
+  if (k === 'escape' && (SIMU_OUTIL || SIMU_POSE)) { outilSimu(false); return; }
+  if (k === 'escape' && SIMU_SEL) { SIMU_SEL = null; toutDessine(); return; }
+  if (k === 'enter' && SIMU_POSE && SIMU_POSE.etape === 'tp') { const sm = SIMU_POSE.sm; sm.tp = null; SIMU_POSE = null; SIMU_SEL = sm; gardeSimus(); aideSimu(); return; }
   if ((k === 'delete' || k === 'backspace') && SIMU_SEL) { effaceSimu(SIMU_SEL); return; }
   if (k === 'escape' && TRADE.brouillon) { TRADE.brouillon = null; majTicket(); toutDessine(); return; }
   if (k === 'enter' && $('#tconf').classList.contains('on')) { $('#tconf-ok').click(); return; }
