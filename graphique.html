@@ -171,6 +171,23 @@
   .simu-aide.on { display: flex; animation: monte .18s ease-out; } .simu-aide b { font: 800 11px 'Inter'; letter-spacing: .1em; background: rgba(255, 255, 255, .2); padding: 3px 8px; border-radius: 6px; } .simu-aide button { border: 0; background: rgba(0, 0, 0, .25); color: #fff; border-radius: 8px; padding: 5px 9px; font: 700 11px 'Inter'; cursor: pointer; }
   @media (max-width: 1700px) { .haut .horloges .horloge:nth-child(n+2) { display: none; } #b-trade, #b-simu-h { font-size: 0 !important; gap: 0 !important; padding-left: 9px !important; padding-right: 9px !important; } #b-presente { padding: 6px 10px !important; } #b-presente br { display: none; } .haut .tilt { display: none; } }
   @media (max-width: 1450px) { .haut .seg button { padding-left: 7px !important; padding-right: 7px !important; } .haut .marque span { display: none; } .haut .sym > svg, .haut .sym .spk, #sym-spark { display: none !important; } #b-presente { display: none !important; } .haut .grp.masque-mobile .ico { width: 27px !important; min-width: 27px !important; } }
+  .res.fn b { font-family: 'JetBrains Mono', monospace; color: var(--ambre); min-width: 92px; } .res.fn span { color: #c6ccd8; } .res.fn small { margin-left: auto; color: var(--tres-doux); font: 600 10.5px 'JetBrains Mono', monospace; }
+  .res-t.fnt { color: var(--ambre); }
+  .fn-p { position: fixed; inset: 0; z-index: 64; display: none; align-items: flex-start; justify-content: center; padding-top: 7vh; background: rgba(4, 6, 10, .62); backdrop-filter: blur(4px); } .fn-p.on { display: flex; }
+  .fn-b { width: min(1180px, 96vw); max-height: 84vh; display: flex; flex-direction: column; background: #07090e; border: 1px solid #2a3142; border-top: 3px solid var(--ambre); border-radius: 10px; box-shadow: 0 40px 100px rgba(0, 0, 0, .7); overflow: hidden; }
+  .fn-t { display: flex; align-items: baseline; gap: 14px; padding: 12px 16px; border-bottom: 1px solid #1c2230; } .fn-t b { font: 800 18px 'JetBrains Mono', monospace; color: var(--ambre); letter-spacing: .04em; } .fn-t span { color: #8a91a0; font: 600 12px 'Inter'; flex: 1; }
+  .fn-t button { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 7px; padding: 5px 10px; font: 700 11px 'Inter'; cursor: pointer; }
+  #fn-c { overflow: auto; padding: 14px 16px 18px; font: 500 13px 'Inter'; color: #e6e9ef; }
+  .fn-f { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; } .fn-f input, .fn-f select { background: #0d1018; border: 1px solid #2a3142; color: #e6e9ef; border-radius: 7px; padding: 7px 10px; font: 600 12.5px 'Inter'; } .fn-f input { flex: 1; min-width: 220px; }
+  .fn-f button { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 7px; padding: 6px 10px; font: 700 11px 'Inter'; cursor: pointer; } .fn-f button.on { border-color: var(--ambre); color: var(--ambre); }
+  .fn-row { display: grid; grid-template-columns: 92px 104px 1fr auto; gap: 12px; align-items: baseline; padding: 8px 6px; border-bottom: 1px solid #141a26; cursor: pointer; } .fn-row:hover { background: rgba(255, 171, 26, .06); }
+  .fn-row time { font: 700 12px 'JetBrains Mono', monospace; color: #8a91a0; } .fn-row .g { font: 800 9.5px 'Inter'; letter-spacing: .1em; padding: 2px 6px; border-radius: 4px; justify-self: start; }
+  .fn-row .g.critique { background: #f0435a; color: #fff; } .fn-row .g.importante { background: rgba(255, 171, 26, .2); color: var(--ambre); } .fn-row .g.chiffre { background: rgba(61, 123, 255, .2); color: #8fb0ff; } .fn-row .g.normale, .fn-row .g.info { background: #1a2030; color: #9aa1ad; }
+  .fn-row p { margin: 3px 0 0; color: #9aa1ad; font-size: 12px; } .fn-row .m { font: 700 11px 'JetBrains Mono', monospace; color: #8fb0ff; white-space: nowrap; } .fn-jour { padding: 14px 6px 6px; font: 800 10.5px 'Inter'; letter-spacing: .14em; color: var(--ambre); }
+  .rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px; } .rk > div { background: #0d1018; border: 1px solid #1c2230; border-radius: 10px; padding: 12px 14px; }
+  .rk small { display: block; font: 800 10px 'Inter'; letter-spacing: .14em; color: #8a91a0; } .rk b { display: block; font: 800 28px 'JetBrains Mono', monospace; margin: 4px 0 8px; } .rk .h { color: #19d38c; } .rk .r { color: #ff3d5a; } .rk .a { color: var(--ambre); }
+  .jg { height: 10px; border-radius: 6px; background: #1a2030; overflow: hidden; position: relative; } .jg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; } .rk p { margin: 8px 0 0; color: #9aa1ad; font-size: 12px; line-height: 1.45; }
+  .rk-pos { display: grid; grid-template-columns: 90px 110px repeat(4, 1fr); gap: 10px; padding: 9px 6px; border-bottom: 1px solid #141a26; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; } .rk-pos.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; }
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -648,7 +665,7 @@
   <button data-l="style" title="Plein / pointillés"><svg viewBox="0 0 24 24"><path d="M3 12h4M10 12h4M17 12h4"/></svg></button>
   <button data-l="efface" title="Effacer (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
 </div>
-<div class="voile" id="voile"><div class="recherche"><input id="q" placeholder="Un marché, ou ce que tu veux : « l'or en H4 », « trace une horizontale sur le dernier creux », « pourquoi le pétrole monte ? »" autocomplete="off"><div class="resultats" id="resultats"></div><div class="pied">↑ ↓ pour choisir un marché · Entrée : ouvrir le marché, ou faire ce que tu as écrit (une commande, sinon une question au copilote) · Échap pour fermer</div></div></div>
+<div class="voile" id="voile"><div class="recherche"><input id="q" placeholder="Ligne de commande : SIL D1 · MGC/SIL · RISK · NEWS · CAL · ALRT SIL 52 — ou un marché, ou une phrase" autocomplete="off"><div class="resultats" id="resultats"></div><div class="pied">↑ ↓ pour choisir un marché · Entrée : ouvrir le marché, ou faire ce que tu as écrit (une commande, sinon une question au copilote) · Échap pour fermer</div></div></div>
 <div class="toasts" id="toasts"></div>
 <div class="copi" id="copi"><div class="copi-t"><span class="onde"><i></i><i></i><i></i><i></i><i></i></span><b id="copi-titre">Copilote</b><button id="copi-x" aria-label="Fermer">×</button></div>
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
@@ -691,6 +708,7 @@
   <div class="nl"><input id="pages-q" placeholder="Nom de la mise en page actuelle (ex. « Matin D1 H4 H1 », « Ichimoku or »)" autocomplete="off"><button class="go" id="pages-go">Enregistrer</button></div>
   <div class="al" id="pages-l"></div></div></div>
 <div class="aide-k" id="aide-k"><div><h3>LES RACCOURCIS · ? POUR FERMER</h3>
+  <p><kbd>/</kbd>la ligne de commande : <b>SIL D1</b> · <b>MGC/SIL</b> · <b>ALRT SIL 52</b> · <b>NEWS</b> · <b>CAL</b> · <b>RISK</b> · <b>HIST …</b> · <b>METH ichimoku</b> — Tab complète, ↑ rappelle tes commandes</p>
   <p><kbd>/</kbd>chercher un marché, ou écrire une phrase : « préviens-moi quand… », « montre-moi les fois où… », « configuration : … », « compare avec l'or », « méthode ichimoku », « montre-moi les figures »</p>
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
   <p><kbd>L</kbd>ligne · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie</p>
@@ -718,6 +736,7 @@
   <h3>LES DERNIERS ORDRES</h3><div class="al" id="tr-j"></div></div></div>
 <div class="tconf" id="tconf"><div><div class="q">CONFIRMER L'ORDRE</div><b id="tconf-t"></b><p id="tconf-d"></p><div class="bt"><button id="tconf-ok">Envoyer · Entrée</button><button id="tconf-non">Annuler · Échap</button></div></div></div>
 <div class="simu-aide" id="simu-aide"><b id="simu-e"></b><span id="simu-t"></span><button id="simu-stop">Annuler · Échap</button></div>
+<div class="fn-p" id="fn-p"><div class="fn-b"><div class="fn-t"><b id="fn-nom"></b><span id="fn-sous"></span><button id="fn-x">Fermer · Échap</button></div><div id="fn-c"></div></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button></div><div class="faits" id="visite-f"></div></div>
 <div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
@@ -1340,7 +1359,7 @@ const MOTS = { MGC: 'or gold micro', GC: 'or gold', SIL: 'argent silver', MCL: '
 const sansAccent = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 let selRes = 0;
 const PH_Q = $('#q').placeholder;
-function ouvreRecherche(lettre, ajout = false) { AJOUT = ajout; TXR = []; txQ = ''; $('#q').placeholder = ajout ? 'Un contrat TopstepX à ajouter : « russell », « livre », « taux », « blé », « ZN »…' : PH_Q; $('#voile').classList.add('on'); $('#q').value = lettre || ''; selRes = 0; filtreRecherche(); setTimeout(() => $('#q').focus(), 10); }
+function ouvreRecherche(lettre, ajout = false) { histK = -1; AJOUT = ajout; TXR = []; txQ = ''; $('#q').placeholder = ajout ? 'Un contrat TopstepX à ajouter : « russell », « livre », « taux », « blé », « ZN »…' : PH_Q; $('#voile').classList.add('on'); $('#q').value = lettre || ''; selRes = 0; filtreRecherche(); setTimeout(() => $('#q').focus(), 10); }
 function fermeRecherche() { $('#voile').classList.remove('on'); }
 function filtreRecherche() {
   const brut = $('#q').value.trim(), q = sansAccent(brut), mots = brut.split(/\s+/).filter(Boolean).length;
@@ -1349,7 +1368,7 @@ function filtreRecherche() {
   else { TXR = []; txQ = ''; }
   const aj = (AJOUT ? TXR : TXR.filter(x => !x.suivi && !L.some(y => y.code === x.code))).map(x => ({ ...x, aj: true })), tout = r.concat(aj);
   selRes = Math.min(selRes, Math.max(0, tout.length - 1));
-  $('#resultats').innerHTML = r.map((x, k) => `<div class="res ${k === selRes ? 'sel' : ''}" data-c="${esc(x.code)}"><b>${esc(x.code)}</b><span>${esc(x.nom)} · ${esc(x.famille)}</span><span class="v">${nb(x.dernier, x.dec)}</span><span class="v ${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</span></div>`).join('')
+  $('#resultats').innerHTML = suggestionsCmd(brut) + r.map((x, k) => `<div class="res ${k === selRes ? 'sel' : ''}" data-c="${esc(x.code)}"><b>${esc(x.code)}</b><span>${esc(x.nom)} · ${esc(x.famille)}</span><span class="v">${nb(x.dernier, x.dec)}</span><span class="v ${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</span></div>`).join('')
     + (aj.length ? `<div class="res-t">${AJOUT ? 'CHEZ TOPSTEPX' : 'À AJOUTER À TA LISTE · TOPSTEPX'}</div>` + aj.map((x, k) => `<div class="res aj ${r.length + k === selRes ? 'sel' : ''}" data-aj="${esc(x.code)}"><b>${esc(x.code)}</b><span>${esc(x.nom)} · ${esc(x.famille)}${x.tick ? ` · tick ${esc(String(x.tick).replace('.', ','))}${x.valeur_tick ? ` = ${nb(x.valeur_tick, 2)} $` : ''}` : ''}</span><span class="v"></span><span class="v ${x.suivi ? 'deja' : 'plus'}">${x.suivi ? '✓ suivi' : '+ Ajouter'}</span></div>`).join('') : '')
     || `<div class="res"><span>${AJOUT ? (brut.length < 2 ? "Tape le nom d'un marché, en français ou en anglais, ou son code." : txQ === brut && !txAttente ? 'Aucun contrat trouvé chez TopstepX.' : 'Je cherche chez TopstepX…') : 'Aucun marché trouvé.'}</span></div>`;
   return tout;
@@ -1369,6 +1388,9 @@ async function ajouteMarche(c, ouvrir) {
 $('#sym').onclick = () => ouvreRecherche();
 $('#q').addEventListener('input', () => { selRes = 0; filtreRecherche(); });
 $('#q').addEventListener('keydown', ev => {
+  if (ev.key === 'Enter' && !AJOUT && parseCmd($('#q').value) && !(parseCmd($('#q').value).genre === 'marche' && !/\s/.test($('#q').value.trim()) && L.filter(x => sansAccent(`${x.code} ${x.nom}`).includes(sansAccent($('#q').value.trim()))).length > 1)) { ev.preventDefault(); lanceCmd($('#q').value); return; }
+  if (ev.key === 'Tab') { const f = FONCTIONS.find(z => z[0].startsWith($('#q').value.trim().toUpperCase())); if (f) { ev.preventDefault(); $('#q').value = f[0] + ' '; filtreRecherche(); return; } }
+  if (ev.key === 'ArrowUp' && !$('#q').value.trim() && HIST_CMD.length) { ev.preventDefault(); histK = Math.min(HIST_CMD.length - 1, histK + 1); $('#q').value = HIST_CMD[histK]; filtreRecherche(); return; }
   const r = filtreRecherche();
   if (ev.key === 'ArrowDown') { selRes = Math.min(r.length - 1, selRes + 1); filtreRecherche(); ev.preventDefault(); }
   else if (ev.key === 'ArrowUp') { selRes = Math.max(0, selRes - 1); filtreRecherche(); ev.preventDefault(); }
@@ -2840,6 +2862,103 @@ function simuMove(p, x, y) { const d = SIMU_DRAG;
   sm._fq = null; toutDessine(); return true; }
 function simuUp(p) { const d = SIMU_DRAG; if (!d) return false; SIMU_DRAG = null; gardeSimus();
   if (d.sm.sl != null && d.sm.tp == null) toast(d.sm.sens === 'achat' ? 'Achat simulé : tire maintenant ton objectif vers le haut depuis la ligne bleue' : 'Vente simulée : tire maintenant ton objectif vers le bas depuis la ligne bleue'); return true; }
+/* ================= la ligne de commande (comme Bloomberg) : des fonctions courtes au clavier, qui se complètent, avec l'historique ================= */
+// SIL D1 · MGC/SIL · ALRT SIL 52 · NEWS SIL · CAL · RISK · HIST … · CFG … · METH ichimoku · DOW · REPLAY · TRADE · SIMU · AIDE
+const FONCTIONS = [
+  ['RISK', 'ton cockpit Topstep : résultat du jour, limite du jour, MLL, ce que coûte chaque stop', () => fnRisk()],
+  ['NEWS', 'les dépêches · NEWS SIL : celles de ce marché · NEWS fed : recherche', a => fnNews(a)],
+  ['CAL', 'l’agenda : consensus, précédent, réel, compte à rebours', () => fnCal()],
+  ['ALRT', 'une alerte de prix : ALRT SIL 52,5 (une horizontale avec alerte)', a => fnAlerte(a)],
+  ['HIST', 'interroger le passé : HIST cassure du haut de Londres', a => ouvrePasse(a || null)],
+  ['CFG', 'une configuration : CFG cassure du plus haut de la veille', a => ouvreConfigs(a || null)],
+  ['IND', 'les indicateurs et les méthodes', () => ouvreIndic()],
+  ['METH', 'une méthode : METH dow · smc · volume · ichimoku', a => { const k = { dow: 'dow', zigzag: 'dow', smc: 'smc', smart: 'smc', volume: 'volume', vwap: 'volume', ichimoku: 'ichimoku' }[sansAccent(a || '').split(' ')[0]]; if (k) { choisirMethode(k); toast(`Méthode : ${METHODES[k].nom}`); } else ouvreIndic(); }],
+  ['DOW', 'la structure de Dow de tous tes marchés', () => ouvreDow()],
+  ['REPLAY', 'rejouer une séance (clique ensuite le point de départ)', () => choisirReplay()],
+  ['TRADE', 'ton ticket d’ordre', () => basculeTrade(true)],
+  ['SIMU', 'simuler une position en 3 clics', () => outilSimu(true)],
+  ['FIG', 'les figures repérées', () => { if (!optFig) $('#t-fig').click(); }],
+  ['AIDE', 'toutes les touches et fonctions', () => $('#aide-k').classList.add('on')],
+];
+let HIST_CMD = (() => { try { return JSON.parse(lit('g-cmd', '[]')) || []; } catch (e) { return []; } })(), histK = -1;
+const UTS_CMD = { '5m': '5m', '5': '5m', 'm5': '5m', '15m': '15m', '15': '15m', 'm15': '15m', '30m': '30m', '30': '30m', 'm30': '30m', 'h1': 'H1', '1h': 'H1', 'h4': 'H4', '4h': 'H4', 'd1': 'D1', 'd': 'D1', '1d': 'D1', 'w': 'W', 'w1': 'W', 'm': 'M', 'mn': 'M' };
+function parseCmd(brut) {
+  const t = brut.trim(), m1 = /^([A-Za-z0-9]{2,6})\s*\/\s*([A-Za-z0-9]{2,6})$/.exec(t);
+  if (m1 && L.some(x => x.code === m1[1].toUpperCase()) && L.some(x => x.code === m1[2].toUpperCase())) return { genre: 'rapport', a: m1[1].toUpperCase(), b: m1[2].toUpperCase(), txt: `${m1[1].toUpperCase()} ÷ ${m1[2].toUpperCase()} · le rapport des deux marchés` };
+  const m2 = /^([A-Za-z0-9]{2,6})(?:\s+([A-Za-z0-9]{1,3}))?$/.exec(t);
+  if (m2 && L.some(x => x.code === m2[1].toUpperCase()) && (!m2[2] || UTS_CMD[m2[2].toLowerCase()])) return { genre: 'marche', c: m2[1].toUpperCase(), ut: m2[2] ? UTS_CMD[m2[2].toLowerCase()] : null, txt: `ouvrir ${m2[1].toUpperCase()}${m2[2] ? ' en ' + (LIB[UTS_CMD[m2[2].toLowerCase()]] || UTS_CMD[m2[2].toLowerCase()]) : ''}` };
+  const sp = t.indexOf(' '), tete = (sp < 0 ? t : t.slice(0, sp)).toUpperCase(), reste = sp < 0 ? '' : t.slice(sp + 1).trim(), f = FONCTIONS.find(z => z[0] === tete);
+  if (f) return { genre: 'fn', f, reste, txt: f[1] };
+  return null;
+}
+function lanceCmd(brut) { const c = parseCmd(brut); if (!c) return false; HIST_CMD = [brut.trim(), ...HIST_CMD.filter(z => z !== brut.trim())].slice(0, 30); ecrit('g-cmd', JSON.stringify(HIST_CMD)); fermeRecherche();
+  if (c.genre === 'marche') { changeCode(c.c).then(() => { if (c.ut) choisirUT(c.ut); }); }
+  else if (c.genre === 'rapport') { const go = () => { cmpMode = 'rapport'; regleCmp({ code: c.b, mode: 'rapport' }); }; if (code !== c.a) changeCode(c.a).then(go); else go(); }
+  else c.f[2](c.reste); return true; }
+// les suggestions de fonctions, au-dessus des marchés, dans la barre « / »
+function suggestionsCmd(brut) { const t = brut.trim(), T = t.toUpperCase(); if (AJOUT) return '';
+  const c = parseCmd(t), out = [];
+  if (c && c.genre !== 'fn') out.push(`<div class="res fn sel-cmd" data-cmd="${esc(t)}"><b>${esc(t.toUpperCase())}</b><span>${esc(c.txt)}</span><small>Entrée</small></div>`);
+  const fs = FONCTIONS.filter(f => t && f[0].startsWith(T.split(' ')[0]) && T.split(' ')[0].length >= 1 && /^[A-Z]+$/.test(T.split(' ')[0]));
+  for (const f of fs.slice(0, 6)) out.push(`<div class="res fn" data-cmd="${esc(f[0] + (t.includes(' ') ? t.slice(t.indexOf(' ')) : ' '))}"><b>${f[0]}</b><span>${esc(f[1])}</span><small>${f[0] === T.split(' ')[0] ? 'Entrée' : 'Tab'}</small></div>`);
+  if (!t && HIST_CMD.length) out.push('<div class="res-t fnt">TES DERNIÈRES COMMANDES · ↑</div>' + HIST_CMD.slice(0, 5).map(h => `<div class="res fn" data-cmd="${esc(h)}"><b>${esc(h.split(' ')[0].toUpperCase())}</b><span>${esc(h)}</span></div>`).join(''));
+  if (!t) out.push('<div class="res-t fnt">FONCTIONS · tape leur nom</div>' + FONCTIONS.slice(0, 6).map(f => `<div class="res fn" data-cmd="${f[0]} "><b>${f[0]}</b><span>${esc(f[1])}</span></div>`).join(''));
+  return out.length ? out.join('') + '<div class="res-t">MARCHÉS</div>' : ''; }
+$('#resultats').addEventListener('click', ev => { const d = ev.target.closest('.res.fn'); if (!d) return; ev.stopPropagation(); const v = d.dataset.cmd; if (/\s$/.test(v)) { $('#q').value = v; $('#q').focus(); filtreRecherche(); } else lanceCmd(v); }, true);
+// le panneau des fonctions
+function ouvreFn(nom, sous, html) { $('#fn-nom').textContent = nom; $('#fn-sous').textContent = sous; $('#fn-c').innerHTML = html; $('#fn-p').classList.add('on'); }
+const fermeFn = () => $('#fn-p').classList.remove('on');
+$('#fn-x').onclick = fermeFn; $('#fn-p').addEventListener('click', ev => { if (ev.target.id === 'fn-p') fermeFn(); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('#fn-p').classList.contains('on')) { fermeFn(); ev.stopPropagation(); } }, true);
+// ALRT : une horizontale avec alerte, au prix donné
+async function fnAlerte(a) { const m = /^([A-Za-z0-9]{2,6})?\s*([0-9]+(?:[ .,][0-9]+)*)$/.exec((a || '').trim()); if (!m) { toast('ALRT SIL 52,5 : le marché (facultatif) puis le prix'); return; }
+  const c = m[1] ? m[1].toUpperCase() : code, prix = parseFloat(m[2].replace(/ /g, '').replace(',', '.')); if (!L.some(x => x.code === c) || !isFinite(prix)) { toast('marché ou prix inconnu'); return; }
+  if (c !== code) await changeCode(c); const t = (panes[0] && panes[0].d && panes[0].d.bougies.slice(-1)[0][0]) || Date.now() / 1000;
+  lignes.push({ id: idNeuf(), genre: 'horizontale', t1: t, p1: prix, alerte: true }); sauve(); toast(`🔔 Alerte posée sur ${c} à ${nb(prix, (L.find(x => x.code === c) || {}).dec ?? 2)} (touche ou cassure : voix, téléphone)`); }
+// RISK : le cockpit Topstep
+async function fnRisk() { ouvreFn('RISK', 'ton risque en ce moment · lecture seule', '<p style="color:#8a91a0">Je rassemble ton compte…</p>');
+  let P = POSD, LI = []; try { P = await api('/maison/graphique?direct=1'); } catch (e) { /* hors liaison */ } try { LI = (await api('/maison/copilote', { action: 'liens' })).liens || []; } catch (e) { /* rien */ }
+  const dll = (TRADE.reg && TRADE.reg.dll) || P.dll || null, src = TRADE.reg && TRADE.reg.dll ? 'ta limite (réglages du ticket)' : 'limite supposée par la maison — indique la tienne dans ⚙ du ticket', pos = P.positions || [];
+  let latent = 0, risque = 0; const lignesP = pos.map(ps => { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, sg = ps.sens === 'long' ? 1 : -1, t = Math.round((der - ps.prix_moyen) / tk) * sg, v = ps.valeur || 0, usd = t * v * ps.taille; latent += usd;
+    const rs = ps.stop != null ? Math.round((ps.stop - der) / tk) * sg * v * ps.taille : null; if (rs != null) risque += Math.min(0, rs); return { ps, t, usd, rs }; });
+  const pnl = P.pnl_jour || 0, reste = dll ? dll + pnl + latent : null, apres = dll ? dll + pnl + latent + risque : null, pct = dll && reste != null ? Math.max(0, Math.min(100, reste / dll * 100)) : null;
+  const sansStop = pos.filter(ps => ps.stop == null).map(ps => ps.instr), lies = [];
+  for (let i = 0; i < pos.length; i++) for (let k = i + 1; k < pos.length; k++) { const a = pos[i].instr, b = pos[k].instr, l = LI.find(x => (x.a === a && x.b === b) || (x.a === b && x.b === a)); if (l && Math.abs(l.corr) > .6) { const meme = (l.corr > 0) === (pos[i].sens === pos[k].sens); lies.push(`${a} et ${b} : corrélation ${l.corr > 0 ? '+' : ''}${nb(l.corr, 2)} sur 5 jours → ${meme ? 'presque la même position, le risque s’additionne' : 'positions qui se compensent en partie'}`); } }
+  const col = x => x == null ? '' : x >= 0 ? 'h' : 'r';
+  ouvreFn('RISK', `${pos.length ? pos.length + ' position' + (pos.length > 1 ? 's' : '') + ' ouverte' + (pos.length > 1 ? 's' : '') : 'aucune position ouverte'} · mis à jour ${new Date().toLocaleTimeString('fr-FR')}`,
+    `<div class="rk"><div><small>RÉSULTAT DU JOUR (CLÔTURÉ)</small><b class="${col(pnl)}">${pnl > 0 ? '+' : ''}${Math.round(pnl)} $</b><p>Les trades déjà fermés aujourd’hui (journée CME).</p></div>
+      <div><small>EN COURS (LATENT)</small><b class="${col(latent)}">${latent > 0 ? '+' : ''}${Math.round(latent)} $</b><p>${pos.length ? 'Tes positions ouvertes, au dernier cours.' : 'Rien d’ouvert.'}</p></div>
+      <div><small>RESTE AVANT LA LIMITE DU JOUR</small><b class="${reste != null && reste < (dll || 0) * .3 ? 'r' : 'a'}">${reste != null ? Math.round(reste) + ' $' : '—'}</b><div class="jg"><i style="width:${pct ?? 0}%;background:${pct != null && pct < 30 ? '#ff3d5a' : pct != null && pct < 60 ? '#ffab1a' : '#19d38c'}"></i></div><p>${dll ? `sur ${Math.round(dll)} $ · ${src}` : 'limite inconnue : indique-la dans ⚙ du ticket'}</p></div>
+      <div><small>SI TOUS TES STOPS PARTENT</small><b class="${apres != null && apres < 0 ? 'r' : apres != null && apres < (dll || 0) * .3 ? 'a' : ''}">${apres != null ? Math.round(apres) + ' $' : '—'}</b><p>${pos.length ? `il te resterait cela avant la limite du jour (risque total des stops : ${Math.round(-risque)} $)${sansStop.length ? ` · <span class="r">SANS STOP : ${sansStop.join(', ')}</span>` : ''}` : 'aucun stop en jeu'}</p></div>
+      <div><small>MLL (PERTE MAXIMALE DU COMPTE)</small><b class="${P.marge_mll != null && P.marge_mll < 1000 ? 'r' : ''}">${P.marge_mll != null ? Math.round(P.marge_mll) + ' $' : '—'}</b><p>${P.marge_mll != null ? 'la marge qu’il te reste avant la MLL, selon les règles Topstep suivies par la maison' : 'disponible quand une position est ouverte'}</p></div></div>
+    ${pos.length ? `<div class="rk-pos t"><span>MARCHÉ</span><span>SENS</span><span>EN COURS</span><span>STOP</span><span>COÛT DU STOP</span><span>COMPTE</span></div>` + lignesP.map(({ ps, t, usd, rs }) => `<div class="rk-pos"><span>${esc(ps.instr)}</span><span class="${ps.sens === 'long' ? 'h' : 'r'}" style="color:${ps.sens === 'long' ? '#19d38c' : '#ff3d5a'}">${ps.sens === 'long' ? 'LONG' : 'SHORT'} ${ps.taille}</span><span style="color:${usd >= 0 ? '#19d38c' : '#ff3d5a'}">${t > 0 ? '+' : ''}${t} t · ${usd > 0 ? '+' : ''}${Math.round(usd)} $</span><span>${ps.stop != null ? nb(ps.stop, 3) : '<span style="color:#ff3d5a">aucun</span>'}</span><span style="color:${rs != null && rs < 0 ? '#ff3d5a' : '#19d38c'}">${rs != null ? (rs > 0 ? '+' : '') + Math.round(rs) + ' $' : '—'}</span><span style="color:#8a91a0">${esc(ps.compte || '')}</span></div>`).join('') : ''}
+    ${lies.length ? `<div class="fn-jour">TES POSITIONS LIÉES</div>${lies.map(x => `<p style="margin:4px 6px;color:#c6ccd8">${esc(x)}</p>`).join('')}` : ''}
+    <p style="margin:14px 6px 0;color:#6f7787;font-size:11.5px">Des chiffres, pas un conseil : les règles Topstep sont celles que suit la maison ; vérifie-les sur ton tableau de bord Topstep.</p>`); }
+// NEWS : tout le fil du radar, cherchable ; un clic = le graphique à l'heure de la dépêche
+let NEWS_F = { q: '', m: '', g: '' };
+async function fnNews(a) { const t = (a || '').trim(), c = t && L.some(x => x.code === t.toUpperCase()) ? t.toUpperCase() : ''; NEWS_F = { q: c ? '' : t, m: c, g: '' };
+  ouvreFn('NEWS', 'le fil du radar', '<p style="color:#8a91a0">Je charge le fil…</p>'); try { RADAR_D = await api('/maison/radar'); } catch (e) { /* hors liaison */ } majNews(); }
+var RADAR_D = null;
+function majNews() { const D = RADAR_D || {}, f = NEWS_F, q = sansAccent(f.q), ms = [...new Set((D.items || []).flatMap(i => i.marches || []))].sort();
+  const l = (D.items || []).filter(i => (!f.m || (i.marches || []).includes(f.m)) && (!f.g || (f.g === 'chiffre' ? i.chiffre : i.urgence === f.g)) && (!q || sansAccent(`${i.titre} ${i.resume || ''}`).includes(q))).sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 300);
+  let jour = '', h = `<div class="fn-f"><input id="nw-q" placeholder="chercher dans les dépêches : fed, opep, iran, chômage…" value="${esc(f.q)}"><select id="nw-m"><option value="">tous les marchés</option>${ms.map(m => `<option ${m === f.m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select>${[['', 'tout'], ['critique', 'critiques'], ['importante', 'importantes'], ['chiffre', 'chiffres']].map(([k, n]) => `<button data-g="${k}" class="${f.g === k ? 'on' : ''}">${n}</button>`).join('')}<span style="color:#8a91a0;font-size:12px">${l.length} dépêche${l.length > 1 ? 's' : ''}</span></div>`;
+  for (const i of l) { const at = i.publie || i.at, d = new Date(at * 1000), j = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); if (j !== jour) { jour = j; h += `<div class="fn-jour">${esc(j.toUpperCase())}</div>`; }
+    h += `<div class="fn-row" data-at="${at}" data-m="${esc((i.marches || [])[0] || '')}"><time>${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time><span class="g ${i.chiffre ? 'chiffre' : esc(i.urgence)}">${i.chiffre ? 'CHIFFRE' : esc((i.urgence || '').toUpperCase())}</span><div><b>${esc(i.titre)}</b>${i.resume ? `<p>${esc(i.resume)}</p>` : ''}</div><span class="m">${esc((i.marches || []).join(' '))}</span></div>`; }
+  $('#fn-c').innerHTML = h + (l.length ? '' : '<p style="color:#8a91a0">Aucune dépêche ne correspond.</p>');
+  const iq = $('#nw-q'); iq.oninput = () => { NEWS_F.q = iq.value; const pos0 = iq.selectionStart; majNews(); const n = $('#nw-q'); n.focus(); n.setSelectionRange(pos0, pos0); };
+  $('#nw-m').onchange = ev => { NEWS_F.m = ev.target.value; majNews(); }; $('#fn-c').querySelectorAll('.fn-f button').forEach(b => b.onclick = () => { NEWS_F.g = b.dataset.g; majNews(); }); }
+$('#fn-c').addEventListener('click', async ev => { const r = ev.target.closest('.fn-row[data-at]'); if (!r) return; const at = +r.dataset.at, m = r.dataset.m && L.some(x => x.code === r.dataset.m) ? r.dataset.m : code; fermeFn();
+  if (m !== code) await changeCode(m); await new Promise(z => setTimeout(z, 500)); for (const p of panes) { const B = (p.d && p.d.bougies) || [], k = B.findIndex(b => b[0] >= at); if (k >= 0) { p.n = 120; p.fin = Math.max(-6, B.length - k - 60); p.y = null; } }
+  MARQUE_PASSE = { t: at, fin: at + 3600, txt: `dépêche de ${new Date(at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` }; toutDessine(); });
+// CAL : l'agenda des chiffres forts
+async function fnCal() { ouvreFn('CAL', 'l’agenda des annonces', '<p style="color:#8a91a0">Je charge l’agenda…</p>'); try { RADAR_D = await api('/maison/radar'); } catch (e) { /* hors liaison */ }
+  const D = RADAR_D || {}, now = Date.now() / 1000, vus = new Set(), l = [...(D.agenda_hist || []), ...(D.agenda || [])].filter(a => { const k = a.at + a.titre; if (vus.has(k)) return false; vus.add(k); return a.at > now - 3 * 86400; }).sort((a, b) => a.at - b.at);
+  const avant = l.filter(a => a.at < now - 900), apres = l.filter(a => a.at >= now - 900), chrono = a => { const d = a.at - now; if (d < 0) return 'passé'; const h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60); return h >= 24 ? `dans ${Math.floor(h / 24)} j` : h ? `dans ${h} h ${String(m).padStart(2, '0')}` : `dans ${m} min`; };
+  let jour = '', h = ''; const ligne = a => { const d = new Date(a.at * 1000), j = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); let s2 = ''; if (j !== jour) { jour = j; s2 += `<div class="fn-jour">${esc(j.toUpperCase())}</div>`; }
+    return s2 + `<div class="fn-row" style="grid-template-columns:92px 70px 1fr 260px;cursor:default"><time>${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time><span class="g ${a.fort ? 'critique' : 'normale'}">${esc(a.pays || '')}</span><div><b>${esc(a.titre_fr || a.titre)}</b></div><span class="m" style="color:#c6ccd8">${a.prevision ? 'attendu ' + esc(a.prevision) : ''}${a.precedent ? ' · précédent ' + esc(a.precedent) : ''}${a.resultats ? ' · <b style="color:var(--ambre)">publié ' + esc(typeof a.resultats === 'object' ? JSON.stringify(a.resultats).slice(0, 30) : a.resultats) + '</b>' : ''}<br><span style="color:#8a91a0">${chrono(a)}</span></span></div>`; };
+  h += apres.length ? apres.map(ligne).join('') : '<p style="color:#8a91a0">Rien de prévu dans l’agenda pour l’instant (il se remplit pour la semaine qui vient).</p>';
+  if (avant.length) { jour = ''; h += `<div class="fn-jour" style="color:#8a91a0;margin-top:10px">DÉJÀ PASSÉ</div>` + avant.slice(-12).reverse().map(ligne).join(''); }
+  ouvreFn('CAL', `${apres.length} annonce${apres.length > 1 ? 's' : ''} à venir · l’étude de la réaction passée : touche A`, h); }
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
