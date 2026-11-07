@@ -163,6 +163,9 @@
   .ticket .tk-a { background: linear-gradient(180deg, #19c37d, #0f9c62); } .ticket .tk-v { background: linear-gradient(180deg, #ff4d63, #d92a43); } .ticket .tk-a.arme, .ticket .tk-v.arme { box-shadow: 0 0 0 2px #fff inset; }
   .ticket .tk-go { background: #2962ff; } .ticket .tk-go:disabled { background: #2a3142; color: #8a91a0; cursor: default; } .ticket .tk-f { background: #3a2410; color: var(--ambre); } .ticket .tk-c { background: transparent; color: var(--doux); font-size: 15px; padding: 6px 8px; }
   .ticket .tk-r { font: 700 11.5px 'JetBrains Mono', monospace; color: var(--doux); max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ticket .tk-r .r { color: #ff3d5a; } .ticket .tk-r .h { color: #19d38c; } .ticket .tk-r .a { color: var(--ambre); }
+  .tvoy { border: 1px solid rgba(41,98,255,.45); background: rgba(41,98,255,.06); border-radius: 12px; padding: 4px 14px 8px; margin-bottom: 14px; }
+  .tvoy input:not([type=checkbox]) { background: #0d1018; color: #e6e9ef; border: 1px solid var(--bord2); border-radius: 7px; padding: 6px 8px; font-size: 14px; max-width: 100%; }
+  .tvoy button { background: #2962ff; color: #fff; border: 0; border-radius: 7px; padding: 7px 14px; font-weight: 700; cursor: pointer; } .tvoy #tv-oubli { background: transparent; color: var(--doux, #8a93a6); border: 1px solid var(--bord2); }
   .treg { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 8px 0; } .treg label { display: flex; gap: 6px; align-items: center; cursor: pointer; } .treg select { background: #0d1018; color: #e6e9ef; border: 1px solid var(--bord2); border-radius: 7px; padding: 5px 8px; }
   .indic-b p.regles { font-size: 11.5px; line-height: 1.5; color: var(--tres-doux); }
   .tconf { position: fixed; inset: 0; z-index: 72; display: none; place-items: center; background: rgba(5, 7, 12, .5); } .tconf.on { display: grid; } .tconf > div { width: min(420px, 92vw); background: rgba(12, 15, 22, .98); border: 1px solid #2f3850; border-radius: 14px; padding: 16px 18px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
@@ -637,7 +640,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v54</span></span>
+    <span class="etat"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v55</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -768,10 +771,15 @@
   <button class="tk-c" id="tk-reg" title="Réglages : allumer les ordres, compte, confirmation">⚙</button></div>
 <div class="indic-p" id="trade-p"><div class="indic-b">
   <h3>TES ORDRES DEPUIS ATLAS</h3><p class="s">C'est toi qui passes tes ordres : tu poses l'entrée, tu tires ton stop et ton objectif sur le graphique. Atlas ne passe jamais d'ordre tout seul et ne te propose aucun niveau.</p>
-  <div class="treg"><label><input type="checkbox" id="tr-actif"> <b>Ordres allumés</b></label><select id="tr-compte"></select><label><input type="checkbox" id="tr-conf"> Demander une confirmation avant chaque envoi</label><label>Ta limite de perte du jour <input type="number" id="tr-dll" min="100" max="20000" step="50" style="width:90px;background:#0d1018;color:#e6e9ef;border:1px solid var(--bord2);border-radius:7px;padding:4px 6px"> $</label></div>
+  <div class="tvoy" id="tr-voy" hidden><h3>MODE VOYAGE · ORDRES DEPUIS CET APPAREIL</h3>
+    <p class="s">Ici, tes ordres partent <b>directement de cet appareil</b> vers TopstepX, sans passer par ton PC (règle Topstep). Ton identifiant et ta clé API restent sur cet appareil. Le stop, c'est toi qui le poses ; la page le place dès l'exécution et annule le restant à la sortie : <b>garde cette page ouverte tant que tu es en position</b> (l'écran reste allumé).</p>
+    <div class="treg"><input id="tv-user" placeholder="identifiant TopstepX" autocomplete="off" style="width:170px"><input id="tv-key" type="password" placeholder="clé API TopstepX" autocomplete="off" style="width:200px"><button id="tv-co">Se connecter</button><button id="tv-oubli" title="Effacer tes accès de cet appareil">Oublier</button></div>
+    <div class="treg"><select id="tv-compte"></select><label>Ta limite de perte du jour <input type="number" id="tv-dll" min="100" max="20000" step="50" style="width:90px"> $</label><label><input type="checkbox" id="tv-conf"> Confirmation avant chaque envoi</label><label><input type="checkbox" id="tv-actif"> <b>Ordres depuis cet appareil</b></label></div>
+    <p class="s" id="tv-m"></p></div>
+  <div id="tr-maison"><div class="treg"><label><input type="checkbox" id="tr-actif"> <b>Ordres allumés</b></label><select id="tr-compte"></select><label><input type="checkbox" id="tr-conf"> Demander une confirmation avant chaque envoi</label><label>Ta limite de perte du jour <input type="number" id="tr-dll" min="100" max="20000" step="50" style="width:90px;background:#0d1018;color:#e6e9ef;border:1px solid var(--bord2);border-radius:7px;padding:4px 6px"> $</label></div>
   <p class="s" id="tr-m"></p>
   <p class="s regles">Règles Topstep respectées : ordres par l'API permis sur le Combine et l'Express Funded, <b>jamais sur un compte Live funded</b> ; tout part de ton ordinateur ; pas de haute fréquence. Stop obligatoire ; un ordre dont le stop ferait dépasser ta limite du jour est refusé. Ton ordre part seul ; dès qu'il est exécuté, la maison pose ton stop et ton objectif (en une à deux secondes), puis annule celui qui reste quand l'autre est touché. <b>Garde la maison allumée tant que tu es en position.</b> Une seule entrée suivie à la fois par marché. Fais tes premiers essais sur un compte d'entraînement.</p>
-  <h3>LES DERNIERS ORDRES</h3><div class="al" id="tr-j"></div></div></div>
+  <h3>LES DERNIERS ORDRES</h3><div class="al" id="tr-j"></div></div></div></div>
 <div class="tconf" id="tconf"><div><div class="q">CONFIRMER L'ORDRE</div><b id="tconf-t"></b><p id="tconf-d"></p><div class="bt"><button id="tconf-ok">Envoyer · Entrée</button><button id="tconf-non">Annuler · Échap</button></div></div></div>
 <div class="simu-aide" id="simu-aide"><b id="simu-e"></b><span id="simu-t"></span><button id="simu-stop">Annuler · Échap</button></div>
 <div class="fn-p" id="fn-p"><div class="fn-b"><div class="fn-t"><b id="fn-nom"></b><span id="fn-sous"></span><button id="fn-x">Fermer · Échap</button></div><div id="fn-c"></div></div></div>
@@ -850,7 +858,9 @@ class Pane {
     const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
     try { const kc = `${code}|${this.ut}`, cc = CACHE_D[kc];  /* (fin : la position est gardée d'un rechargement à l'autre) */
       if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); chargeConfigsBientot(); if (CMP && CMP.code !== code) chargeCmp(this); else this.cmpD = this.cmpReel = null; return true; }
-    catch (e) { if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
+    catch (e) {  // en voyage, sans la maison : les bougies directement chez TopstepX, depuis cet appareil
+      if (!ICI_PC && TXD_PRET()) try { this.dReel = await txdGraphique(code, this.ut); CACHE_D[`${code}|${this.ut}`] = { at: Date.now(), d: this.dReel }; this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (ch) ch.style.display = 'none'; this.dessine(); return true; } catch (e2) { /* rien */ }
+      if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
   }
   taille() { const r = this.el.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
     if (r.width !== this.W || r.height !== this.H || dpr !== this._dpr) { this.W = r.width; this.H = r.height; this._dpr = dpr; this.cv.width = Math.round(r.width * dpr); this.cv.height = Math.round(r.height * dpr); }
@@ -1249,10 +1259,12 @@ function sauve() { if (nbLignesAvant != null && lignes.length > nbLignesAvant) s
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
   const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
+  ecrit('g-lignes-' + code, JSON.stringify(lignes));
   try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
 async function chargeLignes() {
   try { const r = await api(`/maison/graphique?lignes=1&code=${code}`); const l = r.lignes || [];
-    lignes = l.filter(x => !x.double).map(x => x.canal ? { ...x, genre: 'canal' } : x); } catch (e) { lignes = []; }
+    lignes = l.filter(x => !x.double).map(x => x.canal ? { ...x, genre: 'canal' } : x); ecrit('g-lignes-' + code, JSON.stringify(lignes)); }
+  catch (e) { try { lignes = JSON.parse(lit('g-lignes-' + code, '[]')) || []; } catch (e2) { lignes = []; } }  // (sans la maison : tes lignes d'avant, gardées sur l'appareil)
   try { nbLignesAvant = lignes.length; } catch (e) { /* rien */ }
 }
 
@@ -2722,8 +2734,9 @@ async function pourquoiBougie(p, t) {
 var POSD = { positions: [] }, optPos = lit('g-pos-axe', '1') === '1';
 const positionsDe = c => (POSD.positions || []).filter(p => p.instr === c || (p.instr && c && c.endsWith(p.instr)) || p.instr === ({ GC: 'MGC', CL: 'MCL', NQ: 'MNQ', YM: 'MYM', ES: 'MES' }[c]));
 async function chargePositions() {
-  if (!ROOT || document.hidden || ROLE === 'ensemble') return;
-  try { POSD = await api('/maison/graphique?direct=1'); } catch (e) { return; }
+  const voy = !ICI_PC && TXD_PRET() && TXD.cfg.compte;  // (en voyage : directement chez TopstepX, depuis cet appareil)
+  if ((!ROOT && !voy) || document.hidden || ROLE === 'ensemble') return;
+  try { POSD = voy ? await vPositions() : await api('/maison/graphique?direct=1'); } catch (e) { return; }
   const l = POSD.positions || [], f = $('#pos-f'); f.hidden = !l.length;
   if (l.length) { let latent = 0;
     f.innerHTML = l.map(ps => { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null; if (usd != null) latent += usd;
@@ -2733,7 +2746,7 @@ async function chargePositions() {
   toutDessine();
 }
 $('#pos-f').onclick = () => { optPos = !optPos; ecrit('g-pos-axe', optPos ? '1' : '0'); toast(optPos ? 'Repères de ta position sur l’échelle des prix : affichés' : 'Repères de ta position : cachés (la ligne du bas reste)'); toutDessine(); };
-chargePositions(); setInterval(chargePositions, 5000);
+setTimeout(chargePositions, 0); setInterval(chargePositions, 5000);  // (après tout le script : le mode voyage doit être prêt)
 /* ================= trader depuis le graphique : c'est LUI qui pose l'entrée, tire son stop et son objectif ================= */
 // Atlas ne propose aucun niveau et ne passe jamais d'ordre tout seul. La maison vérifie tout (compte permis par Topstep, stop obligatoire,
 // limite du jour) et envoie l'ordre avec son stop et son objectif attachés ; ensuite on fait glisser les ordres posés pour les déplacer.
@@ -2753,6 +2766,103 @@ $('#trade-p').addEventListener('click', ev => { if (ev.target.id === 'trade-p') 
 $('#tr-actif').onchange = ev => { if (ev.target.checked && !confirm('Allumer les ordres ? Tes ordres partiront vraiment sur le compte choisi.')) { ev.target.checked = false; return; } chargeReglagesTrade({ actif: ev.target.checked }); };
 $('#tr-compte').onchange = ev => chargeReglagesTrade({ compte: ev.target.value ? +ev.target.value : null });
 $('#tr-conf').onchange = ev => chargeReglagesTrade({ confirmation: ev.target.checked });
+/* ================= le MODE VOYAGE : ordres et cours DIRECTEMENT entre cet appareil et TopstepX (règle Topstep : l'ordre part de ton appareil) ================= */
+// Tes accès restent sur cet appareil (jamais envoyés à la maison). La page pose ton stop et ton objectif (ceux que TU as choisis) à l'exécution,
+// annule le restant à la sortie, ferme la position si elle s'inverse, garde l'écran allumé tant que tu es en position. Jamais le flux temps réel.
+const TXB = 'https://api.topstepx.com/api', TX_UT = { '5m': [2, 5, 12], '15m': [2, 15, 35], '30m': [2, 30, 60], H1: [3, 1, 210], H4: [3, 4, 400], D1: [4, 1, 800], W: [5, 1, 2500], M: [6, 1, 5000] };
+var TXD = { cfg: (() => { try { return JSON.parse(lit('g-txd', '{}')) || {}; } catch (e) { return {}; } })(), token: null, tokenAt: 0, pause: 0, contrats: {}, comptes: [], verrou: false };
+const VOYAGE = () => !ICI_PC && !!(TXD.cfg.user && TXD.cfg.key && TXD.cfg.actif && TXD.cfg.compte && TXD.cfg.dll);
+const TXD_PRET = () => !!(TXD.cfg.user && TXD.cfg.key);
+function gardeTxd() { ecrit('g-txd', JSON.stringify(TXD.cfg)); }
+async function txdLogin() { const r = await fetch(TXB + '/Auth/loginKey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userName: TXD.cfg.user, apiKey: TXD.cfg.key }) }); const j = await r.json(); if (!j.token) throw new Error('connexion TopstepX refusée (identifiant ou clé)'); TXD.token = j.token; TXD.tokenAt = Date.now(); }
+async function txd(chemin, corps, essai = 0) { if (Date.now() < TXD.pause) throw new Error('TopstepX demande une courte pause');
+  if (!TXD.token || Date.now() - TXD.tokenAt > 20 * 3600e3) await txdLogin();
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 12000);
+  try { const r = await fetch(TXB + chemin, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TXD.token }, body: JSON.stringify(corps), signal: ctl.signal });
+    if (r.status === 429) { TXD.pause = Date.now() + 30000; throw new Error('TopstepX demande une pause (trop de demandes)'); }
+    if (r.status === 401 && !essai) { TXD.token = null; return txd(chemin, corps, 1); }
+    const j = await r.json(); if (j.success === false) throw new Error(`${chemin} : ${j.errorMessage || j.errorCode}`); return j; } finally { clearTimeout(tm); } }
+async function txdContrat(c) { if (TXD.contrats[c]) return TXD.contrats[c]; const l = (await txd('/Contract/search', { searchText: c, live: false })).contracts || [], re = new RegExp('^' + c + '[FGHJKMNQUVXZ]\\d{1,2}$');
+  const x = l.find(z => z.activeContract && re.test(z.name)) || l.find(z => re.test(z.name)); if (!x) throw new Error(`contrat ${c} introuvable chez TopstepX`); return (TXD.contrats[c] = { id: x.id, tick: +x.tickSize, valeur: +x.tickValue, nom: x.description || x.name }); }
+const isoTs = s => Date.parse(s) / 1000, tsIso = t => new Date(t * 1000).toISOString();
+async function txdBarres(c, ut) { const k = await txdContrat(c), [u, n, j] = TX_UT[ut] || TX_UT.H1, now = Date.now() / 1000;
+  const r = await txd('/History/retrieveBars', { contractId: k.id, live: false, startTime: tsIso(now - j * 86400), endTime: tsIso(now), unit: u, unitNumber: n, limit: 5000, includePartialBar: true });
+  return (r.bars || []).map(b => [isoTs(b.t), b.o, b.h, b.l, b.c, b.v || 0]).sort((a, b2) => a[0] - b2[0]); }
+function zigzagJS(b, dev = 5, prof = 10) { const pts = []; for (let i = 0; i < b.length; i++) { const lo = Math.max(0, i - prof), hi = Math.min(b.length, i + prof + 1); let mh = -Infinity, ml = Infinity; for (let q = lo; q < hi; q++) { if (b[q][2] > mh) mh = b[q][2]; if (b[q][3] < ml) ml = b[q][3]; }
+    for (const [g, p] of [b[i][2] >= mh ? ['h', b[i][2]] : [null], b[i][3] <= ml ? ['l', b[i][3]] : [null]]) { if (!g) continue; if (!pts.length) { pts.push([b[i][0], p, g]); continue; } const d = pts[pts.length - 1];
+      if (d[2] === g) { if ((g === 'h' && p > d[1]) || (g === 'l' && p < d[1])) pts[pts.length - 1] = [b[i][0], p, g]; } else if (Math.abs(p - d[1]) / d[1] * 100 >= dev) pts.push([b[i][0], p, g]); } }
+  if (pts.length) pts.push([b[b.length - 1][0], b[b.length - 1][4], 'dernier']); return pts; }
+// le graphique sans la maison : les bougies directement chez TopstepX, tes lignes gardées sur l'appareil
+async function txdGraphique(c, ut) { const k = await txdContrat(c), b = (await txdBarres(c, ut)).slice(-1500), x = L.find(z => z.code === c) || {}, dec = x.dec ?? Math.max(0, String(k.tick).split('.')[1] ? String(k.tick).split('.')[1].length : 0);
+  let lg = []; try { lg = JSON.parse(lit('g-lignes-' + c, '[]')) || []; } catch (e) { /* rien */ }
+  return { code: c, ut, nom: x.nom || k.nom, tick: k.tick, dec, bougies: b, source: 'TopstepX direct', zigzag: zigzagJS(b), lignes: lg, zones: [] }; }
+// les comptes, le résultat du jour
+async function txdComptes() { TXD.comptes = ((await txd('/Account/search', { onlyActiveAccounts: true })).accounts || []).filter(a => a.canTrade !== false).map(a => ({ id: a.id, nom: a.name || '', solde: a.balance, permis: /(EXPRESS|PRAC|COMBINE|\bTC\b|\dK?TC|TRIAL|EVAL)/i.test(a.name || '') && !/(LIVE|\bLFA\b)/i.test(a.name || '') })); return TXD.comptes; }
+async function txdPnlJour() { try { const d = new Date(), deb = new Date(d); deb.setHours(23, 0, 0, 0); if (deb > d) deb.setDate(deb.getDate() - 1);  // (la journée CME commence à 23 h, heure de Paris)
+    const l = (await txd('/Trade/search', { accountId: TXD.cfg.compte, startTimestamp: deb.toISOString(), endTimestamp: d.toISOString() })).trades || []; return l.reduce((s2, t) => s2 + (t.profitAndLoss || 0) - (t.fees || 0), 0); } catch (e) { return 0; } }
+// le suivi en voyage (sur l'appareil)
+const vSuivi = () => { try { return JSON.parse(lit('g-txd-suivi', '[]')) || []; } catch (e) { return []; } }, vGarde = l => ecrit('g-txd-suivi', JSON.stringify(l.slice(-50)));
+const vMaj = it => { const l = vSuivi(), i = l.findIndex(x => x.id === it.id); if (i >= 0) l[i] = it; else l.push(it); vGarde(l); };
+async function vPart(corps) { if (TXD.verrou) return; TXD.verrou = true; TRADE.envoi = true; $('#tk-go').disabled = true;
+  try { const c = TXD.cfg, cpt = c.compte; if (!(TXD.comptes.length ? TXD.comptes : await txdComptes()).find(a => a.id === cpt && a.permis)) throw new Error('compte non autorisé par Topstep pour l’API');
+    const k = await txdContrat(corps.code), sg = corps.sens === 'achat' ? 1 : -1, m1 = await txdBarres(corps.code, '5m'), der = m1.length ? m1[m1.length - 1][4] : null;
+    if (!der || Date.now() / 1000 - m1[m1.length - 1][0] > 900) throw new Error('pas de cours TopstepX récent pour ce marché');
+    const ar = x => +(Math.round(x / k.tick) * k.tick).toFixed(8), entree = corps.genre === 'marche' ? der : ar(corps.prix), sl = ar(corps.sl), tp = corps.tp != null ? ar(corps.tp) : null;
+    if ((sl - entree) * sg >= 0) throw new Error('le stop doit être du côté de la perte'); if (tp != null && (tp - entree) * sg <= 0) throw new Error('l’objectif doit être du côté du gain');
+    if (corps.genre === 'limite' && (entree - der) * sg > 0) throw new Error('un ordre limite à l’achat se place sous le cours (au-dessus à la vente)'); if (corps.genre === 'stop' && (entree - der) * sg < 0) throw new Error('un ordre stop à l’achat se place au-dessus du cours');
+    const risque = Math.abs(Math.round((sl - entree) / k.tick)) * k.valeur * corps.taille, pnl = await txdPnlJour(); if (pnl - risque < -c.dll * .98) throw new Error(`ce stop (−${Math.round(risque)} $) te ferait dépasser ta limite du jour (il te reste ${Math.round(c.dll + pnl)} $)`);
+    if (vSuivi().some(x => x.code === corps.code && x.etat !== 'fini')) throw new Error(`un ordre est déjà suivi sur ${corps.code}`);
+    const avP = (await txd('/Position/searchOpen', { accountId: cpt })).positions || []; if (avP.some(p => p.contractId === k.id)) throw new Error(`tu as déjà une position sur ${corps.code}`);
+    const avO = new Set(((await txd('/Order/searchOpen', { accountId: cpt })).orders || []).map(o => o.id)), corpsTx = { accountId: cpt, contractId: k.id, type: { marche: 2, limite: 1, stop: 4 }[corps.genre], side: sg > 0 ? 0 : 1, size: corps.taille, limitPrice: corps.genre === 'limite' ? entree : null, stopPrice: corps.genre === 'stop' ? entree : null, trailPrice: null, customTag: null };
+    let oid = null; try { oid = (await txd('/Order/place', corpsTx)).orderId; } catch (e) { await new Promise(z => setTimeout(z, 1500)); const n = ((await txd('/Order/searchOpen', { accountId: cpt })).orders || []).find(o => !avO.has(o.id) && o.contractId === k.id && o.side === corpsTx.side); const p2 = ((await txd('/Position/searchOpen', { accountId: cpt })).positions || []).find(p => p.contractId === k.id); if (n) oid = n.id; else if (p2) oid = -1; else throw e; }
+    vMaj({ id: String(Date.now()), compte: cpt, cid: k.id, code: corps.code, sens: corps.sens, taille: corps.taille, sl, tp, entree_ordre: oid > 0 ? oid : null, etat: 'attente', sl_ordre: null, tp_ordre: null, essais: 0, cree: Date.now() / 1000 });
+    TRADE.brouillon = null; sonne('pose'); toast(`✓ Ordre parti depuis cet appareil · stop et objectif posés à l’exécution — garde la page ouverte`); vDemarre(); }
+  catch (e) { toast(`✗ ${e.message}`); } TXD.verrou = false; TRADE.envoi = false; majTicket(); toutDessine(); setTimeout(chargeOrdresTrade, 800); setTimeout(chargePositions, 1200); }
+// la surveillance, dans la page
+let vFil = null, vVeille = null;
+function vDemarre() { if (!vFil) vFil = setInterval(vTour, 2500); vTour(); vEveil(true); }
+async function vEveil(on) { try { if (on && !vVeille && navigator.wakeLock) vVeille = await navigator.wakeLock.request('screen'); if (!on && vVeille) { await vVeille.release(); vVeille = null; } } catch (e) { /* rien */ } }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && vSuivi().some(x => x.etat !== 'fini')) { vVeille = null; vEveil(true); vTour(); } });
+async function vPose(it, type, prix, taille, om) { const o = Object.values(om).find(x => x.contractId === it.cid && x.side === (it.sens === 'achat' ? 1 : 0) && (type === 4 ? [4, 5].includes(x.type) : x.type === 1)); if (o) return o.id;
+  return (await txd('/Order/place', { accountId: it.compte, contractId: it.cid, type, side: it.sens === 'achat' ? 1 : 0, size: taille, limitPrice: type === 1 ? prix : null, stopPrice: type === 4 ? prix : null, trailPrice: null, customTag: null })).orderId; }
+let vEnCours = false;
+async function vTour() { if (vEnCours) return; const l = vSuivi().filter(x => x.etat !== 'fini'); if (!l.length) { clearInterval(vFil); vFil = null; vEveil(false); return; } if (!TXD_PRET()) return; vEnCours = true;
+  try { for (const cpt of new Set(l.map(x => x.compte))) { const om = Object.fromEntries(((await txd('/Order/searchOpen', { accountId: cpt })).orders || []).map(o => [o.id, o])), pos = Object.fromEntries(((await txd('/Position/searchOpen', { accountId: cpt })).positions || []).map(p => [p.contractId, p]));
+    for (const it of l.filter(x => x.compte === cpt)) { const p = pos[it.cid], taille = p ? Math.abs(p.size || 0) : 0, bon = !!p && (p.type === 1) === (it.sens === 'achat');
+      if (it.etat === 'attente') { if (p && bon) { it.etat = 'protege'; vMaj(it); try { it.sl_ordre = await vPose(it, 4, it.sl, taille, om); vMaj(it); } catch (e) { it.essais++; vMaj(it); halo('rouge'); sonne('critique'); toast(`✗ ${it.code} : stop non posé (${e.message}) — nouvel essai`); continue; }
+          if (it.tp != null) try { it.tp_ordre = await vPose(it, 1, it.tp, taille, om); vMaj(it); } catch (e) { toast(`✗ ${it.code} : objectif non posé — pose-le dans TopstepX si tu le veux`); } }
+        else if (!it.entree_ordre || !om[it.entree_ordre]) { if (Date.now() / 1000 - it.cree > 10) { const p2 = ((await txd('/Position/searchOpen', { accountId: cpt })).positions || []).find(z => z.contractId === it.cid); if (!p2) { it.etat = 'fini'; vMaj(it); } } } }
+      else if (it.etat === 'protege') { if (!p) { it.etat = 'sortie'; vMaj(it); }
+        else if (!bon) { try { await txd('/Position/closeContract', { accountId: cpt, contractId: it.cid }); } catch (e) { /* rien */ } it.etat = 'sortie'; vMaj(it); halo('rouge'); sonne('critique'); toast(`✗ ${it.code} : position inversée — fermée au marché`); continue; }
+        else { if (!it.sl_ordre || !om[it.sl_ordre]) { try { it.sl_ordre = await vPose(it, 4, it.sl, taille, om); vMaj(it); } catch (e) { it.essais++; vMaj(it); if (it.essais >= 3) { try { await txd('/Position/closeContract', { accountId: cpt, contractId: it.cid }); } catch (e2) { /* rien */ } it.etat = 'sortie'; vMaj(it); halo('rouge'); toast(`✗ ${it.code} : stop impossible à poser — position fermée`); } continue; } }
+          for (const k2 of ['sl_ordre', 'tp_ordre']) { const o = om[it[k2]]; if (o && o.size !== taille && taille > 0) try { await txd('/Order/modify', { accountId: cpt, orderId: o.id, size: taille, limitPrice: o.limitPrice ?? null, stopPrice: o.stopPrice ?? null, trailPrice: null }); } catch (e) { /* rien */ } } } }
+      if (it.etat === 'sortie') { if (p && bon) { it.etat = 'protege'; vMaj(it); continue; } const r = [it.sl_ordre, it.tp_ordre, it.entree_ordre].filter(i => i && om[i]); for (const i of r) try { await txd('/Order/cancel', { accountId: cpt, orderId: i }); } catch (e) { /* rien */ } if (!r.length) { it.etat = 'fini'; vMaj(it); } } } } }
+  catch (e) { /* hors liaison : nouvel essai au tour suivant */ } finally { vEnCours = false; } }
+if (vSuivi().some(x => x.etat !== 'fini')) setTimeout(vDemarre, 1500);  // (à la réouverture : le suivi reprend, ce qui traîne est annulé)
+// ce que dessine le ticket en voyage
+async function vOuverts(c) { const k = await txdContrat(c), cpt = TXD.cfg.compte, sv = vSuivi(), sl = new Set(sv.map(x => x.sl_ordre)), tp = new Set(sv.map(x => x.tp_ordre));
+  return { ok: true, ordres: ((await txd('/Order/searchOpen', { accountId: cpt })).orders || []).filter(o => o.contractId === k.id).map(o => ({ ordre: o.id, type: o.type, cote: o.side === 0 ? 'achat' : 'vente', taille: o.size, role: sl.has(o.id) ? 'stop' : tp.has(o.id) ? 'objectif' : null, prix: [4, 5].includes(o.type) ? o.stopPrice : o.limitPrice })), suivi: [] }; }
+async function vPositions() { const cpt = TXD.cfg.compte, l = (await txd('/Position/searchOpen', { accountId: cpt })).positions || [], om = (await txd('/Order/searchOpen', { accountId: cpt })).orders || [], out = [];
+  for (const p of l) { const c = Object.keys(TXD.contrats).find(z => TXD.contrats[z].id === p.contractId) || (L.find(x => p.contractId.includes('.' + x.code + '.')) || {}).code || p.contractId, k = TXD.contrats[c] || await txdContrat(c).catch(() => ({})), sens = p.type === 1 ? 'long' : 'short';
+    const st = om.filter(o => o.contractId === p.contractId && [4, 5].includes(o.type) && (o.side === 1) === (sens === 'long')).map(o => o.stopPrice), b = await txdBarres(c, '5m').catch(() => []);
+    out.push({ compte: TXD.cfg.compte, instr: c, sens, taille: Math.abs(p.size || 0), prix_moyen: p.averagePrice, pas: k.tick, valeur: k.valeur, stop: st[0] ?? null, dernier: b.length ? b[b.length - 1][4] : null }); }
+  return { positions: out, dll: TXD.cfg.dll, pnl_jour: await txdPnlJour() }; }
+async function vModifie(o, prix) { await txd('/Order/modify', { accountId: TXD.cfg.compte, orderId: o.ordre, size: null, limitPrice: o.type === 1 ? prix : null, stopPrice: [4, 5].includes(o.type) ? prix : null, trailPrice: null });
+  const l = vSuivi(); for (const it of l) { if (it.sl_ordre === o.ordre) it.sl = prix; if (it.tp_ordre === o.ordre) it.tp = prix; } vGarde(l); }
+// les réglages du mode voyage
+function majVoyage() { const v = $('#tr-voy'); v.hidden = ICI_PC; $('#tr-maison').hidden = !ICI_PC; if (ICI_PC) return; const c = TXD.cfg; $('#tv-user').value = c.user || ''; $('#tv-key').value = c.key ? '••••••••' : ''; $('#tv-actif').checked = !!c.actif; $('#tv-conf').checked = c.confirmation !== false; $('#tv-dll').value = c.dll || '';
+  $('#tv-compte').innerHTML = '<option value="">— ton compte —</option>' + TXD.comptes.map(a => `<option value="${a.id}" ${a.id === c.compte ? 'selected' : ''} ${a.permis ? '' : 'disabled'}>${esc(a.nom)}${a.permis ? '' : ' (interdit par Topstep)'}</option>`).join('');
+  $('#tv-m').textContent = VOYAGE() ? `✓ Mode voyage allumé : tes ordres partent de cet appareil. Limite du jour : ${Math.round(c.dll)} $.` : !TXD_PRET() ? 'Entre ton identifiant et ta clé API TopstepX, puis « Se connecter ».' : !c.dll ? 'Indique ta limite de perte du jour.' : !c.compte ? 'Choisis ton compte.' : 'Coche « Ordres depuis cet appareil » pour les allumer.'; }
+$('#tv-co').onclick = async () => { const u = $('#tv-user').value.trim(), k = $('#tv-key').value.trim(); if (u) TXD.cfg.user = u; if (k && !/^•+$/.test(k)) TXD.cfg.key = k; TXD.token = null; gardeTxd();
+  try { await txdLogin(); await txdComptes(); toast('✓ Connecté à TopstepX depuis cet appareil'); } catch (e) { toast(`✗ ${e.message}`); } majVoyage(); };
+$('#tv-oubli').onclick = () => { if (!confirm('Oublier ton identifiant et ta clé TopstepX sur cet appareil ?')) return; TXD.cfg = {}; TXD.token = null; gardeTxd(); majVoyage(); toast('Accès oubliés sur cet appareil'); };
+$('#tv-actif').onchange = ev => { if (ev.target.checked && !confirm('Allumer les ordres depuis cet appareil ? Ils partiront vraiment sur ton compte.')) { ev.target.checked = false; return; } TXD.cfg.actif = ev.target.checked; gardeTxd(); majVoyage(); majTicket(); };
+$('#tv-compte').onchange = ev => { TXD.cfg.compte = ev.target.value ? +ev.target.value : null; gardeTxd(); majVoyage(); };
+$('#tv-conf').onchange = ev => { TXD.cfg.confirmation = ev.target.checked; gardeTxd(); };
+$('#tv-dll').onchange = ev => { const v = +ev.target.value; if (v >= 100 && v <= 20000) { TXD.cfg.dll = v; gardeTxd(); } majVoyage(); };
+$('#tk-reg').addEventListener('click', () => { majVoyage(); if (!ICI_PC && TXD_PRET() && !TXD.comptes.length) txdComptes().then(majVoyage).catch(() => {}); });
+const CONF = () => ICI_PC ? TRADE.reg.confirmation !== false : TXD.cfg.confirmation !== false;
+majVoyage();
 $('#tk-moins').onclick = () => { TRADE.taille = Math.max(1, TRADE.taille - 1); ecrit('g-taille', TRADE.taille); majTicket(); toutDessine(); };
 $('#tk-plus').onclick = () => { TRADE.taille = Math.min(20, TRADE.taille + 1); ecrit('g-taille', TRADE.taille); majTicket(); toutDessine(); };
 const dernierCours = () => { const p = panes[actif] || panes[0], B = p && p.d && p.d.bougies; return B && B.length ? B[B.length - 1][4] : null; };
@@ -2773,13 +2883,13 @@ function calcBrouillon() { const b = TRADE.brouillon; if (!b) return null; const
 function majTicket() { const b = TRADE.brouillon, k = calcBrouillon(), pos = positionsDe(code)[0];
   $('#tk-taille').textContent = TRADE.taille; $('#tk-achat').classList.toggle('arme', b && b.sens === 'achat'); $('#tk-vente').classList.toggle('arme', b && b.sens === 'vente');
   $('#tk-go').hidden = $('#tk-x').hidden = !b; $('#tk-ferme').hidden = !pos;
-  if (!ICI_PC) $('#tk-r').innerHTML = '<span class="a">hors de ton PC : consultation seulement · tes ordres dans TopstepX</span>';
-  else if (!TRADE.reg.actif) $('#tk-r').innerHTML = '<span class="a">ordres éteints · ⚙ pour les allumer</span>';
+  if (!ICI_PC && !VOYAGE()) $('#tk-r').innerHTML = '<span class="a">hors de ton PC · ⚙ pour allumer le mode voyage (ordres depuis cet appareil)</span>';
+  else if (ICI_PC && !TRADE.reg.actif) $('#tk-r').innerHTML = '<span class="a">ordres éteints · ⚙ pour les allumer</span>';
   else if (!b) $('#tk-r').innerHTML = pos ? `<span class="d">${esc(code)} · glisse tes ordres sur le graphique pour les déplacer</span>` : `<span class="d">${esc(code)} · choisis acheter ou vendre</span>`;
   else if (k.attend) $('#tk-r').innerHTML = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${k.genre} · <span class="a">clique sur le graphique à ton prix</span>`;
   else if (k.mauvais) $('#tk-r').innerHTML = `<span class="a">${k.genre === 'limite' ? `un ordre limite ${b.sens === 'achat' ? 'à l’achat se place SOUS le' : 'à la vente se place AU-DESSUS du'} cours` : `un ordre stop ${b.sens === 'achat' ? 'à l’achat se place AU-DESSUS du' : 'à la vente se place SOUS le'} cours`}</span>`;
   else $('#tk-r').innerHTML = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} · ${k.genre === 'marche' ? 'au marché' : k.genre + ' ' + nb(k.e, infoCode().dec)}${k.tsl != null ? ` · <span class="r">SL ${k.tsl} t${k.rsk != null ? ' −' + Math.round(k.rsk) + ' $' : ''}</span>` : ' · <span class="a">tire ton stop</span>'}${k.ttp != null ? ` · <span class="h">TP ${k.ttp} t${k.gain != null ? ' +' + Math.round(k.gain) + ' $' : ''}</span>` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}`;
-  $('#tk-go').disabled = !(b && k && k.ok && TRADE.reg.actif && ICI_PC); $('#tk-go').textContent = b && k && k.ok ? `Envoyer ${b.sens === 'achat' ? 'l’achat' : 'la vente'}` : 'Envoyer'; }
+  $('#tk-go').disabled = !(b && k && k.ok && (ICI_PC ? TRADE.reg.actif : VOYAGE())); $('#tk-go').textContent = b && k && k.ok ? `Envoyer ${b.sens === 'achat' ? 'l’achat' : 'la vente'}` : 'Envoyer'; }
 // le dessin : lignes fines, étiquettes collées au bord droit, et un ruban de risque étroit contre l'échelle (rien au milieu des bougies)
 function dessineTrade(p, g) { const { c, Y, pw, ph, AX, dec } = g, { tk, val } = infoCode(), der = dernierCours(); if (der == null) return; p.tradeHits = [];
   const ligne = (prix, col, txt, tir, poignee) => { const y = Y(prix); if (!isFinite(y)) return null; const yy = Math.max(10, Math.min(ph - 10, y));
@@ -2820,29 +2930,33 @@ function tradeMove(p, x, y) { const d = TRADE.drag; if (!d) { if (TRADE.on || TR
   if (b && d.genre === 'sl') b.sl = prix; if (b && d.genre === 'tp') b.tp = prix;
   majTicket(); toutDessine(); return true; }
 function tradeUp(p) { const d = TRADE.drag; if (!d) return false; TRADE.drag = null; if (d.genre === 'ordre' && d.bouge && d.prix !== d.o.prix) deplaceOrdre(d.o, d.prix); else toutDessine(); if (TRADE.brouillon) sonne('pose'); return true; }
-async function chargeOrdresTrade() { if (!ROOT || (!TRADE.on && !positionsDe(code).length)) { if (TRADE.ordres.length) { TRADE.ordres = []; toutDessine(); } return; }
-  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ouverts', code }); if (r.ok && !TRADE.drag) { TRADE.ordres = r.ordres || []; toutDessine(); }
+async function chargeOrdresTrade() { const voy = !ICI_PC && TXD_PRET() && TXD.cfg.compte; if ((!ROOT && !voy) || (!TRADE.on && !positionsDe(code).length)) { if (TRADE.ordres.length) { TRADE.ordres = []; toutDessine(); } return; }
+  try { const r = voy ? await vOuverts(code) : await api('/maison/graphique', { action: 'ordre', op: 'ouverts', code }); if (r.ok && !TRADE.drag) { TRADE.ordres = r.ordres || []; toutDessine(); }
     for (const x of r.suivi || []) if (x.alerte && !TRADE.alertes_vues?.[x.code + x.alerte]) { (TRADE.alertes_vues ||= {})[x.code + x.alerte] = 1; halo('rouge'); sonne('critique'); toast(`✗ ${x.code} : ${x.alerte} — pose ton stop dans TopstepX`); } } catch (e) { /* hors liaison */ } majTicket(); }
 setInterval(() => { if (!document.hidden) chargeOrdresTrade(); }, 4000);
 async function envoyer() { const b = TRADE.brouillon, k = calcBrouillon(); if (!b || !k || !k.ok || TRADE.envoi) return; const { dec } = infoCode();
   const corps = { action: 'ordre', op: 'place', code, sens: b.sens, taille: TRADE.taille, genre: k.genre, prix: k.genre === 'marche' ? null : k.e, sl: b.sl, tp: b.tp };
-  if (TRADE.reg.confirmation !== false) { $('#tconf-t').textContent = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${code} · ${k.genre === 'marche' ? 'au marché' : k.genre + ' à ' + nb(k.e, dec)}`;
+  if (CONF()) { $('#tconf-t').textContent = `${b.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${TRADE.taille} ${code} · ${k.genre === 'marche' ? 'au marché' : k.genre + ' à ' + nb(k.e, dec)}`;
     $('#tconf-d').innerHTML = `Stop ${nb(b.sl, dec)} · ${k.tsl} ticks${k.rsk != null ? ` · −${Math.round(k.rsk)} $` : ''}<br>${b.tp != null ? `Objectif ${nb(b.tp, dec)} · ${k.ttp} ticks${k.gain != null ? ` · +${Math.round(k.gain)} $` : ''}${k.R ? ` · ${nb(k.R, 1)} R` : ''}` : 'Sans objectif'}${k.pct != null ? `<br>${Math.round(k.pct)} % de ce qu’il te reste avant la limite du jour` : ''}`;
     $('#tconf').classList.add('on'); TRADE.attente = corps; return; }
   part(corps); }
-async function part(corps) { if (!ICI_PC) { toast('Depuis cet appareil, passe tes ordres dans TopstepX : ici, Atlas sert à consulter (règle Topstep : l’ordre doit partir de ton appareil, pas transiter par ton PC)'); return; } TRADE.envoi = true; $('#tk-go').disabled = true;
+async function part(corps) { if (!ICI_PC && VOYAGE()) return vPart(corps); if (!ICI_PC) { toast('Depuis cet appareil, passe tes ordres dans TopstepX : ici, Atlas sert à consulter (règle Topstep : l’ordre doit partir de ton appareil, pas transiter par ton PC)'); return; } TRADE.envoi = true; $('#tk-go').disabled = true;
   try { const r = await api('/maison/graphique', corps); if (!r.ok) throw new Error(r.raison || 'refusé'); TRADE.brouillon = null; sonne('pose'); toast(`✓ Ordre parti · stop ${r.ticks_sl} t${r.ticks_tp != null ? ` · objectif ${r.ticks_tp} t` : ''}`); }
   catch (e) { toast(`✗ ${e.message}`); } TRADE.envoi = false; majTicket(); toutDessine(); setTimeout(chargeOrdresTrade, 800); setTimeout(chargePositions, 1200); }
 $('#tk-go').onclick = envoyer;
 $('#tconf-ok').onclick = () => { $('#tconf').classList.remove('on'); if (TRADE.attente) part(TRADE.attente); TRADE.attente = null; };
 $('#tconf-non').onclick = () => { $('#tconf').classList.remove('on'); TRADE.attente = null; };
-async function deplaceOrdre(o, prix) { if (!ICI_PC) { toast('Depuis cet appareil, modifie tes ordres dans TopstepX'); toutDessine(); return; } const ancien = o.prix; o.prix = prix; toutDessine();
-  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'modifie', code, ordre: o.ordre, prix }); if (!r.ok) throw new Error(r.raison); toast(`✓ Ordre déplacé à ${nb(r.prix, infoCode().dec)}`); }
+async function deplaceOrdre(o, prix) { const voy = !ICI_PC && VOYAGE(); if (!ICI_PC && !voy) { toast('Depuis cet appareil, allume le mode voyage (⚙) ou modifie tes ordres dans TopstepX'); toutDessine(); return; } const ancien = o.prix; o.prix = prix; toutDessine();
+  try { if (voy) { const pos = positionsDe(code)[0], estSL = o.role === 'stop' || (pos && [4, 5].includes(o.type) && (pos.sens === 'long') === (o.cote === 'vente'));
+      if (estSL && pos && pos.dernier != null && (pos.dernier - prix) * (pos.sens === 'long' ? 1 : -1) <= 0) throw new Error('le stop doit rester du côté de la perte'); await vModifie(o, prix); toast(`✓ Ordre déplacé à ${nb(prix, infoCode().dec)}`); }
+    else { const r = await api('/maison/graphique', { action: 'ordre', op: 'modifie', code, ordre: o.ordre, prix }); if (!r.ok) throw new Error(r.raison); toast(`✓ Ordre déplacé à ${nb(r.prix, infoCode().dec)}`); } }
   catch (e) { o.prix = ancien; toast(`✗ ${e.message}`); toutDessine(); } setTimeout(chargeOrdresTrade, 600); }
-async function annuleOrdre(o) { if (!ICI_PC) { toast('Depuis cet appareil, modifie tes ordres dans TopstepX'); toutDessine(); return; } if (TRADE.reg.confirmation !== false && !confirm('Annuler cet ordre ?')) return;
-  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'annule', ordre: o.ordre }); if (!r.ok) throw new Error(r.raison); toast('✓ Ordre annulé'); } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargeOrdresTrade, 500); }
-$('#tk-ferme').onclick = async () => { if (!ICI_PC) { toast('Depuis cet appareil, ferme ta position dans TopstepX'); return; } if (TRADE.reg.confirmation !== false && !confirm(`Fermer ta position sur ${code} au marché ?`)) return;
-  try { const r = await api('/maison/graphique', { action: 'ordre', op: 'ferme', code }); if (!r.ok) throw new Error(r.raison); toast('✓ Position fermée'); } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargePositions, 800); setTimeout(chargeOrdresTrade, 800); };
+async function annuleOrdre(o) { const voy = !ICI_PC && VOYAGE(); if (!ICI_PC && !voy) { toast('Depuis cet appareil, allume le mode voyage (⚙) ou modifie tes ordres dans TopstepX'); toutDessine(); return; }
+  const pos0 = positionsDe(code)[0]; if (voy && pos0 && (o.role === 'stop' || ([4, 5].includes(o.type) && (pos0.sens === 'long') === (o.cote === 'vente')))) { toast('Le stop d’une position ne s’annule pas : fais-le glisser, ou ferme la position'); return; } if (CONF() && !confirm('Annuler cet ordre ?')) return;
+  try { if (voy) { await txd('/Order/cancel', { accountId: TXD.cfg.compte, orderId: o.ordre }); toast('✓ Ordre annulé'); } else { const r = await api('/maison/graphique', { action: 'ordre', op: 'annule', ordre: o.ordre }); if (!r.ok) throw new Error(r.raison); toast('✓ Ordre annulé'); } } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargeOrdresTrade, 500); }
+$('#tk-ferme').onclick = async () => { const voy = !ICI_PC && VOYAGE(); if (!ICI_PC && !voy) { toast('Depuis cet appareil, allume le mode voyage (⚙) ou ferme ta position dans TopstepX'); return; } if (CONF() && !confirm(`Fermer ta position sur ${code} au marché ?`)) return;
+  try { if (voy) { const k = await txdContrat(code); await txd('/Position/closeContract', { accountId: TXD.cfg.compte, contractId: k.id }); const l = vSuivi(); l.forEach(x => { if (x.cid === k.id && x.etat !== 'fini') x.etat = 'sortie'; }); vGarde(l); vDemarre(); toast('✓ Position fermée · les ordres restants vont être annulés'); }
+    else { const r = await api('/maison/graphique', { action: 'ordre', op: 'ferme', code }); if (!r.ok) throw new Error(r.raison); toast('✓ Position fermée'); } } catch (e) { toast(`✗ ${e.message}`); } setTimeout(chargePositions, 800); setTimeout(chargeOrdresTrade, 800); };
 /* ================= simuler une position (sans ordre) : ce qui s'est passé, et la fréquence « objectif avant stop » ================= */
 // mêmes gestes que le ticket : un clic pose l'entrée, on tire le stop (le sens de la traction choisit achat ou vente), puis l'objectif.
 // Placée dans le passé, elle rejoue la suite (touché, quand, plus loin dans ton sens / contre toi). Des faits mesurés, jamais une prévision.
