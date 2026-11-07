@@ -204,6 +204,19 @@
   .mur-l { flex: 0 0 auto !important; max-height: 34vh; } .mur-l .lt h4 { font-size: max(11px, 1.35vh) !important; } .mur-l .lt .li { font-size: max(13px, 1.9vh) !important; } .mur-l .lt .li time, .mur-l .lt .li .n { font-size: max(12px, 1.7vh) !important; }
   .mur-l .lt .li .cd { font-size: max(15px, 2.4vh) !important; } .mur-l .vide2 { font-size: max(12px, 1.7vh) !important; } .mur-vide small { font-size: max(14px, 2.1vh) !important; }
   @media (max-width: 700px) { .tuile .ouvre, .tuile button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .titre-section { flex-wrap: wrap; gap: 4px; } }
+  /* ===== le mur sur un écran VERTICAL (1080 × 1920) : tout se dimensionne sur la largeur ===== */
+  @media (orientation: portrait) {
+    .mur { padding: 2vh 3.5vw 0; gap: 1.4vh; } .mur-h { position: relative; flex-wrap: wrap; align-items: flex-end; gap: 1.4vh 6vw; padding-bottom: 1.4vh; }
+    .mur-h .hl.ici { flex-basis: 100%; } .mur-h .hl.ici b { font-size: 16vw !important; } .mur-h .hl b { font-size: 7.6vw !important; } .mur-h .hl small { font-size: 1.9vw !important; letter-spacing: .25em; } .mur-h .hl small i { width: 1.2vw; height: 1.2vw; }
+    .mur-h .esp { display: none; } .mur-h .tm { order: -1; flex-basis: 100%; display: flex; align-items: center; justify-content: space-between; gap: 2vw; } .mur-h .tm button { margin-top: 0 !important; } .mur-h .tm b { font-size: 2.1vw !important; } .mur-h .tm button { font-size: 1.9vw; padding: .5vh 1.6vw; }
+    .mur-c { flex: none; padding: 1.2vh 3vw; gap: .6vh 3vw; flex-wrap: wrap; } .mur-c small { font-size: 2.1vw !important; flex-basis: 100%; } .mur-c b { font-size: 4.6vw !important; line-height: 1.2; } .mur-c b[style*="opacity"] { font-size: 3.1vw !important; } .mur-c > div { min-width: 0; } .mur-c span { font-size: 3.2vw !important; }
+    .mur-g { grid-template-columns: repeat(2, 1fr) !important; grid-template-rows: repeat(4, 1fr) !important; gap: 1.2vh 2.6vw; }
+    .tuile-m { padding: 1.4vh 3.4vw; border-radius: 1.6vw; } .tuile-m .c b { font-size: 4.6vw !important; } .tuile-m .c small { font-size: 2.6vw !important; } .tuile-m .px { font-size: 9.6vw !important; } .tuile-m .vr { font-size: 3.6vw !important; } .tuile-m svg { height: 4.5vh; }
+    .mur-vide b { font-size: 7vw !important; line-height: 1.15; } .mur-vide small { font-size: 3.3vw !important; max-width: 86vw; } .mur-vide { min-height: 0; grid-row: 1 / -1; }
+    .mur-l { grid-template-columns: 1fr 1fr !important; max-height: 40vh; gap: 1.2vh 2.6vw; } .mur-l .lt { padding: 1.3vh 3vw; border-radius: 1.6vw; }
+    .mur-l .lt h4 { font-size: 2.1vw !important; } .mur-l .lt .li { font-size: 2.55vw !important; gap: 1.6vw; line-height: 1.3; } .mur-l .lt .li time, .mur-l .lt .li .n { font-size: 2.2vw !important; } .mur-l .lt .li .cd { font-size: 3vw !important; } .mur-l .vide2 { font-size: 2.5vw !important; } .mur-l .lt .li .h, .mur-l .lt .li .r { white-space: nowrap; }
+    .mur-f { height: 5vh; margin: 0 -3.5vw; } .mur-f .t { font-size: 2.2vw; padding: 0 3vw; } .mur-f .dp { font-size: 3.6vw; gap: 2vw; padding: 0 5vw; } .mur-f .dp time { font-size: 3.2vw; } .mur-f .dp .fl, .mur-f .dp .im { font-size: 2.1vw; padding: .3vh 1.2vw; }
+  }
 </style>
 </head>
 <body>
