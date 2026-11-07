@@ -225,7 +225,7 @@
   @media (max-width: 700px) { .brief { grid-template-columns: 1fr; } .beta small { display: none; } }
   body.role-terminal .app, body.role-terminal #visite, body.role-terminal #figc, body.role-terminal #mon-o, body.role-terminal .poche, body.role-terminal .ticket, body.role-terminal .toasts ~ .amb { display: none !important; }
   body.role-terminal { background: #060b16; overflow: hidden; } body.role-terminal .role-badge { display: none; }
-  body.role-terminal .fn-p { display: flex !important; inset: 52px 0 0 250px; padding: 0; background: none; backdrop-filter: none; align-items: stretch; z-index: 20; }
+  body.role-terminal .fn-p { display: flex !important; inset: calc(52px + var(--tn, 36px)) 0 0 250px; padding: 0; background: none; backdrop-filter: none; align-items: stretch; z-index: 20; }
   body.role-terminal .fn-b { width: 100%; max-height: none; height: 100%; border: 0; border-left: 1px solid #1b2a44; border-radius: 0; box-shadow: none; background: #081020; } body.role-terminal #fn-x { display: none; } body.role-terminal #fn-c { padding: 18px 26px 40px; }
   body.role-terminal .fn-t { padding: 14px 26px; } body.role-terminal .fn-t b { font-size: 22px; }
   .term-g { position: fixed; left: 0; top: 0; bottom: 0; width: 250px; z-index: 21; background: #091224; border-right: 1px solid #1b2a44; display: flex; flex-direction: column; padding: 14px 12px; }
@@ -239,6 +239,10 @@
   .term-h { position: fixed; left: 250px; right: 0; top: 0; height: 52px; z-index: 21; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: #091224; border-bottom: 1px solid #1b2a44; }
   .term-m { flex: 1; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; } .term-m .tm { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; background: #0e182c; border: 1px solid #1b2a44; border-radius: 8px; padding: 4px 10px; cursor: pointer; color: #e6e9ef; }
   .term-m .tm b { font: 800 11.5px 'JetBrains Mono', monospace; } .term-m .tm span { font: 600 10px 'JetBrains Mono', monospace; } .term-m .tm .h { color: #19d38c; } .term-m .tm .r { color: #ff3d5a; } .term-m .tm.on { border-color: var(--ambre); background: rgba(76, 201, 240, .08); } .term-m .tm.on b { color: var(--ambre); }
+  .term-now { position: fixed; left: 250px; right: 0; top: 52px; z-index: 21; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; background: #081224; border-bottom: 1px solid #1b2a44; }
+  .term-now .tn-t { font: 800 9.5px 'Inter'; letter-spacing: .22em; color: var(--ambre); margin-right: 4px; } .term-now .tn-r { font: 500 12px 'Inter'; color: #6f86a6; }
+  .term-now .tn { background: #0e1a30; border: 1px solid #1f3152; border-radius: 999px; padding: 6px 12px; font: 500 12.5px 'Inter'; color: #dbe6f5; cursor: pointer; } .term-now .tn:hover { border-color: var(--ambre); } .term-now .tn b { color: #fff; font-weight: 700; } .term-now .tn u { text-decoration: none; color: var(--ambre); }
+  .term-now .tn .h { color: #19d38c; } .term-now .tn .r { color: #ff3d5a; } .term-now .tn.ko { border-color: rgba(255,61,90,.6); background: rgba(255,61,90,.08); } .term-now .tn.ann { border-color: rgba(255,171,26,.55); background: rgba(255,171,26,.07); } .term-now .tn.mvt { border-color: rgba(255,171,26,.4); } .term-now .tn.pos { border-color: rgba(76,201,240,.55); }
   #term-age { font: 600 11px 'Inter'; color: #5b6b8c; white-space: nowrap; } #term-h-t { font: 700 13px 'JetBrains Mono', monospace; color: #c6ccd8; } #term-r { background: #0e182c; border: 1px solid #26365a; color: #c6ccd8; border-radius: 8px; width: 34px; height: 30px; cursor: pointer; font-size: 15px; }
   .fn-l { margin: 5px 6px; color: #c6ccd8; cursor: pointer; } .fn-l b { font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
   .mov { display: grid; grid-template-columns: minmax(140px, 1.6fr) .8fr .7fr 1.6fr .8fr .8fr; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #14213a; font: 600 12.5px 'JetBrains Mono', monospace; align-items: center; cursor: pointer; } .mov:hover { background: rgba(255,255,255,.03); } .mov.t { font: 800 10px 'Inter'; letter-spacing: .12em; color: #8a91a0; cursor: default; } .mov small { color: #8a91a0; font: 600 11px 'Inter'; }
@@ -712,7 +716,7 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v67</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v68</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -1896,14 +1900,16 @@ async function commandeGraphique(texte) {
   return null;
 }
 // la fenêtre qui obéit : celle qu'il a touchée en dernier (avec plusieurs écrans, une seule change)
-const toucheFen = () => ecrit('g-derniere-fen', FEN);
+const toucheFen = () => { if (ROLE !== 'terminal') ecrit('g-derniere-fen', FEN); };
 document.addEventListener('pointerdown', toucheFen, true); document.addEventListener('keydown', toucheFen, true); window.addEventListener('focus', toucheFen);
 let cmdDepuis = 0;
 async function chargeCommandes() {
   if (!ROOT) return;
   try { const r = await api('/maison/copilote', { action: 'commandes', depuis: cmdDepuis });
     if (!cmdDepuis) { cmdDepuis = r.maintenant; return; }
-    for (const c of r.commandes || []) { cmdDepuis = Math.max(cmdDepuis, c.id); if (lit('g-derniere-fen', '1') !== FEN) continue; const ok = await commandeGraphique(c.texte); toast(ok ? `✓ ${ok}` : `Je n'ai pas compris : « ${c.texte} »`); }
+    for (const c of r.commandes || []) { cmdDepuis = Math.max(cmdDepuis, c.id); const fv = fnVoix(' ' + sansAcc(c.texte) + ' ');
+      if (fv) { const term = Date.now() - (+lit('term-vivant', '0')) < 15000; if (term ? ROLE !== 'terminal' : lit('g-derniere-fen', '1') !== FEN) continue; const ok = await lanceFnVoix(fv); toast(ok ? `✓ ${ok}` : `Je n'ai pas compris : « ${c.texte} »`); continue; }
+      if (ROLE === 'terminal' || lit('g-derniere-fen', '1') !== FEN) continue; const ok = await commandeGraphique(c.texte); toast(ok ? `✓ ${ok}` : `Je n'ai pas compris : « ${c.texte} »`); }
   } catch (e) { /* hors liaison */ }
 }
 setInterval(chargeCommandes, 2000); chargeCommandes();
@@ -3762,20 +3768,52 @@ versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 300
    en grand, rafraîchie seule ; taper au clavier filtre directement les fonctions, Entrée ouvre. */
 const TERM_G = [['MON TRADING', ['BRIEF', 'PERF', 'RISK']], ['LES MARCHÉS', ['MOV', 'OMON', 'CORR', 'BETA', 'WEI', 'CMDTY', 'CT', 'FXC', 'GC']], ['LES INFOS', ['NEWS', 'CAL', 'ECO']], ['TON MARCHÉ', ['DES', 'SEAS', 'HP']], ['LE SYSTÈME', ['ETAT']]];
 const TERM_DEP = ['DES', 'SEAS', 'HP', 'BETA', 'OMON'], TERM_TXT = Object.fromEntries(FN_TEL);
-let TERM_K = lit('term-k', 'BRIEF'), TERM_AT = 0, TERM_CODE = null, TERM_SEL = -1;
+let TERM_ARG = '', TERM_K = lit('term-k', 'BRIEF'), TERM_AT = 0, TERM_CODE = null, TERM_SEL = -1;
 const termListe = () => { const q = sansAccent($('#term-q').value.trim()); return TERM_G.flatMap(([, l]) => l).filter(k => !q || sansAccent(k).includes(q) || sansAccent(TERM_TXT[k] || '').includes(q) || sansAccent((FONCTIONS.find(f => f[0] === k) || [])[1] || '').includes(q)); };
 function termNav() { const vis = new Set(termListe()), q = $('#term-q').value.trim();
   $('#term-l').innerHTML = TERM_G.map(([g, l]) => { const m = l.filter(k => vis.has(k)); return m.length ? `<div class="tg">${g}</div>` + m.map(k => `<button class="ti ${k === TERM_K ? 'on' : ''} ${q && termListe()[TERM_SEL < 0 ? 0 : TERM_SEL] === k ? 'sel' : ''}" data-tk="${k}"><b>${k}</b><span>${esc(TERM_TXT[k] || '')}</span></button>`).join('') : ''; }).join('') || '<div class="tg">aucune fonction ne correspond</div>';
   document.querySelectorAll('#term-l [data-tk]').forEach(b => b.onclick = () => { $('#term-q').value = ''; TERM_SEL = -1; termOuvre(b.dataset.tk); }); }
 function termChips() { const h = $('#term-m'); if (!h) return; h.innerHTML = L.map(x => `<button class="tm ${x.code === code ? 'on' : ''}" data-tc="${esc(x.code)}"><b>${esc(x.code)}</b><span class="${(x.pct || 0) >= 0 ? 'h' : 'r'}">${x.pct == null ? '' : (x.pct > 0 ? '+' : '') + nb(x.pct, 2) + ' %'}</span></button>`).join('');
   h.querySelectorAll('[data-tc]').forEach(b => b.onclick = async () => { await changeCode(b.dataset.tc); termChips(); if (TERM_DEP.includes(TERM_K)) termOuvre(TERM_K, true); }); }
-async function termOuvre(k, rafraichit) { const f = FONCTIONS.find(z => z[0] === k); if (!f) return; TERM_K = k; ecrit('term-k', k); termNav(); const c = $('#fn-c'), y = rafraichit ? c.scrollTop : 0;
-  try { await f[2](''); } catch (e) { /* rien */ } if (rafraichit) c.scrollTop = y; else c.scrollTop = 0; TERM_AT = Date.now(); TERM_CODE = code; majTermAge(); }
+async function termOuvre(k, rafraichit, arg = '') { const f = FONCTIONS.find(z => z[0] === k); if (!f) return; if (!rafraichit) TERM_ARG = arg; TERM_K = k; ecrit('term-k', k); termNav(); const c = $('#fn-c'), y = rafraichit ? c.scrollTop : 0;
+  try { await f[2](rafraichit ? TERM_ARG : arg); } catch (e) { /* rien */ } if (rafraichit) c.scrollTop = y; else c.scrollTop = 0; TERM_AT = Date.now(); TERM_CODE = code; majTermAge(); }
 function majTermAge() { const e = $('#term-age'); if (!e) return; const s = TERM_AT ? Math.round((Date.now() - TERM_AT) / 1000) : null; e.textContent = s == null ? '' : `mis à jour il y a ${s < 60 ? s + ' s' : Math.round(s / 60) + ' min'}`; $('#term-h-t').textContent = new Date().toLocaleTimeString('fr-FR'); }
+/* --- les fonctions à la voix : « Atlas, le point du moment », « montre la volatilité », « mes stats »… (sur le Terminal s'il est ouvert, et Atlas lit « À retenir ») --- */
+const FN_VOIX = [[/\b(point du moment|le point|brief|briefing|resume du marche|resume des marches)\b/, 'BRIEF'], [/\b(mes )?(stats|statistiques|performances?|perf|mes resultats|mon journal de trading)\b/, 'PERF'],
+  [/\b(mon )?risque\b|\brisk\b/, 'RISK'], [/\b(ce qui bouge|qui bouge le plus|mouvements? du jour|mov)\b/, 'MOV'], [/\b(volatilite|options|mouvement attendu|omon)\b/, 'OMON'],
+  [/\b(correlations?|qui bouge avec qui|corr)\b/, 'CORR'], [/\b(beta|sensibilites?)\b/, 'BETA'], [/\b(indices (du monde|mondiaux)|bourses du monde|wei)\b/, 'WEI'],
+  [/\b(matieres premieres|commodities|cmdty)\b/, 'CMDTY'], [/\b(contango|deport|structure par echeance|echeances|courbe des contrats)\b/, 'CT'], [/\b(devises|forex|force des devises|fxc)\b/, 'FXC'],
+  [/\b(courbe des taux|taux americains|taux us|les taux)\b/, 'GC'], [/\b(reaction aux annonces|memoire des annonces|eco)\b/, 'ECO'], [/\b(agenda|calendrier economique|calendrier)\b/, 'CAL'],
+  [/\b(depeches|les news|actualites)\b/, 'NEWS'], [/\b(fiche du (contrat|marche)|la fiche)\b/, 'DES'], [/\b(saisonnalite)\b/, 'SEAS'], [/\b(historique des cours|historique)\b/, 'HP'], [/\b(liaisons|etat des liaisons)\b/, 'ETAT']];
+const VERBE_FN = /\b(montre|affiche|ouvre|donne|lis|fais|quel|quelle|quels|quelles|c est quoi|ou en est|ou en sont|voir|mets)\b|\bpoint du moment\b|\bmes stats\b/;
+function fnVoix(n) { if (!VERBE_FN.test(n)) return null; const m = FN_VOIX.find(([r]) => r.test(n)); if (!m) return null;
+  let arg = ''; if (m[1] === 'CT') arg = (n.match(/\b(petrole|or|argent|gaz|cuivre)\b/) || [])[1] || ''; if (m[1] === 'ECO') arg = (n.match(/\b(emploi|fed|cpi|inflation|bce|pib|pce|ism|ventes|chomage)\b/) || [])[1] || '';
+  if (m[1] === 'PERF') arg = /\bsemaine\b/.test(n) ? '7' : /\bmois\b/.test(n) ? '30' : ''; return { k: m[1], arg }; }
+async function lanceFnVoix(v) { const f = FONCTIONS.find(z => z[0] === v.k); if (!f) return null;
+  if (ROLE === 'terminal') await termOuvre(v.k, false, v.arg); else await f[2](v.arg);
+  if (v.k === 'BRIEF') { await expliqueFn(); const t = (document.querySelector('#fn-c .fn-copi') || {}).innerText || ''; if (t) dire(t.replace(/^COPILOTE\s*/, '')); }
+  else { const r = document.querySelector('#fn-c .fn-retenir'); if (r) dire(r.innerText.replace(/^À RETENIR\s*/, '')); }
+  return `${v.k} · ${(FONCTIONS.find(z => z[0] === v.k) || [])[1] || ''}`.slice(0, 60); }
+/* --- le Terminal qui anticipe : la bande « MAINTENANT » fait remonter seule ce qui compte à l'instant --- */
+let TERM_TOUCHE = 0, ECO_PROCH = { at: 0, l: [] }, AUTO_ECO = {};
+async function termMaintenant() { const e = $('#term-now'); if (!e) return; const now = Date.now() / 1000, items = [];
+  for (const x of liaisons()) if (x.e === 'ko') items.push({ c: 'ko', t: `<b>${esc(x.n)}</b> ${esc(x.t)}`, k: 'ETAT' });
+  for (const ps of (POSD.positions || [])) { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, sg = ps.sens === 'long' ? 1 : -1, t = Math.round((der - ps.prix_moyen) / tk) * sg, usd = ps.valeur ? Math.round(t * ps.valeur * ps.taille) : null, ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
+    items.push({ c: 'pos', t: `<b>${esc(ps.instr)} ${ps.sens === 'long' ? 'LONG' : 'SHORT'} ${ps.taille}</b> <span class="${t >= 0 ? 'h' : 'r'}">${t > 0 ? '+' : ''}${t} t${usd != null ? ` · ${usd > 0 ? '+' : ''}${usd} $` : ''}</span> · ${ds != null ? `stop à ${ds} t` : '<span class="r">SANS STOP</span>'}`, k: 'RISK', code: ps.instr }); }
+  const ag = (AGENDA || []).filter(a => a.at > now - 120 && a.at - now < 45 * 60).sort((a, b) => a.at - b.at)[0];
+  if (ag) { if (Date.now() - ECO_PROCH.at > 300000) { try { ECO_PROCH = { at: Date.now(), l: (await api('/maison/graphique?eco=')).types || [] }; } catch (er) { /* rien */ } }
+    const ty = ECO_PROCH.l.find(x => x.n && x.prochaine && Math.abs(x.prochaine.at - ag.at) < 120), mn = Math.round((ag.at - now) / 60);
+    items.push({ c: 'ann', t: `<b>${mn > 0 ? `Dans ${mn} min` : mn === 0 ? 'Maintenant' : `Il y a ${-mn} min`}</b> · ${esc(ag.titre_fr || ag.titre)}${ag.prevision ? ` · attendu ${esc(ag.prevision)}` : ''}${ty ? ' · <u>la réaction habituelle</u>' : ''}`, k: ty ? 'ECO' : 'CAL', arg: ty ? ty.cle : '' });
+    if (ty && mn > 0 && mn <= 10 && !AUTO_ECO[ag.at] && Date.now() - TERM_TOUCHE > 120000) { AUTO_ECO[ag.at] = 1; termOuvre('ECO', false, ty.cle); toast(`Dans ${mn} min : ${ag.titre_fr || ag.titre} — voici comment tes marchés ont réagi les dernières fois`); } }
+  if (!marcheFerme()) for (const x of L.filter(x => x.amp_hab && x.amp / x.amp_hab >= 1.8).sort((a, b) => b.amp / b.amp_hab - a.amp / a.amp_hab).slice(0, 2))
+    items.push({ c: 'mvt', t: `<b>${esc(x.code)}</b> a déjà fait <b>× ${nb(x.amp / x.amp_hab, 1)}</b> sa journée habituelle`, k: 'MOV', code: x.code });
+  e.innerHTML = `<span class="tn-t">MAINTENANT</span>` + (items.length ? items.map((x, i) => `<button class="tn ${x.c}" data-tn="${i}">${x.t}</button>`).join('') : `<span class="tn-r">Rien d’urgent${marcheFerme() ? ' · ' + esc(marcheFerme()) : ''}. Je te montre ici ce qui compte dès que ça arrive : une annonce qui approche, ta position, un marché qui s’emballe, une liaison coupée.</span>`);
+  e.querySelectorAll('[data-tn]').forEach(b => b.onclick = async () => { const x = items[+b.dataset.tn]; if (x.code && x.code !== code && L.some(z => z.code === x.code)) { await changeCode(x.code); termChips(); } termOuvre(x.k, false, x.arg || ''); });
+  document.body.style.setProperty('--tn', e.offsetHeight + 'px'); }
 if (ROLE === 'terminal') {
   document.body.insertAdjacentHTML('beforeend', `<aside class="term-g"><div class="term-logo">ATLAS <span>TERMINAL</span></div><input id="term-q" placeholder="tape pour chercher…" autocomplete="off" spellcheck="false"><div id="term-l"></div>
     <div class="term-aide">↑ ↓ choisir · Entrée ouvrir · Échap effacer<br>un clic sur un marché change aussi tes graphiques</div></aside>
-    <header class="term-h"><div id="term-m" class="term-m"></div><span id="term-age"></span><b id="term-h-t"></b><button id="term-r" title="Rafraîchir maintenant">↻</button></header>`);
+    <div id="term-now" class="term-now"></div><header class="term-h"><div id="term-m" class="term-m"></div><span id="term-age"></span><b id="term-h-t"></b><button id="term-r" title="Rafraîchir maintenant">↻</button></header>`);
   try { $('#boot').remove(); } catch (e) { /* rien */ } BOOT.fini = true;
   $('#term-q').addEventListener('input', () => { TERM_SEL = -1; termNav(); });
   $('#term-r').onclick = () => termOuvre(TERM_K, true);
@@ -3787,6 +3825,9 @@ if (ROLE === 'terminal') {
     if (ev.key === 'Escape') { ev.stopImmediatePropagation(); $('#term-q').value = ''; TERM_SEL = -1; termNav(); $('#term-q').blur(); return; }
     if (ev.key.length === 1 || ev.key === 'Backspace') { ev.stopImmediatePropagation(); const q = $('#term-q'); if (document.activeElement !== q) { ev.preventDefault(); q.focus(); q.value = ev.key === 'Backspace' ? q.value.slice(0, -1) : q.value + ev.key; TERM_SEL = -1; termNav(); } } }, true);
   document.title = (DEV ? 'ESSAI · ' : '') + 'Atlas · Terminal';
+  ['pointerdown', 'keydown', 'wheel'].forEach(t => addEventListener(t, () => { TERM_TOUCHE = Date.now(); }, true));
+  setInterval(() => ecrit('term-vivant', String(Date.now())), 5000); ecrit('term-vivant', String(Date.now()));
+  setInterval(termMaintenant, 10000); setTimeout(termMaintenant, 2500);
   termNav(); termChips(); (async () => { for (let i = 0; i < 40 && !L.length; i++) await new Promise(r => setTimeout(r, 250)); termChips(); termOuvre(TERM_K); })();  // (d'abord tes marchés, puis la fonction)
   setInterval(() => { majTermAge(); if (code !== TERM_CODE && TERM_CODE && TERM_DEP.includes(TERM_K)) termOuvre(TERM_K, true); }, 1000);
   setInterval(() => { termChips(); if (!document.hidden && !marcheFerme() && Date.now() - TERM_AT > 60000 && document.activeElement !== $('#term-q')) termOuvre(TERM_K, true); }, 5000);
