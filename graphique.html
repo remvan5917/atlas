@@ -191,6 +191,22 @@
   .grp-c { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #2f3850; background: #0d1018; display: grid; place-items: center; cursor: pointer; padding: 0; flex: 0 0 auto; align-self: center; } .grp-c i { width: 10px; height: 10px; border-radius: 50%; background: transparent; border: 1.5px dashed #59627a; }
   .grp-c.g i { border: 0; box-shadow: 0 0 10px currentColor; background: currentColor; }
   .frais { font: 700 10px 'JetBrains Mono', monospace; color: #8a91a0; } .frais.fige { color: var(--ambre); }
+  .poche { position: fixed; inset: 0; z-index: 66; display: none; flex-direction: column; background: radial-gradient(120% 80% at 50% 0%, #121826 0%, #06080c 60%); color: #e6e9ef; }
+  body.m-poche .poche { display: flex; } body.m-poche.pc-graph .poche { inset: auto 0 0 0; height: 64px; background: rgba(6, 8, 12, .96); } body.m-poche.pc-graph .poche .pc-h, body.m-poche.pc-graph .poche .pc-cartes, body.m-poche.pc-graph .poche .pc-pts { display: none; }
+  body.m-poche.pc-graph .app { padding-bottom: 64px; } body.m-poche .liste, body.m-poche .outils, body.m-poche .dock, body.m-poche .fil { display: none !important; }
+  .pc-h { display: flex; align-items: center; gap: 10px; padding: 14px 16px 6px; } .pc-h b { font: 800 14px 'Inter'; letter-spacing: .3em; color: var(--ambre); } .pc-h span { flex: 1; font: 600 11px 'JetBrains Mono', monospace; color: #8a91a0; text-align: right; }
+  .pc-h button { background: #141a26; border: 1px solid #2a3142; color: #c6ccd8; border-radius: 8px; padding: 5px 10px; font: 700 11px 'Inter'; }
+  .pc-cartes { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; scrollbar-width: none; } .pc-cartes::-webkit-scrollbar { display: none; }
+  .pc-c { flex: 0 0 100%; scroll-snap-align: center; padding: 10px 18px 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+  .pc-c .nm { font: 800 13px 'Inter'; letter-spacing: .14em; color: #8a91a0; } .pc-c .nm b { color: var(--ambre); font-size: 22px; letter-spacing: .04em; margin-right: 8px; }
+  .pc-c .px { font: 800 clamp(44px, 14vw, 72px) 'JetBrains Mono', monospace; letter-spacing: -.03em; line-height: 1; } .pc-c .vr { font: 700 16px 'JetBrains Mono', monospace; } .pc-c .vr.h { color: #19d38c; } .pc-c .vr.r { color: #ff3d5a; }
+  .pc-c svg.sp { width: 100%; height: 90px; } .pc-k { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .pc-k > div { background: rgba(255, 255, 255, .04); border: 1px solid #1c2230; border-radius: 12px; padding: 10px 12px; }
+  .pc-k small { display: block; font: 800 9.5px 'Inter'; letter-spacing: .14em; color: #8a91a0; } .pc-k b { display: block; font: 800 18px 'JetBrains Mono', monospace; margin-top: 4px; } .pc-k .h { color: #19d38c; } .pc-k .r { color: #ff3d5a; } .pc-k .a { color: var(--ambre); }
+  .pc-pos { background: linear-gradient(135deg, rgba(41, 98, 255, .18), rgba(41, 98, 255, .04)); border: 1px solid rgba(41, 98, 255, .35); border-radius: 14px; padding: 12px 14px; } .pc-pos .l1 { font: 800 15px 'Inter'; } .pc-pos .l2 { font: 700 13px 'JetBrains Mono', monospace; color: #c6ccd8; margin-top: 4px; }
+  .pc-nw { border-left: 3px solid #f0435a; padding: 6px 10px; background: rgba(240, 67, 90, .06); border-radius: 0 10px 10px 0; font: 600 13px/1.4 'Inter'; } .pc-nw time { display: block; font: 700 10.5px 'JetBrains Mono', monospace; color: #8a91a0; }
+  .pc-pts { display: flex; justify-content: center; gap: 6px; padding: 6px; } .pc-pts i { width: 6px; height: 6px; border-radius: 50%; background: #2a3142; } .pc-pts i.on { background: var(--ambre); width: 18px; border-radius: 3px; }
+  .pc-nav { display: flex; border-top: 1px solid #1c2230; background: rgba(6, 8, 12, .96); padding-bottom: env(safe-area-inset-bottom); } .pc-nav button { flex: 1; background: none; border: 0; color: #8a91a0; font: 700 11.5px 'Inter'; padding: 14px 4px; } .pc-nav button.on { color: var(--ambre); }
+  body.m-nomade .ico, body.m-nomade .seg button { min-width: 40px !important; min-height: 40px; } body.m-nomade .ticket button { padding: 12px 18px; font-size: 13px; } body.m-nomade .ticket { bottom: 24px; } body.m-nomade .liste { display: none; }
   .ico.txt { font: 800 11px 'JetBrains Mono', monospace; letter-spacing: .02em; } .seg2 { display: flex; gap: 6px; margin: 6px 0 12px; } .seg2 button { background: #0d1018; border: 1px solid var(--bord); color: #e6e9ef; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; cursor: pointer; } .seg2 button.on { border-color: #00b3ff; color: #00b3ff; }
   #cmp-l button.on { border-color: #00b3ff; }
   .figc { position: fixed; z-index: 56; width: 340px; padding: 12px 14px; border-radius: 12px; background: rgba(15, 19, 28, .98); border: 1px solid #5b4a9c; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); color: var(--texte); display: none; }
@@ -741,6 +757,9 @@
 <div class="tconf" id="tconf"><div><div class="q">CONFIRMER L'ORDRE</div><b id="tconf-t"></b><p id="tconf-d"></p><div class="bt"><button id="tconf-ok">Envoyer · Entrée</button><button id="tconf-non">Annuler · Échap</button></div></div></div>
 <div class="simu-aide" id="simu-aide"><b id="simu-e"></b><span id="simu-t"></span><button id="simu-stop">Annuler · Échap</button></div>
 <div class="fn-p" id="fn-p"><div class="fn-b"><div class="fn-t"><b id="fn-nom"></b><span id="fn-sous"></span><button id="fn-x">Fermer · Échap</button></div><div id="fn-c"></div></div></div>
+<div class="poche" id="poche"><div class="pc-h"><b>ATLAS</b><span id="pc-frais"></span><button id="pc-mode">Mode</button></div><div class="pc-cartes" id="pc-cartes"></div><div class="pc-pts" id="pc-pts"></div>
+  <nav class="pc-nav"><button data-v="cartes" class="on">Marchés</button><button data-v="graph">Graphique</button><button data-v="risk">Risque</button><button data-v="news">Dépêches</button><button data-v="voix">🎙 Copilote</button></nav></div>
+<div class="indic-p" id="mode-p"><div class="indic-b" style="width:min(560px,94vw)"><h3>OÙ TU TRADES</h3><p class="s">Atlas reconnaît ton appareil tout seul ; tu peux aussi choisir.</p><div class="meths" id="mode-l" style="grid-template-columns:repeat(2,1fr)"></div></div></div>
 <div class="bulle" id="bulle"></div>
 <div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button></div><div class="faits" id="visite-f"></div></div>
 <div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
@@ -1077,7 +1096,9 @@ class Pane {
     const cv = this.cv; let glisse = null;
     const pos = ev => { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
     const zone = (x, y) => (this.pw && x >= this.pw ? 'prix' : this.ph && y >= this.ph ? 'temps' : 'graphe');
-    cv.addEventListener('pointerdown', ev => { actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
+    this.tp = new Map();  // (les doigts posés : deux doigts = pincer pour zoomer dans le temps)
+    cv.addEventListener('pointerdown', ev => { if (ev.pointerType === 'touch') { const [x0, y0] = pos(ev); this.tp.set(ev.pointerId, [x0, y0]); if (this.tp.size === 2) { glisse = null; const [a, b] = [...this.tp.values()]; this.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, n: this.n }; return; } }
+      actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
       const z = zone(x, y);
       if (z === 'graphe' && this.T && simuDown(this, x, y)) return;
       if (z !== 'temps' && this.T && tradeDown(this, x, y)) return;
@@ -1098,7 +1119,9 @@ class Pane {
         else if (choisie) { choisie = null; toutDessine(); }
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
-    cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev); this.souris = [x, y];
+    cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev);
+      if (this.pinch && this.tp.has(ev.pointerId)) { this.tp.set(ev.pointerId, [x, y]); const [a, b] = [...this.tp.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; this.n = Math.max(20, Math.min(1500, this.pinch.n * this.pinch.d / d)); this.dessine(); return; }
+      this.souris = ev.pointerType === 'touch' ? null : [x, y];
       if (simuMove(this, x, y)) return;
       if (tradeMove(this, x, y)) return;
       if (this.iT && panes.length > 1) { INSTANT = { t: this.iT(x), p: this }; panes.forEach(q => { if (q !== this) q.dessine(); }); }
@@ -1123,7 +1146,9 @@ class Pane {
         }
       }
       this.dessine(); });
-    cv.addEventListener('pointerup', ev => { const [x, y] = pos(ev); if (simuUp(this)) return; if (tradeUp(this)) return; if (!brouillon || brouillon.direct) travail(false);
+    const lacheDoigt = ev => { this.tp.delete(ev.pointerId); if (this.tp.size < 2) this.pinch = null; };
+    cv.addEventListener('pointercancel', lacheDoigt);
+    cv.addEventListener('pointerup', ev => { if (ev.pointerType === 'touch') { const etait = !!this.pinch; lacheDoigt(ev); if (etait) return; } const [x, y] = pos(ev); if (simuUp(this)) return; if (tradeUp(this)) return; if (!brouillon || brouillon.direct) travail(false);
       if (brouillon && brouillon.direct && brouillon.pane === this) { if (Math.abs(this.T(brouillon.t2) - this.T(brouillon.t1)) < 6) { brouillon = null; toutDessine(); } else cliqueDessin(this, x, y); glisse = null; return; }
       if (glisse && glisse.mode === 'regle') { glisse = null; const r = this.regle; setTimeout(() => { if (this.regle === r) { this.regle = null; this.dessine(); } }, 5000); return; }
       if (glisse && glisse.mode === 'graphe' && !glisse.ligne && Math.abs(glisse.v || 0) > .25 && performance.now() - (glisse.lt || 0) < 80) {  // l'élan : le graphique continue de glisser, puis ralentit
@@ -1240,7 +1265,7 @@ if (SALLE_BC && (ROLE || FEN === '1')) SALLE_BC.onmessage = ev => { const m = ev
 async function changeCode(c, diffuse = true) { if (c !== code) { vu(); setTimeout(() => verifieVisite('marche'), 1500); } setTimeout(() => { try { majPxDow(); } catch (e) { /* rien */ } }, 50); if (diffuse && SALLE_BC && ROLE !== 'lie' && (ROLE || FEN === '1')) SALLE_BC.postMessage({ t: 'code', c, de: FEN }); $('#graphes').classList.add('bascule'); setTimeout(() => $('#graphes').classList.remove('bascule'), 400); code = c; ecrit(K('g-code'), c); choisie = null; brouillon = null; await chargeLignes(); construit(); majListe(); chargeCot(); chargeNouvelles(); }
 async function chargeCot() { const k = code; if (COTD[k] && Date.now() - COTD[k]._vu < 3600000) return; try { const r = await api(`/maison/graphique?cot=1&code=${k}`); COTD[k] = { ...r, _vu: Date.now() }; toutDessine(); } catch (e) { /* hors liaison */ } }
 let L = [];
-async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; L_AT = Date.now(); POS = r.positions || []; if (!GLISSE && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#liste'))) majListe(r.familles || []); else FAMS = r.familles || FAMS; if (ROLE === 'ensemble') chargeTout(); try { majPxDow(); } catch (er) { /* rien */ } try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
+async function chargeListe() { try { const r = await api('/maison/graphique?liste=1'); L = r.liste || []; L_AT = Date.now(); if (typeof majPoche === 'function') setTimeout(majPoche, 0); POS = r.positions || []; if (!GLISSE && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#liste'))) majListe(r.familles || []); else FAMS = r.familles || FAMS; if (ROLE === 'ensemble') chargeTout(); try { majPxDow(); } catch (er) { /* rien */ } try { majTicker(); guetteTouches(); } catch (er) { /* rien */ } } catch (e) { /* hors liaison */ } }
 const fermees = new Set(JSON.parse(lit('g-fams-fermees', '[]'))); let POS = [], avantPx = {}, FAMS = [];
 function spark(v, up) {
   if (!v || v.length < 2) return '<svg></svg>'; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
@@ -2983,6 +3008,46 @@ function majFraicheur() { const e = $('#mon-frais'); if (!e) return; const f = m
   else if (age > 60) { e.textContent = `TopstepX · figé depuis ${age > 3600 ? Math.round(age / 3600) + ' h' : Math.round(age / 60) + ' min'}`; e.classList.add('fige'); }
   else { e.textContent = `TopstepX · à jour ${new Date(L_AT).toLocaleTimeString('fr-FR')}`; e.classList.remove('fige'); } }
 setInterval(majFraicheur, 1000);
+/* ================= trader partout : Atlas s'adapte à l'endroit où tu es (salle, bureau, tablette, téléphone) ================= */
+// Poche (téléphone) : une carte par marché, on glisse de l'une à l'autre ; Nomade (tablette) : un grand graphique au doigt, pincer pour zoomer.
+// Lecture seule hors de la maison tant que la question de la règle Topstep n'est pas tranchée (voir la feuille de route).
+const MODES = [['auto', 'Automatique', 'selon l’appareil'], ['salle', 'Salle', 'tes écrans, comme aujourd’hui'], ['nomade', 'Nomade', 'tablette : un grand graphique au doigt'], ['poche', 'Poche', 'téléphone : une carte par marché']];
+var MODE_CHOIX = lit('g-mode', 'auto'), MODE = 'salle', PC_I = 0;
+function modeAuto() { const tactile = matchMedia('(pointer: coarse)').matches, w = innerWidth; return w <= 640 ? 'poche' : tactile && w <= 1400 ? 'nomade' : 'salle'; }
+function appliqueMode() { const m = MODE_CHOIX === 'auto' ? modeAuto() : MODE_CHOIX; if (ROLE && ROLE !== 'structure') return; if (m === MODE) return; MODE = m;
+  document.body.classList.toggle('m-poche', m === 'poche'); document.body.classList.toggle('m-nomade', m === 'nomade'); document.body.classList.remove('pc-graph');
+  if ((m === 'poche' || m === 'nomade') && vue !== 'un') { vue = 'un'; construit(); }
+  if (m === 'poche') { majPoche(); chargeRadarPoche(); } setTimeout(toutDessine, 50); }
+addEventListener('resize', () => { clearTimeout(appliqueMode._t); appliqueMode._t = setTimeout(appliqueMode, 250); });
+function ouvreModes() { $('#mode-l').innerHTML = MODES.map(([k, n, a]) => `<button data-mode="${k}" class="${MODE_CHOIX === k ? 'on' : ''}">${esc(n)}<small>${esc(a)}${k === 'auto' ? ` (maintenant : ${(MODES.find(z => z[0] === modeAuto()) || [])[1]})` : ''}</small></button>`).join(''); $('#mode-p').classList.add('on'); }
+$('#mode-l').addEventListener('click', ev => { const b = ev.target.closest('[data-mode]'); if (!b) return; MODE_CHOIX = b.dataset.mode; ecrit('g-mode', MODE_CHOIX); MODE = ''; appliqueMode(); $('#mode-p').classList.remove('on'); toast(`Mode ${(MODES.find(z => z[0] === MODE_CHOIX) || [])[1]}`); });
+$('#mode-p').addEventListener('click', ev => { if (ev.target.id === 'mode-p') $('#mode-p').classList.remove('on'); });
+$('#pc-mode').onclick = ouvreModes;
+FONCTIONS.push(['MODE', 'où tu trades : salle, tablette, téléphone (ou automatique)', () => ouvreModes()]);
+// la carte d'un marché, en grand
+function cartePoche(x) { const ps = positionsDe(x.code)[0], dec = x.dec ?? 2, v = x.spark || [], lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
+  const pts = v.map((y, i) => `${(i * 100 / Math.max(1, v.length - 1)).toFixed(1)},${(86 - (y - lo) / r * 80).toFixed(1)}`).join(' '), up = (x.pct || 0) >= 0;
+  const now = Date.now() / 1000, D = RADAR_D || {}, ann = (D.agenda || []).filter(a => a.fort && a.at > now).sort((a, b) => a.at - b.at)[0], nw = (D.items || []).filter(i => (i.marches || []).some(m => m === x.code || m === ({ GC: 'MGC', CL: 'MCL', NQ: 'MNQ' }[x.code])) && (i.urgence === 'critique' || i.urgence === 'importante')).sort((a, b) => (b.publie || b.at) - (a.publie || a.at))[0];
+  let pos = ''; if (ps) { const tk = ps.pas || 1, der = ps.dernier ?? x.dernier, sg = ps.sens === 'long' ? 1 : -1, t = Math.round((der - ps.prix_moyen) / tk) * sg, usd = ps.valeur ? t * ps.valeur * ps.taille : null, ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null, reste = POSD.dll ? Math.round(POSD.dll + (POSD.pnl_jour || 0) + (usd || 0)) : null;
+    pos = `<div class="pc-pos"><div class="l1" style="color:${t >= 0 ? '#19d38c' : '#ff3d5a'}">${ps.sens === 'long' ? 'LONG' : 'SHORT'} ${ps.taille} · ${t > 0 ? '+' : ''}${t} t${usd != null ? ` · ${usd > 0 ? '+' : ''}${Math.round(usd)} $` : ''}</div><div class="l2">${ds != null ? `stop à ${ds} t` : '<span style="color:#ff3d5a">sans stop</span>'}${reste != null ? ` · reste ${reste} $ avant la limite du jour` : ''}</div></div>`; }
+  return `<section class="pc-c" data-c="${esc(x.code)}"><div class="nm"><b>${esc(x.code)}</b>${esc(x.nom || '')}</div><div class="px">${nb(x.dernier, dec)}</div><div class="vr ${up ? 'h' : 'r'}">${up ? '▲' : '▼'} ${nb(Math.abs(x.pct || 0), 2)} %${x.ticks != null ? ` · ${x.ticks > 0 ? '+' : ''}${x.ticks} t` : ''}</div>
+    <svg class="sp" viewBox="0 0 100 90" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${up ? '#19d38c' : '#ff3d5a'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>${pos}
+    <div class="pc-k"><div><small>AMPLITUDE DU JOUR</small><b class="${x.amp_hab && x.amp / x.amp_hab >= 1.3 ? 'a' : ''}">${x.amp != null ? x.amp + ' t' : '—'}</b></div><div><small>TA LIGNE LA PLUS PROCHE</small><b class="${x.ligne && Math.abs(x.ligne.d) <= 20 ? 'a' : ''}">${x.ligne ? `${x.ligne.d > 0 ? '▼' : '▲'} ${Math.abs(x.ligne.d)} t` : '—'}</b></div>
+      <div style="grid-column:1/-1"><small>PROCHAINE ANNONCE FORTE</small><b style="font-size:14px">${ann ? `${new Date(ann.at * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })} · ${esc(ann.titre_fr || ann.titre)}` : 'rien de prévu pour l’instant'}</b></div></div>
+    ${nw ? `<div class="pc-nw"><time>${new Date((nw.publie || nw.at) * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</time>${esc(nw.titre)}</div>` : ''}</section>`; }
+function majPoche() { if (MODE !== 'poche') return; const l = L.length ? L : [], c = $('#pc-cartes'); if (!l.length) { c.innerHTML = '<section class="pc-c"><div class="nm">Je charge tes marchés…</div></section>'; return; }
+  const sl = c.scrollLeft, premier = !c.dataset.vu; c.innerHTML = l.map(cartePoche).join(''); c.dataset.vu = '1';
+  if (premier) { const k = Math.max(0, l.findIndex(x => x.code === code)); PC_I = k; requestAnimationFrame(() => { c.scrollLeft = k * c.clientWidth; }); } else c.scrollLeft = sl; $('#pc-pts').innerHTML = l.map((x, k) => `<i class="${k === PC_I ? 'on' : ''}"></i>`).join('');
+  $('#pc-frais').textContent = (marcheFerme() || '').replace('marché fermé · reprise dimanche 23 h', 'fermé · reprise dim. 23 h') || (L_AT ? `à jour ${new Date(L_AT).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''); }
+$('#pc-cartes').addEventListener('scroll', () => { const c = $('#pc-cartes'), k = Math.round(c.scrollLeft / Math.max(1, c.clientWidth)); if (k !== PC_I) { PC_I = k; document.querySelectorAll('#pc-pts i').forEach((e, i) => e.classList.toggle('on', i === k)); const x = L[k]; if (x && x.code !== code) changeCode(x.code); } }, { passive: true });
+async function chargeRadarPoche() { if (MODE !== 'poche' || document.hidden) return; try { RADAR_D = await api('/maison/radar'); } catch (e) { /* hors liaison */ } majPoche(); }
+setInterval(chargeRadarPoche, 60000); setInterval(() => { if (MODE === 'poche' && !document.hidden) majPoche(); }, 5000);
+document.querySelector('.pc-nav').addEventListener('click', ev => { const b = ev.target.closest('[data-v]'); if (!b) return; const v = b.dataset.v;
+  if (v === 'voix') { toast('Maintiens le bouton et parle'); return; }
+  document.querySelectorAll('.pc-nav button').forEach(z => z.classList.toggle('on', z === b && v !== 'risk' && v !== 'news'));
+  if (v === 'cartes') { document.body.classList.remove('pc-graph'); majPoche(); } else if (v === 'graph') { document.body.classList.add('pc-graph'); setTimeout(() => { panes.forEach(p => p.taille && p.dessine()); }, 60); } else if (v === 'risk') fnRisk(); else if (v === 'news') fnNews(code); });
+{ const bv = document.querySelector('.pc-nav [data-v="voix"]'); bv.addEventListener('pointerdown', () => demarreMicro('q')); bv.addEventListener('pointerup', () => { if (rec && rec.mode === 'q') arreteMicro(); }); }
+setTimeout(appliqueMode, 300);
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
 var CFGD = {}, CFG_AT = {}, CFG_LA = {}, cfgMinuteur = 0;
