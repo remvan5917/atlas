@@ -791,7 +791,7 @@ class Pane {
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
     const iY = y => { const w = lHi - (y - HAUT) / (BASP - HAUT) * (lHi - lLo); return LOG ? Math.exp(w) : w; };
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
-    const IC = [...(IND.length ? calculeIndics(this, B, IND) : []), ...(SPR ? [SPR] : [])], HA = TYPE === 'heikin' ? heikin(this, B) : null, MC = METHODE !== 'dow' ? calculeMethode(this, B) : null;
+    const IC = [...(IND.length ? (() => { try { return calculeIndics(this, B, IND); } catch (e) { console.warn('indicateur', e); return []; } })() : []), ...(SPR ? [SPR] : [])], HA = TYPE === 'heikin' ? heikin(this, B) : null, MC = METHODE !== 'dow' ? calculeMethode(this, B) : null;
     const TH = theme(), coul = x => (!x || x === '#000' || x === '#000000' || x === '#0b0e15') ? TH.fg : x;
     c.clearRect(0, 0, W, H); c.fillStyle = TH.bg; c.fillRect(0, 0, W, H);
     // la grille pointillée
@@ -955,8 +955,8 @@ class Pane {
     this.marques = [];
     // tes configurations : un petit triangle de leur couleur, gravé en haut de l'axe du temps, à chaque fois qu'elles sont apparues (rien sur les bougies)
     for (const cf of (CFGD[`${code}|${this.ut}`] || [])) { if (!cf.visible || !cf.eval || !cf.eval.ok) continue;
-      for (const ca of cf.eval.cas) { if (REPLAY && ca.t > REPLAY.t) continue; const x = T(ca.t); if (x < 2 || x > pw - 2) continue;
-        const n = { genre: 'config', at: ca.t, fin: ca.t + cf.suite * (DUREE[cf.eval.ut] || 3600), cf, ca }, sel = this.survol && this.survol.genre === 'config' && this.survol.ca === ca, w = sel ? 5.5 : 3.6;
+      for (const ca of cf.eval.cas) { if (REPLAY && ca.t + (DUREE[cf.eval.ut] || 3600) > REPLAY.t) continue; const x = T(ca.t); if (x < 2 || x > pw - 2) continue;  // (en replay : seulement les bougies déjà closes)
+        const n = ca._n || (ca._n = { genre: 'config', at: ca.t, fin: ca.t + cf.suite * (DUREE[cf.eval.ut] || 3600), cf, ca }), sel = this.survol && this.survol.genre === 'config' && this.survol.ca === ca, w = sel ? 5.5 : 3.6;
         c.fillStyle = cf.couleur || '#12b8a6'; c.beginPath(); c.moveTo(x, ph + 1.5); c.lineTo(x + w, ph + 1.5 + w * 1.5); c.lineTo(x - w, ph + 1.5 + w * 1.5); c.closePath(); c.fill();
         this.marques.push({ x, y: ph + 5, n }); } }
     if (opt.news && NOUV[code]) {
@@ -1015,6 +1015,7 @@ class Pane {
       // la règle : Ctrl + glisser (ou le bouton du milieu) = ticks, dollars, barres, durée
       if (z === 'graphe' && this.T && (ev.ctrlKey || ev.metaKey || ev.button === 1)) { ev.preventDefault(); const t = this.iT(x), pr = this.iY(y); this.regle = { t1: t, p1: pr, t2: t, p2: pr }; glisse = { mode: 'regle' }; return; }
       if (this.figSurvol && outil === 'curseur' && !proche(this, x, y)) { ouvreFigure(this.figSurvol, ev.clientX, ev.clientY); return; }
+      if (this.survol && outil === 'curseur' && this.survol.genre === 'config' && REPLAY) { return; }
       if (this.survol && outil === 'curseur' && this.survol.genre === 'config') { const n = this.survol; MARQUE_PASSE = { t: n.at, fin: n.fin, txt: `${n.cf.nom} · ${quand(n.at)} · ${n.ca.fin > 0 ? '+' : ''}${n.ca.fin} t ensuite` }; this.survol = null; montreBulle(null); toutDessine(); return; }
       if (this.survol && outil === 'curseur') { const n = this.survol; copilote(`Explique-moi la nouvelle « ${n.titre} » de ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} et comment le marché a réagi.`); return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
@@ -1701,6 +1702,7 @@ const GENRES = { critique: ['CRITIQUE', '#f23645'], importante: ['IMPORTANTE', '
 function montreBulle(n, x, y) {
   const b = $('#bulle'); if (!n) { b.classList.remove('on'); toutDessine(); return; }
   if (n.genre === 'figure') { b.innerHTML = `<div class="q"><span class="g" style="background:#8b5cff22;color:#b39dff">FIGURE</span>${esc(n.f.ut)}</div><b>${esc(n.f.nom)}</b><p>${esc(n.f.texte)}</p><div class="astuce">clic : la garder, l’ignorer, ou l’explication du copilote</div>`; b.classList.add('on'); placeBulle(x, y); return; }
+  if (n.genre === 'config' && REPLAY) { b.innerHTML = `<div class="q"><span class="g" style="background:${n.cf.couleur}22;color:${n.cf.couleur}">CONFIGURATION</span>${new Date(n.at * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div><b>${esc(n.cf.nom)}</b><div class="astuce">replay : la suite reste cachée</div>`; b.classList.add('on'); placeBulle(x, y); return; }
   if (n.genre === 'config') { const cf = n.cf, ca = n.ca, st = cf.eval.stats, du = dureeTxt(cf.suite * (DUREE[cf.eval.ut] || 3600) / 60);
     b.innerHTML = `<div class="q"><span class="g" style="background:${cf.couleur}22;color:${cf.couleur}">CONFIGURATION</span>${new Date(n.at * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
       <b>${esc(cf.nom)}</b>${cf.explication ? `<p>${esc(cf.explication)}</p>` : ''}
@@ -2197,8 +2199,8 @@ function calculeIndics(p, B, IND) {
           if (e.type === 'ema') { let pr = fins[0]; for (let q = 1; q < fins.length; q++) pr += a * (fins[q] - pr); o[k] = pr; } else { let sm = 0; for (let q = fins.length - n; q < fins.length; q++) sm += fins[q]; o[k] = sm / n; } } return o; }
       case 'session_haut': case 'session_bas': { const [tz, d0, d1] = PL[e.place] || PL.londres, o = new Float64Array(N).fill(NaN); let cle0 = null, run = null, fait = null;
         for (let k = 0; k < N; k++) { const t = B[k][0], m = minutesLa(tz, t), dans = m >= d0 && m < d1, cl = Math.floor((t + decalage(tz, t) * 60) / 86400);
-          if (dans) { if (cl !== cle0) { cle0 = cl; run = [B[k][2], B[k][3]]; } else { run[0] = Math.max(run[0], B[k][2]); run[1] = Math.min(run[1], B[k][3]); } fait = run; }
-          if (fait) o[k] = e.f === 'session_haut' ? fait[0] : fait[1]; } return o; }
+          if (fait) o[k] = e.f === 'session_haut' ? fait[0] : fait[1];  // (pendant la séance : jusqu'à la bougie précédente, pour qu'une cassure soit possible)
+          if (dans) { if (cl !== cle0) { cle0 = cl; run = [B[k][2], B[k][3]]; } else { run[0] = Math.max(run[0], B[k][2]); run[1] = Math.min(run[1], B[k][3]); } fait = [run[0], run[1]]; } } return o; }
     }
     return new Float64Array(N).fill(NaN);
   }
@@ -2234,7 +2236,7 @@ $('#indic-a').addEventListener('click', ev => { const b = ev.target.closest('but
 $('#indic-a').addEventListener('input', ev => { const e = ev.target.closest('input[type=color]'); if (!e) return; const x = INDICS[+e.dataset.k]; if (!x) return; x.couleurs = { ...(x.couleurs || {}), [e.dataset.c]: e.value }; e.parentNode.style.background = e.value; indicsVersion++; toutDessine(); });
 $('#indic-a').addEventListener('change', ev => { if (ev.target.matches('input[type=color]')) gardeIndics(); });
 function periodes(r) { const o = []; JSON.stringify(r, (cle, val) => { if (cle === 'n' && typeof val === 'number') o.push(val); return val; }); return o; }
-function verifieRecette(r) { const ok = e => { if (!e || typeof e !== 'object') return false; if ('src' in e && Object.keys(e).length === 1) return typeof e.src === 'string'; if ('const' in e) return isFinite(+e.const); if (e.op) return ['+', '-', '*', '/', '>', '<', '>=', '<=', 'croise_haut', 'croise_bas', 'et', 'ou'].includes(e.op) && ok(e.a) && ok(e.b); return typeof e.f === 'string' && (!e.src || ok(e.src)); };
+function verifieRecette(r) { const ok = e => { if (!e || typeof e !== 'object') return false; if ('src' in e && Object.keys(e).length === 1) return typeof e.src === 'string'; if ('const' in e) return isFinite(+e.const); if (e.op) return ['+', '-', '*', '/', '>', '<', '>=', '<=', 'croise_haut', 'croise_bas', 'et', 'ou'].includes(e.op) && ok(e.a) && ok(e.b); return typeof e.f === 'string' && (['sma', 'ema', 'wma', 'stdev', 'plus_haut', 'plus_bas', 'change', 'abs', 'rsi', 'precedent'].includes(e.f) ? ok(e.src) : (!e.src || ok(e.src))); };
   const coul = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#3d7bff';
   if (!r || typeof r !== 'object') throw new Error('recette illisible');
   const o = { nom: String(r.nom || 'Indicateur importé').slice(0, 40), explication: String(r.explication || '').slice(0, 240), niveaux: (r.niveaux || []).slice(0, 4).map(Number).filter(isFinite),
@@ -2401,7 +2403,7 @@ function alertesMethode(p, M, B) {  // une fois quand ça DEVIENT vrai (pas au c
     if (av === false && dedans && !(MALERTE[kk] && maint - MALERTE[kk] < 1800000)) { MALERTE[kk] = maint; halo('ambre'); if (QUI_SONNE) sonne('ligne'); toast(`◆ ${lib} : ${txt}`); } };
   if (M.genre === 'smc') { M.fvg.forEach(f => etat('fvg' + f.t, b[3] <= f.haut && b[2] >= f.bas, `le prix entre dans un déséquilibre ${f.sens > 0 ? 'haussier' : 'baissier'} (${nb(f.bas, dec)} – ${nb(f.haut, dec)})`));
     M.ob.forEach(o => etat('ob' + o.t, b[3] <= o.haut && b[2] >= o.bas, `le prix revient dans un bloc d’ordres ${o.sens > 0 ? 'haussier' : 'baissier'} (${nb(o.bas, dec)} – ${nb(o.haut, dec)})`));
-    const s = M.sweeps[M.sweeps.length - 1]; if (s) etat('sw' + s.t, s.t >= b[0], `mèche au-delà ${s.sens > 0 ? 'du creux' : 'du sommet'} ${nb(s.prix, dec)}, la clôture revient en deçà`); }
+    const s = M.sweeps[M.sweeps.length - 1]; if (s) etat('sw', s.t >= b[0], `mèche au-delà ${s.sens > 0 ? 'du creux' : 'du sommet'} ${nb(s.prix, dec)}, la clôture revient en deçà`); }
   if (M.genre === 'volume') { const v = M.vw[k], sd = M.sd[k]; if (isFinite(v) && sd > 0) { etat('v2h', b[2] >= v + 2 * sd, `le prix touche la bande haute du VWAP (2 écarts, ${nb(v + 2 * sd, dec)})`); etat('v2b', b[3] <= v - 2 * sd, `le prix touche la bande basse du VWAP (2 écarts, ${nb(v - 2 * sd, dec)})`); etat('vw', b[3] <= v && b[2] >= v, `le prix revient sur le VWAP (${nb(v, dec)})`); } }
   if (M.genre === 'ichimoku') { const kj = M.kj[k], a = M.sa[k], bb = M.sb[k]; if (isFinite(kj)) { etat('kjh', b[4] > kj, `le prix passe au-dessus de la Kijun (${nb(kj, dec)})`); etat('kjb', b[4] < kj, `le prix passe sous la Kijun (${nb(kj, dec)})`); }
     if (isFinite(a) && isFinite(bb)) etat('nuage', b[4] <= Math.max(a, bb) && b[4] >= Math.min(a, bb), `le prix entre dans le nuage (${nb(Math.min(a, bb), dec)} – ${nb(Math.max(a, bb), dec)})`); }
@@ -2415,7 +2417,7 @@ function ecranTexte(p, enReplay) {  // ce que montre son écran, pour le copilot
     const al = (ALERTES || []).filter(a => a.actif && a.marche === code); if (al.length) L.push('Ses alertes actives sur ce marché : ' + al.map(a => `${a.titre} (${a.ut})`).join(' ; ') + '.');
     const hb = habitudesTexte(); if (hb) L.push(hb);
     const cf = p && !enReplay ? (CFGD[`${code}|${p.ut}`] || []).filter(x => x.visible && x.eval && x.eval.ok) : []; if (cf.length) L.push('Ses configurations : ' + cf.map(x => `${x.nom}${x.eval.maintenant ? ' (PRÉSENTE sur la dernière bougie close)' : ''}${x.eval.stats ? ` — ${x.eval.stats.n} fois, ensuite ${x.eval.stats.plus} fois plus haut / ${x.eval.stats.moins} fois plus bas` : ''}`).join(' ; ') + '.');
-    if (optFig && p && B) { const fg = figuresDe(p, B); if (fg.length) L.push('Figures repérées sur son graphique : ' + fg.map(f => `${f.nom} — ${f.texte}`).join(' | ')); }
+    if (optFig && !enReplay && p && B) { const fg = figuresDe(p, B); if (fg.length) L.push('Figures repérées sur son graphique : ' + fg.map(f => `${f.nom} — ${f.texte}`).join(' | ')); }
     if (M && B) { const k = B.length - 1, der = B[k][4], pos = (h, l) => der > h ? 'AU-DESSUS' : der < l ? 'EN DESSOUS' : 'DEDANS';
       if (M.genre === 'smc') { L.push('Déséquilibres (FVG) non comblés : ' + (M.fvg.slice(-5).map(f => `${f.sens > 0 ? 'haussier' : 'baissier'} ${nb(f.bas, dec)}–${nb(f.haut, dec)} (prix ${pos(f.haut, f.bas)})`).join(' ; ') || 'aucun') + '.');
         L.push('Blocs d’ordres actifs : ' + (M.ob.map(o => `${o.sens > 0 ? 'haussier' : 'baissier'} ${nb(o.bas, dec)}–${nb(o.haut, dec)} (prix ${pos(o.haut, o.bas)})`).join(' ; ') || 'aucun') + '.');
@@ -2576,7 +2578,7 @@ $('#pages-l').addEventListener('click', ev => { const d = ev.target.closest('[da
   if (b.dataset.op === 'efface') { l.splice(+d.dataset.k, 1); ecrit('g-pages', JSON.stringify(l)); majPages(); return; }
   for (const [k, v] of Object.entries(x.etat)) ecrit(k.startsWith('§') ? K('g-' + k.slice(1)) : k, v);
   try { new BroadcastChannel('atlas-indics' + (DEV ? '-dev' : '')).postMessage(1); } catch (e) { /* rien */ } if (METH_BC) METH_BC.postMessage(lit('g-methode', 'dow'));
-  location.reload(); });
+  if (/code=/.test(location.hash)) location.hash = location.hash.replace(/&?code=[^&]*/, ''); location.reload(); });
 /* « pourquoi cette bougie ? » */
 async function pourquoiBougie(p, t) {
   if (copiOccupe) return; copiOccupe = true; taisToi(); const du = DUREE[p.ut] || 3600, h = new Date(t * 1000).toLocaleString('fr-FR', ['D1', 'W', 'M'].includes(p.ut) ? { day: 'numeric', month: 'short' } : { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
