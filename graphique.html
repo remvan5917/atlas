@@ -95,6 +95,7 @@
   .res.sel, .res:hover { background: rgba(41, 98, 255, .14); } .res b { font: 700 14px 'Inter'; } .res span { color: var(--doux); } .res .v { font: 600 13px 'Inter'; font-variant-numeric: tabular-nums; }
   .recherche .pied { padding: 8px 14px; color: var(--tres-doux); font-size: 11px; border-top: 1px solid var(--ligne); }
   /* ---- les petits messages ---- */
+  .toast-act { pointer-events: auto; display: flex; align-items: center; gap: 14px; } .toast-act button { pointer-events: auto; background: none; border: 1px solid rgba(76, 201, 240, .5); color: #4cc9f0; border-radius: 8px; padding: 4px 10px; font: 700 12px 'Inter'; cursor: pointer; }
   .toasts { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 70; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
   .toast { background: #0b1426; color: #fff; border: 1px solid #2c3445; padding: 9px 16px; border-radius: 10px; font-weight: 500; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: toast 2.6s ease forwards; }
   @keyframes toast { 0% { opacity: 0; transform: translateY(10px); } 10%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
@@ -898,7 +899,7 @@
       <b>Le graphique</b> : <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
       <b>Souris</b> : glisser = déplacer (avec élan) · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
       <b>La salle</b> : <kbd>/</kbd> écris ce que tu veux (un marché, une commande, une question) · <kbd>E</kbd> copilote · <kbd>Q</kbd> maintenu : lui parler · <kbd>V</kbd> maintenu : journal · <kbd>D</kbd> structure de Dow · <kbd>A</kbd> étude d'annonce · <kbd>R</kbd> replay · <kbd>M</kbd> mémoire · <kbd>Z</kbd> focus · survole un repère de nouvelle (clic = explication)<br>
-      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
+      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
   </div>
   <div class="fil"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="piste2"></div></div><span class="pos-f" id="pos-f" hidden title="Ta position (lecture seule). Clic : montrer / cacher les repères sur l'échelle des prix"></span><span class="fil-e" id="fil-e"></span></div>
@@ -963,7 +964,7 @@
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
   <p><kbd>Échap</kbd>fermer une fenêtre, revenir au curseur</p></section>
   <section><h4>Dessiner</h4>
-  <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie</p>
+  <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie · <kbd>Ctrl + Z</kbd>annuler · <kbd>Ctrl + Y</kbd>rétablir</p>
   <p><kbd>Maj</kbd>+ glisser : une tendance · <kbd>Alt</kbd>+ clic : une horizontale · double-clic sur un pivot : support / résistance · <kbd>Ctrl</kbd>+ glisser : la règle</p>
   <p>Fibonacci, zone de prix (rectangle, avec alerte), flèche, texte : dans la barre d'outils à gauche</p></section>
   <section><h4>Analyser</h4>
@@ -1486,10 +1487,22 @@ function proche(p, x, y) {
     if (d < dmin) { dmin = d; mieux = l; } });
   return mieux;
 }
-function efface() { if (!choisie) return; lignes = lignes.filter(l => l !== choisie); choisie = null; sauve(); toutDessine(); }
+function efface() { if (!choisie) return; lignes = lignes.filter(l => l !== choisie); choisie = null; sauve(); toutDessine(); toast('Ligne effacée', ['Annuler', () => annule(false)]); }
+/* annuler / rétablir tes dessins (Ctrl + Z, Ctrl + Y) : chaque enregistrement garde l'état d'avant, par marché, dans cette fenêtre (60 pas) ; un même geste (un glissé) ne compte qu'une fois */
+var HIST_L = {}, REDO_L = {}, ETAT_L = {}, HIST_T = 0, SANS_HIST = false;
+const snapL = () => JSON.stringify(lignes, (k, v) => k === 'pane' || k === 'etape' || (k && k[0] === '_') ? undefined : v);
+function noteHist() { const s = snapL(), avant = ETAT_L[code]; ETAT_L[code] = s; if (SANS_HIST || avant == null || avant === s) return;
+  if (Date.now() - HIST_T > 900) { (HIST_L[code] = HIST_L[code] || []).push(avant); if (HIST_L[code].length > 60) HIST_L[code].shift(); } HIST_T = Date.now(); REDO_L[code] = []; }
+function annule(refait) { if (ROLE === 'terminal' || ROLE === 'ensemble') return; const H = (refait ? REDO_L : HIST_L)[code] || [];
+  if (!H.length) { toast(refait ? 'Rien à rétablir' : `Rien à annuler sur ${code}`); return; }
+  const cible = H.pop(), cur = snapL(), autre = refait ? HIST_L : REDO_L; (autre[code] = autre[code] || []).push(cur); const n0 = lignes.length;
+  try { lignes = JSON.parse(cible) || []; } catch (e) { return; } choisie = null; ETAT_L[code] = cible; nbLignesAvant = lignes.length; SANS_HIST = true; try { sauve(); } finally { SANS_HIST = false; } HIST_T = 0;
+  const d = lignes.length - n0; toast(`${refait ? '↷ Rétabli' : '↶ Annulé'}${d > 0 ? ` · ${d} dessin${d > 1 ? 's' : ''} remis` : d < 0 ? ` · ${-d} dessin${d < -1 ? 's' : ''} retiré${d < -1 ? 's' : ''}` : ''} · ${refait ? 'Ctrl + Z pour annuler' : 'Ctrl + Y pour rétablir'}`); }
+document.addEventListener('keydown', ev => { if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return; const t = ev.target; if (t && (/INPUT|TEXTAREA|SELECT/.test(t.tagName || '') || t.isContentEditable)) return;
+  const k = (ev.key || '').toLowerCase(); if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); ev.stopImmediatePropagation(); annule(false); } else if (k === 'y' || (k === 'z' && ev.shiftKey)) { ev.preventDefault(); ev.stopImmediatePropagation(); annule(true); } }, true);
 const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
-function sauve() { if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
+function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
   const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
@@ -1499,7 +1512,7 @@ async function chargeLignes() {
   try { const r = await api(`/maison/graphique?lignes=1&code=${code}`); const l = r.lignes || [];
     lignes = l.filter(x => !x.double).map(x => x.canal ? { ...x, genre: 'canal' } : x); ecrit('g-lignes-' + code, JSON.stringify(lignes)); }
   catch (e) { try { lignes = JSON.parse(lit('g-lignes-' + code, '[]')) || []; } catch (e2) { lignes = []; } }  // (sans la maison : tes lignes d'avant, gardées sur l'appareil)
-  try { nbLignesAvant = lignes.length; } catch (e) { /* rien */ }
+  try { nbLignesAvant = lignes.length; ETAT_L[code] = snapL(); } catch (e) { /* rien */ }
 }
 
 /* ---------- les panneaux, la liste, les touches ---------- */
@@ -1723,7 +1736,8 @@ $('#q').addEventListener('keydown', ev => {
 $('#resultats').addEventListener('click', ev => { const a = ev.target.closest('.res[data-aj]'); if (a) { const x = TXR.find(y => y.code === a.dataset.aj); if (x && !x.suivi) ajouteMarche(x.code, !AJOUT); return; } const t = ev.target.closest('.res[data-c]'); if (t) { fermeRecherche(); changeCode(t.dataset.c); } });
 $('#voile').addEventListener('click', ev => { if (ev.target.id === 'voile') fermeRecherche(); });
 /* les petits messages */
-function toast(t) { try { if (/^✓/.test(t) && navigator.vibrate && matchMedia('(pointer: coarse)').matches) navigator.vibrate([10, 40, 10]); } catch (er) { /* rien */ } const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; $('#toasts').appendChild(e); setTimeout(() => e.remove(), 2700); }
+function toast(t, act) { if (act) return toastAct(t, act); try { if (/^✓/.test(t) && navigator.vibrate && matchMedia('(pointer: coarse)').matches) navigator.vibrate([10, 40, 10]); } catch (er) { /* rien */ } const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; $('#toasts').appendChild(e); setTimeout(() => e.remove(), 2700); }
+function toastAct(t, [lib, f]) { const e = document.createElement('div'); e.className = 'toast toast-act'; e.style.animation = 'toast 6s ease forwards'; e.append(t); const b = document.createElement('button'); b.textContent = lib; b.onclick = () => { e.remove(); f(); }; e.appendChild(b); $('#toasts').appendChild(e); setTimeout(() => e.remove(), 6000); }
 /* la petite barre d'une ligne choisie : alerte, couleur, style, effacer */
 function majBarreLigne() {
   const bl = $('#barre-ligne'), p = panes[actif] || panes[0];
@@ -1739,7 +1753,7 @@ $('#barre-ligne').addEventListener('click', ev => {
   if (b.dataset.c) { choisie.couleur = b.dataset.c; sauve(); }
   else if (b.dataset.l === 'alerte') { choisie.alerte = choisie.alerte === false; sauve(); toast(choisie.alerte ? 'Alerte activée : Atlas te prévient quand le prix touche ou casse cette ligne' : 'Alerte coupée pour cette ligne'); }
   else if (b.dataset.l === 'style') { choisie.style = choisie.style === 'tirets' ? 'plein' : 'tirets'; sauve(); }
-  else if (b.dataset.l === 'efface') { efface(); toast('Ligne effacée'); }
+  else if (b.dataset.l === 'efface') efface();
   toutDessine();
 });
 /* la capture du graphique, le plein écran */
