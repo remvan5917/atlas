@@ -96,22 +96,65 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
   const pad2 = v => String(v).padStart(2, '0');
   const hhmm = s => { const d = new Date(s * 1000); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
   const cleRdv = x => `${N(x.titre)}|${x.date}|${x.journee ? 'j' : x.debut}|${x.journee ? '' : x.fin || ''}`;
+  // la semaine en tableau : les jours en colonnes, les moments en lignes (journée, matin, midi, après-midi, soir) ;
+  // ce qui est déjà prévu (discret), ce qu'il dicte (en clair, « nouveau »), les annonces des marchés (en ambre) ; chaque chose une seule fois
+  const PL_CSS = `.plg{--l:rgba(255,255,255,.07);display:grid;border:1px solid var(--l);border-radius:14px;overflow:hidden;margin-top:10px;font-family:system-ui}
+.plg>div{border-right:1px solid var(--l);border-bottom:1px solid var(--l);min-width:0}
+.plg .plh{padding:9px 6px 8px;background:rgba(255,255,255,.04);text-align:center}
+.plg .plh b{display:block;color:#fde68a;font-size:15px;text-transform:capitalize;white-space:nowrap}
+.plg .plh small{display:inline-block;margin-top:4px;font-size:10px;letter-spacing:.1em;color:#a5b4fc;border:1px solid rgba(165,180,252,.35);border-radius:10px;padding:0 7px;text-transform:uppercase}
+.plg .plh.auj{background:rgba(253,230,138,.13)}
+.plg .plm{padding:8px 10px;background:rgba(255,255,255,.04);display:flex;flex-direction:column;justify-content:center}
+.plg .plm b{color:#e2e8f0;font-size:12px;letter-spacing:.12em;text-transform:uppercase}.plg .plm small{color:#64748b;font-size:10.5px;margin-top:2px}
+.plg .plc{padding:5px;display:flex;flex-direction:column;gap:4px;min-height:40px}.plg .plc.auj{background:rgba(253,230,138,.05)}
+.pli{display:grid;grid-template-columns:auto 1fr;gap:1px 6px;align-items:baseline;padding:4px 6px;border-radius:7px;border-left:3px solid var(--c);background:rgba(255,255,255,.06);font-size:13.5px;line-height:1.28}
+.pli time{font:700 12px system-ui;color:#cbd5e1;font-variant-numeric:tabular-nums}
+.pli span{color:#f1f5f9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.pli.ex{opacity:.82}.pli.neuf{background:rgba(253,230,138,.16);border-left-color:#fde68a;box-shadow:inset 0 0 0 1px rgba(253,230,138,.4)}
+.pli em{grid-column:1/-1;font-style:normal;font-size:10px;letter-spacing:.1em;color:#fde68a;font-weight:800}
+.pli i{grid-column:1/-1;font-style:normal;font-size:11px;color:#fca5a5}
+.ple{font-size:11px;color:#fcd34d;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plleg{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px;font-size:12px;color:#94a3b8}.plleg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.pljour{margin-top:10px;border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden}.pljour>b{display:block;padding:7px 10px;background:rgba(255,255,255,.04);color:#fde68a;text-transform:capitalize}
+.pljour>b small{margin-left:8px;font-size:10px;letter-spacing:.1em;color:#a5b4fc}.pljour .plr{display:grid;grid-template-columns:78px 1fr;border-top:1px solid rgba(255,255,255,.06)}
+.pljour .plr>b{padding:7px 8px;font-size:11px;letter-spacing:.1em;color:#94a3b8;text-transform:uppercase}.pljour .plr>div{padding:5px;display:flex;flex-direction:column;gap:4px}`;
+  const styleGrille = () => { if (!document.getElementById('pl-css')) { const st = document.createElement('style'); st.id = 'pl-css'; st.textContent = PL_CSS; document.head.appendChild(st); } };
+  const LIGNES = [['journee', 'Journée', ''], ['matin', 'Matin', 'avant midi'], ['midi', 'Midi', '12 h – 14 h'], ['aprem', 'Après-midi', '14 h – 18 h'], ['soir', 'Soir', 'après 18 h']];
+  const cleVue = t => N(String(t || '').replace(/ \(pro\)$/, '')).replace(/^echeance /, '').replace(/ a confirmer$/, '').trim();
+  // deux titres pour la même chose, à la même heure (« Réunion hebdomadaire SOPAM » / « SOPAM Réunion hebdomadaire (Tristan…) ») : les mots du plus court sont presque tous dans l'autre
+  const motsDe = t => new Set(cleVue(t).split(' ').filter(w => w.length > 2 && !/^(avec|pour|dans|chez|les|des|une|aux)$/.test(w)));
+  const memeChose = (a, b) => { const A = motsDe(a), B = motsDe(b), [p, g] = A.size <= B.size ? [A, B] : [B, A]; if (!p.size) return false; let n = 0; p.forEach(w => { if (g.has(w)) n++; }); return n / p.size >= 0.7; };
   function grille(jours, existants, nouveaux = [], orig = null) {
+    styleGrille();
     const etroit = window.innerWidth < 760, auj = dJ(new Date()), deja = new Set((orig || []).map(cleRdv));
-    const coul = (titre, pro) => (/kedi/i.test(titre) ? '#f9a8d4' : pro ? '#93c5fd' : '#86efac');
-    const carte = (h, titre, pro, genre, conflit) => `<div style="margin-top:5px;padding:5px 7px;border-radius:8px;border-left:3px solid ${genre === 'neuf' ? '#fde68a' : coul(titre, pro)};background:${genre === 'neuf' ? 'rgba(253,230,138,.14)' : 'rgba(255,255,255,.05)'};${genre === 'ex' ? 'opacity:.72;' : ''}font-size:13px;line-height:1.25">`
-      + `<div style="font:700 11px system-ui;color:#cbd5e1;font-variant-numeric:tabular-nums">${h || 'journée'}${genre === 'neuf' ? ' <span style="color:#fde68a;letter-spacing:.08em">· NOUVEAU</span>' : ''}</div>`
-      + `<div style="color:#f1f5f9;overflow-wrap:anywhere">${esc(titre)}</div>${conflit ? `<div style="color:#fca5a5;font-size:11px">⚠ même heure que ${esc(propre(conflit.titre))}</div>` : ''}</div>`;
-    const colonne = d => {
-      const j = dJ(d), t0 = epoque(j), t1 = t0 + 86400;
-      const items = (existants || []).filter(e => e.journee ? e.debut < t1 && e.fin > t0 : e.debut >= t0 && e.debut < t1)
-        .map(e => ({ k: e.journee ? '' : hhmm(e.debut), html: e.eco ? `<div style="margin-top:4px;font-size:11.5px;color:#fcd34d;opacity:.85">${hhmm(e.debut)} ${esc(propre(e.titre))}</div>` : carte(e.journee ? '' : hhmm(e.debut), propre(String(e.titre).replace(/ \(pro\)$/, '')), e.pro, 'ex') }))
-        .concat(nouveaux.filter(x => x.date === j).map(x => ({ k: x.journee ? '' : x.debut || '99', html: carte(x.journee ? '' : x.debut ? `${x.debut}${x.fin ? `–${x.fin}` : ''}` : '<span style="color:#fca5a5">heure ?</span>', x.titre, x.pro, deja.has(cleRdv(x)) ? 'atlas' : 'neuf', chevauche(x, existants)) })))
-        .sort((a, b) => a.k.localeCompare(b.k)).map(x => x.html).join('');
-      return `<div style="min-width:0;background:${j === auj ? 'rgba(253,230,138,.07)' : 'rgba(255,255,255,.025)'};border-radius:12px;padding:8px 7px"><b style="display:block;color:#fde68a;font-size:14px;text-transform:capitalize">${esc(libJour(d))}</b>${items || '<div style="color:#64748b;font-size:12px;margin-top:6px">libre</div>'}</div>`;
+    const coul = (t, pro) => (/kedi/i.test(t) ? '#f9a8d4' : pro ? '#93c5fd' : '#86efac');
+    const libelle = t => { t = propre(String(t).replace(/ \(pro\)$/, '')); if (!/kedi/i.test(t)) return t; const reste = t.split('·').slice(1).join('·').trim(); return `♥ ${reste || 'Avec Kedi'}`; };
+    const carte = it => `<div class="pli ${it.genre}" style="--c:${coul(it.titre, it.pro)}" title="${esc(propre(it.titre))}">${it.genre === 'neuf' ? '<em>NOUVEAU</em>' : ''}<time>${it.h || ''}</time><span>${esc(libelle(it.titre))}</span>${it.conflit ? `<i>⚠ même heure que ${esc(libelle(it.conflit.titre))}</i>` : ''}</div>`;
+    // les choses d'un jour, rangées par moment, sans doublon
+    const duJour = d => {
+      const j = dJ(d), t0 = epoque(j), t1 = t0 + 86400, vus = new Set(), heuresEco = new Set(), par = { journee: [], matin: [], midi: [], aprem: [], soir: [] }; let marque = '';
+      const neufs = nouveaux.filter(x => x.date === j).map(x => ({ titre: x.titre, pro: x.pro, h: x.journee ? '' : x.debut ? `${x.debut}${x.fin ? `–${x.fin}` : ''}` : '<span style="color:#fca5a5">heure ?</span>', m: momentDe(x), genre: deja.has(cleRdv(x)) ? 'atlas' : 'neuf', conflit: chevauche(x, existants), k: x.journee ? '' : x.debut || '99' }));
+      const ex = (existants || []).filter(e => e.journee ? e.debut < t1 && e.fin > t0 : e.debut >= t0 && e.debut < t1).sort((a, b) => a.debut - b.debut);
+      neufs.forEach(x => vus.add(`${cleVue(x.titre)}|${x.k}`)); const pareils = [];
+      for (const e of ex) {
+        if (/^semaine [ab]$/i.test(propre(e.titre))) { marque = propre(e.titre); continue; }  // (semaine A / B : une étiquette sous le jour)
+        const h = e.journee ? '' : hhmm(e.debut), m = e.journee ? 'journee' : momentH(new Date(e.debut * 1000).getHours() + new Date(e.debut * 1000).getMinutes() / 60);
+        if (e.eco) { if (heuresEco.has(h)) continue; heuresEco.add(h); par[m].push({ eco: true, k: h, html: `<div class="ple" title="${esc(propre(e.titre))}">${h} ${esc(propre(e.titre))}</div>` }); continue; }
+        const cle = `${cleVue(e.titre)}|${h}`; if (vus.has(cle) || pareils.some(([hh, mm]) => hh === h && memeChose(mm, e.titre))) continue; vus.add(cle); pareils.push([h, e.titre]);
+        par[m].push({ k: h, html: carte({ titre: e.titre, pro: e.pro || / \(pro\)$/.test(e.titre), h, genre: 'ex' }) });
+      }
+      neufs.forEach(x => par[x.m].push({ k: x.k, html: carte(x) }));
+      for (const m in par) {  // une annonce des marchés déjà présente dans l'agenda (même heure) : une seule fois
+        const hNonEco = new Set(par[m].filter(x => !x.eco).map(x => x.k)); par[m] = par[m].filter(x => !x.eco || !hNonEco.has(x.k)).sort((a, b) => a.k.localeCompare(b.k));
+      }
+      return { j, marque, par };
     };
-    const legende = `<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:12px;color:#94a3b8"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#fde68a;margin-right:5px"></i>nouveau</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#93c5fd;margin-right:5px"></i>pro</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#86efac;margin-right:5px"></i>perso</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#f9a8d4;margin-right:5px"></i>avec Kedi</span><span style="color:#fcd34d">annonces des marchés</span></div>`;
-    return `${legende}<div style="display:grid;grid-template-columns:${etroit ? '1fr' : `repeat(${jours.length},minmax(0,1fr))`};gap:6px;margin-top:8px">${jours.map(colonne).join('')}</div>`;
+    const semaine = jours.map(d => ({ d, ...duJour(d) }));
+    const lignes = LIGNES.filter(([k]) => k !== 'journee' || semaine.some(s => s.par.journee.length));
+    const legende = `<div class="plleg"><span><i style="background:#fde68a"></i>nouveau</span><span><i style="background:#93c5fd"></i>pro</span><span><i style="background:#86efac"></i>perso</span><span><i style="background:#f9a8d4"></i>avec Kedi</span><span style="color:#fcd34d">annonces des marchés</span></div>`;
+    if (etroit) return legende + semaine.map(s => `<div class="pljour"><b>${esc(libJour(s.d))}${s.j === auj ? ' · aujourd’hui' : ''}${s.marque ? `<small>${esc(s.marque.toUpperCase())}</small>` : ''}</b>${lignes.filter(([k]) => s.par[k].length).map(([k, lab]) => `<div class="plr"><b>${lab}</b><div>${s.par[k].map(x => x.html).join('')}</div></div>`).join('') || '<div class="plr"><b></b><div style="color:#64748b;font-size:12px">libre</div></div>'}</div>`).join('');
+    return `${legende}<div class="plg" style="grid-template-columns:96px repeat(${jours.length},minmax(0,1fr))"><div class="plh"></div>${semaine.map(s => `<div class="plh${s.j === auj ? ' auj' : ''}"><b>${esc(libJour(s.d))}</b>${s.marque ? `<small>${esc(s.marque)}</small>` : ''}</div>`).join('')}`
+      + lignes.map(([k, lab, sous]) => `<div class="plm"><b>${lab}</b>${sous ? `<small>${sous}</small>` : ''}</div>${semaine.map(s => `<div class="plc${s.j === auj ? ' auj' : ''}">${s.par[k].map(x => x.html).join('')}</div>`).join('')}`).join('') + '</div>';
   }
   const boutons = () => `<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)"><div style="display:flex;gap:10px"><button type="button" id="ok-board" style="flex:2;padding:16px;border:0;border-radius:14px;background:#16a34a;color:#fff;font:800 19px system-ui;cursor:pointer">✔ C'est bon, écris-le</button><button type="button" id="mod-board" style="flex:1;padding:16px;border:0;border-radius:14px;background:#334155;color:#fff;font:800 19px system-ui;cursor:pointer">✎ Modifier</button></div>`
     + `<input id="corr-board" autocomplete="off" placeholder="ou écris ce qu'il faut changer, puis Entrée (ex. « déplace le dentiste à jeudi 15 h »)" style="width:100%;box-sizing:border-box;margin-top:8px;padding:11px 12px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#f1f5f9;font:15px system-ui"><div style="text-align:center;color:#94a3b8;font-size:13px;margin-top:6px">ou dis « c'est bon », ou ce qu'il faut changer : rien n'est écrit sans ton accord</div></div>`;
