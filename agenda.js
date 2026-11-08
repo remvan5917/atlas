@@ -232,7 +232,9 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
         : `${tour ? "Voilà, c'est corrigé. " : ''}${l.length > 1 ? `${l.length} rendez-vous. ` : ''}${resume(l)}.${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} Dis « c'est bon » dès que c'est niquel, ou ce qu'il faut changer.`;
       a = await valideVisuel(lu, { wait: 20000 });
       }
-      if (a === 'modifier') { a = await valideVisuel("Je t'écoute : qu'est-ce qu'on change ?", { wait: 30000 }); if (!a || a === 'modifier') { attente = true; continue; } }
+      if (a === 'modifier') {  // (le bouton vient de couper la voix et l'écoute : on laisse passer cette coupure avant d'écouter la correction)
+        await new Promise(r => setTimeout(r, 650)); dlg.interrupt = false;
+        a = await valideVisuel("Je t'écoute : qu'est-ce qu'on change ? Dis-le, ou écris-le en dessous.", { wait: 30000 }); if (!a || a === 'modifier') { attente = true; continue; } }
       if (a === 'ok') return ecrire(l, existants, titre, '', orig);
       if (a === 'non') { hideBoard(); await say(orig ? "D'accord, je ne change rien." : "D'accord, je ne note rien."); return { statut: 'annule', l }; }
       if (!a) { if (++silences < 2) continue; await say("Je laisse ton planning à l'écran, rien n'est écrit. Touche « C'est bon » quand tu veux, ou « Modifier »."); attente = true; continue; }
@@ -348,5 +350,5 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     if (/\b(mon agenda|mes rendez vous|mes rdv|mon planning|mon programme|mon emploi du temps|mon prochain (rendez vous|rdv)|qu est ce que j ai (de prevu )?(aujourd hui|demain|cette semaine|ce matin|cet apres midi|ce soir)|j ai quoi (de prevu )?(aujourd hui|demain|cette semaine)|j ai (un|des) (rendez vous|rdv)|c est quand mon (rendez vous|rdv))\b/.test(n)) return () => dire(n);
     return null;
   }
-  return { route, routePlanning, planifie, modifiePlanning, _grille: grille, _montre: montre, _lire: lire, aujourdhui, prochain, un, hm, propre, _analyse: analyse, _semaine: semaineCible };
+  return { route, routePlanning, planifie, modifiePlanning, _grille: grille, _montre: montre, _valide: valideEtEcris, _lire: lire, aujourdhui, prochain, un, hm, propre, _analyse: analyse, _semaine: semaineCible };
 })();
