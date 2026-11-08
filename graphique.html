@@ -1762,14 +1762,18 @@ function majBarreLigne() {
 }
 // le passé de la ligne choisie, dans l'unité du graphique (la mesure de NIV) : une ligne de texte dans sa petite barre, rien sur les bougies
 let BL_NIV = { cle: '', txt: '' };
+function nivLigne(l, B, tk, ut) {  // une ligne du trader, mesurée comme dans NIV : contacts, repartis, traversées (null si ce n'est pas une ligne de prix)
+  const du = DUREE[ut] || 3600, rg = B.slice(-500).map(b => b[2] - b[3]).filter(x => x > 0).sort((a, b) => a - b), D = Math.max(4 * tk, rg.length ? rg[rg.length >> 1] : 0); let z, hors;
+  if (l.genre === 'rect') { if (l.p2 == null) return null; const lo = Math.min(l.p1, l.p2), hi = Math.max(l.p1, l.p2), ta = Math.min(l.t1, l.t2 ?? l.t1), tb = Math.max(l.t1, l.t2 ?? l.t1); z = () => [lo, hi]; hors = t => t >= ta - 2 * du && t <= tb + 2 * du; }
+  else if (['horizontale', 'droite', 'canal'].includes(l.genre)) { const plat = l.genre === 'horizontale' || l.t2 == null || l.t2 === l.t1, ta = plat ? l.t1 : Math.min(l.t1, l.t2), tb = plat ? l.t1 : Math.max(l.t1, l.t2); z = t => { if (plat) return [l.p1, l.p1]; if (t < ta - du) return null; const v = l.p1 + (l.p2 - l.p1) * (t - l.t1) / (l.t2 - l.t1); return [v, v]; }; hors = t => t >= ta - 3 * du && t <= tb + 3 * du; }
+  else return null;
+  const ep = nivEpisodes(B, z, tk, D, 10, hors).filter(x => x.issue !== 'encours'), zN = z(B[B.length - 1][0]);
+  return { n: ep.length, te: ep.filter(x => x.issue === 'tenue').length, tr: ep.filter(x => x.issue === 'traversee').length, v: zN, der: ep[ep.length - 1] || null }; }
 function majBlNiv(p) { const e = $('#bl-niv'), l = choisie; if (!e) return; const B = p && p.d && p.d.bougies;
   if (!l || !B || B.length < 60 || !['horizontale', 'droite', 'canal', 'rect'].includes(l.genre) || REPLAY) { e.hidden = true; return; }
   const cle = `${l.id}|${l.p1}|${l.p2}|${l.t1}|${l.t2}|${p.ut}|${B.length}|${B[B.length - 1][0]}`;
-  if (BL_NIV.cle !== cle) { const tk = p.d.tick || 1, du = DUREE[p.ut] || 3600, rg = B.slice(-500).map(b => b[2] - b[3]).filter(x => x > 0).sort((a, b) => a - b), D = Math.max(4 * tk, rg.length ? rg[rg.length >> 1] : 0);
-    let z, hors; if (l.genre === 'rect') { if (l.p2 == null) { e.hidden = true; return; } const lo = Math.min(l.p1, l.p2), hi = Math.max(l.p1, l.p2), ta = Math.min(l.t1, l.t2 ?? l.t1), tb = Math.max(l.t1, l.t2 ?? l.t1); z = () => [lo, hi]; hors = t => t >= ta - 2 * du && t <= tb + 2 * du; }
-    else { const plat = l.genre === 'horizontale' || l.t2 == null || l.t2 === l.t1, ta = plat ? l.t1 : Math.min(l.t1, l.t2), tb = plat ? l.t1 : Math.max(l.t1, l.t2); z = t => { if (plat) return [l.p1, l.p1]; if (t < ta - du) return null; const v = l.p1 + (l.p2 - l.p1) * (t - l.t1) / (l.t2 - l.t1); return [v, v]; }; hors = t => t >= ta - 3 * du && t <= tb + 3 * du; }
-    const ep = nivEpisodes(B, z, tk, D, 10, hors).filter(x => x.issue !== 'encours'), te = ep.filter(x => x.issue === 'tenue').length, tr = ep.filter(x => x.issue === 'traversee').length;
-    BL_NIV = { cle, txt: ep.length ? `${ep.length} contact${ep.length > 1 ? 's' : ''} ${p.ut} · ${te} reparti${te > 1 ? 's' : ''} · ${tr} traversée${tr > 1 ? 's' : ''}` : `jamais touchée en ${p.ut}`, ut: p.ut }; }
+  if (BL_NIV.cle !== cle) { const m = nivLigne(l, B, p.d.tick || 1, p.ut); if (!m) { e.hidden = true; return; }
+    BL_NIV = { cle, txt: m.n ? `${m.n} contact${m.n > 1 ? 's' : ''} ${p.ut} · ${m.te} reparti${m.te > 1 ? 's' : ''} · ${m.tr} traversée${m.tr > 1 ? 's' : ''}` : `jamais touchée en ${p.ut}`, ut: p.ut }; }
   e.textContent = BL_NIV.txt; e.title = `Le passé de cette ligne en ${p.ut} (la mesure de NIV, sur l’historique chargé) · un clic ouvre NIV`; e.hidden = false; }
 $('#bl-niv').addEventListener('click', ev => { ev.stopPropagation(); const p = panes[actif] || panes[0], ut = p && ['H1', 'H4', 'D1'].includes(p.ut) ? p.ut : 'H1'; fnNiv(`${ut} ${code}`); });
 $('#barre-ligne').addEventListener('click', ev => {
@@ -1874,10 +1878,12 @@ async function dire(texte) {
 /* --- le copilote : il regarde le graphique actif et dit ce qui se passe --- */
 let copiOccupe = false;
 function ouvreCopi(titre, txt, question, pense) { const k = $('#copi'); if (titre !== 'Ta salle') k.classList.remove('salle'); k.classList.add('on'); k.classList.toggle('pense', !!pense); $('#copi-titre').textContent = titre || 'Copilote'; $('#copi-txt').textContent = txt || ''; $('#copi-q-txt').textContent = question ? `« ${question} »` : ''; }
+var PLAN_COPI = { at: 0, code: null, l: [] };
+async function planCopi() { if (PLAN_COPI.code === code && Date.now() - PLAN_COPI.at < 60000) return; try { const r = await api('/maison/graphique', { action: 'plan', op: 'liste', code }); PLAN_COPI = { at: Date.now(), code, l: (r && r.scenarios) || [] }; } catch (e) { /* sans ses scénarios */ } }
 async function copilote(question = '') {
   if (REPLAY && !REPLAY.choix) { coachReplay(question ? `question du trader : ${question}` : ''); return; }
   if (copiOccupe) return; copiOccupe = true; taisToi();
-  const p = panes[actif] || panes[0]; ouvreCopi('Copilote', 'Je regarde ton graphique…', question, true);
+  const p = panes[actif] || panes[0]; ouvreCopi('Copilote', 'Je regarde ton graphique…', question, true); await planCopi();
   let image = ''; try { image = p.cv.toDataURL('image/jpeg', 0.8); } catch (e) { /* rien */ }
   try {
     const r = await api('/maison/copilote', { action: 'explique', code, ut: p ? p.ut : 'H1', question, image, ecran: ecranTexte(p) });
@@ -2876,6 +2882,9 @@ function ecranTexte(p, enReplay) {  // ce que montre son écran, pour le copilot
         L.push('Indicateurs affichés (valeur sur la dernière bougie) : ' + IC.map(r => `${r.nom} : ` + r.lignes.map(l => { const v = l.v[k]; return isFinite(v) ? `${l.nom || r.nom} ${nb(v, l.panneau === 'prix' ? dec : 1)}${l.panneau === 'prix' ? ` (prix ${der >= v ? 'AU-DESSUS' : 'EN DESSOUS'})` : ''}` : ''; }).filter(Boolean).join(', ') + (r.niveaux && r.niveaux.length ? ` [niveaux ${r.niveaux.join(' / ')}]` : '')).join(' ; ') + '.'); } catch (e) { L.push('Indicateurs affichés : ' + ind.map(r => r.nom).join(', ') + '.'); } }
     else if (ind.length) L.push('Indicateurs affichés : ' + ind.map(r => r.nom).join(', ') + '.');
     const al = (ALERTES || []).filter(a => a.actif && a.marche === code); if (al.length) L.push('Ses alertes actives sur ce marché : ' + al.map(a => `${a.titre} (${a.ut})`).join(' ; ') + '.');
+    if (p && B && B.length >= 60 && !enReplay) { try { const tk = p.d.tick || 1, der = B[B.length - 1][4], ms = lignes.map(l => ({ l, m: nivLigne(l, B, tk, p.ut) })).filter(x => x.m && x.m.v).sort((a, b) => Math.abs(a.m.v[0] - der) - Math.abs(b.m.v[0] - der)).slice(0, 5);
+      if (ms.length) L.push(`Le passé de SES lignes en ${p.ut} (mesure NIV : un contact = le prix revient la toucher ; « reparti » = il s'en éloigne du côté d'où il venait, « traversée » = il clôture de l'autre côté) : ` + ms.map(({ l, m }) => `${l.genre === 'rect' ? 'sa zone' : 'sa ligne'} ${nb(m.v[0], dec)}${m.v[1] !== m.v[0] ? '–' + nb(m.v[1], dec) : ''} (${Math.abs(Math.round((m.v[0] - der) / tk))} ticks ${m.v[0] > der ? 'AU-DESSUS' : 'SOUS'} le prix actuel) : ${m.n ? `${m.n} contacts, ${m.te} repartis, ${m.tr} traversées` : 'jamais touchée'}`).join(' ; ') + '.'); } catch (e) { /* rien */ } }
+    if (PLAN_COPI.code === code && PLAN_COPI.l.length && !enReplay) L.push('SES scénarios du jour sur ce marché (écrits par lui ; ce n’est pas un conseil d’Atlas) : ' + PLAN_COPI.l.filter(x => x.ok).map(x => `« ${x.texte} » : ${x.reuni ? 'RÉUNI' : `${x.conditions.filter(k => k.ok).length}/${x.conditions.length} conditions`} (${x.conditions.map(k => `${k.texte} ${k.ok ? 'oui' : 'non'}${!k.ok && k.ecart_ticks != null && !(k.deja > 0) ? `, il manque ${Math.abs(k.ecart_ticks)} ticks` : ''}`).join(' ; ')})`).join(' | ') + '.');
     const hb = habitudesTexte(); if (hb) L.push(hb);
     const cf = p && !enReplay ? (CFGD[`${code}|${p.ut}`] || []).filter(x => x.visible && x.eval && x.eval.ok) : []; if (cf.length) L.push('Ses configurations : ' + cf.map(x => `${x.nom}${x.eval.maintenant ? ' (PRÉSENTE sur la dernière bougie close)' : ''}${x.eval.stats ? ` — ${x.eval.stats.n} fois, ensuite ${x.eval.stats.plus} fois plus haut / ${x.eval.stats.moins} fois plus bas` : ''}`).join(' ; ') + '.');
     if (optFig && !enReplay && p && B) { const fg = figuresDe(p, B); if (fg.length) L.push('Figures repérées sur son graphique : ' + fg.map(f => `${f.nom} — ${f.texte}`).join(' | ')); }
