@@ -82,7 +82,9 @@ ${actuels ? `Voici la liste ACTUELLE, à corriger selon ce qu'il dit (enlever, d
 Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-JJ", "debut": "09:00", "fin": "10:00", "journee": false, "pro": true, "lieu": "", "rappel": 0}]}`;
     const raw = String(await AI.chat([{ role: 'system', content: consigne }, { role: 'user', content: `${existants.length ? `Déjà dans son agenda (ne pas les recréer) : ${existants.slice(0, 40).map(e => `${libJour(new Date(e.debut * 1000))} ${e.journee ? '' : hm(e.debut)} ${propre(e.titre)}`).join(' ; ')}.\n` : ''}Ce qu'il dit : ${texte}` }], { maxTokens: 2500, temperature: 0.1, json: true }));
     const o = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
-    return (o.evenements || []).filter(x => x && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || '')).slice(0, 60).map(x => ({ titre: String(x.titre).slice(0, 120), date: x.date, debut: /^\d{1,2}:\d{2}$/.test(x.debut || '') ? x.debut.padStart(5, '0') : '', fin: /^\d{1,2}:\d{2}$/.test(x.fin || '') ? x.fin.padStart(5, '0') : '', journee: !!x.journee, pro: !!x.pro, lieu: String(x.lieu || '').slice(0, 120), rappel: Math.max(0, Math.min(1440, +x.rappel || 0)) }));
+    const sortie = (o.evenements || []).filter(x => x && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || '')).slice(0, 60).map(x => ({ titre: String(x.titre).slice(0, 120), date: x.date, debut: /^\d{1,2}:\d{2}$/.test(x.debut || '') ? x.debut.padStart(5, '0') : '', fin: /^\d{1,2}:\d{2}$/.test(x.fin || '') ? x.fin.padStart(5, '0') : '', journee: !!x.journee, pro: !!x.pro, lieu: String(x.lieu || '').slice(0, 120), rappel: Math.max(0, Math.min(1440, +x.rappel || 0)) }));
+    const ecartes = sortie.filter(x => dejaLa(x, existants)); dernierEcart = ecartes.length;  // (ce qui est déjà dans son agenda : jamais recréé, quoi que réponde le cerveau)
+    return sortie.filter(x => !dejaLa(x, existants));
   }
   const epoque = (date, h) => Math.floor(new Date(`${date}T${h || '00:00'}:00`).getTime() / 1000);
   const enEvt = x => { const deb = x.journee ? epoque(x.date) : epoque(x.date, x.debut); let fin = x.journee ? deb + 86400 : x.fin ? epoque(x.date, x.fin) : deb + 3600; if (fin <= deb) fin = deb + 3600; return { titre: x.titre, debut: deb, fin, journee: x.journee, pro: x.pro, lieu: x.lieu, rappel: x.rappel }; };
@@ -110,7 +112,8 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
 .pli{display:grid;grid-template-columns:auto 1fr;gap:1px 6px;align-items:baseline;padding:4px 6px;border-radius:7px;border-left:3px solid var(--c);background:rgba(255,255,255,.06);font-size:13.5px;line-height:1.28}
 .pli time{font:700 12px system-ui;color:#cbd5e1;font-variant-numeric:tabular-nums}
 .pli span{color:#f1f5f9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
-.pli.ex{opacity:.82}.pli.neuf{background:rgba(253,230,138,.16);border-left-color:#fde68a;box-shadow:inset 0 0 0 1px rgba(253,230,138,.4)}
+.pli.ex{opacity:.82}.plg-edit .pli.clic{cursor:pointer}.plg-edit .pli.clic:hover{box-shadow:inset 0 0 0 1px #fde68a}.plg-edit .plc{cursor:copy}
+.plg-edit .plc:hover::after{content:'+ ajouter';font-size:10.5px;color:#64748b;padding:2px 4px}.pli.neuf{background:rgba(253,230,138,.16);border-left-color:#fde68a;box-shadow:inset 0 0 0 1px rgba(253,230,138,.4)}
 .pli em{grid-column:1/-1;font-style:normal;font-size:10px;letter-spacing:.1em;color:#fde68a;font-weight:800}
 .pli i{grid-column:1/-1;font-style:normal;font-size:11px;color:#fca5a5}
 .ple{font-size:11px;color:#fcd34d;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -124,16 +127,25 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
   // deux titres pour la même chose, à la même heure (« Réunion hebdomadaire SOPAM » / « SOPAM Réunion hebdomadaire (Tristan…) ») : les mots du plus court sont presque tous dans l'autre
   const motsDe = t => new Set(cleVue(t).split(' ').filter(w => w.length > 2 && !/^(avec|pour|dans|chez|les|des|une|aux)$/.test(w)));
   const memeChose = (a, b) => { const A = motsDe(a), B = motsDe(b), [p, g] = A.size <= B.size ? [A, B] : [B, A]; if (!p.size) return false; let n = 0; p.forEach(w => { if (g.has(w)) n++; }); return n / p.size >= 0.7; };
+  // déjà dans son agenda : même jour, même moment (± 45 min, ou tous deux « journée »), même chose (titre pareil ou presque)
+  let dernierEcart = 0;
+  function dejaLa(x, existants) {
+    if (!x || !x.date) return false;
+    const deb = x.journee || !x.debut ? null : epoque(x.date, x.debut), t0 = epoque(x.date), t1 = t0 + 86400;
+    return (existants || []).some(e => !e.eco && (e.journee ? e.debut < t1 && e.fin > t0 : e.debut >= t0 && e.debut < t1)
+      && (x.journee || !x.debut ? e.journee || /^semaine [ab]$/i.test(propre(e.titre)) || cleVue(e.titre) === cleVue(x.titre) : !e.journee && Math.abs(e.debut - deb) <= 2700)
+      && (cleVue(e.titre) === cleVue(x.titre) || memeChose(e.titre, x.titre)));
+  }
   function grille(jours, existants, nouveaux = [], orig = null) {
     styleGrille();
     const etroit = window.innerWidth < 760, auj = dJ(new Date()), deja = new Set((orig || []).map(cleRdv));
     const coul = (t, pro) => (/kedi/i.test(t) ? '#f9a8d4' : pro ? '#93c5fd' : '#86efac');
     const libelle = t => { t = propre(String(t).replace(/ \(pro\)$/, '')); if (!/kedi/i.test(t)) return t; const reste = t.split('·').slice(1).join('·').trim(); return `♥ ${reste || 'Avec Kedi'}`; };
-    const carte = it => `<div class="pli ${it.genre}" style="--c:${coul(it.titre, it.pro)}" title="${esc(propre(it.titre))}">${it.genre === 'neuf' ? '<em>NOUVEAU</em>' : ''}<time>${it.h || ''}</time><span>${esc(libelle(it.titre))}</span>${it.conflit ? `<i>⚠ même heure que ${esc(libelle(it.conflit.titre))}</i>` : ''}</div>`;
+    const carte = it => `<div class="pli ${it.genre}${it.i != null ? ' clic' : ' agenda'}"${it.i != null ? ` data-i="${it.i}"` : ''} style="--c:${coul(it.titre, it.pro)}" title="${esc(propre(it.titre))}">${it.genre === 'neuf' ? '<em>NOUVEAU</em>' : ''}<time>${it.h || ''}</time><span>${esc(libelle(it.titre))}</span>${it.conflit ? `<i>⚠ même heure que ${esc(libelle(it.conflit.titre))}</i>` : ''}</div>`;
     // les choses d'un jour, rangées par moment, sans doublon
     const duJour = d => {
       const j = dJ(d), t0 = epoque(j), t1 = t0 + 86400, vus = new Set(), heuresEco = new Set(), par = { journee: [], matin: [], midi: [], aprem: [], soir: [] }; let marque = '';
-      const neufs = nouveaux.filter(x => x.date === j).map(x => ({ titre: x.titre, pro: x.pro, h: x.journee ? '' : x.debut ? `${x.debut}${x.fin ? `–${x.fin}` : ''}` : '<span style="color:#fca5a5">heure ?</span>', m: momentDe(x), genre: deja.has(cleRdv(x)) ? 'atlas' : 'neuf', conflit: chevauche(x, existants), k: x.journee ? '' : x.debut || '99' }));
+      const neufs = nouveaux.map((x, i) => [x, i]).filter(([x]) => x.date === j).map(([x, i]) => ({ i, titre: x.titre, pro: x.pro, h: x.journee ? '' : x.debut ? `${x.debut}${x.fin ? `–${x.fin}` : ''}` : '<span style="color:#fca5a5">heure ?</span>', m: momentDe(x), genre: deja.has(cleRdv(x)) ? 'atlas' : 'neuf', conflit: chevauche(x, existants), k: x.journee ? '' : x.debut || '99' }));
       const ex = (existants || []).filter(e => e.journee ? e.debut < t1 && e.fin > t0 : e.debut >= t0 && e.debut < t1).sort((a, b) => a.debut - b.debut);
       neufs.forEach(x => vus.add(`${cleVue(x.titre)}|${x.k}`)); const pareils = [];
       for (const e of ex) {
@@ -152,17 +164,59 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     const semaine = jours.map(d => ({ d, ...duJour(d) }));
     const lignes = LIGNES.filter(([k]) => k !== 'journee' || semaine.some(s => s.par.journee.length));
     const legende = `<div class="plleg"><span><i style="background:#fde68a"></i>nouveau</span><span><i style="background:#93c5fd"></i>pro</span><span><i style="background:#86efac"></i>perso</span><span><i style="background:#f9a8d4"></i>avec Kedi</span><span style="color:#fcd34d">annonces des marchés</span></div>`;
-    if (etroit) return legende + semaine.map(s => `<div class="pljour"><b>${esc(libJour(s.d))}${s.j === auj ? ' · aujourd’hui' : ''}${s.marque ? `<small>${esc(s.marque.toUpperCase())}</small>` : ''}</b>${lignes.filter(([k]) => s.par[k].length).map(([k, lab]) => `<div class="plr"><b>${lab}</b><div>${s.par[k].map(x => x.html).join('')}</div></div>`).join('') || '<div class="plr"><b></b><div style="color:#64748b;font-size:12px">libre</div></div>'}</div>`).join('');
+    if (etroit) return legende + semaine.map(s => `<div class="pljour"><b>${esc(libJour(s.d))}${s.j === auj ? ' · aujourd’hui' : ''}${s.marque ? `<small>${esc(s.marque.toUpperCase())}</small>` : ''}</b>${lignes.filter(([k]) => s.par[k].length).map(([k, lab]) => `<div class="plr"><b>${lab}</b><div class="plc" data-j="${s.j}" data-m="${k}">${s.par[k].map(x => x.html).join('')}</div></div>`).join('') || '<div class="plr"><b></b><div style="color:#64748b;font-size:12px">libre</div></div>'}</div>`).join('');
     return `${legende}<div class="plg" style="grid-template-columns:96px repeat(${jours.length},minmax(0,1fr))"><div class="plh"></div>${semaine.map(s => `<div class="plh${s.j === auj ? ' auj' : ''}"><b>${esc(libJour(s.d))}</b>${s.marque ? `<small>${esc(s.marque)}</small>` : ''}</div>`).join('')}`
-      + lignes.map(([k, lab, sous]) => `<div class="plm"><b>${lab}</b>${sous ? `<small>${sous}</small>` : ''}</div>${semaine.map(s => `<div class="plc${s.j === auj ? ' auj' : ''}">${s.par[k].map(x => x.html).join('')}</div>`).join('')}`).join('') + '</div>';
+      + lignes.map(([k, lab, sous]) => `<div class="plm"><b>${lab}</b>${sous ? `<small>${sous}</small>` : ''}</div>${semaine.map(s => `<div class="plc${s.j === auj ? ' auj' : ''}" data-j="${s.j}" data-m="${k}">${s.par[k].map(x => x.html).join('')}</div>`).join('')}`).join('') + '</div>';
   }
   const boutons = () => `<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)"><div style="display:flex;gap:10px"><button type="button" id="ok-board" style="flex:2;padding:16px;border:0;border-radius:14px;background:#16a34a;color:#fff;font:800 19px system-ui;cursor:pointer">✔ C'est bon, écris-le</button><button type="button" id="mod-board" style="flex:1;padding:16px;border:0;border-radius:14px;background:#334155;color:#fff;font:800 19px system-ui;cursor:pointer">✎ Modifier</button></div>`
     + `<input id="corr-board" autocomplete="off" placeholder="ou écris ce qu'il faut changer, puis Entrée (ex. « déplace le dentiste à jeudi 15 h »)" style="width:100%;box-sizing:border-box;margin-top:8px;padding:11px 12px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#f1f5f9;font:15px system-ui"><div style="text-align:center;color:#94a3b8;font-size:13px;margin-top:6px">ou dis « c'est bon », ou ce qu'il faut changer : rien n'est écrit sans ton accord</div></div>`;
   const joursDe = (l, titre) => (titre === 'À AJOUTER' ? [...new Set(l.map(x => x.date))].sort().map(j => new Date(`${j}T12:00:00`)) : semaineCible());
+  let etatPl = null;
+  const titrePl = () => `${esc(etatPl.o.orig ? 'MODIFIER TON PLANNING' : etatPl.titre)} · ${etatPl.l.length} RENDEZ-VOUS${etatPl.o.ecrit ? ' · ✔ ÉCRIT DANS TON AGENDA' : ''}`;
+  function rafraichit() {
+    const g = document.getElementById('pl-grille'), t = document.getElementById('pl-titre'); if (!g || !etatPl) return;
+    g.innerHTML = grille(joursDe(etatPl.l, etatPl.titre), etatPl.existants, etatPl.l, etatPl.o.orig); if (t) t.innerHTML = titrePl();
+  }
   function montre(l, existants, titre, o = {}) {
-    showBoard(`<div style="text-align:left;font-family:system-ui;width:min(calc(97vw - 48px),1232px)"${o.ecrit ? ' id="pl-ecrit"' : ''}><small style="letter-spacing:.3em;color:#a5b4fc">${esc(o.orig ? 'MODIFIER TON PLANNING' : titre)} · ${l.length} RENDEZ-VOUS${o.ecrit ? ' · ✔ ÉCRIT DANS TON AGENDA' : ''}</small>${grille(joursDe(l, titre), existants, l, o.orig)}`
+    etatPl = { l, existants, titre, o };
+    showBoard(`<div style="text-align:left;font-family:system-ui;width:min(calc(97vw - 48px),1232px)"${o.ecrit ? ' id="pl-ecrit"' : ''}><small id="pl-titre" style="letter-spacing:.3em;color:#a5b4fc">${titrePl()}</small>${!o.ecrit && dernierEcart ? `<span style="color:#94a3b8;font-size:12px;margin-left:10px">· ${dernierEcart} déjà dans ton agenda, non recréé${dernierEcart > 1 ? 's' : ''}</span>` : ''}${o.ecrit ? '' : '<span style="color:#94a3b8;font-size:12px;margin-left:10px">· clique un rendez-vous pour le modifier ou le supprimer, une case vide pour en ajouter un</span>'}<div id="pl-grille" class="${o.ecrit ? '' : 'plg-edit'}">${grille(joursDe(l, titre), existants, l, o.orig)}</div>`
       + `${o.ecrit ? '<div style="margin-top:12px;color:#94a3b8;font-size:14px">Pour changer quelque chose plus tard : dis « modifie mon planning ».</div>' : boutons()}</div>`, 'planning-large');
   }
+  // au clic : modifier ou supprimer un rendez-vous, en ajouter un dans une case vide (rien n'est écrit avant « C'est bon »)
+  const HEURE_MOMENT = { journee: '', matin: '09:00', midi: '12:30', aprem: '14:00', soir: '19:00' };
+  function fenetre(x, i) {
+    const vieux = document.getElementById('pl-edit'); if (vieux) vieux.remove();
+    const jours = [...new Set(semaineCible().map(dJ).concat(etatPl.l.map(y => y.date)))].sort();
+    const champ = 'padding:10px 11px;border-radius:9px;border:1px solid #334155;background:#0b1220;color:#f1f5f9;font:15px system-ui;box-sizing:border-box';
+    const bouton = (id, txt, fond) => `<button type="button" id="${id}" style="flex:1;padding:12px;border:0;border-radius:11px;background:${fond};color:#fff;font:800 15px system-ui;cursor:pointer">${txt}</button>`;
+    document.body.insertAdjacentHTML('beforeend', `<div id="pl-edit" style="position:fixed;inset:0;z-index:30;background:rgba(2,6,15,.62);display:flex;align-items:center;justify-content:center"><div style="background:#0f172a;border:1px solid #fde68a;border-radius:16px;padding:18px;width:min(92vw,460px);font-family:system-ui;color:#f1f5f9;display:flex;flex-direction:column;gap:10px">
+      <b style="color:#fde68a;letter-spacing:.2em;font-size:12px">${i == null ? 'AJOUTER UN RENDEZ-VOUS' : 'MODIFIER CE RENDEZ-VOUS'}</b>
+      <input id="pe-t" placeholder="Quoi ? (ex. Dentiste)" value="${esc(x.titre || '')}" style="${champ};width:100%">
+      <div style="display:flex;gap:8px"><select id="pe-d" style="${champ};flex:2">${jours.map(j => `<option value="${j}"${j === x.date ? ' selected' : ''}>${esc(libJour(new Date(`${j}T12:00:00`)))}</option>`).join('')}</select><input id="pe-h1" type="time" value="${x.debut || ''}" style="${champ};flex:1"><input id="pe-h2" type="time" value="${x.fin || ''}" style="${champ};flex:1"></div>
+      <div style="display:flex;gap:18px;font-size:14px;color:#cbd5e1"><label><input type="checkbox" id="pe-j"${x.journee ? ' checked' : ''}> toute la journée</label><label><input type="checkbox" id="pe-p"${x.pro ? ' checked' : ''}> pro</label></div>
+      <div style="display:flex;gap:8px">${bouton('pe-ok', i == null ? 'Ajouter' : 'Enregistrer', '#16a34a')}${i == null ? '' : bouton('pe-sup', 'Supprimer', '#b91c1c')}${bouton('pe-x', 'Annuler', '#334155')}</div></div></div>`);
+    const f = document.getElementById('pl-edit'), v = id => document.getElementById(id);
+    f.querySelectorAll('input,select').forEach(e => e.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') v('pe-ok').click(); if (ev.key === 'Escape') f.remove(); }));
+    f.addEventListener('click', ev => { if (ev.target === f) f.remove(); });
+    v('pe-x').onclick = () => f.remove();
+    if (v('pe-sup')) v('pe-sup').onclick = () => { etatPl.l.splice(i, 1); f.remove(); rafraichit(); try { fx.tone([[660, 0.06]]); } catch (e) { /* rien */ } };
+    v('pe-ok').onclick = () => {
+      const t = v('pe-t').value.trim(); if (!t) { v('pe-t').focus(); return; }
+      const j = v('pe-j').checked, h1 = v('pe-h1').value, h2 = v('pe-h2').value;
+      if (!j && !h1) { v('pe-h1').focus(); return; }
+      const y = { ...(i == null ? { lieu: '', rappel: 0 } : etatPl.l[i]), titre: t.charAt(0).toUpperCase() + t.slice(1), date: v('pe-d').value, journee: j, debut: j ? '' : h1, fin: j ? '' : (h2 && h2 > h1 ? h2 : (() => { const [a, b] = h1.split(':').map(Number), m = a * 60 + b + 60; return `${pad2(Math.min(23, Math.floor(m / 60)))}:${pad2(m % 60)}`; })()), pro: v('pe-p').checked };
+      if (i == null) etatPl.l.push(y); else etatPl.l[i] = y;
+      f.remove(); rafraichit(); try { fx.tone([[988, 0.05]]); } catch (e) { /* rien */ }
+    };
+    setTimeout(() => v('pe-t').focus(), 30);
+  }
+  document.addEventListener('click', ev => {
+    const g = ev.target.closest && ev.target.closest('#pl-grille.plg-edit'); if (!g || !etatPl || etatPl.o.ecrit) return;
+    const c = ev.target.closest('.pli');
+    if (c && c.dataset.i != null) return fenetre(etatPl.l[+c.dataset.i], +c.dataset.i);
+    if (c) { if (typeof toast === 'function') toast('Ce rendez-vous est déjà dans ton Google Agenda : il se modifie dans l’application Google Agenda.'); else say('Ce rendez-vous se modifie dans Google Agenda.'); return; }
+    const cs = ev.target.closest('.plc[data-j]'); if (cs) fenetre({ titre: '', date: cs.dataset.j, debut: HEURE_MOMENT[cs.dataset.m] || '09:00', fin: '', journee: cs.dataset.m === 'journee', pro: false }, null);
+  });
   // les boutons seuls (il ne répond pas) : on attend son geste, sans rien écrire
   function attendsBoutons(ms) {
     return new Promise(r => {
@@ -229,7 +283,7 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
       else {
       const lu = silences ? "C'est bon ? Dis « c'est bon », touche Modifier, ou dis ce qu'il faut changer."
         : orig && !tour ? "Voici ce que j'ai noté pour toi cette semaine. Qu'est-ce qu'on change ?"
-        : `${tour ? "Voilà, c'est corrigé. " : ''}${l.length > 1 ? `${l.length} rendez-vous. ` : ''}${resume(l)}.${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} Dis « c'est bon » dès que c'est niquel, ou ce qu'il faut changer.`;
+        : `${tour ? "Voilà, c'est corrigé. " : ''}${dernierEcart ? `Je laisse de côté ${dernierEcart} rendez-vous déjà dans ton agenda. ` : ''}${l.length > 1 ? `${l.length} rendez-vous. ` : ''}${resume(l)}.${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} Dis « c'est bon » dès que c'est niquel, ou ce qu'il faut changer.`;
       a = await valideVisuel(lu, { wait: 20000, strict: true });
       }
       if (a === 'modifier') {  // (le bouton vient de couper la voix et l'écoute : on laisse passer cette coupure avant d'écouter la correction)
