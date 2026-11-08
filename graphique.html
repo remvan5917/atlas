@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#06080c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atlas Marchés">
 <title>Atlas · Salle de marché</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -243,7 +247,7 @@
   .term-now .tn-t { font: 800 9.5px 'Inter'; letter-spacing: .22em; color: var(--ambre); margin-right: 4px; } .term-now .tn-r { font: 500 12px 'Inter'; color: #6f86a6; }
   .term-now .tn { background: #0e1a30; border: 1px solid #1f3152; border-radius: 999px; padding: 6px 12px; font: 500 12.5px 'Inter'; color: #dbe6f5; cursor: pointer; } .term-now .tn:hover { border-color: var(--ambre); } .term-now .tn b { color: #fff; font-weight: 700; } .term-now .tn u { text-decoration: none; color: var(--ambre); }
   .term-now .tn .h { color: #19d38c; } .term-now .tn .r { color: #ff3d5a; } .term-now .tn.ko { border-color: rgba(255,61,90,.6); background: rgba(255,61,90,.08); } .term-now .tn.ann { border-color: rgba(255,171,26,.55); background: rgba(255,171,26,.07); } .term-now .tn.mvt { border-color: rgba(255,171,26,.4); } .term-now .tn.pos { border-color: rgba(76,201,240,.55); }
-  #term-age { font: 600 11px 'Inter'; color: #5b6b8c; white-space: nowrap; } #term-h-t { font: 700 13px 'JetBrains Mono', monospace; color: #c6ccd8; } #term-r { background: #0e182c; border: 1px solid #26365a; color: #c6ccd8; border-radius: 8px; width: 34px; height: 30px; cursor: pointer; font-size: 15px; }
+  #term-age { font: 600 11px 'Inter'; color: #5b6b8c; white-space: nowrap; } #term-h-t { font: 700 13px 'JetBrains Mono', monospace; color: #c6ccd8; } #term-pl { background: #0e182c; border: 1px solid #26365a; color: #c6ccd8; border-radius: 8px; width: 34px; height: 30px; cursor: pointer; display: grid; place-items: center; padding: 0; } #term-r { background: #0e182c; border: 1px solid #26365a; color: #c6ccd8; border-radius: 8px; width: 34px; height: 30px; cursor: pointer; font-size: 15px; }
   .fn-clair { margin: 0 6px 14px; border: 1px solid #1f3152; border-radius: 10px; background: #0a1426; padding: 0 14px; } .fn-clair summary { cursor: pointer; list-style: none; padding: 10px 0; font: 800 9.5px 'Inter'; letter-spacing: .18em; color: #8fb3d9; } .fn-clair summary::-webkit-details-marker { display: none; } .fn-clair summary::before { content: '▸ '; } .fn-clair[open] summary::before { content: '▾ '; }
   .fn-clair p { margin: 0 0 10px; font: 400 13.5px/1.6 'Inter'; color: #d3deec; } .fn-clair p b, .fn-clair .fx > b { color: #fff; font-weight: 700; } .fn-clair .fx { margin: 0 0 8px; font: 400 13.5px/1.6 'Inter'; color: #d3deec; } .fn-clair ul { margin: 6px 0 0; padding-left: 18px; } .fn-clair li { margin: 3px 0; } .fn-clair small { display: block; color: #6f86a6; font: 500 11px 'Inter'; padding-bottom: 10px; }
   .dbf { margin: 0 6px 10px; padding: 10px 12px; border: 1px solid #1b2a44; border-radius: 10px; background: #0a1426; } .dbf .h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; } .dbf .h b { font: 800 13px 'JetBrains Mono', monospace; color: #fff; } .dbf .h span { font: 600 12px 'Inter'; color: #8a91a0; flex: 1; } .dbf .h em { font: 700 13px 'JetBrains Mono', monospace; font-style: normal; }
@@ -277,7 +281,7 @@
   body.m-poche .poche { display: flex; } body.m-poche.pc-graph .poche { inset: auto 0 0 0; height: 64px; background: rgba(6, 8, 12, .96); } body.m-poche.pc-graph .poche .pc-h, body.m-poche.pc-graph .poche .pc-cartes, body.m-poche.pc-graph .poche .pc-pts { display: none; }
   body.m-poche.pc-graph .app { padding-bottom: 64px; } body.m-poche .liste, body.m-poche .outils, body.m-poche .dock, body.m-poche .fil { display: none !important; }
   .pc-h { display: flex; align-items: center; gap: 10px; padding: 14px 16px 6px; } .pc-h b { font: 800 14px 'Inter'; letter-spacing: .3em; color: var(--ambre); } .pc-h span { flex: 1; font: 600 11px 'JetBrains Mono', monospace; color: #8a91a0; text-align: right; }
-  .pc-h button { background: #14213a; border: 1px solid #26365a; color: #c6ccd8; border-radius: 8px; padding: 5px 10px; font: 700 11px 'Inter'; } #pc-fn { color: var(--ambre); border-color: rgba(76, 201, 240, .45); background: rgba(76, 201, 240, .08); } .pc-h span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pc-plein { padding: 4px 7px; } #pc-plein svg { width: 16px; height: 16px; } .pc-h button { background: #14213a; border: 1px solid #26365a; color: #c6ccd8; border-radius: 8px; padding: 5px 10px; font: 700 11px 'Inter'; } #pc-fn { color: var(--ambre); border-color: rgba(76, 201, 240, .45); background: rgba(76, 201, 240, .08); } .pc-h span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pc-cartes { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; scrollbar-width: none; } .pc-cartes::-webkit-scrollbar { display: none; }
   .pc-c { flex: 0 0 100%; scroll-snap-align: center; padding: 10px 18px 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
   .pc-c .nm { font: 800 13px 'Inter'; letter-spacing: .14em; color: #8a91a0; } .pc-c .nm b { color: var(--ambre); font-size: 22px; letter-spacing: .04em; margin-right: 8px; }
@@ -693,6 +697,9 @@
   .aide-k section { break-inside: avoid; margin-bottom: 10px; } .aide-k h4 { margin: 0 0 6px; font: 800 10px 'Inter'; letter-spacing: .14em; text-transform: uppercase; color: #8a91a0; }
   .aide-k .aide-v { column-span: all; color: #8a91a0; } .aide-k mark { background: rgba(76, 201, 240, .25); color: #fff; border-radius: 3px; }
   #sym-px.fige { opacity: .55; } #sym-px.fige::after { content: ' figé'; font: 700 9px 'Inter'; letter-spacing: .08em; color: var(--ambre); vertical-align: super; }
+  .pe-aide { position: fixed; inset: 0; z-index: 9999; background: rgba(2, 6, 14, .72); display: flex; align-items: flex-end; justify-content: center; padding: 16px; } .pe-aide > div { max-width: 440px; width: 100%; background: #0b1426; border: 1px solid #26365a; border-radius: 14px; padding: 18px 18px 14px; color: #e6e9ef; font: 500 14.5px/1.5 'Inter', sans-serif; } .pe-aide b { color: #4cc9f0; } .pe-aide > div > b { display: block; font: 800 11px 'Inter'; letter-spacing: .18em; margin-bottom: 6px; } .pe-aide p { margin: 0 0 12px; } .pe-aide p b { color: #fff; } .pe-aide .pe-k { display: inline-block; padding: 0 6px; border: 1px solid #26365a; border-radius: 6px; } .pe-aide button { width: 100%; background: #2962ff; color: #fff; border: 0; border-radius: 10px; padding: 11px; font: 700 14px 'Inter'; cursor: pointer; }
+  #plein-h { display: none; cursor: pointer; } @media (max-width: 900px) { #plein-h { display: inline-flex; } } body.role-ensemble #plein-h, body.m-nomade #plein-h, body.m-portable #plein-h { display: inline-flex; }
+  .b-plein svg { width: 18px; height: 18px; display: block; } .b-plein.on { color: #4cc9f0; }
 </style>
 </head>
 <body>
@@ -733,6 +740,7 @@
     <a class="lien trade-b" id="b-trade" data-tip="Trader depuis le graphique : place ton ordre, tire toi-même ton stop et ton objectif (T)"><svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>Trader</a>
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
+    <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
     <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v74</span></span>
   </div>
@@ -765,7 +773,7 @@
       <button class="ico outil-d" id="b-son" data-tip="La voix d'Atlas"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
     <span class="ressort"></span>
       <button class="ico outil-d" id="photo" data-tip="Capture du graphique en image (P)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
-      <button class="ico outil-d" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="ico outil-d b-plein" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       <button class="ico outil-d" id="b-salle" data-tip="Installe ma salle : tes 4 écrans (graphiques, Terminal, vue d'ensemble, Radar), chacun à sa place, en plein écran · à la voix : « Atlas, installe ma salle »"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="2.5" y="13.5" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="13.5" width="8.5" height="6.5" rx="1.2"/></svg></button>
       <button class="ico outil-d" id="b-mur" data-tip="Le Radar en mode mur : pour un autre écran, lisible de loin"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h3M7 12h6M14 9h3"/></svg></button>
       <button class="ico outil-d" id="b-sons" data-tip="Les sons de la salle (ligne touchée, nouvelle critique, ligne posée)"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button>
@@ -893,7 +901,7 @@
 <div class="tconf" id="tconf"><div><div class="q">CONFIRMER L'ORDRE</div><b id="tconf-t"></b><p id="tconf-d"></p><div class="bt"><button id="tconf-ok">Envoyer · Entrée</button><button id="tconf-non">Annuler · Échap</button></div></div></div>
 <div class="simu-aide" id="simu-aide"><b id="simu-e"></b><span id="simu-t"></span><button id="simu-stop">Annuler · Échap</button></div>
 <div class="fn-p" id="fn-p"><div class="fn-b"><div class="fn-t"><button id="fn-ret" hidden>← Fonctions</button><b id="fn-nom"></b><span id="fn-sous"></span><button id="fn-copi" title="Le copilote t’explique cette fenêtre en quelques phrases">✦ Explique-moi</button><button id="fn-x">Fermer · Échap</button></div><div id="fn-c"></div></div></div>
-<div class="poche" id="poche"><div class="pc-h"><b>ATLAS</b><span id="pc-frais"></span><i class="pc-pt" id="pc-pt"></i><button id="pc-fn">Fonctions</button><button id="pc-mode">Mode</button></div><div class="pc-cartes" id="pc-cartes"></div><div class="pc-pts" id="pc-pts"></div>
+<div class="poche" id="poche"><div class="pc-h"><b>ATLAS</b><span id="pc-frais"></span><i class="pc-pt" id="pc-pt"></i><button id="pc-fn">Fonctions</button><button id="pc-plein" class="b-plein" title="Plein écran"></button><button id="pc-mode">Mode</button></div><div class="pc-cartes" id="pc-cartes"></div><div class="pc-pts" id="pc-pts"></div>
   <nav class="pc-nav"><button data-v="cartes" class="on">Marchés</button><button data-v="graph">Graphique</button><button data-v="trade">Trader</button><button data-v="risk">Risque</button><button data-v="news">Dépêches</button><button data-v="voix">🎙 Copilote</button></nav></div>
 <div class="indic-p" id="mode-p"><div class="indic-b" style="width:min(560px,94vw)"><h3>OÙ TU TRADES</h3><p class="s">Atlas reconnaît ton appareil tout seul ; tu peux aussi choisir.</p><div class="meths" id="mode-l" style="grid-template-columns:repeat(2,1fr)"></div></div></div>
 <div class="bulle" id="bulle"></div>
@@ -934,6 +942,7 @@ let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } 
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
+try { if (diese.get('maison')) localStorage.setItem('g-maison-dist', ROOT); else if (!ROOT) ROOT = localStorage.getItem('g-maison-dist') || ''; } catch (e) { /* rien */ }  // (l'icône de l'écran d'accueil peut perdre le #maison= : on s'en souvient)
 if (/^\/salle(-dev)?\//.test(location.pathname)) ROOT = location.origin;
 if (ROOT && !/^\/salle(-dev)?\//.test(location.pathname)) $('#lien-radar').href = 'radar.html#maison=' + encodeURIComponent(ROOT);
 const DEV = location.pathname.startsWith('/salle-dev/'), PK = DEV ? 'dev:' : '';  // (la version d'essai garde ses réglages à part)
@@ -1629,7 +1638,27 @@ $('#barre-ligne').addEventListener('click', ev => {
 });
 /* la capture du graphique, le plein écran */
 $('#photo').onclick = () => { const p = panes[actif] || panes[0]; if (!p) return; p.cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${code}-${LIB[p.ut] || p.ut}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Capture enregistrée dans tes téléchargements'); }); };
-$('#plein').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); };
+/* ================= Le plein écran, partout : ordinateur, tablette, téléphone (sur iPhone : l'icône sur l'écran d'accueil) ================= */
+const PE_OK = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled), PE_APP = (() => { try { return matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true; } catch (e) { return false; } })();
+const enPlein = () => !!(document.fullscreenElement || document.webkitFullscreenElement), PE_TACTILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+const PE_SVG = on => on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+function pleinEcran(on) { if (on === undefined) on = !enPlein();
+  if (!PE_OK) { if (on) aidePlein(); return; }
+  try { ecrit('g-plein', on ? '1' : '0'); } catch (e) { /* rien */ }
+  try { const el = document.documentElement;
+    if (on && !enPlein()) { const p = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen && el.webkitRequestFullscreen(); if (p && p.catch) p.catch(() => {}); }
+    else if (!on && enPlein()) { const p = document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen && document.webkitExitFullscreen(); if (p && p.catch) p.catch(() => {}); } } catch (e) { /* refusé par le navigateur */ } }
+function aidePlein() { if (document.getElementById('pe-aide')) return; const ios = /iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  const d = document.createElement('div'); d.id = 'pe-aide'; d.className = 'pe-aide';
+  d.innerHTML = `<div><b>Plein écran</b><p>${PE_APP ? 'Atlas est déjà ouvert en plein écran, depuis son icône.' : ios ? 'Sur iPhone, Safari ne permet pas à une page de passer en plein écran. La solution : touche <b>Partager</b> <span class="pe-k">⬆︎</span> puis <b>« Sur l’écran d’accueil »</b>. Ouvre ensuite Atlas depuis cette icône : il prend tout l’écran, sans barre d’adresse.' : 'Ce navigateur ne permet pas le plein écran. Ajoute la page à l’écran d’accueil (menu du navigateur → « Ajouter à l’écran d’accueil ») : ouverte depuis l’icône, elle prend tout l’écran.'}</p><button>Compris</button></div>`;
+  d.onclick = ev => { if (ev.target === d || ev.target.tagName === 'BUTTON') d.remove(); }; document.body.appendChild(d); }
+function majPlein() { const on = enPlein(); document.querySelectorAll('.b-plein').forEach(b => { b.innerHTML = PE_SVG(on); b.classList.toggle('on', on); b.title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if (b.dataset.tip !== undefined) b.dataset.tip = b.title; });
+  document.documentElement.classList.toggle('en-plein', on || PE_APP); }
+['fullscreenchange', 'webkitfullscreenchange'].forEach(t => document.addEventListener(t, () => { try { ecrit('g-plein', enPlein() ? '1' : '0'); } catch (e) { /* rien */ } majPlein(); }));
+document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('.b-plein'); if (b) { ev.preventDefault(); ev.stopPropagation(); pleinEcran(); } }, true);
+// (sur téléphone et tablette : s'il l'avait laissé en plein écran, le premier toucher après un rechargement le remet — le navigateur exige un geste)
+if (PE_OK && PE_TACTILE && !PE_APP) { const re = () => { try { if (lit('g-plein', '0') === '1' && !enPlein()) pleinEcran(true); } catch (e) { /* rien */ } }; document.addEventListener('pointerup', re, { capture: true, once: true }); }
+setTimeout(majPlein, 0);
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT') return; const k = ev.key.toLowerCase();
   if (k === '/' || (k === 'k' && (ev.ctrlKey || ev.metaKey))) { ev.preventDefault(); ouvreRecherche(); return; }
@@ -4122,7 +4151,7 @@ async function termMaintenant() { const e = $('#term-now'); if (!e) return; cons
 if (ROLE === 'terminal') {
   document.body.insertAdjacentHTML('beforeend', `<aside class="term-g"><div class="term-logo">ATLAS <span>TERMINAL</span></div><input id="term-q" placeholder="tape pour chercher…" autocomplete="off" spellcheck="false"><div id="term-l"></div>
     <div class="term-aide">↑ ↓ choisir · Entrée ouvrir · Échap effacer<br>un clic sur un marché change aussi tes graphiques</div></aside>
-    <div id="term-now" class="term-now"></div><header class="term-h"><div id="term-m" class="term-m"></div><span id="term-age"></span><b id="term-h-t"></b><button id="term-r" title="Rafraîchir maintenant">↻</button></header>`);
+    <div id="term-now" class="term-now"></div><header class="term-h"><div id="term-m" class="term-m"></div><span id="term-age"></span><b id="term-h-t"></b><button id="term-r" title="Rafraîchir maintenant">↻</button><button id="term-pl" class="b-plein" title="Plein écran"></button></header>`);
   try { $('#boot').remove(); } catch (e) { /* rien */ } BOOT.fini = true;
   $('#term-q').addEventListener('input', () => { TERM_SEL = -1; termNav(); });
   $('#term-r').onclick = () => termOuvre(TERM_K, true);

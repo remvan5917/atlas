@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#060b16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atlas Radar">
 <title>Radar Atlas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -217,6 +221,8 @@
     .mur-l .lt h4 { font-size: 2.1vw !important; } .mur-l .lt .li { font-size: 2.55vw !important; gap: 1.6vw; line-height: 1.3; } .mur-l .lt .li time, .mur-l .lt .li .n { font-size: 2.2vw !important; } .mur-l .lt .li .cd { font-size: 3vw !important; } .mur-l .vide2 { font-size: 2.5vw !important; } .mur-l .lt .li .h, .mur-l .lt .li .r { white-space: nowrap; }
     .mur-f { height: 5vh; margin: 0 -3.5vw; } .mur-f .t { font-size: 2.2vw; padding: 0 3vw; } .mur-f .dp { font-size: 3.6vw; gap: 2vw; padding: 0 5vw; } .mur-f .dp time { font-size: 3.2vw; } .mur-f .dp .fl, .mur-f .dp .im { font-size: 2.1vw; padding: .3vh 1.2vw; }
   }
+  .pe-aide { position: fixed; inset: 0; z-index: 9999; background: rgba(2, 6, 14, .72); display: flex; align-items: flex-end; justify-content: center; padding: 16px; } .pe-aide > div { max-width: 440px; width: 100%; background: #0b1426; border: 1px solid #26365a; border-radius: 14px; padding: 18px 18px 14px; color: #e6e9ef; font: 500 14.5px/1.5 'Inter', sans-serif; } .pe-aide b { color: #4cc9f0; } .pe-aide > div > b { display: block; font: 800 11px 'Inter'; letter-spacing: .18em; margin-bottom: 6px; } .pe-aide p { margin: 0 0 12px; } .pe-aide p b { color: #fff; } .pe-aide .pe-k { display: inline-block; padding: 0 6px; border: 1px solid #26365a; border-radius: 6px; } .pe-aide button { width: 100%; background: #2962ff; color: #fff; border: 0; border-radius: 10px; padding: 11px; font: 700 14px 'Inter'; cursor: pointer; }
+  .b-plein svg { width: 18px; height: 18px; display: block; } .tm .b-plein { vertical-align: middle; } .b-plein.on { color: #4cc9f0; }
 </style>
 </head>
 <body>
@@ -231,6 +237,7 @@
   <button class="rond" id="b-cherche" title="Rechercher ( / )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
   <button class="rond" id="b-mur" title="Mode mur : lisible de loin, pour un autre écran ( W )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
   <button class="rond" id="b-squawk" title="La voix de la salle : Atlas annonce les nouvelles critiques et les chiffres publiés ( V )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h3l5 4V5L7 9z"/><path d="M16 8.5c1.5 1.8 1.5 5.2 0 7M18.8 6c2.8 3.4 2.8 8.6 0 12"/></svg></button>
+  <button class="rond b-plein" id="b-plein" title="Plein écran (F)"></button>
   <button class="rond" id="b-son" title="Son ( M )"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path id="ondes" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
   <div class="liaison"><span class="point" id="point"></span><span id="liaison">connexion…</span></div>
 </div>
@@ -284,6 +291,27 @@ const DEC = { M6E: 5, MNQ: 2, MYM: 0, MGC: 1, SIL: 3, MCL: 2 };
 const DEV = location.pathname.startsWith('/salle-dev/'), PK = DEV ? 'dev:' : '';
 const lit = (k, d) => { try { const v = localStorage.getItem(PK + k); return v == null ? d : v; } catch (e) { return d; } };
 const ecrit = (k, v) => { try { localStorage.setItem(PK + k, v); } catch (e) { /* rien */ } };
+/* ================= Le plein écran, partout : ordinateur, tablette, téléphone (sur iPhone : l'icône sur l'écran d'accueil) ================= */
+const PE_OK = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled), PE_APP = (() => { try { return matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true; } catch (e) { return false; } })();
+const enPlein = () => !!(document.fullscreenElement || document.webkitFullscreenElement), PE_TACTILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+const PE_SVG = on => on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+function pleinEcran(on) { if (on === undefined) on = !enPlein();
+  if (!PE_OK) { if (on) aidePlein(); return; }
+  try { ecrit('g-plein', on ? '1' : '0'); } catch (e) { /* rien */ }
+  try { const el = document.documentElement;
+    if (on && !enPlein()) { const p = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen && el.webkitRequestFullscreen(); if (p && p.catch) p.catch(() => {}); }
+    else if (!on && enPlein()) { const p = document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen && document.webkitExitFullscreen(); if (p && p.catch) p.catch(() => {}); } } catch (e) { /* refusé par le navigateur */ } }
+function aidePlein() { if (document.getElementById('pe-aide')) return; const ios = /iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  const d = document.createElement('div'); d.id = 'pe-aide'; d.className = 'pe-aide';
+  d.innerHTML = `<div><b>Plein écran</b><p>${PE_APP ? 'Atlas est déjà ouvert en plein écran, depuis son icône.' : ios ? 'Sur iPhone, Safari ne permet pas à une page de passer en plein écran. La solution : touche <b>Partager</b> <span class="pe-k">⬆︎</span> puis <b>« Sur l’écran d’accueil »</b>. Ouvre ensuite Atlas depuis cette icône : il prend tout l’écran, sans barre d’adresse.' : 'Ce navigateur ne permet pas le plein écran. Ajoute la page à l’écran d’accueil (menu du navigateur → « Ajouter à l’écran d’accueil ») : ouverte depuis l’icône, elle prend tout l’écran.'}</p><button>Compris</button></div>`;
+  d.onclick = ev => { if (ev.target === d || ev.target.tagName === 'BUTTON') d.remove(); }; document.body.appendChild(d); }
+function majPlein() { const on = enPlein(); document.querySelectorAll('.b-plein').forEach(b => { b.innerHTML = PE_SVG(on); b.classList.toggle('on', on); b.title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if (b.dataset.tip !== undefined) b.dataset.tip = b.title; });
+  document.documentElement.classList.toggle('en-plein', on || PE_APP); }
+['fullscreenchange', 'webkitfullscreenchange'].forEach(t => document.addEventListener(t, () => { try { ecrit('g-plein', enPlein() ? '1' : '0'); } catch (e) { /* rien */ } majPlein(); }));
+document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('.b-plein'); if (b) { ev.preventDefault(); ev.stopPropagation(); pleinEcran(); } }, true);
+// (sur téléphone et tablette : s'il l'avait laissé en plein écran, le premier toucher après un rechargement le remet — le navigateur exige un geste)
+if (PE_OK && PE_TACTILE && !PE_APP) { const re = () => { try { if (lit('g-plein', '0') === '1' && !enPlein()) pleinEcran(true); } catch (e) { /* rien */ } }; document.addEventListener('pointerup', re, { capture: true, once: true }); }
+setTimeout(majPlein, 0);
 let vue = lit('radar-vue', 'tout'), marche = lit('radar-marche', ''), son = lit('radar-son', '0') === '1', cherche = '';
 let D = null, ouverts = new Set(), sel = -1, premier = true, dernierOk = 0;
 let vus = new Set(); try { vus = new Set(JSON.parse(lit('radar-lus', '[]'))); } catch (e) { /* rien */ }
@@ -593,6 +621,7 @@ document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT') { if (ev.key === 'Escape') ev.target.blur(); return; }
   if (ev.key === 'w' || ev.key === 'W') { modeMur(!document.body.classList.contains('mode-mur')); return; }
   if (ev.key === 'v' || ev.key === 'V') { $('#b-squawk').click(); return; }
+  if ((ev.key === 'f' || ev.key === 'F') && !ev.ctrlKey && !ev.metaKey) { pleinEcran(); return; }
   if (document.body.classList.contains('mode-mur')) { if (ev.key === 'Escape') modeMur(false); return; }
   if (ev.key === 'Escape' && grapheOuvert) { fermeGraphe(); return; }
   if (!D) return;
@@ -675,7 +704,7 @@ function murPublie() {
 function murTic() {
   if (!document.body.classList.contains('mode-mur')) return;
   $('#mur-h').innerHTML = PLACES.map(([n, tz, ici]) => { const h = heureLa(tz); return `<div class="hl${ici ? ' ici' : ''}"><b>${ici ? h.txt + `<span style="opacity:.5;font-size:.55em">:${h.s}</span>` : h.txt}</b><small><i class="${ouverte(ici ? 'CME' : n) ? 'ouv' : ''}"></i>${ici ? 'PARIS · CME' : n}</small></div>`; }).join('')
-    + `<div class="esp"></div><div class="tm"><b>ATLAS · RADAR</b><button id="mur-comp">${document.body.classList.contains('mur-edit') ? 'Terminé' : 'Composer'}</button> <button id="mur-x">Mode lecture · W</button></div>`;
+    + `<div class="esp"></div><div class="tm"><b>ATLAS · RADAR</b><button id="mur-comp">${document.body.classList.contains('mur-edit') ? 'Terminé' : 'Composer'}</button> <button id="mur-x">Mode lecture · W</button> <button class="b-plein" title="Plein écran (F)">${PE_SVG(enPlein())}</button></div>`;
   if (murPublie()) return;
   const now = Date.now() / 1000, a = ((D && D.agenda) || []).filter(x => x.fort && x.at > now - 60).sort((x, y) => x.at - y.at)[0];
   if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60);
