@@ -378,7 +378,7 @@ const SECRETAIRE = (() => {
       let bilan = null; if (typeof AVENIR !== 'undefined') { try { bilan = await AVENIR.bilan(); } catch (e) { bilan = null; } }
       // 4. la Gazette
       let imp = false;
-      const gazette = { type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan, garde: typeof VIE !== 'undefined' ? VIE.phraseSemaine(Array.from({ length: 7 }, (v, i) => plusJours(i, du))) : '' };
+      const gazette = { type: 'gazette', auto: !!o.seul, du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan, garde: typeof VIE !== 'undefined' ? VIE.phraseSemaine(Array.from({ length: 7 }, (v, i) => plusJours(i, du))) : '' };
       // imprimer : seul (le dimanche soir sans lui) comme avant ; avec lui, seulement s'il dit oui
       const imprimer = o.seul || await demandeImpression('Ta Gazette est prête', 'Le planning, le menu, les courses et les choses à ne pas oublier. Je l’imprime ?', "Ta Gazette est prête. Je l'imprime ? Dis « imprime », ou « pas encore ».");
       if (imprimer) { try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(gazette) }); imp = r.ok; } catch (e) { imp = false; } S.gazetteEnAttente = null; }
