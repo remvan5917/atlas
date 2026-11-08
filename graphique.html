@@ -3559,6 +3559,7 @@ async function fnNiv(a) { const mots = String(a || '').trim().toUpperCase().spli
     const plat = g === 'horizontale' || l.t2 == null || l.t2 === l.t1, ta = plat ? l.t1 : Math.min(l.t1, l.t2), tb = plat ? l.t1 : Math.max(l.t1, l.t2);
     const v = plat ? () => l.p1 : t => t < ta - du ? null : l.p1 + (l.p2 - l.p1) * (t - l.t1) / (l.t2 - l.t1);
     LG.push({ l, lib: plat ? (l.canal || l.double ? 'canal' : 'horizontale') : (l.canal || l.double ? 'canal' : 'oblique'), z: t => { const x = v(t); return x == null ? null : [x, x]; }, hors: t => t >= ta - 3 * du && t <= tb + 3 * du }); }
+  if (!LG.length && CAPT) { ouvreFn('NIV', '', ''); return; }
   if (!LG.length) { ouvreFn('NIV', `${c} · ${ut} · tes lignes à l’épreuve du passé`, `${ch}${retenir(`Tu n’as pas encore de ligne sur ${esc(c)}. Trace tes supports et résistances sur le graphique (horizontales, obliques, canaux, zones) : NIV te dira ensuite combien de fois le prix est venu à chacune, et ce qu’il a fait — reparti du même côté ou traversée.`)}`); nivBranche(c); return; }
   const tot = { tenue: 0, traversee: 0, indecis: 0 };
   for (const g of LG) { g.ep = nivEpisodes(B, g.z, tk, D, H, g.hors); const z = g.z(tN); g.now = z ? (der > z[1] ? (der - z[1]) / tk : der < z[0] ? (der - z[0]) / tk : 0) : null; g.vNow = z;
@@ -3638,7 +3639,7 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0, ['SESS', 'les séances Asie, Londres, 
 // PLAN : tes scénarios pour un marché, écrits en français ; Atlas dit, condition par condition, ce qui est rempli maintenant et ce qu'il manque (en ticks),
 // et ce qui a suivi les fois passées où le scénario s'est réuni, dans les deux sens. Les scénarios sont les tiens : Atlas n'en propose aucun et ne passe aucun ordre.
 const PLAN_EX = ['le prix repasse sous le plus bas de Londres avec un RSI sous 50', 'clôture au-dessus du plus haut de la veille en H4', 'le prix casse son dernier sommet du zigzag en H1', 'le prix est au-dessus de la MM 50 en H4 et sous la MM 20 en H1'];
-let PLAN_C = null, PLAN_EN = false;
+let PLAN_C = null, PLAN_EN = false, PLAN_NOW = { at: 0, code: null, l: [] };
 async function fnPlan(a, ajout, discret) { const mots = String(a || '').trim().toUpperCase().split(/\s+/).filter(Boolean), c = mots.find(z => L.some(x => x.code === z)) || code; PLAN_C = c;
   const q0 = $('#pln-q'), garde = q0 && document.activeElement === q0 ? q0.value : (ajout ? '' : q0 ? q0.value : '');
   if (!discret) ouvreFn('PLAN', `${c} · ${ajout ? 'je traduis ton scénario…' : 'je regarde tes scénarios…'}`, SQUEL);
@@ -3647,6 +3648,7 @@ async function fnPlan(a, ajout, discret) { const mots = String(a || '').trim().t
   if (r.raison) toast(r.raison); await scanSurvLit(); const S = r.scenarios || [];
   const form = `<form id="pln-f" class="scn-f"><input id="pln-q" value="${esc(garde)}" placeholder="écris un scénario pour ${esc(c)} : « le prix repasse sous le plus bas de Londres avec un RSI sous 50 »" autocomplete="off" spellcheck="false"><button>Ajouter</button></form>
     ${S.length < 6 ? `<div class="scn-ex"><span>EXEMPLES</span>${PLAN_EX.map(z => `<button class="fn-ch" data-ple="${esc(z)}">${esc(z)}</button>`).join('')}</div>` : ''}`;
+  if (!S.length && CAPT) { ouvreFn('PLAN', '', ''); return; }  // (le point du moment : pas de carte sans scénario)
   if (!S.length) { ouvreFn('PLAN', `${c} · tes scénarios, condition par condition`, `${form}${retenir(`Écris tes scénarios pour ${esc(c)} comme tu les dirais (jusqu’à 6). Atlas les traduit en conditions, te montre en direct lesquelles sont remplies et ce qu’il manque en ticks, et ce qui a suivi les fois passées où chaque scénario s’est réuni, dans les deux sens. Ce sont tes scénarios : Atlas n’en propose aucun et ne passe aucun ordre.`)}`); planBranche(c, S); return; }
   const tks = x => `${Math.abs(x)} tick${Math.abs(x) > 1 ? 's' : ''}`, bg = n => `${n} bougie${n > 1 ? 's' : ''}`, dur = m => m >= 1440 ? `${Math.round(m / 1440)} j` : m >= 60 ? `${Math.round(m / 60)} h` : `${m} min`;
   const detail = (k, s) => { const haut = k.op === '>' || k.op === '>=' || k.op === 'croise_haut', e = k.ecart_ticks, out = [];
@@ -4065,7 +4067,7 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0,
 FN_TEL.splice(11, 0, ['CMDTY', 'les matières premières'], ['CT', 'contango ou déport'], ['HP', 'l’historique en tableau']);
 /* ================= BRIEF : le point du moment — l'essentiel de chaque fonction sur un seul écran, puis la synthèse du copilote ================= */
 let CAPT = null, BRIEF_EN = false;
-const BRIEF_L = [['MOV', 'Ce qui bouge', () => fnMov()], ['HEURES', 'L’heure qui vient', () => fnHeures('')], ['OMON', 'Le mouvement attendu', () => fnOmon()], ['CORR', 'Qui bouge avec qui', () => fnCorr('60')], ['FXC', 'Les devises', () => fnFxc('jour')],
+const BRIEF_L = [['PLAN', 'Tes scénarios', () => fnPlan('')], ['MOV', 'Ce qui bouge', () => fnMov()], ['HEURES', 'L’heure qui vient', () => fnHeures('')], ['SESS', 'Les séances', () => fnSess('')], ['NIV', 'Tes lignes', () => fnNiv('')], ['OMON', 'Le mouvement attendu', () => fnOmon()], ['CORR', 'Qui bouge avec qui', () => fnCorr('60')], ['FXC', 'Les devises', () => fnFxc('jour')],
   ['CMDTY', 'Les matières premières', () => fnCmdty()], ['CT', 'La structure du pétrole', () => fnCt('petrole')], ['GC', 'Les taux américains', () => fnGc()], ['WEI', 'Les indices du monde', () => fnWei()], ['PERF', 'Tes 30 derniers jours', () => fnPerf('30')]];
 async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; for (let i = 0; i < 40 && !L.length; i++) await new Promise(r => setTimeout(r, 250)); const res = {}, t0 = new Date();
   const dessine = fini => { const ag = (AGENDA || []).filter(a => a.at > Date.now() / 1000 - 60).sort((a, b) => a.at - b.at)[0];
@@ -4430,6 +4432,8 @@ async function termMaintenant() { const e = $('#term-now'); if (!e) return; cons
     const ty = ECO_PROCH.l.find(x => x.n && x.prochaine && Math.abs(x.prochaine.at - ag.at) < 120), mn = Math.round((ag.at - now) / 60);
     items.push({ c: 'ann', t: `<b>${mn > 0 ? `Dans ${mn} min` : mn === 0 ? 'Maintenant' : `Il y a ${-mn} min`}</b> · ${esc(ag.titre_fr || ag.titre)}${ag.prevision ? ` · attendu ${esc(ag.prevision)}` : ''}${ty ? ' · <u>la réaction habituelle</u>' : ''}`, k: ty ? 'ECO' : 'CAL', arg: ty ? ty.cle : '' });
     if (ty && mn > 0 && mn <= 10 && !AUTO_ECO[ag.at] && Date.now() - TERM_TOUCHE > 120000) { AUTO_ECO[ag.at] = 1; termOuvre('ECO', false, ty.cle); toast(`Dans ${mn} min : ${ag.titre_fr || ag.titre} — voici comment tes marchés ont réagi les dernières fois`); } }
+  if (!marcheFerme()) { if (Date.now() - PLAN_NOW.at > 60000 || PLAN_NOW.code !== code) { PLAN_NOW = { at: Date.now(), code, l: [] }; try { const r = await api('/maison/graphique', { action: 'plan', op: 'liste', code }); PLAN_NOW.l = (r && r.scenarios) || []; } catch (er) { /* rien */ } }  // (tes scénarios du marché affiché : au plus une lecture par minute)
+    for (const s of PLAN_NOW.l.filter(s => s.ok && s.reuni)) items.push({ c: 'mvt', t: `<b>TON SCÉNARIO</b> « ${esc(s.texte)} » est réuni sur ${esc(PLAN_NOW.code)}${s.depuis > 1 ? ` depuis ${s.depuis} bougies ${esc(s.ut)}` : ''}`, k: 'PLAN', code: PLAN_NOW.code }); }
   if (!marcheFerme()) for (const x of L.filter(x => x.amp_hab && x.amp / x.amp_hab >= 1.8).sort((a, b) => b.amp / b.amp_hab - a.amp / a.amp_hab).slice(0, 2))
     items.push({ c: 'mvt', t: `<b>${esc(x.code)}</b> a déjà fait <b>× ${nb(x.amp / x.amp_hab, 1)}</b> sa journée habituelle`, k: 'MOV', code: x.code });
   e.innerHTML = `<span class="tn-t">MAINTENANT</span>` + (items.length ? items.map((x, i) => `<button class="tn ${x.c}" data-tn="${i}">${x.t}</button>`).join('') : `<span class="tn-r">Rien d’urgent${marcheFerme() ? ' · ' + esc(marcheFerme()) : ''}. Je te montre ici ce qui compte dès que ça arrive : une annonce qui approche, ta position, un marché qui s’emballe, une liaison coupée.</span>`);
