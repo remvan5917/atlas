@@ -175,7 +175,14 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
       montre(l, existants, titre, { orig });
       const conf = l.map(x => [x, chevauche(x, existants)]).filter(([, c]) => c);
       let a;
-      if (attente) { a = await attendsBoutons(15 * 60000); if (a === null) return metsDeCote(l, titre, orig); }
+      if (attente) {  // il n'a pas répondu : le planning reste à l'écran ; il écoute sa voix ET attend un bouton, sans rien écrire (15 min au plus)
+        let gagne = null; const limite = Date.now() + 15 * 60000;
+        attendsBoutons(15 * 60000).then(v => { if (gagne === null) { gagne = v === null ? '' : v; try { OREILLES.cancel(); } catch (e) { /* rien */ } } });
+        while (gagne === null && Date.now() < limite) { const h = await hear({ maxWait: 60000 }); if (gagne === null && h) gagne = h; }
+        a = gagne || null; gagne = gagne === null ? '' : gagne;
+        if (!a) return metsDeCote(l, titre, orig);
+        if (a !== 'ok' && a !== 'modifier') { if (estOk(a)) a = 'ok'; else if (isNo(a) && N(a).split(' ').length <= 3) a = 'non'; else if (/^(modifie|modifier|change|corrige|je modifie)$/.test(N(a))) a = 'modifier'; }
+      }
       else {
       const lu = silences ? "C'est bon ? Dis « c'est bon », touche Modifier, ou dis ce qu'il faut changer."
         : orig && !tour ? "Voici ce que j'ai noté pour toi cette semaine. Qu'est-ce qu'on change ?"
