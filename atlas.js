@@ -298,8 +298,14 @@ const estOk = t => { const n = N(t || ''); return !!n && !CORRIGE_RE.test(n) && 
 const boutonOk = (txt = "✔ C'est bon") => `<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)"><button type="button" id="ok-board" style="width:100%;padding:18px;border:0;border-radius:16px;background:#16a34a;color:#fff;font:800 20px system-ui;cursor:pointer">${txt}</button><div style="text-align:center;color:#94a3b8;font-size:13px;margin-top:6px">ou dis « c'est bon » quand tu veux, même pendant qu'il parle</div></div>`;
 async function valideVisuel(texte, { wait: w = 20000 } = {}) {
   let ok = null; const bouton = new Promise(r => { ok = r; });
-  setTimeout(() => { const b = document.getElementById('ok-board'); if (b) b.onclick = () => { try { voice.reprise = null; dlg.interrupt = true; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); } catch (e) { /* rien */ } try { fx.tone([[988, 0.06], [1319, 0.1]]); } catch (e) { /* rien */ } ok('ok'); }; }, 60);
+  setTimeout(() => {
+    const fin = v => { try { voice.reprise = null; dlg.interrupt = true; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); } catch (e) { /* rien */ } try { fx.tone([[988, 0.06], [1319, 0.1]]); } catch (e) { /* rien */ } ok(v); };
+    const b = document.getElementById('ok-board'), m = document.getElementById('mod-board'), i = document.getElementById('corr-board');
+    if (b) b.onclick = () => fin('ok'); if (m) m.onclick = () => fin('modifier');  // « Modifier » : il se tait et écoute la correction
+    if (i) i.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter' && i.value.trim()) fin(i.value.trim()); };  // ou la correction écrite
+  }, 60);
   const a = await Promise.race([bouton, ask(texte, { wait: w })]);
+  if (a === 'modifier') return 'modifier';
   if (a === 'ok' || estOk(a)) { voice.reprise = null; if (voice.occupe()) voice.stop(); return 'ok'; }
   if (isNo(a) && N(a).split(' ').length <= 3) return 'non';
   return a || '';

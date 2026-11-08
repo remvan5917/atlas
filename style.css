@@ -51,6 +51,7 @@ body { background: var(--bg); color: var(--texte); font-family: system-ui, -appl
 .board { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8; max-width: min(92vw, 900px); max-height: 86vh; overflow: auto; overflow-x: hidden;
   padding: 18px 22px; border-radius: 22px; border: 2px solid #e0a040; background: rgba(16, 13, 9, .96); box-shadow: 0 10px 40px rgba(0, 0, 0, .6); }
 .board[hidden] { display: none; }
+.board.planning-large { max-width: min(97vw, 1280px); }
 .board .papa-txt { width: min(80vw, 720px); max-width: 100%; text-align: left; color: var(--texte); font-size: clamp(15px, 2.6vmin, 18px); line-height: 1.55; }
 .board .papa-txt h3 { margin: 0 0 8px; color: var(--ambre2); font-size: clamp(16px, 3vmin, 21px); letter-spacing: .06em; }
 .board .papa-txt h4 { margin: 14px 0 6px; color: var(--ambre2); }
