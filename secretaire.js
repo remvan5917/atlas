@@ -349,6 +349,7 @@ const SECRETAIRE = (() => {
         let r = null; try { r = await AGENDA.planifie({ rituel: true }); } catch (e) { r = null; }
         // rien entendu : on recommence (une fois) avant d'imprimer quoi que ce soit
         if (r && r.statut === 'rien' && await askYesNo("On recommence ton planning ? Parle bien près de moi.")) { try { r = await AGENDA.planifie({ rituel: true }); } catch (e) { r = null; } }
+        if (r && ['attente', 'annule', 'erreur'].includes(r.statut)) return say("Je m'arrête là : ton planning n'est pas fini, rien d'autre ne part. Dis « reprends mon planning » quand tu veux, puis « on prépare la semaine » pour les repas et la Gazette.");
       }
       // 2. les menus : adaptés s'ils existent, sinon faits (menus, courses, drive)
       // les menus faits APRÈS le planning, du lundi au dimanche ; s'il y en a déjà pour cette semaine-là, ils s'adaptent seulement
@@ -377,11 +378,16 @@ const SECRETAIRE = (() => {
       let bilan = null; if (typeof AVENIR !== 'undefined') { try { bilan = await AVENIR.bilan(); } catch (e) { bilan = null; } }
       // 4. la Gazette
       let imp = false;
-      try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan, garde: typeof VIE !== 'undefined' ? VIE.phraseSemaine(Array.from({ length: 7 }, (v, i) => plusJours(i, du))) : '' }) }); imp = r.ok; } catch (e) { imp = false; }
+      const gazette = { type: 'gazette', du, au, jours: menus.filter(x => x.date >= du && x.date <= au), afaire: afaire.slice(0, 40), courses: coursesGroupees(), bilan, garde: typeof VIE !== 'undefined' ? VIE.phraseSemaine(Array.from({ length: 7 }, (v, i) => plusJours(i, du))) : '' };
+      // imprimer : seul (le dimanche soir sans lui) comme avant ; avec lui, seulement s'il dit oui
+      const imprimer = o.seul || await demandeImpression('Ta Gazette est prête', 'Le planning, le menu, les courses et les choses à ne pas oublier. Je l’imprime ?', "Ta Gazette est prête. Je l'imprime ? Dis « imprime », ou « pas encore ».");
+      if (imprimer) { try { const r = await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(gazette) }); imp = r.ok; } catch (e) { imp = false; } S.gazetteEnAttente = null; }
+      else { S.gazetteEnAttente = gazette; save(); }
       const n = afaire.length;
       showBoard(`<div style="text-align:center;font-family:system-ui;min-width:min(80vw,460px);padding:14px 4px"><div style="font-size:46px">✔</div><b style="font-size:22px;color:#86efac">Ta semaine est prête</b><div style="color:#cbd5e1;font-size:15px;margin-top:8px">${imp ? 'La Gazette s’imprime : le planning, le menu, les courses' : 'Planning, menus et courses : c’est fait'}${n ? ` · ${n} chose${n > 1 ? 's' : ''} à ne pas oublier` : ''}</div></div>`); setTimeout(() => { const b = document.getElementById('board'); if (b && /Ta semaine est prête/.test(b.textContent)) hideBoard(); }, 60000);
       S.semaineFaite = (AGENDA._semaine ? dJ(AGENDA._semaine()[0]) : auj()); save();
       if (o.seul) { S.semaineSansLui = S.semaineFaite; save(); return say(`Ta semaine est prête, et ta Gazette s'imprime sur l'imprimante du bureau. Demain matin, dis-moi « on fait mon planning » pour ajouter tes rendez-vous.`); }
+      if (!imprimer) await say("Je ne l'imprime pas pour l'instant. Dis « imprime ma Gazette » quand tu as fini.");
       return say(`Ta semaine est prête.${n ? ` À ne pas oublier : ${afaire.filter(x => x.g !== 'argent').slice(0, 4).map(x => x.t).join(' ; ')}${n > 4 ? ', et le reste sur la feuille' : ''}.` : ''}${imp ? ` Ta Gazette de la semaine s'imprime sur l'imprimante du bureau : une page pour le planning, une pour le menu, une pour les courses, et une pour les choses à ne pas oublier.${bilan && bilan.conseil ? ` Mon conseil pour la semaine : ${bilan.conseil}` : ''}` : ''} Bonne semaine !`);
     } finally { window.__RITUEL = false; }
   }
@@ -435,6 +441,7 @@ const SECRETAIRE = (() => {
       if (/^(non|pas ce week end|il n est pas la|pas la peine|laisse)\b/.test(n)) return () => { weekendDemande = 0; dlg.attendReponse = 0; return say("D'accord. Bon week-end !"); };
     }
     // le rituel du dimanche
+    if (/\b(imprime|imprimer|imprimes)\b.*\bgazette\b/.test(n) && S.gazetteEnAttente) return async () => { let ok = false; try { ok = (await fetch(`${r0()}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(S.gazetteEnAttente) })).ok; } catch (e) { ok = false; } if (ok) { S.gazetteEnAttente = null; save(); } return say(ok ? "C'est parti : ta Gazette s'imprime sur l'imprimante du bureau." : "L'imprimante ne répond pas. Redis-le-moi dans un instant."); };
     if (/\b(on prepare|prepare|preparons|prepare moi)( toute| tout)? (la|ma) semaine\b|\bfais tout pour la semaine\b|\bla gazette de la semaine\b/.test(n) && !/\b(menus?|repas|courses|cuisine)\b/.test(n)) return semaine;
     // les papiers
     if (/\b(range|scanne|scan|photographie|lis|enregistre|garde|classe)\b.*\b(ce |mon |le |un )?(papier|courrier|document|facture|lettre|avis|attestation|contrat)\b/.test(n) && !/\b(ticket)\b/.test(n)) return scanne;

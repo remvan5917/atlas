@@ -296,7 +296,13 @@ async function askYesNo(text) {
 const CORRIGE_RE = /\b(mais|sauf|change|changer|remplace|decale|decaler|enleve|retire|ajoute|rajoute|plutot|deplace|corrige|refais|recommence|pas le|pas la|pas de|pas a|au lieu)\b/;
 const estOk = t => { const n = N(t || ''); return !!n && !CORRIGE_RE.test(n) && (isYes(t) || /\b(niquel|nickel|impeccable|parfait|ca me va|ca va|valide|tout est bon|c est tout bon|c est good|top)\b/.test(n)); };
 const boutonOk = (txt = "✔ C'est bon") => `<div style="position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,rgba(5,10,20,.94) 30%)"><button type="button" id="ok-board" style="width:100%;padding:18px;border:0;border-radius:16px;background:#16a34a;color:#fff;font:800 20px system-ui;cursor:pointer">${txt}</button><div style="text-align:center;color:#94a3b8;font-size:13px;margin-top:6px">ou dis « c'est bon » quand tu veux, même pendant qu'il parle</div></div>`;
-async function valideVisuel(texte, { wait: w = 20000 } = {}) {
+// imprimer ? toujours demandé, jamais par défaut : « Imprimer » (bouton ou « imprime / oui ») ; un silence ou « pas encore » = rien ne sort
+async function demandeImpression(titre, sous, question) {
+  showBoard(`<div style="text-align:center;font-family:system-ui;min-width:min(86vw,480px);padding:10px 4px"><div style="font-size:42px">🖨</div><b style="font-size:22px;color:#fde68a">${esc(titre)}</b><div style="color:#cbd5e1;font-size:15px;margin:8px 0 14px">${esc(sous)}</div><div style="display:flex;gap:10px"><button type="button" id="ok-board" style="flex:1;padding:16px;border:0;border-radius:14px;background:#16a34a;color:#fff;font:800 19px system-ui;cursor:pointer">🖨 Imprimer</button><button type="button" id="mod-board" style="flex:1;padding:16px;border:0;border-radius:14px;background:#334155;color:#fff;font:800 19px system-ui;cursor:pointer">Pas encore</button></div></div>`);
+  const a = await valideVisuel(question, { wait: 20000, strict: true });
+  return a === 'ok' || (!!a && a !== 'modifier' && !isNo(a) && /\b(imprime|imprimer|imprime la|vas y|oui|go)\b/.test(N(a)) && !/\b(pas encore|attends|plus tard)\b/.test(N(a)));
+}
+async function valideVisuel(texte, { wait: w = 20000, strict = false } = {}) {
   let ok = null; const bouton = new Promise(r => { ok = r; });
   setTimeout(() => {
     const fin = v => { try { voice.reprise = null; dlg.interrupt = true; voice.stop(); OREILLES.cancel(); setTimeout(() => OREILLES.cancel(), 400); } catch (e) { /* rien */ } try { fx.tone([[988, 0.06], [1319, 0.1]]); } catch (e) { /* rien */ } ok(v); };
@@ -306,7 +312,7 @@ async function valideVisuel(texte, { wait: w = 20000 } = {}) {
   }, 60);
   const a = await Promise.race([bouton, ask(texte, { wait: w })]);
   if (a === 'modifier') return 'modifier';
-  if (a === 'ok' || estOk(a)) { voice.reprise = null; if (voice.occupe()) voice.stop(); return 'ok'; }
+  if (a === 'ok' || (estOk(a) && (!strict || N(a).split(' ').length <= 4))) { voice.reprise = null; if (voice.occupe()) voice.stop(); return 'ok'; }  // (strict : une phrase longue est une correction, pas un accord)
   if (isNo(a) && N(a).split(' ').length <= 3) return 'non';
   return a || '';
 }

@@ -224,17 +224,17 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
         while (gagne === null && Date.now() < limite) { const h = await hear({ maxWait: 60000 }); if (gagne === null && h) gagne = h; }
         a = gagne || null; gagne = gagne === null ? '' : gagne;
         if (!a) return metsDeCote(l, titre, orig);
-        if (a !== 'ok' && a !== 'modifier') { if (estOk(a)) a = 'ok'; else if (isNo(a) && N(a).split(' ').length <= 3) a = 'non'; else if (/^(modifie|modifier|change|corrige|je modifie)$/.test(N(a))) a = 'modifier'; }
+        if (a !== 'ok' && a !== 'modifier') { if (estOk(a) && N(a).split(' ').length <= 4) a = 'ok'; else if (isNo(a) && N(a).split(' ').length <= 3) a = 'non'; else if (/^(modifie|modifier|change|corrige|je modifie)$/.test(N(a))) a = 'modifier'; }
       }
       else {
       const lu = silences ? "C'est bon ? Dis « c'est bon », touche Modifier, ou dis ce qu'il faut changer."
         : orig && !tour ? "Voici ce que j'ai noté pour toi cette semaine. Qu'est-ce qu'on change ?"
         : `${tour ? "Voilà, c'est corrigé. " : ''}${l.length > 1 ? `${l.length} rendez-vous. ` : ''}${resume(l)}.${conf.length ? ` Attention : ${conf.slice(0, 2).map(([x, c]) => `${x.titre} tombe en même temps que ${propre(c.titre)}`).join(', et ')}.` : ''} Dis « c'est bon » dès que c'est niquel, ou ce qu'il faut changer.`;
-      a = await valideVisuel(lu, { wait: 20000 });
+      a = await valideVisuel(lu, { wait: 20000, strict: true });
       }
       if (a === 'modifier') {  // (le bouton vient de couper la voix et l'écoute : on laisse passer cette coupure avant d'écouter la correction)
         await new Promise(r => setTimeout(r, 650)); dlg.interrupt = false;
-        a = await valideVisuel("Je t'écoute : qu'est-ce qu'on change ? Dis-le, ou écris-le en dessous.", { wait: 30000 }); if (!a || a === 'modifier') { attente = true; continue; } }
+        a = await valideVisuel("Je t'écoute : qu'est-ce qu'on change ? Dis-le, ou écris-le en dessous.", { wait: 30000, strict: true }); if (!a || a === 'modifier') { attente = true; continue; } }
       if (a === 'ok') return ecrire(l, existants, titre, '', orig);
       if (a === 'non') { hideBoard(); await say(orig ? "D'accord, je ne change rien." : "D'accord, je ne note rien."); return { statut: 'annule', l }; }
       if (!a) { if (++silences < 2) continue; await say("Je laisse ton planning à l'écran, rien n'est écrit. Touche « C'est bon » quand tu veux, ou « Modifier »."); attente = true; continue; }
@@ -263,8 +263,8 @@ Réponds UNIQUEMENT en JSON : {"evenements": [{"titre": "…", "date": "AAAA-MM-
     try { const r = await fetch(`${r0}/maison/imprime`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'planning', du: dJ(j[0]), au: dJ(j[j.length - 1]) }) }); return r.ok; } catch (e) { return false; }
   }
   async function apres() {
-    const imp = S.settings.imprimePlanning !== false && await imprimePlanning();
-    if (imp) await say("Je l'imprime sur l'imprimante du bureau.");
+    if (S.settings.imprimePlanning !== false && await demandeImpression('Ton planning est écrit', 'Je l’imprime sur l’imprimante du bureau ?', "Je l'imprime ? Dis « imprime », ou « pas encore ».")) { const imp = await imprimePlanning(); await say(imp ? "Je l'imprime sur l'imprimante du bureau." : "L'imprimante ne répond pas."); }
+    else { hideBoard(); await say("Je ne l'imprime pas. Dis « imprime mon planning » quand tu veux."); }
     if (typeof CUISINE === 'undefined' || !CUISINE.semaineValidee) return;
     await say('Maintenant, les repas de la semaine.');
     return CUISINE.semaineValidee({ debut: dJ(semaineCible()[0]), imprime: true });

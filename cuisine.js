@@ -475,7 +475,7 @@ Réponds UNIQUEMENT en JSON : {"jours": [{"matin": "…", "midi": "…", "collat
     try { if (typeof PRIX !== 'undefined') await PRIX.planDrive(); } catch (e) { /* sans */ }
     S.semainePrete = { at: Date.now() }; save(); fx.ok();
     const nb = tableauCourses();
-    const imp = o.imprime && S.settings.imprimeMenus !== false && await imprimeMenu(j, (S.listes || []).filter(x => x.liste === 'courses'), []);
+    const imp = o.imprime && S.settings.imprimeMenus !== false && await demandeImpression('Tes menus sont prêts', 'Le menu de la semaine et la liste de courses. Je les imprime ?', "J'imprime le menu et la liste de courses ? Dis « imprime », ou « pas encore ».") && await imprimeMenu(j, (S.listes || []).filter(x => x.liste === 'courses'), []);  // (jamais sans son oui)
     await say(`C'est validé. La liste de courses est faite : ${nb} article${nb > 1 ? 's' : ''}${ajoutes.length && ajoutes.length < nb ? `, dont ${ajoutes.length} pour ces menus` : ''}, rangés par rayon.${imp ? " J'imprime le menu et la liste sur l'imprimante du bureau." : ''}`);
     return { j, co, ajoutes };
   }
