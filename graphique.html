@@ -3737,7 +3737,7 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0,
 FN_TEL.splice(11, 0, ['CMDTY', 'les matières premières'], ['CT', 'contango ou déport'], ['HP', 'l’historique en tableau']);
 /* ================= BRIEF : le point du moment — l'essentiel de chaque fonction sur un seul écran, puis la synthèse du copilote ================= */
 let CAPT = null, BRIEF_EN = false;
-const BRIEF_L = [['MOV', 'Ce qui bouge', () => fnMov()], ['OMON', 'Le mouvement attendu', () => fnOmon()], ['CORR', 'Qui bouge avec qui', () => fnCorr('60')], ['FXC', 'Les devises', () => fnFxc('jour')],
+const BRIEF_L = [['MOV', 'Ce qui bouge', () => fnMov()], ['HEURES', 'L’heure qui vient', () => fnHeures('')], ['OMON', 'Le mouvement attendu', () => fnOmon()], ['CORR', 'Qui bouge avec qui', () => fnCorr('60')], ['FXC', 'Les devises', () => fnFxc('jour')],
   ['CMDTY', 'Les matières premières', () => fnCmdty()], ['CT', 'La structure du pétrole', () => fnCt('petrole')], ['GC', 'Les taux américains', () => fnGc()], ['WEI', 'Les indices du monde', () => fnWei()], ['PERF', 'Tes 30 derniers jours', () => fnPerf('30')]];
 async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; for (let i = 0; i < 40 && !L.length; i++) await new Promise(r => setTimeout(r, 250)); const res = {}, t0 = new Date();
   const dessine = fini => { const ag = (AGENDA || []).filter(a => a.at > Date.now() / 1000 - 60).sort((a, b) => a.at - b.at)[0];
