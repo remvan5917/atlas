@@ -765,6 +765,33 @@
   body.m-poche #fn-x { display: none !important; } body.m-poche .fn-t { align-items: center; }
   @media (max-width: 700px) { .fn-row { grid-template-columns: auto auto 1fr !important; gap: 4px 10px !important; padding: 11px 6px !important; } .fn-row > div { grid-column: 1 / -1; } .fn-row > div b { font-size: 14.5px; line-height: 1.35; } .fn-row .m { grid-row: 1; grid-column: 3; justify-self: end; } }
   body.m-poche.pc-graph .app { padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important; } body.m-poche.pc-graph .poche { height: calc(64px + env(safe-area-inset-bottom)) !important; overflow: visible; }
+  /* ================= la tablette, au doigt (v78) ================= */
+  .tab-nav { align-items: flex-end; padding: 0 10px env(safe-area-inset-bottom) !important; background: rgba(6, 10, 18, .94) !important; backdrop-filter: blur(18px) !important; -webkit-backdrop-filter: blur(18px); border-top: 1px solid #16233d !important; }
+  .tab-nav button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 2px 11px !important; color: #7d889e !important; font: 650 11.5px 'Inter' !important; -webkit-tap-highlight-color: transparent; border-radius: 12px; }
+  .tab-nav button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; } .tab-nav button span b { color: var(--acc, #4cc9f0); font-weight: 800; }
+  .tab-nav button:active { background: rgba(76, 201, 240, .08) !important; color: #fff !important; }
+  .tab-nav .tab-mic { flex: 0 0 70px !important; height: 70px; margin: -24px 8px 8px; padding: 0 !important; border-radius: 50% !important; justify-content: center; background: var(--prim, linear-gradient(135deg, #67dcff, #2f7bff)) !important; color: #03121f !important; box-shadow: 0 10px 28px rgba(47, 123, 255, .45), 0 0 0 6px #070c16; }
+  .tab-nav .tab-mic svg { width: 29px; height: 29px; stroke-width: 2.1; } .tab-nav .tab-mic:active { transform: scale(.94); }
+  body.m-nomade .app { padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important; } body.m-nomade .ticket { bottom: calc(88px + env(safe-area-inset-bottom)) !important; }
+  body.m-nomade .fn-p { bottom: calc(68px + env(safe-area-inset-bottom)) !important; } body.m-nomade #fn-x { display: none !important; }
+  body.m-nomade .haut .seg button, body.m-nomade .haut .grp button { min-height: 38px; min-width: 38px; } body.m-nomade .haut .lien, body.m-nomade .haut .ico { min-height: 38px; min-width: 38px; }
+  body.m-nomade #etat, body.m-nomade .etat > span:last-child { display: none; } body.m-nomade .haut { scrollbar-width: none; }
+  .b-plein svg { flex: none !important; min-width: 18px; } #plein-h { justify-content: center; align-items: center; padding: 0 10px !important; }
+  body.m-nomade #b-simu-h, body.m-nomade #b-alertes-h { display: none !important; }  /* (Simuler et Alertes sont dans la barre du bas) */
+  /* le Terminal sur un téléphone : les fonctions en bande en haut, l'écran pour le contenu */
+  @media (max-width: 700px) {
+    body.role-terminal .term-g { right: 0; bottom: auto; width: auto; height: 52px; flex-direction: row; align-items: center; gap: 8px; padding: 8px 10px; border-right: 0; border-bottom: 1px solid #1b2a44; padding-top: calc(8px + env(safe-area-inset-top)); height: calc(52px + env(safe-area-inset-top)); }
+    body.role-terminal .term-logo, body.role-terminal .term-aide, body.role-terminal .term-g .tg { display: none !important; }
+    body.role-terminal #term-q { flex: 0 0 96px; width: 96px; margin: 0; padding: 7px 9px; font-size: 13px; }
+    body.role-terminal #term-l { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; } body.role-terminal #term-l::-webkit-scrollbar { display: none; }
+    body.role-terminal .term-g .ti { flex: none; width: auto; padding: 7px 11px; border: 1px solid #1d2c49; border-left: 1px solid #1d2c49; border-radius: 999px; background: #0f1b31; } body.role-terminal .term-g .ti span { display: none; } body.role-terminal .term-g .ti b { min-width: 0; font-size: 12px; }
+    body.role-terminal .term-g .ti.on { border-color: var(--acc-b, rgba(76, 201, 240, .45)); background: var(--acc-f, rgba(76, 201, 240, .13)); }
+    body.role-terminal .term-h { left: 0; top: calc(52px + env(safe-area-inset-top)); padding: 0 10px; gap: 8px; } body.role-terminal #term-age, body.role-terminal #term-h-t { display: none; }
+    body.role-terminal .term-now { left: 0; top: calc(104px + env(safe-area-inset-top)); padding: 6px 10px; font-size: 12px; }
+    body.role-terminal .fn-p { inset: calc(104px + env(safe-area-inset-top) + var(--tn, 36px)) 0 0 0 !important; }
+  }
+  /* l'ordinateur portable (≤ 1500 px) : le bandeau tient sur une ligne, sans rien cacher d'utile — les horloges restent dans le Radar, Simuler et les alertes dans la barre d'outils */
+  @media (min-width: 901px) and (max-width: 1500px) { .haut #horloges, .haut #b-simu-h, .haut #b-alertes-h, .haut #b-cmd { display: none !important; } .haut { gap: 6px !important; } .haut #etat, .haut .etat > span:last-child { display: none; } .haut .etat { padding-left: 8px; padding-right: 8px; } }
 </style>
 </head>
 <body>
@@ -4021,10 +4048,17 @@ appliqueMode = function () { const avant = MODE; _appliqueMode0(); const m = MOD
   if (m === 'nomade') { const o = innerWidth > innerHeight ? 'paysage' : 'portrait'; if (!document.body.classList.contains('m-nomade-ok') || o !== appliqueMode.orient) { document.body.classList.add('m-nomade-ok'); if (lit(K('g-moniteur'), null) == null) moniteur(false, false); appliqueMode.orient = o; document.body.classList.add('m-nomade'); if (o === 'paysage') { vue = 'trois'; DISPO = 'pp'; } else vue = 'un'; construit(); } } };
 setTimeout(() => appliqueMode(), 350);
 ['vue-un', 'vue-trois', 'vue-pp'].forEach(id => $('#' + id).addEventListener('click', () => ecrit(K('g-dispo-choisie'), '1')));
+function majTabUt() { const b = document.querySelector('#tab-nav [data-k="ut"] span'); if (!b) return; const u = (typeof vue !== 'undefined' && vue === 'trois') ? utsTrois[actif] : utSeul; b.innerHTML = ['D1', 'H4', 'H1'].map(z => z === u ? `<b>${z}</b>` : z).join(' · '); }
 // la barre du bas de la tablette : tout au pouce
 const TAB_NAV = [['/', 'Marchés', () => ouvreRecherche()], ['ut', 'D1 · H4 · H1', () => { const o = ['D1', 'H4', 'H1'], u = vue === 'trois' ? utsTrois[actif] : utSeul; choisirUT(o[(o.indexOf(u) + 1) % 3]); }], ['i', 'Indicateurs', () => ouvreIndic()], ['a', 'Alertes', () => ouvreAlertes()], ['r', 'Risque', () => fnRisk()], ['n', 'Dépêches', () => fnNews(code)], ['s', 'Simuler', () => outilSimu(true)]];
-{ const nv = document.createElement('nav'); nv.className = 'tab-nav'; nv.id = 'tab-nav'; nv.innerHTML = TAB_NAV.map(([k, n]) => `<button data-k="${k}">${n}</button>`).join('') + '<button data-k="v">🎙 Copilote</button>'; document.body.appendChild(nv);
-  nv.addEventListener('click', ev => { const b = ev.target.closest('[data-k]'); if (!b || b.dataset.k === 'v') return; const f = TAB_NAV.find(z => z[0] === b.dataset.k); if (f) f[2](); });
+TAB_NAV.push(['f', 'Fonctions', () => ouvreFnTel()]);
+const TAB_IC = { '/': '<rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8 14l3-3 2 2 3-4"/>', ut: '<path d="M4 19h16"/><path d="M7 15V9M7 7V5M12 16v-5M12 9V6M17 13V8M17 6V4"/>', i: '<path d="M3 17l5-6 4 4 4-7 5 9"/>', a: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  r: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>', n: '<path d="M5 5h14v14H5z"/><path d="M8 9h8M8 12.5h8M8 16h5"/>', s: '<path d="M4 18h16"/><path d="M6 14l4-4 3 3 5-6"/><circle cx="18" cy="7" r="1.6"/>', f: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+  v: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>' };
+const tabB = (k, n) => `<button data-k="${k}"${k === 'v' ? ' class="tab-mic" title="Maintiens et parle au copilote"' : ''}><svg viewBox="0 0 24 24">${TAB_IC[k] || ''}</svg>${k === 'v' ? '' : `<span>${n}</span>`}</button>`;
+{ const nv = document.createElement('nav'); nv.className = 'tab-nav'; nv.id = 'tab-nav'; const mi = Math.ceil(TAB_NAV.length / 2); nv.innerHTML = TAB_NAV.slice(0, mi).map(([k, n]) => tabB(k, n)).join('') + tabB('v', 'Copilote') + TAB_NAV.slice(mi).map(([k, n]) => tabB(k, n)).join(''); document.body.appendChild(nv);
+  nv.addEventListener('click', ev => { const b = ev.target.closest('[data-k]'); if (!b || b.dataset.k === 'v') return; const f = TAB_NAV.find(z => z[0] === b.dataset.k); if (f) { if (b.dataset.k !== 'f' && b.dataset.k !== 'r' && b.dataset.k !== 'n') $('#fn-p').classList.remove('on'); f[2](); majTabUt(); } });
+  setTimeout(majTabUt, 800);
   const bv = nv.querySelector('[data-k="v"]'); bv.addEventListener('pointerdown', () => demarreMicro('q')); bv.addEventListener('pointerup', () => { if (rec && rec.mode === 'q') arreteMicro(); }); }
 /* ================= tes configurations, en français, avec leur passé ================= */
 // la phrase → une condition sûre (relais) ; sur chaque marché / unité affichés : les repères dans l'axe du temps, ce qui a suivi, « là maintenant »
@@ -4118,7 +4152,8 @@ let TERM_ARG = '', TERM_K = lit('term-k', 'BRIEF'), TERM_AT = 0, TERM_CODE = nul
 const termListe = () => { const q = sansAccent($('#term-q').value.trim()); return TERM_G.flatMap(([, l]) => l).filter(k => !q || sansAccent(k).includes(q) || sansAccent(TERM_TXT[k] || '').includes(q) || sansAccent((FONCTIONS.find(f => f[0] === k) || [])[1] || '').includes(q)); };
 function termNav() { const vis = new Set(termListe()), q = $('#term-q').value.trim();
   $('#term-l').innerHTML = TERM_G.map(([g, l]) => { const m = l.filter(k => vis.has(k)); return m.length ? `<div class="tg">${g}</div>` + m.map(k => `<button class="ti ${k === TERM_K ? 'on' : ''} ${q && termListe()[TERM_SEL < 0 ? 0 : TERM_SEL] === k ? 'sel' : ''}" data-tk="${k}"><b>${k}</b><span>${esc(TERM_TXT[k] || '')}</span></button>`).join('') : ''; }).join('') || '<div class="tg">aucune fonction ne correspond</div>';
-  document.querySelectorAll('#term-l [data-tk]').forEach(b => b.onclick = () => { $('#term-q').value = ''; TERM_SEL = -1; termOuvre(b.dataset.tk); }); }
+  document.querySelectorAll('#term-l [data-tk]').forEach(b => b.onclick = () => { $('#term-q').value = ''; TERM_SEL = -1; termOuvre(b.dataset.tk); });
+  if (innerWidth <= 700) { const on = document.querySelector('#term-l .ti.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' }); } }
 function termChips() { const h = $('#term-m'); if (!h) return; h.innerHTML = L.map(x => `<button class="tm ${x.code === code ? 'on' : ''}" data-tc="${esc(x.code)}"><b>${esc(x.code)}</b><span class="${(x.pct || 0) >= 0 ? 'h' : 'r'}">${x.pct == null ? '' : (x.pct > 0 ? '+' : '') + nb(x.pct, 2) + ' %'}</span></button>`).join('');
   h.querySelectorAll('[data-tc]').forEach(b => b.onclick = async () => { await changeCode(b.dataset.tc); termChips(); if (TERM_DEP.includes(TERM_K)) termOuvre(TERM_K, true); }); }
 async function termOuvre(k, rafraichit, arg = '') { const f = FONCTIONS.find(z => z[0] === k); if (!f) return; if (!rafraichit) TERM_ARG = arg; TERM_K = k; ecrit('term-k', k); termNav(); const c = $('#fn-c'), y = rafraichit ? c.scrollTop : 0;
