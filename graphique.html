@@ -700,6 +700,54 @@
   .pe-aide { position: fixed; inset: 0; z-index: 9999; background: rgba(2, 6, 14, .72); display: flex; align-items: flex-end; justify-content: center; padding: 16px; } .pe-aide > div { max-width: 440px; width: 100%; background: #0b1426; border: 1px solid #26365a; border-radius: 14px; padding: 18px 18px 14px; color: #e6e9ef; font: 500 14.5px/1.5 'Inter', sans-serif; } .pe-aide b { color: #4cc9f0; } .pe-aide > div > b { display: block; font: 800 11px 'Inter'; letter-spacing: .18em; margin-bottom: 6px; } .pe-aide p { margin: 0 0 12px; } .pe-aide p b { color: #fff; } .pe-aide .pe-k { display: inline-block; padding: 0 6px; border: 1px solid #26365a; border-radius: 6px; } .pe-aide button { width: 100%; background: #2962ff; color: #fff; border: 0; border-radius: 10px; padding: 11px; font: 700 14px 'Inter'; cursor: pointer; }
   #plein-h { display: none; cursor: pointer; } @media (max-width: 900px) { #plein-h { display: inline-flex; } } body.role-ensemble #plein-h, body.m-nomade #plein-h, body.m-portable #plein-h { display: inline-flex; }
   .b-plein svg { width: 18px; height: 18px; display: block; } .b-plein.on { color: #4cc9f0; }
+  /* ================= LA PEAU D'ATLAS (v76) : une seule famille pour tous les écrans — 3 tailles de texte, 2 arrondis, un style de bouton, de carte, de pastille ================= */
+  :root { --r-s: 8px; --r-m: 12px; --t-s: 11px; --t-m: 13px; --t-l: 15px; --acc: #4cc9f0; --acc-f: rgba(76, 201, 240, .13); --acc-b: rgba(76, 201, 240, .45); --s1: #0b1426; --s2: #0f1b31; --bd: #1d2c49; --bd2: #2a3d61;
+    --doux2: #8a94a8; --ease: cubic-bezier(.2, .8, .2, 1); --prim: linear-gradient(135deg, #67dcff 0%, #2f7bff 100%); }
+  body { font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+  ::selection { background: rgba(76, 201, 240, .28); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: #22334f; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; } ::-webkit-scrollbar-thumb:hover { background-color: #2f4670; } ::-webkit-scrollbar-track { background: transparent; }
+  :focus-visible { outline: 2px solid var(--acc) !important; outline-offset: 2px; border-radius: var(--r-s); }
+  /* un seul bouton */
+  .fn-ch, .pc-h button, #term-r, #term-pl, .rond, .scn-ex .fn-ch, #fn-copi, #fn-ret, .tm button { border-radius: var(--r-s) !important; transition: background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), transform .12s var(--ease), box-shadow .15s var(--ease); }
+  .fn-ch { background: var(--s2); border: 1px solid var(--bd2); color: #c9d0dc; font-weight: 650; }
+  .fn-ch:hover, #term-r:hover, #term-pl:hover, .pc-h button:hover, .rond:hover { border-color: var(--acc-b); color: #fff; background: #13223d; }
+  .fn-ch.on { background: var(--acc-f) !important; border-color: var(--acc-b) !important; color: #e8f8fe !important; box-shadow: inset 0 0 0 1px rgba(76, 201, 240, .15); }
+  button:active, .fn-ch:active, .lien:active, .ico:active { transform: scale(.97); }
+  /* l'action principale : une seule couleur, partout */
+  .scn-f button, .pe-aide button, .fnt-f button { background: var(--prim) !important; color: #03121f !important; border: 0 !important; font-weight: 750 !important; box-shadow: 0 6px 20px rgba(47, 123, 255, .28); }
+  .scn-f button:hover, .pe-aide button:hover, .fnt-f button:hover { filter: brightness(1.08); }
+  .scn-f input, .fnt-f input, #term-q { border-radius: var(--r-s) !important; transition: border-color .15s var(--ease), box-shadow .15s var(--ease); }
+  .scn-f input:focus, .fnt-f input:focus, #term-q:focus { border-color: var(--acc) !important; box-shadow: 0 0 0 3px rgba(76, 201, 240, .14); outline: none; }
+  /* une seule carte */
+  .rk > div, .brief-c, .ana-c, .ana-cur, .fn-retenir, .fn-clair, .dbf, .pc-k > div { border-radius: var(--r-m) !important; }
+  .rk > div, .brief-c, .ana-c { background: linear-gradient(180deg, #0f1b31, #0c1629) !important; border: 1px solid var(--bd) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04); }
+  .brief-c, .ana-c, .scn:not(.h), .mov:not(.h), .hp[data-t], .fnt button, .tm { transition: transform .16s var(--ease), border-color .16s var(--ease), background .16s var(--ease), box-shadow .16s var(--ease); }
+  .brief-c:hover, .ana-c:hover, .fnt button:hover { transform: translateY(-2px); border-color: var(--acc-b) !important; box-shadow: 0 10px 28px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .05); }
+  .scn:not(.h):hover, .mov:not(.h):hover { background: rgba(76, 201, 240, .05) !important; }
+  .rk small, .fn-jour, .brief-c .bt span, .scn.h, .ana-cur small, .pc-k small { letter-spacing: .14em; font-size: 10px !important; color: #7d889e; }
+  .rk b { letter-spacing: -.02em; }
+  /* la hiérarchie : une chose en grand par écran, le reste en dessous */
+  #fn-nom { font: 800 22px 'Inter Tight', 'Inter', sans-serif !important; letter-spacing: .02em; color: #fff; }
+  #fn-sous { font-size: 12px !important; color: #7d889e !important; }
+  .fn-retenir { font-size: var(--t-l) !important; line-height: 1.55 !important; border-left: 3px solid var(--acc) !important; background: linear-gradient(135deg, rgba(76, 201, 240, .11), rgba(76, 201, 240, .025)) !important; }
+  .fn-retenir b { color: #fff; }
+  /* les pastilles */
+  .fn-av { border-radius: var(--r-s); }
+  /* l'apparition : ce qui arrive vient d'où on l'attend (court, jamais une interface qui s'efface) */
+  @keyframes peau-monte { from { opacity: 0; transform: translateY(6px); } }
+  @keyframes peau-pop { from { opacity: 0; transform: translateY(8px) scale(.985); } }
+  .fn-p.on .fn-b { animation: peau-pop .2s var(--ease); }
+  #fn-c.peau-neuf > * { animation: peau-monte .22s var(--ease) both; } #fn-c.peau-neuf > :nth-child(2) { animation-delay: .03s; } #fn-c.peau-neuf > :nth-child(3) { animation-delay: .06s; } #fn-c.peau-neuf > :nth-child(4) { animation-delay: .09s; } #fn-c.peau-neuf > :nth-child(n+5) { animation-delay: .12s; }
+  .mem.on, .tiroir.on, .bulle.on { animation: peau-pop .18s var(--ease); }
+  .pe-aide > div { animation: peau-pop .22s var(--ease); }
+  /* l'attente : la silhouette de ce qui arrive, plutôt que « … » */
+  .squel { display: grid; gap: 10px; margin: 2px 6px; } .squel i { display: block; height: 14px; border-radius: 6px; background: linear-gradient(90deg, #111d33 0%, #1a2a47 40%, #111d33 80%); background-size: 300% 100%; animation: peau-brille 1.3s linear infinite; }
+  .squel i.g { height: 64px; border-radius: var(--r-m); } .squel .r { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; } .squel .r i { height: 86px; border-radius: var(--r-m); }
+  @keyframes peau-brille { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; } }
+  .ligne-s.sel { background: linear-gradient(90deg, rgba(76, 201, 240, .16), rgba(76, 201, 240, .03)) !important; box-shadow: inset 0 0 0 1px rgba(76, 201, 240, .3) !important; }
+  #fn-c .squel { margin-top: 4px; }
+  .fn-clair { font-size: 13px !important; line-height: 1.55 !important; color: #a9b2c3 !important; background: rgba(255, 255, 255, .015) !important; border: 1px solid var(--bd) !important; } .fn-clair p b, .fn-clair .fx > b { color: #d6dce6; } .fn-clair summary { cursor: pointer; color: var(--acc); } .fn-clair:not([open]) { padding-bottom: 6px !important; }
 </style>
 </head>
 <body>
@@ -1617,7 +1665,7 @@ $('#q').addEventListener('keydown', ev => {
 $('#resultats').addEventListener('click', ev => { const a = ev.target.closest('.res[data-aj]'); if (a) { const x = TXR.find(y => y.code === a.dataset.aj); if (x && !x.suivi) ajouteMarche(x.code, !AJOUT); return; } const t = ev.target.closest('.res[data-c]'); if (t) { fermeRecherche(); changeCode(t.dataset.c); } });
 $('#voile').addEventListener('click', ev => { if (ev.target.id === 'voile') fermeRecherche(); });
 /* les petits messages */
-function toast(t) { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; $('#toasts').appendChild(e); setTimeout(() => e.remove(), 2700); }
+function toast(t) { try { if (/^✓/.test(t) && navigator.vibrate && matchMedia('(pointer: coarse)').matches) navigator.vibrate([10, 40, 10]); } catch (er) { /* rien */ } const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; $('#toasts').appendChild(e); setTimeout(() => e.remove(), 2700); }
 /* la petite barre d'une ligne choisie : alerte, couleur, style, effacer */
 function majBarreLigne() {
   const bl = $('#barre-ligne'), p = panes[actif] || panes[0];
@@ -2325,14 +2373,15 @@ setInterval(() => { if (!document.hidden && panes.some(p => ['5m', '15m', '30m',
 
 
 /* ================= le mode nuit des graphiques ================= */
-let NUIT = lit('g-nuit', 'auto');  // auto (le soir, de 20 h à 7 h) · on · off
-function nuitActive() { if (NUIT === 'on') return true; if (NUIT === 'off') return false; const h = new Date().getHours(); return h >= 20 || h < 7; }
+let NUIT = lit('g-nuit', 'auto');  // auto (le soir, de 20 h à 7 h, ou ses heures : NUIT 19 7) · on · off
+const nuitH = () => { const m = /^(\d{1,2})-(\d{1,2})$/.exec(lit('g-nuit-h', '20-7')); return m ? [+m[1] % 24, +m[2] % 24] : [20, 7]; };
+function nuitActive() { if (NUIT === 'on') return true; if (NUIT === 'off') return false; const h = new Date().getHours(), [a, b] = nuitH(); return a > b ? h >= a || h < b : h >= a && h < b; }
 function theme() {
-  return nuitActive() ? { nuit: true, bg: '#14171e', grid: '#1f2430', txt: '#7d8597', fg: '#e6e9ef', hausse: '#6b7383', mecheH: '#8a92a2', vol: 'rgba(230,233,239,.75)', zone: 'rgba(200,205,215,.07)', zoneB: 'rgba(200,205,215,.28)', axe: '#262c38' }
+  return nuitActive() ? { nuit: true, bg: '#0d1526', grid: '#162139', txt: '#7f8ba3', fg: '#e9edf3', hausse: '#6f7c96', mecheH: '#8e9ab2', vol: 'rgba(233,237,243,.62)', zone: 'rgba(160,190,230,.07)', zoneB: 'rgba(170,195,230,.26)', axe: '#1b2741' }
     : { nuit: false, bg: '#fff', grid: '#eef0f4', txt: '#7a8190', fg: '#000', hausse: '#9e9e9e', mecheH: '#7a7a7a', vol: 'rgba(0,0,0,.85)', zone: 'rgba(120,120,120,.13)', zoneB: 'rgba(90,90,90,.55)', axe: '#e3e6ec' };
 }
-function majNuit() { const b = $('#t-nuit'); if (!b) return; b.classList.toggle('on', nuitActive()); b.dataset.tip = `Mode nuit des graphiques : ${NUIT === 'auto' ? 'automatique (20 h – 7 h)' : NUIT === 'on' ? 'toujours' : 'jamais'} · clic pour changer`; document.body.classList.toggle('nuitg', nuitActive()); }
-$('#t-nuit').onclick = () => { NUIT = NUIT === 'auto' ? 'on' : NUIT === 'on' ? 'off' : 'auto'; ecrit('g-nuit', NUIT); majNuit(); toast(`Mode nuit : ${NUIT === 'auto' ? 'automatique, de 20 h à 7 h' : NUIT === 'on' ? 'toujours' : 'jamais'}`); toutDessine(); };
+function majNuit() { const b = $('#t-nuit'); if (!b) return; b.classList.toggle('on', nuitActive()); b.dataset.tip = `Mode nuit des graphiques : ${NUIT === 'auto' ? `automatique (${nuitH()[0]} h – ${nuitH()[1]} h)` : NUIT === 'on' ? 'toujours' : 'jamais'} · clic pour changer · tes heures : / NUIT 19 7`; document.body.classList.toggle('nuitg', nuitActive()); }
+$('#t-nuit').onclick = () => { NUIT = NUIT === 'auto' ? 'on' : NUIT === 'on' ? 'off' : 'auto'; ecrit('g-nuit', NUIT); majNuit(); toast(`Mode nuit : ${NUIT === 'auto' ? `automatique, de ${nuitH()[0]} h à ${nuitH()[1]} h` : NUIT === 'on' ? 'toujours' : 'jamais'}`); toutDessine(); };
 majNuit(); let nuitAvant = nuitActive(); setInterval(() => { const n = nuitActive(); if (n !== nuitAvant) { nuitAvant = n; majNuit(); toutDessine(); } }, 60000);
 /* ================= la lumière qui suit la séance ================= */
 function majAmbiance() { const se = seanceDe(Date.now() / 1000), k = !se ? '' : se.startsWith('rgba(255') ? 'ny' : se.startsWith('rgba(61') ? 'londres' : 'asie'; ['asie', 'londres', 'ny'].forEach(x => $('#amb-' + x).classList.toggle('on', x === k)); }
@@ -3256,7 +3305,10 @@ function suggestionsCmd(brut) { const t = brut.trim(), T = t.toUpperCase(); if (
   return out.length ? out.join('') + '<div class="res-t">MARCHÉS</div>' : ''; }
 $('#resultats').addEventListener('click', ev => { const d = ev.target.closest('.res.fn'); if (!d) return; ev.stopPropagation(); const v = d.dataset.cmd; if (/\s$/.test(v)) { $('#q').value = v; $('#q').focus(); filtreRecherche(); } else lanceCmd(v); }, true);
 // le panneau des fonctions
-function ouvreFn(nom, sous, html) { if (CAPT) { CAPT[nom] = { sous, html }; return; } $('#fn-copi').hidden = nom === 'FONCTIONS' || nom === 'ÉTAT'; $('#fn-ret').hidden = !(MODE === 'poche' || MODE === 'nomade') || nom === 'FONCTIONS'; $('#fn-nom').textContent = nom; $('#fn-sous').textContent = sous; $('#fn-c').innerHTML = html; if (typeof blocClair === 'function' && !/je rassemble|je calcule/.test(sous)) { const bc = blocClair(nom); if (bc) { const r = $('#fn-c .fn-retenir'); if (r) r.insertAdjacentHTML('afterend', bc); else { const ch = $('#fn-c .fn-chs'); if (ch) ch.insertAdjacentHTML('afterend', bc); else $('#fn-c').insertAdjacentHTML('afterbegin', bc); } } } $('#fn-p').classList.add('on'); }
+const SQUEL = '<div class="squel"><i class="g"></i><div class="r"><i></i><i></i><i></i></div><i style="width:72%"></i><i style="width:56%"></i><i style="width:64%"></i></div>';  // (la silhouette de ce qui arrive)
+let PEAU_FN = '', PEAU_CHARGE = false;
+function ouvreFn(nom, sous, html) { if (CAPT) { CAPT[nom] = { sous, html }; return; } const peauAnime = nom !== PEAU_FN || PEAU_CHARGE; PEAU_FN = nom; PEAU_CHARGE = /je calcule|je rassemble|je cherche|je traduis/.test(sous || '') || html === SQUEL;
+  setTimeout(() => { const c0 = document.getElementById('fn-c'); if (!c0) return; c0.classList.remove('peau-neuf'); if (peauAnime) { void c0.offsetWidth; c0.classList.add('peau-neuf'); } }, 0); $('#fn-copi').hidden = nom === 'FONCTIONS' || nom === 'ÉTAT'; $('#fn-ret').hidden = !(MODE === 'poche' || MODE === 'nomade') || nom === 'FONCTIONS'; $('#fn-nom').textContent = nom; $('#fn-sous').textContent = sous; $('#fn-c').innerHTML = html; if (typeof blocClair === 'function' && !/je rassemble|je calcule/.test(sous)) { const bc = blocClair(nom); if (bc) { const r = $('#fn-c .fn-retenir'); if (r) r.insertAdjacentHTML('afterend', bc); else { const ch = $('#fn-c .fn-chs'); if (ch) ch.insertAdjacentHTML('afterend', bc); else $('#fn-c').insertAdjacentHTML('afterbegin', bc); } } } $('#fn-p').classList.add('on'); }
 const fermeFn = () => { if (ROLE === 'terminal') return; $('#fn-p').classList.remove('on'); };
 $('#fn-x').onclick = fermeFn; $('#fn-p').addEventListener('click', ev => { if (ev.target.id === 'fn-p') fermeFn(); });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('#fn-p').classList.contains('on')) { fermeFn(); ev.stopPropagation(); } }, true);
@@ -3266,7 +3318,7 @@ async function fnAlerte(a) { const m = /^([A-Za-z0-9]{2,6})?\s*([0-9]+(?:[ .,][0
   if (c !== code) await changeCode(c); const t = (panes[0] && panes[0].d && panes[0].d.bougies.slice(-1)[0][0]) || Date.now() / 1000;
   lignes.push({ id: idNeuf(), genre: 'horizontale', t1: t, p1: prix, alerte: true }); sauve(); toast(`🔔 Alerte posée sur ${c} à ${nb(prix, (L.find(x => x.code === c) || {}).dec ?? 2)} (touche ou cassure : voix, téléphone)`); }
 // RISK : le cockpit Topstep
-async function fnRisk() { ouvreFn('RISK', 'ton risque en ce moment · lecture seule', '<p style="color:#8a91a0">Je rassemble ton compte…</p>');
+async function fnRisk() { ouvreFn('RISK', 'ton risque en ce moment · lecture seule', SQUEL);
   let P = POSD, LI = []; try { P = await api('/maison/graphique?direct=1'); } catch (e) { /* hors liaison */ } try { LI = (await api('/maison/copilote', { action: 'liens' })).liens || []; } catch (e) { /* rien */ }
   const dll = (TRADE.reg && TRADE.reg.dll) || P.dll || null, src = TRADE.reg && TRADE.reg.dll ? 'ta limite (réglages du ticket)' : 'limite supposée par la maison — indique la tienne dans ⚙ du ticket', pos = P.positions || [];
   let latent = 0, risque = 0; const lignesP = pos.map(ps => { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, sg = ps.sens === 'long' ? 1 : -1, t = Math.round((der - ps.prix_moyen) / tk) * sg, v = ps.valeur || 0, usd = t * v * ps.taille; latent += usd;
@@ -3331,7 +3383,7 @@ function correlation(a, b) { const n = a.length; if (n < 5) return null; const m
 const couleurCorr = r => r == null ? '#14213a' : r >= 0 ? `rgba(25,211,140,${(.12 + Math.abs(r) * .75).toFixed(2)})` : `rgba(255,61,90,${(.12 + Math.abs(r) * .75).toFixed(2)})`;
 // CORR : qui bouge avec qui (rendements journaliers)
 let CORR_N = 60;
-async function fnCorr(a) { const n = parseInt(a, 10); if ([20, 60, 120, 250].includes(n)) CORR_N = n; ouvreFn('CORR', 'les liens entre tes marchés · je calcule…', '<p style="color:#8a91a0">Je rassemble les clôtures journalières…</p>');
+async function fnCorr(a) { const n = parseInt(a, 10); if ([20, 60, 120, 250].includes(n)) CORR_N = n; ouvreFn('CORR', 'les liens entre tes marchés · je calcule…', SQUEL);
   const codes = L.map(x => x.code).slice(0, 14), R = {};
   for (const c of codes) { try { const B = (await barresDe(c, 'D1')).bougies || [], m = {}; for (let i = 1; i < B.length; i++) m[jourDe(B[i][0])] = Math.log(B[i][4] / B[i - 1][4]); R[c] = m; } catch (e) { /* ce marché-là manque */ } }
   const ok = codes.filter(c => R[c]), jours = [...new Set(ok.flatMap(c => Object.keys(R[c])))].sort().slice(-CORR_N);
@@ -3346,7 +3398,7 @@ async function fnCorr(a) { const n = parseInt(a, 10); if ([20, 60, 120, 250].inc
   document.querySelectorAll('#fn-c [data-corr]').forEach(b => b.onclick = () => fnCorr(b.dataset.corr));
   document.querySelectorAll('#fn-c [data-a]').forEach(e => { if (e.dataset.a !== e.dataset.b) e.onclick = () => { fermeFn(); lanceCmd(`${e.dataset.a}/${e.dataset.b}`); }; }); }
 // MOV : ce qui bouge vraiment aujourd'hui (par rapport à son habitude)
-async function fnMov() { ouvreFn('MOV', 'ce qui bouge aujourd’hui · je calcule…', '<p style="color:#8a91a0">…</p>'); const rows = [];
+async function fnMov() { ouvreFn('MOV', 'ce qui bouge aujourd’hui · je calcule…', SQUEL); const rows = [];
   for (const x of L) { let p5 = null, p20 = null; try { const B = (await barresDe(x.code, 'D1')).bougies || [], n = B.length; if (n > 21) { p5 = (B[n - 1][4] / B[n - 6][4] - 1) * 100; p20 = (B[n - 1][4] / B[n - 21][4] - 1) * 100; } } catch (e) { /* rien */ }
     rows.push({ ...x, p5, p20, force: x.amp_hab ? x.amp / x.amp_hab : null }); }
   rows.sort((a, b) => (b.force ?? 0) - (a.force ?? 0)); const mx = Math.max(1.5, ...rows.map(r => r.force || 0)), pc = v => v == null ? '<span>—</span>' : `<span style="color:${v >= 0 ? '#19d38c' : '#ff3d5a'}">${v > 0 ? '+' : ''}${nb(v, 2)} %</span>`;
@@ -3357,7 +3409,7 @@ async function fnMov() { ouvreFn('MOV', 'ce qui bouge aujourd’hui · je calcul
     + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">« × 1,5 » : le marché a déjà parcouru une fois et demie son amplitude habituelle d’une journée. Clique une ligne pour l’ouvrir.</p>`);
   document.querySelectorAll('#fn-c .mov[data-c]').forEach(e => e.onclick = () => { fermeFn(); changeCode(e.dataset.c); }); }
 // SEAS : la saisonnalité (mois de l'année, jour de la semaine) sur tout l'historique disponible
-async function fnSeas(a) { const c = (a || '').trim().toUpperCase() && L.some(x => x.code === (a || '').trim().toUpperCase()) ? a.trim().toUpperCase() : code; ouvreFn('SEAS', `${c} · je calcule…`, '<p style="color:#8a91a0">…</p>');
+async function fnSeas(a) { const c = (a || '').trim().toUpperCase() && L.some(x => x.code === (a || '').trim().toUpperCase()) ? a.trim().toUpperCase() : code; ouvreFn('SEAS', `${c} · je calcule…`, SQUEL);
   let B = []; try { B = (await barresDe(c, 'D1')).bougies || []; } catch (e) { ouvreFn('SEAS', c, '<p>Pas de liaison avec la maison.</p>'); return; }
   const tk = (CACHE_D[`${c}|D1`].d.tick) || 1, finMois = {}; B.forEach(b => { const d = new Date(b[0] * 1000 + 7200e3); finMois[`${d.getUTCFullYear()}-${d.getUTCMonth()}`] = b[4]; });
   const cles = Object.keys(finMois).sort((p, q) => { const [ya, ma] = p.split('-').map(Number), [yb, mb] = q.split('-').map(Number); return ya - yb || ma - mb; }), mois = Array.from({ length: 12 }, () => []);
@@ -3372,7 +3424,7 @@ async function fnSeas(a) { const c = (a || '').trim().toUpperCase() && L.some(x 
       return `<div class="${new Date().getDay() === k + 1 ? 'ici' : ''}"><div class="bar"><i style="height:${aa ? aa / mxa * 92 : 0}px;bottom:0;background:#34486e"></i></div><b>${aa ? Math.round(aa) + ' t' : '—'}</b><small>${n}</small><em style="color:${ra >= 0 ? '#19d38c' : '#ff3d5a'}">${ra == null ? '' : (ra > 0 ? '+' : '') + nb(ra, 2) + ' %'}</em></div>`; }).join('')}</div>
     <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Le mois en cours est encadré. Peu d’années = chiffre fragile : regarde le « 7/10 ↑ » avant la moyenne.</p>`); }
 // DES : la fiche du contrat
-async function fnDes(a) { const c = (a || '').trim().toUpperCase() && L.some(x => x.code === (a || '').trim().toUpperCase()) ? a.trim().toUpperCase() : code, x = L.find(z => z.code === c) || {}; ouvreFn('DES', c, '<p style="color:#8a91a0">…</p>');
+async function fnDes(a) { const c = (a || '').trim().toUpperCase() && L.some(x => x.code === (a || '').trim().toUpperCase()) ? a.trim().toUpperCase() : code, x = L.find(z => z.code === c) || {}; ouvreFn('DES', c, SQUEL);
   let d = null; try { d = await barresDe(c, 'D1'); } catch (e) { ouvreFn('DES', c, '<p>Pas de liaison avec la maison.</p>'); return; }
   const B = d.bougies || [], n = B.length, tk = d.tick || 1, v = VAL_TICK[c] ?? null, dec = d.dec ?? 2, der = n ? B[n - 1][4] : null;
   const tr = []; for (let i = Math.max(1, n - 14); i < n; i++) tr.push(Math.max(B[i][2], B[i - 1][4]) - Math.min(B[i][3], B[i - 1][4])); const atr = tr.length ? tr.reduce((s, z) => s + z, 0) / tr.length / tk : null;
@@ -3392,7 +3444,7 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0,
 // HEURES : à quelle heure le marché bouge — l'amplitude habituelle de chaque heure (heure de Paris), et aujourd'hui comparé à son habitude
 let HEU_N = 60; const HEU_FMT = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', hourCycle: 'h23' }), heureParis = t => parseInt(HEU_FMT.format(new Date(t * 1000)), 10) % 24;  // (« 14 h » en français)
 async function fnHeures(a) { const mots = String(a || '').trim().toUpperCase().split(/\s+/).filter(Boolean), n0 = mots.map(z => z === 'TOUT' ? 9999 : parseInt(z, 10)).find(z => [20, 60, 9999].includes(z));
-  if (n0) HEU_N = n0; const c = mots.find(z => L.some(x => x.code === z)) || code; ouvreFn('HEURES', `${c} · je calcule…`, '<p style="color:#8a91a0">…</p>');
+  if (n0) HEU_N = n0; const c = mots.find(z => L.some(x => x.code === z)) || code; ouvreFn('HEURES', `${c} · je calcule…`, SQUEL);
   let d = null; try { d = await barresDe(c, 'H1'); } catch (e) { ouvreFn('HEURES', c, '<p>Pas de liaison avec la maison.</p>'); return; }
   const B = d.bougies || [], tk = d.tick || 1, v = VAL_TICK[c] ?? null, auj = B.length ? jourDe(B[B.length - 1][0]) : '', vivant = B.length && Date.now() / 1000 - B[B.length - 1][0] < 5400;
   const dit = vivant ? 'aujourd’hui' : `à la dernière séance (${B.length ? new Date(B[B.length - 1][0] * 1000).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' }) : ''})`;  // (marché fermé : la dernière séance, jamais « l’heure en cours »)
@@ -3473,7 +3525,7 @@ function anaSvg(win, apres, col) { const all = [...win, ...(apres || [])], lo = 
 async function fnAnalog(a) { const mots = String(a || '').trim().toUpperCase().split(/\s+/).filter(Boolean);
   for (const z of mots) { if (['H1', 'H4', 'D1', '15M'].includes(z)) ANA_UT = z === '15M' ? '15m' : z; else if ([12, 24, 48].includes(+z)) ANA_N = +z; }
   if (!mots.some(z => ['H1', 'H4', 'D1', '15M'].includes(z)) && ROLE !== 'terminal' && !a) { const p = panes[actif] || panes[0]; if (p && ['H1', 'H4', 'D1', '15m'].includes(p.ut)) ANA_UT = p.ut; }
-  const c = mots.find(z => L.some(x => x.code === z)) || code, ut = ANA_UT, n = ANA_N, hz = Math.max(4, Math.round(n / 2)); ouvreFn('ANALOG', `${c} · ${ut} · je cherche…`, '<p style="color:#8a91a0">…</p>');
+  const c = mots.find(z => L.some(x => x.code === z)) || code, ut = ANA_UT, n = ANA_N, hz = Math.max(4, Math.round(n / 2)); ouvreFn('ANALOG', `${c} · ${ut} · je cherche…`, SQUEL);
   let d = null; try { d = await barresDe(c, ut); } catch (e) { ouvreFn('ANALOG', c, '<p>Pas de liaison avec la maison.</p>'); return; }
   const B = d.bougies || [], N = B.length, tk = d.tick || 1, C = B.map(b => b[4]), der = C[N - 1];
   if (N < n * 6) { ouvreFn('ANALOG', `${c} · ${ut}`, '<p>Pas assez d’historique pour chercher des moments qui ressemblent.</p>'); return; }
@@ -3561,11 +3613,17 @@ async function monFiltreMaj() { if (COL_MON !== 'filtre' || ROLE === 'terminal' 
   if (!r || !r.ok) return; MON_FILTRE = { titre: `${r.titre}${String(r.titre).includes(r.ut) ? '' : ' · ' + r.ut}`, m: Object.fromEntries(r.marches.filter(m => !m.attente).map(m => [m.code, { oui: m.maintenant, depuis: m.depuis, il_y_a: m.il_y_a }])) };
   const b = $('#b-moncol'); if (b) b.title = `Colonne FILTRE : « ${MON_FILTRE.titre} »`; majListe(); }
 setInterval(monFiltreMaj, 60000); setTimeout(monFiltreMaj, 4000); $('#b-moncol').addEventListener('click', () => setTimeout(monFiltreMaj, 50));
+// NUIT 19 7 : ses heures du mode nuit (NUIT on / off / auto)
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['NUIT', 'le mode nuit des graphiques à tes heures : NUIT 19 7 · NUIT on / off / auto', a => { const m = String(a || '').trim().toLowerCase(), h = m.match(/^(\d{1,2})\D+(\d{1,2})$/);
+  if (h && +h[1] < 24 && +h[2] < 24 && h[1] !== h[2]) { ecrit('g-nuit-h', `${+h[1]}-${+h[2]}`); NUIT = 'auto'; ecrit('g-nuit', NUIT); } else if (['on', 'off', 'auto'].includes(m)) { NUIT = m; ecrit('g-nuit', NUIT); }
+  majNuit(); toutDessine(); toast(`Mode nuit : ${NUIT === 'auto' ? `automatique, de ${nuitH()[0]} h à ${nuitH()[1]} h` : NUIT === 'on' ? 'toujours' : 'jamais'}`); }]);
+// le toucher : une petite vibration sous le doigt (téléphone, tablette Android ; l'iPhone n'en permet pas aux pages)
+document.addEventListener('pointerdown', ev => { if (ev.pointerType !== 'touch' || !navigator.vibrate) return; const b = ev.target.closest && ev.target.closest('button, a, [data-fnt], [data-scm], [data-tst], [data-anai], .tm, .pc-c'); if (b) try { navigator.vibrate(7); } catch (e) { /* rien */ } }, { capture: true, passive: true });
 // petite courbe en ligne (pour les tableaux)
 const mini = (v, col) => { if (!v || v.length < 2) return ''; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1; return `<svg class="mini" viewBox="0 0 100 24" preserveAspectRatio="none"><polyline points="${v.map((y, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(22 - (y - lo) / r * 20).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`; };
 const pcHtml = v => v == null ? '<span style="color:#6f7787">—</span>' : `<span style="color:${v >= 0 ? '#19d38c' : '#ff3d5a'}">${v > 0 ? '+' : ''}${nb(v, 2)} %</span>`;
 // WEI : les indices du monde
-async function fnWei() { ouvreFn('WEI', 'les indices mondiaux · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+async function fnWei() { ouvreFn('WEI', 'les indices mondiaux · je rassemble…', SQUEL); let r;
   try { r = await api('/maison/graphique?wei=1'); } catch (e) { ouvreFn('WEI', 'les indices mondiaux', '<p>Pas de liaison avec la maison.</p>'); return; }
   const regs = ['Amériques', 'Europe', 'Asie'], l = r.indices || [];
   const okw = l.filter(x => x.pct != null), mw = g => { const v = okw.filter(x => x.region === g).map(x => x.pct); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; }, tw = okw.slice().sort((a, b) => b.pct - a.pct);
@@ -3575,7 +3633,7 @@ async function fnWei() { ouvreFn('WEI', 'les indices mondiaux · je rassemble…
       `<div class="wei"><span><i class="ouv ${x.ouvert ? 'on' : ''}" title="${x.ouvert ? 'séance en cours' : 'séance fermée'}"></i><b>${esc(x.nom)}</b> <small>${esc(x.pays)}</small></span><span>${nb(x.dernier, x.dernier > 1000 ? 0 : 2)}</span>${pcHtml(x.pct)}${pcHtml(x.pct5)}${pcHtml(x.pct1m)}<span>${mini(x.spark, (x.pct1m ?? 0) >= 0 ? '#19d38c' : '#ff3d5a')}</span></div>`).join('')).join('')
     + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Point vert : la séance de cet indice est ouverte. Cours différés de 15 minutes environ — tes contrats, eux, restent en direct sur TopstepX.</p>`); }
 // OMON : ce que les options attendent (volatilité implicite) face à ce que le marché fait vraiment (volatilité réalisée)
-async function fnOmon() { ouvreFn('OMON', 'la volatilité des options · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+async function fnOmon() { ouvreFn('OMON', 'la volatilité des options · je rassemble…', SQUEL); let r;
   try { r = await api('/maison/graphique?omon=1'); } catch (e) { ouvreFn('OMON', 'la volatilité des options', '<p>Pas de liaison avec la maison.</p>'); return; }
   const lignes = [];
   for (const v of r.vol || []) { const c = (v.marches || []).find(z => L.some(x => x.code === z)); let att = null, atr = null, rv = null, tkv = null;
@@ -3595,7 +3653,7 @@ async function fnOmon() { ouvreFn('OMON', 'la volatilité des options · je rass
     + `<p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px;line-height:1.5">« Implicite » : le mouvement annuel que les prix des options supposent (en %). « Sur 1 an » : 95 % = plus haute que 95 % des jours de l’année. « Mouvement attendu / jour » : un écart-type d’une journée selon les options (environ 2 jours sur 3 restent dedans), à comparer au mouvement réellement fait d’habitude (ATR, haut − bas). L’euro-dollar n’a plus d’indice de volatilité publié. Des mesures, pas une prévision.</p>`);
   document.querySelectorAll('#fn-c .omon[data-c]').forEach(e => e.onclick = () => { fermeFn(); changeCode(e.dataset.c); }); }
 // ECO : comment tes marchés ont réagi les dernières fois à la même annonce
-async function fnEco(a) { ouvreFn('ECO', 'la mémoire des annonces · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+async function fnEco(a) { ouvreFn('ECO', 'la mémoire des annonces · je rassemble…', SQUEL); let r;
   const q = sansAccent((a || '').toLowerCase()), alias = { emploi: 'nfp', nfp: 'nfp', fed: 'fomc', fomc: 'fomc', taux: 'fomc', cpi: 'cpi', inflation: 'cpi', ppi: 'ppi', pib: 'pib', gdp: 'pib', bce: 'bce', ecb: 'bce', pce: 'pce', ism: 'ism-ind', ventes: 'ventes', retail: 'ventes', chomage: 'chomage', jolts: 'jolts', petrole: 'petrole', michigan: 'michigan' };
   let cle = alias[q.split(' ')[0]] || q || ''; try { r = await api(`/maison/graphique?eco=${encodeURIComponent(cle)}`); } catch (e) { ouvreFn('ECO', 'la mémoire des annonces', '<p>Pas de liaison avec la maison.</p>'); return; }
   if (!r.cle) { const avec = (r.types || []).filter(t => t.n).sort((x, y) => y.n - x.n); if (!cle && avec.length) return fnEco(avec[0].cle); }
@@ -3625,7 +3683,7 @@ function courbeSvg(series, { h = 200, labels = [], unite = '', zero = false } = 
   return `<svg class="cbe" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}${lignes}</svg>`; }
 const leg = l => `<div class="leg">${l.map(([t, c, tir]) => `<span><i style="background:${tir ? 'transparent' : c};border-top:2px ${tir ? 'dashed' : 'solid'} ${c}"></i>${esc(t)}</span>`).join('')}</div>`;
 // GC : la courbe des taux américains
-async function fnGc() { ouvreFn('GC', 'la courbe des taux américains · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+async function fnGc() { ouvreFn('GC', 'la courbe des taux américains · je rassemble…', SQUEL); let r;
   try { r = await api('/maison/graphique?gc=1'); if (r.erreur) throw new Error(r.erreur); } catch (e) { ouvreFn('GC', 'la courbe des taux', `<p>${esc(e.message || 'Pas de liaison avec la maison.')}</p>`); return; }
   const C = r.courbes, t = C.aujourdhui.taux, E = r.echeances, i2 = E.indexOf('2 a'), i10 = E.indexOf('10 a'), i3m = E.indexOf('3 m'), d = s => new Date(s).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
   const ecart = (c, a, b) => c.taux[b] != null && c.taux[a] != null ? (c.taux[b] - c.taux[a]) * 100 : null, s210 = ecart(C.aujourdhui, i2, i10), s310 = ecart(C.aujourdhui, i3m, i10);
@@ -3642,7 +3700,7 @@ async function fnGc() { ouvreFn('GC', 'la courbe des taux américains · je rass
     <div class="fn-jour">SUR UN AN · L’ÉCART 10 ANS − 2 ANS (EN POINTS DE BASE)</div>${courbeSvg([{ v: S.map(x => x.a10 != null && x.a2 != null ? (x.a10 - x.a2) * 100 : null), c: '#5b8cff', w: 2 }], { h: 150, zero: true, labels: S.map((x, i) => i % 52 === 0 ? new Date(x.d).toLocaleDateString('fr-FR', { month: 'short' }) : '') })}
     <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px;line-height:1.5">1 point de base = 0,01 %. Taux de clôture officiels, publiés le soir : pas de cours pendant la séance. Des mesures, pas une prévision.</p>`); }
 // FXC : les devises les unes contre les autres
-async function fnFxc(a) { const per = ['jour', 'sem', 'mois'].includes(a) ? a : 'jour'; ouvreFn('FXC', 'les devises · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+async function fnFxc(a) { const per = ['jour', 'sem', 'mois'].includes(a) ? a : 'jour'; ouvreFn('FXC', 'les devises · je rassemble…', SQUEL); let r;
   try { r = await api('/maison/graphique?fxc=1'); } catch (e) { ouvreFn('FXC', 'les devises', '<p>Pas de liaison avec la maison.</p>'); return; }
   const D = (r.devises || []).filter(x => x[per] != null), tri = D.slice().sort((x, y) => y[per] - x[per]), mx = Math.max(.05, ...D.map(x => Math.abs(x[per])));
   const ch = [['jour', 'jour'], ['sem', '5 jours'], ['mois', '1 mois']].map(([k, t]) => `<button class="fn-ch ${k === per ? 'on' : ''}" data-fx="${k}">${t}</button>`).join('');
@@ -3655,7 +3713,7 @@ async function fnFxc(a) { const per = ['jour', 'sem', 'mois'].includes(a) ? a : 
   document.querySelectorAll('#fn-c [data-fx]').forEach(b => b.onclick = () => fnFxc(b.dataset.fx)); }
 // PERF : tes trades en chiffres (ton journal TopstepX, lu par la maison ; rien ne sort de chez toi)
 let PERF_P = 'tout';
-async function fnPerf(a) { if (['7', '30', '90', 'tout'].includes(a)) PERF_P = a; ouvreFn('PERF', 'tes trades en chiffres · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+async function fnPerf(a) { if (['7', '30', '90', 'tout'].includes(a)) PERF_P = a; ouvreFn('PERF', 'tes trades en chiffres · je rassemble…', SQUEL); let r;
   try { r = await api('/maison/graphique?perf=1'); } catch (e) { ouvreFn('PERF', 'tes trades', '<p>Pas de liaison avec la maison.</p>'); return; }
   const DBF = { l: [], revue: null }; try { DBF.l = (await api('/maison/graphique?action=debrief&n=15')).debriefs || []; DBF.revue = await api('/maison/graphique?action=debrief&op=revue&jours=7'); } catch (e) { /* rien */ }
   const now = Date.now() / 1000, T = (r.trades || []).filter(x => PERF_P === 'tout' || x.at > now - (+PERF_P) * 86400), n = T.length;
@@ -3743,7 +3801,7 @@ async function expliqueFn() { const c = $('#fn-c'), nom = $('#fn-nom').textConte
     if (!r || r.ok === false || !r.texte) throw new Error(); b.innerHTML = `<small>COPILOTE</small>${esc(r.texte)}`; }
   catch (e) { b.innerHTML = '<small>COPILOTE</small>Je n’arrive pas à joindre le copilote pour l’instant.'; } }
 // CMDTY : les matières premières
-async function fnCmdty() { ouvreFn('CMDTY', 'les matières premières · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+async function fnCmdty() { ouvreFn('CMDTY', 'les matières premières · je rassemble…', SQUEL); let r;
   try { r = await api('/maison/graphique?cmdty=1'); } catch (e) { ouvreFn('CMDTY', 'les matières premières', '<p>Pas de liaison avec la maison.</p>'); return; }
   const l = (r.lignes || []).filter(x => x.pct != null), tri = l.slice().sort((a, b) => b.pct - a.pct), grp = ['Métaux', 'Énergie', 'Agriculture'], moy = g => { const v = l.filter(x => x.region === g).map(x => x.pct); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
   const ret = tri.length ? `Plus forte hausse : <b>${esc(tri[0].nom)}</b> (${pcT(tri[0].pct)}) · plus forte baisse : <b>${esc(tri[tri.length - 1].nom)}</b> (${pcT(tri[tri.length - 1].pct)}). En moyenne sur la séance : ${grp.map(g => `${g.toLowerCase()} ${moy(g) == null ? '—' : pcT(moy(g))}`).join(', ')}.` : '';
@@ -3755,7 +3813,7 @@ async function fnCmdty() { ouvreFn('CMDTY', 'les matières premières · je rass
 // CT : la structure par échéance
 let CT_P = 'CL';
 async function fnCt(a) { const m = { cl: 'CL', mcl: 'CL', petrole: 'CL', gc: 'GC', mgc: 'GC', or: 'GC', si: 'SI', sil: 'SI', argent: 'SI', ng: 'NG', gaz: 'NG', hg: 'HG', cuivre: 'HG' }[sansAccent((a || '').trim())] || (a ? null : null);
-  if (m) CT_P = m; else if (!a) CT_P = { MCL: 'CL', CL: 'CL', MGC: 'GC', GC: 'GC', SIL: 'SI' }[code] || CT_P; ouvreFn('CT', 'la structure par échéance · je rassemble…', '<p style="color:#8a91a0">…</p>'); let r;
+  if (m) CT_P = m; else if (!a) CT_P = { MCL: 'CL', CL: 'CL', MGC: 'GC', GC: 'GC', SIL: 'SI' }[code] || CT_P; ouvreFn('CT', 'la structure par échéance · je rassemble…', SQUEL); let r;
   try { r = await api(`/maison/graphique?ct=${CT_P}`); } catch (e) { ouvreFn('CT', 'la structure par échéance', '<p>Pas de liaison avec la maison.</p>'); return; }
   const E = r.echeances || [], s = r.etat, ch = Object.entries(r.produits || {}).map(([k, n]) => `<button class="fn-ch ${k === r.prod ? 'on' : ''}" data-ct="${k}">${esc(n)}</button>`).join('');
   const ret = !s ? 'Pas assez d’échéances cotées pour l’instant.' : s.genre === 'déport' ? `<b>${esc(r.nom)} en déport</b> : chaque échéance plus lointaine vaut moins (${pcT(s.total)} de ${s.de} à ${s.a}). Le marché paie plus cher ${r.prod === 'CL' || r.prod === 'NG' ? 'le baril livré' : 'le métal livré'} tout de suite — en général, le signe d’une offre tendue en ce moment.`
@@ -3769,7 +3827,7 @@ async function fnCt(a) { const m = { cl: 'CL', mcl: 'CL', petrole: 'CL', gc: 'GC
 // HP : l'historique des cours, en tableau (copiable)
 let HP_UT = 'D1';
 async function fnHp(a) { const arg = (a || '').trim().split(/\s+/), c = arg[0] && L.some(x => x.code === arg[0].toUpperCase()) ? arg[0].toUpperCase() : code, u = arg.map(z => UTS_CMD[z.toLowerCase()]).find(Boolean); if (u) HP_UT = u;
-  ouvreFn('HP', `${c} · je rassemble…`, '<p style="color:#8a91a0">…</p>'); let d;
+  ouvreFn('HP', `${c} · je rassemble…`, SQUEL); let d;
   try { d = await barresDe(c, HP_UT); } catch (e) { ouvreFn('HP', c, '<p>Pas de liaison avec la maison.</p>'); return; }
   const B = (d.bougies || []).slice(-61), tk = d.tick || 1, dec = d.dec ?? 2, rows = B.slice(1).map((b, i) => ({ t: b[0], o: b[1], h: b[2], l: b[3], c: b[4], v: b[5], ch: b[4] - B[i][4], pct: (b[4] / B[i][4] - 1) * 100, amp: Math.round((b[2] - b[3]) / tk) })).reverse();
   const hausses = rows.filter(x => x.ch > 0).length, gros = rows.slice().sort((x, y) => y.amp - x.amp)[0], ampMoy = rows.length ? Math.round(rows.reduce((s, x) => s + x.amp, 0) / rows.length) : 0, fmt = t => new Date(t * 1000).toLocaleString('fr-FR', HP_UT === 'D1' || HP_UT === 'W' || HP_UT === 'M' ? { weekday: 'short', day: 'numeric', month: 'short', year: '2-digit' } : { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -3809,7 +3867,7 @@ async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; for (let i = 0
     if ($('#fn-nom').textContent === 'BRIEF') dessine(true); }
   finally { CAPT = null; BRIEF_EN = false; } }
 // BETA : de combien tes marchés bougent quand le dollar, le S&P 500, l'or ou le pétrole bougent de 1 %
-async function fnBeta(a) { const n = [20, 60, 120, 250].includes(parseInt(a, 10)) ? parseInt(a, 10) : 60; ouvreFn('BETA', 'les sensibilités · je calcule…', '<p style="color:#8a91a0">…</p>');
+async function fnBeta(a) { const n = [20, 60, 120, 250].includes(parseInt(a, 10)) ? parseInt(a, 10) : 60; ouvreFn('BETA', 'les sensibilités · je calcule…', SQUEL);
   const refs = ['DXY', 'MES', 'MGC', 'MCL'].filter(c => L.some(x => x.code === c)), codes = L.map(x => x.code).filter(c => !['GC', 'NQ', 'CL'].includes(c)).slice(0, 14), R = {};
   for (const c of [...new Set([...codes, ...refs])]) { try { const B = (await barresDe(c, 'D1')).bougies || [], m = {}; for (let i = 1; i < B.length; i++) m[jourDe(B[i][0])] = Math.log(B[i][4] / B[i - 1][4]); R[c] = m; } catch (e) { /* rien */ } }
   const jours = [...new Set(Object.values(R).flatMap(m => Object.keys(m)))].sort().slice(-n);
@@ -4048,7 +4106,7 @@ function majTermAge() { const e = $('#term-age'); if (!e) return; const s = TERM
 /* ================= TES RÈGLES (écrites par toi, gardées par Atlas) ================= */
 let REG_E = null, REG_AT = 0;
 async function chargeRegles(force) { if (!force && REG_E && Date.now() - REG_AT < 20000) return REG_E; try { REG_E = await api('/maison/graphique?action=regles'); REG_AT = Date.now(); } catch (e) { /* hors liaison */ } return REG_E; }
-async function fnRegles() { ouvreFn('REGLES', 'tes règles · je rassemble…', '<p style="color:#8a91a0">…</p>'); const e = await chargeRegles(true); if (!e) { ouvreFn('REGLES', 'tes règles', '<p>Pas de liaison avec la maison.</p>'); return; }
+async function fnRegles() { ouvreFn('REGLES', 'tes règles · je rassemble…', SQUEL); const e = await chargeRegles(true); if (!e) { ouvreFn('REGLES', 'tes règles', '<p>Pas de liaison avec la maison.</p>'); return; }
   const R = e.regles || {}, c = e.compteurs || {}, si = R.sens_interdit || {}, pp = R.pertes_pause || ['', ''], col = { ok: '#19d38c', proche: '#ffab1a', enfreinte: '#ff3d5a' };
   let perf = null; try { perf = await api('/maison/graphique?perf=1'); } catch (er) { /* rien */ }
   const T = (perf && perf.trades) || [], som = l => l.reduce((s2, x) => s2 + x.pnl, 0), hP = x => +new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(x.at * 1000)).find(z => z.type === 'hour').value;

@@ -223,6 +223,53 @@
   }
   .pe-aide { position: fixed; inset: 0; z-index: 9999; background: rgba(2, 6, 14, .72); display: flex; align-items: flex-end; justify-content: center; padding: 16px; } .pe-aide > div { max-width: 440px; width: 100%; background: #0b1426; border: 1px solid #26365a; border-radius: 14px; padding: 18px 18px 14px; color: #e6e9ef; font: 500 14.5px/1.5 'Inter', sans-serif; } .pe-aide b { color: #4cc9f0; } .pe-aide > div > b { display: block; font: 800 11px 'Inter'; letter-spacing: .18em; margin-bottom: 6px; } .pe-aide p { margin: 0 0 12px; } .pe-aide p b { color: #fff; } .pe-aide .pe-k { display: inline-block; padding: 0 6px; border: 1px solid #26365a; border-radius: 6px; } .pe-aide button { width: 100%; background: #2962ff; color: #fff; border: 0; border-radius: 10px; padding: 11px; font: 700 14px 'Inter'; cursor: pointer; }
   .b-plein svg { width: 18px; height: 18px; display: block; } .tm .b-plein { vertical-align: middle; } .b-plein.on { color: #4cc9f0; }
+  /* ================= LA PEAU D'ATLAS (v76) : une seule famille pour tous les écrans — 3 tailles de texte, 2 arrondis, un style de bouton, de carte, de pastille ================= */
+  :root { --r-s: 8px; --r-m: 12px; --t-s: 11px; --t-m: 13px; --t-l: 15px; --acc: #4cc9f0; --acc-f: rgba(76, 201, 240, .13); --acc-b: rgba(76, 201, 240, .45); --s1: #0b1426; --s2: #0f1b31; --bd: #1d2c49; --bd2: #2a3d61;
+    --doux2: #8a94a8; --ease: cubic-bezier(.2, .8, .2, 1); --prim: linear-gradient(135deg, #67dcff 0%, #2f7bff 100%); }
+  body { font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+  ::selection { background: rgba(76, 201, 240, .28); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: #22334f; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; } ::-webkit-scrollbar-thumb:hover { background-color: #2f4670; } ::-webkit-scrollbar-track { background: transparent; }
+  :focus-visible { outline: 2px solid var(--acc) !important; outline-offset: 2px; border-radius: var(--r-s); }
+  /* un seul bouton */
+  .fn-ch, .pc-h button, #term-r, #term-pl, .rond, .scn-ex .fn-ch, #fn-copi, #fn-ret, .tm button { border-radius: var(--r-s) !important; transition: background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), transform .12s var(--ease), box-shadow .15s var(--ease); }
+  .fn-ch { background: var(--s2); border: 1px solid var(--bd2); color: #c9d0dc; font-weight: 650; }
+  .fn-ch:hover, #term-r:hover, #term-pl:hover, .pc-h button:hover, .rond:hover { border-color: var(--acc-b); color: #fff; background: #13223d; }
+  .fn-ch.on { background: var(--acc-f) !important; border-color: var(--acc-b) !important; color: #e8f8fe !important; box-shadow: inset 0 0 0 1px rgba(76, 201, 240, .15); }
+  button:active, .fn-ch:active, .lien:active, .ico:active { transform: scale(.97); }
+  /* l'action principale : une seule couleur, partout */
+  .scn-f button, .pe-aide button, .fnt-f button { background: var(--prim) !important; color: #03121f !important; border: 0 !important; font-weight: 750 !important; box-shadow: 0 6px 20px rgba(47, 123, 255, .28); }
+  .scn-f button:hover, .pe-aide button:hover, .fnt-f button:hover { filter: brightness(1.08); }
+  .scn-f input, .fnt-f input, #term-q { border-radius: var(--r-s) !important; transition: border-color .15s var(--ease), box-shadow .15s var(--ease); }
+  .scn-f input:focus, .fnt-f input:focus, #term-q:focus { border-color: var(--acc) !important; box-shadow: 0 0 0 3px rgba(76, 201, 240, .14); outline: none; }
+  /* une seule carte */
+  .rk > div, .brief-c, .ana-c, .ana-cur, .fn-retenir, .fn-clair, .dbf, .pc-k > div { border-radius: var(--r-m) !important; }
+  .rk > div, .brief-c, .ana-c { background: linear-gradient(180deg, #0f1b31, #0c1629) !important; border: 1px solid var(--bd) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04); }
+  .brief-c, .ana-c, .scn:not(.h), .mov:not(.h), .hp[data-t], .fnt button, .tm { transition: transform .16s var(--ease), border-color .16s var(--ease), background .16s var(--ease), box-shadow .16s var(--ease); }
+  .brief-c:hover, .ana-c:hover, .fnt button:hover { transform: translateY(-2px); border-color: var(--acc-b) !important; box-shadow: 0 10px 28px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .05); }
+  .scn:not(.h):hover, .mov:not(.h):hover { background: rgba(76, 201, 240, .05) !important; }
+  .rk small, .fn-jour, .brief-c .bt span, .scn.h, .ana-cur small, .pc-k small { letter-spacing: .14em; font-size: 10px !important; color: #7d889e; }
+  .rk b { letter-spacing: -.02em; }
+  /* la hiérarchie : une chose en grand par écran, le reste en dessous */
+  #fn-nom { font: 800 22px 'Inter Tight', 'Inter', sans-serif !important; letter-spacing: .02em; color: #fff; }
+  #fn-sous { font-size: 12px !important; color: #7d889e !important; }
+  .fn-retenir { font-size: var(--t-l) !important; line-height: 1.55 !important; border-left: 3px solid var(--acc) !important; background: linear-gradient(135deg, rgba(76, 201, 240, .11), rgba(76, 201, 240, .025)) !important; }
+  .fn-retenir b { color: #fff; }
+  /* les pastilles */
+  .fn-av { border-radius: var(--r-s); }
+  /* l'apparition : ce qui arrive vient d'où on l'attend (court, jamais une interface qui s'efface) */
+  @keyframes peau-monte { from { opacity: 0; transform: translateY(6px); } }
+  @keyframes peau-pop { from { opacity: 0; transform: translateY(8px) scale(.985); } }
+  .fn-p.on .fn-b { animation: peau-pop .2s var(--ease); }
+  #fn-c.peau-neuf > * { animation: peau-monte .22s var(--ease) both; } #fn-c.peau-neuf > :nth-child(2) { animation-delay: .03s; } #fn-c.peau-neuf > :nth-child(3) { animation-delay: .06s; } #fn-c.peau-neuf > :nth-child(4) { animation-delay: .09s; } #fn-c.peau-neuf > :nth-child(n+5) { animation-delay: .12s; }
+  .mem.on, .tiroir.on, .bulle.on { animation: peau-pop .18s var(--ease); }
+  .pe-aide > div { animation: peau-pop .22s var(--ease); }
+  /* l'attente : la silhouette de ce qui arrive, plutôt que « … » */
+  .squel { display: grid; gap: 10px; margin: 2px 6px; } .squel i { display: block; height: 14px; border-radius: 6px; background: linear-gradient(90deg, #111d33 0%, #1a2a47 40%, #111d33 80%); background-size: 300% 100%; animation: peau-brille 1.3s linear infinite; }
+  .squel i.g { height: 64px; border-radius: var(--r-m); } .squel .r { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; } .squel .r i { height: 86px; border-radius: var(--r-m); }
+  @keyframes peau-brille { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; } }
+  .tuile, .lt, .carte, .rattrapage { border-radius: var(--r-m) !important; transition: transform .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease); } .tuile:hover { transform: translateY(-2px); border-color: var(--acc-b) !important; }
+  .segment button { transition: background .15s var(--ease), color .15s var(--ease); }
 </style>
 </head>
 <body>
