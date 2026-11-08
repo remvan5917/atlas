@@ -4066,7 +4066,10 @@ const FN_VOIX = [[/\b(point du moment|le point|brief|briefing|resume du marche|r
   [/\b(courbe des taux|taux americains|taux us|les taux)\b/, 'GC'], [/\b(reaction aux annonces|memoire des annonces|eco)\b/, 'ECO'], [/\b(agenda|calendrier economique|calendrier)\b/, 'CAL'],
   [/\b(depeches|les news|actualites)\b/, 'NEWS'], [/\b(fiche du (contrat|marche)|la fiche)\b/, 'DES'], [/\b(saisonnalite)\b/, 'SEAS'], [/\b(scan|le filtre|mes filtres|filtre les marches)\b/, 'SCAN'], [/\b(tester (ma|une) regle|teste ma regle|backtest)\b/, 'TEST'], [/\b(analog|moments? qui ressemblent?|ca ressemble a quoi|les sosies)\b/, 'ANALOG'], [/\b(profil horaire|a quelle heure (ca|il|elle) bouge|les heures (agitees|qui bougent)|heures agitees)\b/, 'HEURES'], [/\b(historique des cours|historique)\b/, 'HP'], [/\b(liaisons|etat des liaisons)\b/, 'ETAT']];
 const VERBE_FN = /\b(montre|affiche|ouvre|donne|lis|fais|quel|quelle|quels|quelles|c est quoi|ou en est|ou en sont|voir|mets)\b|\bpoint du moment\b|\bmes stats\b/;
-function fnVoix(n) { if (!VERBE_FN.test(n)) return null; const m = FN_VOIX.find(([r]) => r.test(n)); if (!m) return null;
+function fnVoix(n) {
+  const mt = n.match(/\b(?:teste|tester|essaie|essaye|essayer)\s+(?:ma|une|cette)\s+regle\b\s*(.*)$/); if (mt) return { k: 'TEST', arg: mt[1].replace(/^[\s:,.-]+/, '').trim() };  // « teste ma règle : achète quand … » : la phrase entière part au testeur
+  const ms = n.match(/\b(quels|quelles) (marches|contrats) (sont|viennent|ont|passent|cassent|croisent|restent|se trouvent)\b(.*)$/); if (ms && !/\bbougent\b/.test(n)) return { k: 'SCAN', arg: (ms[3] + ms[4]).trim() };  // « quels marchés sont au-dessus de … » : le filtre
+  if (!VERBE_FN.test(n)) return null; const m = FN_VOIX.find(([r]) => r.test(n)); if (!m) return null;
   let arg = ''; if (m[1] === 'CT') arg = (n.match(/\b(petrole|or|argent|gaz|cuivre)\b/) || [])[1] || ''; if (m[1] === 'ECO') arg = (n.match(/\b(emploi|fed|cpi|inflation|bce|pib|pce|ism|ventes|chomage)\b/) || [])[1] || '';
   if (m[1] === 'PERF') arg = /\bsemaine\b/.test(n) ? '7' : /\bmois\b/.test(n) ? '30' : ''; return { k: m[1], arg }; }
 async function lanceFnVoix(v) { const f = FONCTIONS.find(z => z[0] === v.k); if (!f) return null;
