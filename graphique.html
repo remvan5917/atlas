@@ -3484,6 +3484,8 @@ async function fnTest(a, force) { const q = String(a || '').trim();
   if (TEST_CUR !== cur) return;
   if (!r || !r.ok) { ouvreFn('TEST', `« ${cur.texte} »`, `${testForm(cur.texte)}<p class="fn-av">⚠ ${esc((r && r.raison) || 'erreur')}</p>`); testBranche(); return; }
   TEST_G = [cur.texte, ...TEST_G.filter(z => z.toLowerCase() !== cur.texte.toLowerCase())].slice(0, 8); ecrit('g-test', JSON.stringify(TEST_G));
+  try { const pf = await api('/maison/graphique?perf=1'), tk = r.tick;  // (ses vrais trades sur ce marché, pour comparer)
+    const V = (pf.trades || []).filter(x => x.instr === r.marche && x.prix && x.sortie); if (V.length && tk) r._vrais = V.map(x => Math.round((x.sortie - x.prix) * (x.sens === 'short' ? -1 : 1) / tk)); } catch (e) { /* sans son journal */ }
   r._texte = cur.texte; r._at = Date.now(); TEST_R = r; testAffiche(cur, r); }
 function testAffiche(cur, r) { const s = r.stats, h = r.hasard, v = VAL_TICK[r.marche] ?? null, usd = t => v != null ? ` (${Math.round(t * v).toLocaleString('fr-FR')} $)` : '', sg = x => (x > 0 ? '+' : '') + nb(x, Number.isInteger(x) ? 0 : 1);
   const regle = `${r.sens === 'achat' ? 'Achat' : 'Vente'} sur ${esc(r.marche)} en ${esc(r.ut)} · ${r.stop ? `stop ${r.stop} t` : 'sans stop'}${r.objectif ? ` · objectif ${r.objectif} t` : ''}${r.sortie_barres ? ` · sortie après ${r.sortie_barres} bougie${r.sortie_barres > 1 ? 's' : ''}` : ''}`;
@@ -3493,7 +3495,8 @@ function testAffiche(cur, r) { const s = r.stats, h = r.hasard, v = VAL_TICK[r.m
   else { const mieux = h && s.esperance - h.esperance;
     txt = `Depuis le ${depuis}, ta règle aurait fait <b>${s.n} trades</b>, <b>${s.part} % gagnants</b>, en moyenne <b>${sg(s.esperance)} ticks par trade</b>${usd(s.esperance)}, au total ${sg(s.total)} ticks${usd(s.total)}, avec un pire recul de ${s.recul} ticks et jusqu’à ${s.pire_serie} pertes de suite.`;
     if (h) txt += ` Les mêmes distances en entrant à n’importe quelle bougie : ${h.part} % gagnants, ${sg(h.esperance)} ticks par trade — ta règle fait ${Math.abs(mieux) < .5 ? 'à peu près pareil' : mieux > 0 ? `${sg(+mieux.toFixed(1))} ticks de mieux par trade` : `${nb(Math.abs(mieux), 1)} ticks de moins par trade`}.`;
-    if (s.n < 30) txt += ` Seulement ${s.n} trades : un résultat fragile.`; }
+    if (s.n < 30) txt += ` Seulement ${s.n} trades : un résultat fragile.`;
+    if (r._vrais && r._vrais.length) { const w = r._vrais, e2 = w.reduce((a, x) => a + x, 0) / w.length; txt += ` Pour comparer, <b>tes vrais trades sur ${esc(r.marche)}</b> : ${w.length}, ${Math.round(w.filter(x => x > 0).length / w.length * 100)} % gagnants, ${sg(+e2.toFixed(1))} ticks par trade (avant frais).`; } }
   const [m1, m2] = r.moities || [];
   const cell = (k, val, p = '', cl = '') => `<div><small>${k}</small><b class="${cl}">${val}</b>${p ? `<p>${p}</p>` : ''}</div>`, moi = (k, z, p2 = '') => cell(k, z ? `${sg(z.esperance)} t` : '—', z ? `par trade · ${z.n} trades · ${z.part} % gagnants${p2 ? ' · ' + p2 : ''}` : 'aucun trade', z ? (z.esperance >= 0 ? 'h' : 'r') : '');
   ouvreFn('TEST', `« ${r.titre} » · ${regle} · ${r.barres} bougies d’historique · le passé, pas une promesse`,
