@@ -1231,7 +1231,7 @@ class Pane {
       }
     }
     // ses lignes
-    const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : 1.2; c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
+    const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : epaisseurLigne(l, this); c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
       const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
       const rgba = (hex, a) => { const h = String(hex).replace('#', ''); if (h.length !== 6) return `rgba(128,128,128,${a})`; return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`; };
       if (l.genre === 'horizontale') { const y = Y(l.p1); c.beginPath(); c.moveTo(0, y); c.lineTo(pw, y); c.stroke(); }
@@ -1772,6 +1772,14 @@ function majBarreLigne() {
 }
 // le passé de la ligne choisie, dans l'unité du graphique (la mesure de NIV) : une ligne de texte dans sa petite barre, rien sur les bougies
 let BL_NIV = { cle: '', txt: '' };
+// option « tes lignes portent leur passé » : l'épaisseur d'une ligne suit sa solidité mesurée dans l'unité du graphique (repartie souvent : plus épaisse ; traversée souvent : plus fine) ; éteinte par défaut
+var optEpais = lit('g-epais', '0') === '1'; const EPAIS = new Map();
+function epaisseurLigne(l, p) { if (!optEpais || !['horizontale', 'droite', 'canal', 'rect'].includes(l.genre) || !p || !p.d || !p.d.bougies || p.d.bougies.length < 60 || REPLAY) return 1.2;
+  const B = p.d.bougies, cle = `${l.id}|${l.p1}|${l.p2}|${l.t1}|${l.t2}|${p.ut}|${B.length}`; let e = EPAIS.get(cle);
+  if (e == null) { const m = nivLigne(l, B, p.d.tick || 1, p.ut); e = !m || m.te + m.tr < 2 ? 1.2 : .8 + 2.6 * m.te / (m.te + m.tr); EPAIS.set(cle, e); if (EPAIS.size > 400) EPAIS.delete(EPAIS.keys().next().value); }
+  return e; }
+function basculeEpais() { optEpais = !optEpais; ecrit('g-epais', optEpais ? '1' : '0'); toutDessine(); toast(optEpais ? 'Tes lignes portent leur passé : plus épaisses quand le prix y est souvent reparti, plus fines quand il les a souvent traversées' : 'Tes lignes reprennent leur épaisseur normale'); if ($('#fn-nom') && $('#fn-nom').textContent === 'NIV') fnNiv(''); }
+
 function nivLigne(l, B, tk, ut) {  // une ligne du trader, mesurée comme dans NIV : contacts, repartis, traversées (null si ce n'est pas une ligne de prix)
   const du = DUREE[ut] || 3600, rg = B.slice(-500).map(b => b[2] - b[3]).filter(x => x > 0).sort((a, b) => a - b), D = Math.max(4 * tk, rg.length ? rg[rg.length >> 1] : 0); let z, hors;
   if (l.genre === 'rect') { if (l.p2 == null) return null; const lo = Math.min(l.p1, l.p2), hi = Math.max(l.p1, l.p2), ta = Math.min(l.t1, l.t2 ?? l.t1), tb = Math.max(l.t1, l.t2 ?? l.t1); z = () => [lo, hi]; hors = t => t >= ta - 2 * du && t <= tb + 2 * du; }
@@ -3614,7 +3622,7 @@ async function fnNiv(a) { const mots = String(a || '').trim().toUpperCase().spli
   let d = null, brut = null; try { d = await barresDe(c, ut); } catch (e) { ouvreFn('NIV', c, '<p>Pas de liaison avec la maison.</p>'); return; }
   try { brut = (await api(`/maison/graphique?lignes=1&code=${c}`)).lignes || []; } catch (e) { brut = c === code ? lignes : []; }  // (sans réponse : les lignes déjà chargées du marché affiché)
   const B = d.bougies || [], tk = d.tick || 1, v$ = VAL_TICK[c] ?? null, dec = (L.find(x => x.code === c) || {}).dec ?? 2, du = DUREE[ut] || 3600, N = B.length;
-  const ch = `<div class="fn-chs">${['H1', 'H4', 'D1'].map(z => `<button class="fn-ch ${z === ut ? 'on' : ''}" data-niv="${z}">${z}</button>`).join('')}</div>`;
+  const ch = `<div class="fn-chs">${['H1', 'H4', 'D1'].map(z => `<button class="fn-ch ${z === ut ? 'on' : ''}" data-niv="${z}">${z}</button>`).join('')}<span style="width:14px"></span><button class="fn-ch ${optEpais ? 'on' : ''}" id="niv-epais" title="Sur le graphique, l’épaisseur de chaque ligne suit sa solidité dans l’unité du graphique">${optEpais ? '✓ ' : ''}Épaisseur selon la solidité</button></div>`;
   if (N < 60) { ouvreFn('NIV', `${c} · ${ut}`, `${ch}<p>Pas assez d’historique ${esc(ut)} pour ce marché.</p>`); nivBranche(c); return; }
   const rg = B.map(b => b[2] - b[3]).filter(x => x > 0), D = Math.max(4 * tk, (r5 => r5.length ? r5[r5.length >> 1] : 0)(rg.slice(-500).sort((p, q) => p - q))), Dt = Math.round(D / tk), H = 10, der = B[N - 1][4], tN = B[N - 1][0];
   const LG = [];
@@ -3652,7 +3660,7 @@ async function fnNiv(a) { const mots = String(a || '').trim().toUpperCase().spli
       <span>${g.n.length ? `<span class="scn-v">du même côté ${g.mLoin} t · contre ${g.mContre} t</span>` : '<span class="scn-v scn-non">—</span>'}</span></div>`).join('')}
     <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Un contact = une bougie ${esc(ut)} qui touche ta ligne après que le prix s’en est éloigné d’au moins ${Dt} ticks (la taille d’une bougie ${esc(ut)} habituelle). « Reparti » = il s’est éloigné de ${Dt} ticks du côté d’où il venait avant de clôturer de l’autre côté ; « traversée » = une clôture de l’autre côté d’abord ; « ? » = ni l’un ni l’autre en ${H} bougies. Le point d’accroche de ta ligne n’est pas compté (c’est le rebond sur lequel tu l’as tracée). Le hasard : 300 prix tirés dans la plage de l’historique, même mesure. Points pleins = reparti, creux = traversée. Un clic = le dernier contact sur tes graphiques.</p>`);
   nivBranche(c, LG, ut, dec); }
-function nivBranche(c, LG, ut, dec) { document.querySelectorAll('#fn-c [data-niv]').forEach(b => b.onclick = () => fnNiv(`${b.dataset.niv} ${c}`));
+function nivBranche(c, LG, ut, dec) { document.querySelectorAll('#fn-c [data-niv]').forEach(b => b.onclick = () => fnNiv(`${b.dataset.niv} ${c}`)); { const be = $('#niv-epais'); if (be) be.onclick = () => { basculeEpais(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'epais' }); }; }
   if (LG) document.querySelectorAll('#fn-c [data-nivi]').forEach(r => r.onclick = () => { const g = LG[+r.dataset.nivi]; if (!g || !g.der) return; const e = g.der;
     allerA(c, ut, e.t, e.fin, `Ta ligne ${g.px || nb((g.z(e.t) || [0])[0], dec)} · ${quand(e.t)} · ${e.issue === 'tenue' ? 'repartie du même côté' : e.issue === 'traversee' ? 'traversée' : 'sans décider'}`); }); }
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['NIV', 'tes lignes à l’épreuve du passé : combien de fois le prix y est venu, reparti ou traversé, comparé au hasard · NIV SIL H4', a => fnNiv(a)]);
@@ -4016,6 +4024,7 @@ let ANA_UT = 'H1', ANA_N = 24, ANA_DER = [];
 async function allerA(c, ut, t, fin, txt) { if (ROLE === 'terminal') { if (SALLE_BC) SALLE_BC.postMessage({ t: 'va', c, ut, tt: t, fin, txt }); toast('Ce moment est affiché sur tes graphiques'); return; }
   fermeFn(); if (c !== code) await changeCode(c); MARQUE_PASSE = { t, fin, txt };
   setTimeout(() => { const p = panes.find(x => x.ut === ut) || panes[actif] || panes[0]; if (p && p.d) { const B2 = p.d.bougies, k = B2.findIndex(b => b[0] >= t); if (k >= 0) { p.fin = Math.max(-6, B2.length - k - Math.round(p.n / 2)); } } toutDessine(); }, 900); }
+if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'epais' && ROLE !== 'terminal') { optEpais = lit('g-epais', '0') !== '1'; basculeEpais(); } });  // (l'épaisseur selon la solidité, la même dans toutes les fenêtres)
 if (SALLE_BC && ROLE !== 'terminal' && ROLE !== 'ensemble') SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'va' && m.c && (ROLE === 'structure' || (!ROLE && FEN === '1'))) allerA(m.c, m.ut, m.tt, m.fin, m.txt); });
 const zNorm = v => { const m = v.reduce((s, x) => s + x, 0) / v.length, sd = Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) || 1; return v.map(x => (x - m) / sd); };
 function anaSvg(win, apres, col) { const all = [...win, ...(apres || [])], lo = Math.min(...all), hi = Math.max(...all), r = hi - lo || 1, tot = win.length + (apres ? apres.length : Math.round(win.length / 2)) - 1, X = i => (i * 200 / tot).toFixed(1), Y = y => (52 - (y - lo) / r * 48).toFixed(1);
@@ -4681,6 +4690,7 @@ function dessineNiveaux(p, g) { if (!optNiv || ROLE === 'ensemble') return; cons
     if (yLs.some(yl => Math.abs(y - yl) < 14)) continue;  // (sur l'étiquette de prix d'une de TES lignes : le trait seul, ton prix reste lisible)
     const tw = c.measureText(n.court).width + 6; c.fillStyle = fond; c.fillRect(W - tw - 2, y - 6, tw, 12); c.fillStyle = encre; c.fillText(n.court, W - 5, y + 3.5); }
   c.restore(); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['EPAIS', 'tes lignes portent leur passé : leur épaisseur suit leur solidité (mesure NIV) · activer / couper', () => { basculeEpais(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'epais' }); }]);
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['REP', 'afficher / cacher les repères tracés par la plateforme (veille, sommets et creux du zigzag) contre l’échelle · REP', () => { optNiv = !optNiv; ecrit('g-niv', optNiv ? '1' : '0'); toutDessine(); toast(optNiv ? 'Niveaux de la plateforme : affichés (à droite, contre l’échelle)' : 'Niveaux de la plateforme : cachés (les alertes continuent)'); }]);
 /* --- le rejeu de tes trades : sur tes graphiques, l'entrée, la sortie et le stop ; « rejouer » lance le replay juste avant l'entrée --- */
 var TRADE_VU = null;
