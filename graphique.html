@@ -2108,6 +2108,30 @@ setInterval(chargeVeille, 20000);
 const sansAcc = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’'`]/g, ' ').replace(/\s+/g, ' ');
 const VOIX_MARCHES = [[/\b(l ?or|gold)\b/, 'MGC'], [/\bargent|silver\b/, 'SIL'], [/\bpetrole|brut|wti\b/, 'MCL'], [/\bnasdaq\b/, 'MNQ'], [/\bdow\b/, 'MYM'], [/\beuro\b/, 'M6E'], [/\bdollar index|dxy|le dollar\b/, 'DXY'], [/\bvix\b/, 'VIX'], [/\bbitcoin\b/, 'MBT'], [/\bs ?(et|&|and)? ?p\b|\bsp 500\b/, 'MES'], [/\bsoja\b/, 'ZL']];
 const VOIX_UT = [[/\b(5|cinq) ?(minutes?|min|m)\b/, '5m'], [/\b(15|quinze) ?(minutes?|min|m)\b/, '15m'], [/\b(30|trente) ?(minutes?|min|m)\b/, '30m'], [/\bh ?4\b|\b(4|quatre) ?heures?\b/, 'H4'], [/\bh ?1\b|\b(une|1) ?heure\b|\bhoraire\b/, 'H1'], [/\bd ?1\b|\bdaily\b|\bjournalier\b|\ben jour\b/, 'D1'], [/\bhebdo|weekly|semaine\b/, 'W'], [/\bmensuel|monthly|en mois\b/, 'M']];
+/* --- « Atlas, dessine-moi… » : un canal, une oblique, une zone ou une horizontale posés à la voix sur les pivots EXACTS du zigzag (ou le plus haut / plus bas d'un jour) ; tu corriges en glissant, Ctrl + Z pour annuler --- */
+const JOURS_V = { lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6, dimanche: 0 };
+function paneVoix(n) { const u = /\b(d ?1|journalier|daily|jour)\b/.test(n) && !/\bde (lundi|mardi|mercredi|jeudi|vendredi|la veille|hier)\b/.test(n) ? 'D1' : /\b(h ?4|quatre heures|4 heures)\b/.test(n) ? 'H4' : /\b(h ?1|une heure|1 heure|horaire)\b/.test(n) ? 'H1' : null;
+  return (u && panes.find(p => p.ut === u && p.d)) || panes[actif] || panes[0]; }
+function pivotJour(n, p) { const B = (p && p.d && p.d.bougies) || []; if (!B.length) return null; const veille = /\b(hier|la veille)\b/.test(n), m = /\b(lundi|mardi|mercredi|jeudi|vendredi)\b/.exec(n); if (!veille && !m) return null;
+  const jours = [...new Set(B.map(b => jourDe(b[0])))], auj = jours[jours.length - 1], j = veille ? jours[jours.length - 2] : [...jours].reverse().find(d => d !== auj && new Date(d + 'T12:00:00Z').getUTCDay() === JOURS_V[m[1]]); if (!j) return null;
+  const R = B.filter(b => jourDe(b[0]) === j), haut = !/\b(creux|plus bas|bas)\b/.test(n), b = R.reduce((a, x) => (haut ? x[2] > a[2] : x[3] < a[3]) ? x : a, R[0]);
+  return { t: b[0], prix: haut ? b[2] : b[3], quoi: `le ${haut ? 'plus haut' : 'plus bas'} ${veille ? 'de la veille' : 'de ' + m[1]}` }; }
+function dessinVoix(n) { const verbe = /\b(trace|dessine|mets?|pose)(-| )?(moi )?/.test(n); if (!verbe) return null;
+  const canal = /\bun canal\b/.test(n), obl = /\bune (ligne de tendance|oblique|droite|tendance|ligne)\b/.test(n) && /\bdeux derniers\b/.test(n), zone = /\bune zone\b/.test(n), hz = /\bhorizontale\b/.test(n) && /\b(lundi|mardi|mercredi|jeudi|vendredi|hier|la veille)\b/.test(n);
+  if (!canal && !obl && !zone && !hz) return null; const p = paneVoix(n); if (!p || !p.d || !(p.d.bougies || []).length) return null;
+  const B = p.d.bougies, tk = p.d.tick || 1, dec = p.d.dec, der = B[B.length - 1][0], zz = (p.d.zigzag || []).filter(z => z[2] === 'h' || z[2] === 'l'), g = /\b(creux|plus bas|bas)\b/.test(n) ? 'l' : 'h', nomG = g === 'l' ? 'creux' : 'sommets';
+  let l = null, dit = '';
+  if (canal || obl) { const z = zz.filter(x => x[2] === g); if (z.length < 2) return `Pas assez de ${nomG} confirmés en ${p.ut} pour tracer ça`; const [a, b] = z.slice(-2); if (b[0] === a[0]) return null;
+    l = { id: idNeuf(), genre: canal ? 'canal' : 'droite', t1: a[0], p1: a[1], t2: b[0], p2: b[1], alerte: true };
+    if (canal) { const v = t => a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0]), opp = zz.filter(x => x[2] !== g && x[0] > a[0]); if (!opp.length) return `Pas de ${g === 'l' ? 'sommet' : 'creux'} confirmé après le premier ${g === 'l' ? 'creux' : 'sommet'} : je ne peux pas placer le bord opposé`;
+      const e = opp.reduce((m, x) => { const d = x[1] - v(x[0]); return g === 'l' ? (d > m ? d : m) : (d < m ? d : m); }, 0); l.ecart = +(Math.round(e / tk) * tk).toFixed(dec + 2); }
+    dit = `${canal ? 'Canal' : 'Oblique'} tracé${canal ? '' : 'e'} sur les deux derniers ${nomG} ${p.ut} (${nb(a[1], dec)} puis ${nb(b[1], dec)})`; }
+  else { const pj = pivotJour(n, p); let t, prix, quoi;
+    if (pj) ({ t, prix, quoi } = pj); else { const z = zz.filter(x => x[2] === g); if (!z.length) return null; const pv = z[z.length - 1]; t = pv[0]; prix = pv[1]; quoi = `le dernier ${g === 'l' ? 'creux' : 'sommet'} ${p.ut}`; }
+    if (zone) { const rg = B.slice(-200).map(b => b[2] - b[3]).sort((x, y) => x - y), demi = Math.max(2 * tk, Math.round((rg[rg.length >> 1] || 0) * .25 / tk) * tk); l = { id: idNeuf(), genre: 'rect', t1: t, p1: +(prix - demi).toFixed(dec + 2), t2: der, p2: +(prix + demi).toFixed(dec + 2), alerte: true }; dit = `Zone posée sur ${quoi} (${nb(prix - demi, dec)} – ${nb(prix + demi, dec)})`; }
+    else { l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: prix, alerte: true }; dit = `Horizontale sur ${quoi} (${nb(prix, dec)})`; } }
+  lignes.push(l); choisie = l; actif = panes.indexOf(p); sauve(); toutDessine(); setTimeout(() => { try { majBarreLigne(); } catch (e) { /* rien */ } }, 50);
+  toast(`${dit} · alerte active · corrige en glissant, Ctrl + Z pour annuler`); return `${dit}, alerte active`; }
 async function commandeGraphique(texte) {
   const n = ' ' + sansAcc(texte) + ' ';
   { const m = /\b(compare|superpose|comparer|superposer)(-| )?(le|la|les|avec|a|au|aux|l)? ?(.*)$/.exec(n); if (m) { const q = m[4] || ''; const v = VOIX_MARCHES.find(([re]) => re.test(' ' + q + ' ')); const cd = v ? v[1] : (L.find(x => new RegExp('\\b' + x.code.toLowerCase() + '\\b').test(q)) || {}).code;
@@ -2118,6 +2142,7 @@ async function commandeGraphique(texte) {
   if (/\b(presente|presentes|raconte)(-| )?(moi )?(le|les|mes) marches?\b|\batlas presente\b|\bjournal des marches\b/.test(n)) { presente(); return 'Atlas présente'; }
   if (/\b(trois|3) graphiques\b/.test(n)) { vue = 'trois'; ecrit(K('g-vue'), vue); construit(); return 'Trois graphiques'; }
   if (/\b(un seul|1) graphique\b/.test(n)) { vue = 'un'; ecrit(K('g-vue'), vue); construit(); return 'Un graphique'; }
+  { const dv = dessinVoix(n); if (dv) return dv; }  // (« trace un canal sur les deux derniers creux H4 », « mets une zone sur le sommet de vendredi »…)
   if (/\b(trace|dessine|mets?|pose) (moi )?(une )?(ligne )?horizontale\b/.test(n)) {
     const p = panes[actif] || panes[0]; if (!p || !p.d) return null;
     const nbr = /\ba (\d+(?:[ ,.]\d+)*)/.exec(n); let prix = null, t = (p.d.bougies || []).slice(-1)[0][0], quoi = '';
