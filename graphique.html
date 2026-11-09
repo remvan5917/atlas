@@ -1167,7 +1167,7 @@ class Pane {
       c.fillStyle = 'rgba(41,98,255,.10)'; c.fillRect(xa, 0, xb - xa, ph); c.strokeStyle = 'rgba(41,98,255,.6)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(Math.round(xa) + .5, 0); c.lineTo(Math.round(xa) + .5, ph); c.stroke(); c.setLineDash([]); }
     // le cas du passé choisi : une bande ambre discrète (le moment, et la durée mesurée ensuite)
     if (MARQUE_PASSE) { const xa = T(MARQUE_PASSE.t), xb = T(MARQUE_PASSE.fin); if (xb > 0 && xa < pw) { c.fillStyle = 'rgba(76,201,240,.10)'; c.fillRect(xa, 0, Math.max(2, xb - xa), ph); c.strokeStyle = 'rgba(76,201,240,.9)'; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(Math.round(xa) + .5, 0); c.lineTo(Math.round(xa) + .5, ph); c.stroke(); c.setLineDash([]);
-      c.font = '700 11px Inter, sans-serif'; const tw = c.measureText(MARQUE_PASSE.txt).width + 16; c.fillStyle = '#4cc9f0'; c.beginPath(); c.roundRect(Math.min(pw - tw - 4, Math.max(4, xa + 4)), HAUT - 24, tw, 20, 10); c.fill(); c.fillStyle = '#04121f'; c.fillText(MARQUE_PASSE.txt, Math.min(pw - tw - 4, Math.max(4, xa + 4)) + 8, HAUT - 10); } }
+      c.font = '700 11px Inter, sans-serif'; const txm = MARQUE_PASSE.txt + '   ✕', tw = c.measureText(txm).width + 16, xm = Math.min(pw - tw - 4, Math.max(4, xa + 4)); c.fillStyle = '#4cc9f0'; c.beginPath(); c.roundRect(xm, HAUT - 24, tw, 20, 10); c.fill(); c.fillStyle = '#04121f'; c.fillText(txm, xm + 8, HAUT - 10); this._mq = { x: xm, y: HAUT - 24, w: tw, h: 20 }; } else this._mq = null; } else this._mq = null;
     // les zones S/R H4 (grises, discrètes, prolongées à droite)
     if (opt.zones) (this.d.zones || []).forEach(z => { const x0 = Math.max(0, T(z.t)), y0 = Y(z.haut), y1 = Y(z.bas);
       c.fillStyle = TH.zone; c.fillRect(x0, y0, pw - x0, Math.max(1, y1 - y0)); c.strokeStyle = TH.zoneB; c.lineWidth = 1; c.strokeRect(x0 + .5, y0 + .5, pw - x0, Math.max(1, y1 - y0));
@@ -1373,7 +1373,8 @@ class Pane {
     const pos = ev => { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
     const zone = (x, y) => (this.pw && x >= this.pw ? 'prix' : this.ph && y >= this.ph ? 'temps' : 'graphe');
     this.tp = new Map();  // (les doigts posés : deux doigts = pincer pour zoomer dans le temps)
-    cv.addEventListener('pointerdown', ev => { if (ev.pointerType === 'touch') { const [x0, y0] = pos(ev); this.tp.set(ev.pointerId, [x0, y0]); if (this.tp.size === 2) { glisse = null; clearTimeout(this.lp); this.loupe = false; const [a, b] = [...this.tp.values()]; this.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, n: this.n }; return; }
+    cv.addEventListener('pointerdown', ev => { if (MARQUE_PASSE && this._mq) { const [xq, yq] = pos(ev), m = this._mq; if (xq >= m.x - 4 && xq <= m.x + m.w + 4 && yq >= m.y - 4 && yq <= m.y + m.h + 4) { MARQUE_PASSE = null; this._mq = null; toutDessine(); ev.preventDefault(); ev.stopImmediatePropagation(); return; } }  // (un clic sur l'étiquette bleue l'enlève, avec sa bande)
+      if (ev.pointerType === 'touch') { const [x0, y0] = pos(ev); this.tp.set(ev.pointerId, [x0, y0]); if (this.tp.size === 2) { glisse = null; clearTimeout(this.lp); this.loupe = false; const [a, b] = [...this.tp.values()]; this.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, n: this.n }; return; }
         this.lp0 = [x0, y0]; clearTimeout(this.lp); this.lp = setTimeout(() => { this.loupe = true; glisse = null; this.souris = [x0, y0]; this.dessine(); try { navigator.vibrate && navigator.vibrate(12); } catch (e) { /* rien */ } }, 450); }
       actif = panes.indexOf(this); majActif(); const [x, y] = pos(ev); cv.setPointerCapture(ev.pointerId);
       const z = zone(x, y);
@@ -1894,7 +1895,7 @@ async function copilote(question = '') {
 }
 $('#b-copilote').onclick = () => copilote();
 $('#copi-encore').onclick = () => copilote();
-$('#copi-x').onclick = () => { taisToi(); $('#copi').classList.remove('on'); };
+$('#copi-x').onclick = () => { taisToi(); $('#copi').classList.remove('on'); if (MARQUE_PASSE && /^pourquoi \?/.test(MARQUE_PASSE.txt)) { MARQUE_PASSE = null; toutDessine(); } };  // (fermer l'explication enlève aussi le repère « pourquoi ? »)
 /* --- le micro : Q maintenu = une question au copilote ; V maintenu = une note dans le journal --- */
 let rec = null;
 async function demarreMicro(mode) {
