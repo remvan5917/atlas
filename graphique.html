@@ -701,6 +701,8 @@
 
   /* ===== tous les écrans (audit du 07/11) ===== */
   .haut { scrollbar-width: none; } .haut::-webkit-scrollbar { display: none; }
+  @media (max-width: 2240px) { body[class*="role-"]:not(.dev) #etat-b #etat, body[class*="role-"]:not(.dev) #etat-b > span:last-child, body:not(.dev) #etat-b .role-badge { display: none !important; } }  /* (dans ta salle : le point de couleur dit l'état ; le nom du rôle, « en direct » et la version laissent la place) */
+  @media (max-width: 2240px) { body:not(.dev) .role-badge[data-c] { font-size: 0 !important; padding: 3px 7px !important; } body:not(.dev) .role-badge[data-c]::after { content: attr(data-c); font-size: 10px; letter-spacing: .1em; } }  /* (la pastille du rôle, en court : elle ne sort plus de l'écran) */
   @media (max-width: 2240px) { body.dev .role-badge { font-size: 0 !important; padding: 3px 7px !important; } body.dev .role-badge::after { content: 'ESSAI'; font-size: 10px; letter-spacing: .1em; } }
   .pane { container-type: inline-size; } .pane .titre { max-width: calc(100% - 150px); white-space: normal; }
   @container (max-width: 620px) { .titre .indl ~ .indl { display: none !important; } .titre { max-width: calc(100% - 96px) !important; } }
@@ -2152,7 +2154,7 @@ async function installeSalle() {
 function retiensPlace() { const r = ROLE || (document.title === 'Atlas · Structure' ? 'structure' : ''); if (!r) return; const p = JSON.parse(lit('g-salle-pos', '{}')); p[r] = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }; ecrit('g-salle-pos', JSON.stringify(p)); }
 setInterval(retiensPlace, 5000); window.addEventListener('beforeunload', retiensPlace);
 if (DEV) { const et = $('#etat'); document.body.classList.add('dev'); if (et) et.insertAdjacentHTML('beforebegin', '<span class="role-badge" style="background:#d61f3a;color:#fff">VERSION D’ESSAI</span>'); document.title = 'ESSAI · ' + document.title; }
-if (ROLE) { document.body.classList.add('role-' + ROLE); const et = $('#etat'); if (et) et.insertAdjacentHTML('beforebegin', `<span class="role-badge">${ROLE === 'lie' ? 'MARCHÉ LIÉ' : ROLE === 'ensemble' ? 'VUE D’ENSEMBLE' : 'STRUCTURE'}</span>`); }
+if (ROLE) { document.body.classList.add('role-' + ROLE); const et = $('#etat'); if (et) et.insertAdjacentHTML('beforebegin', `<span class="role-badge" data-c="${ROLE === 'lie' ? 'LIÉ' : ROLE === 'ensemble' ? 'ENSEMBLE' : 'STRUCT.'}">${ROLE === 'lie' ? 'MARCHÉ LIÉ' : ROLE === 'ensemble' ? 'VUE D’ENSEMBLE' : 'STRUCTURE'}</span>`); }
 if (ROLE === 'ensemble') setTimeout(() => { if (!$('#dow').classList.contains('on')) ouvreDow(); }, 400);
 if (ROLE === 'lie') setTimeout(() => { if (vue !== 'trois') { vue = 'trois'; utsTrois = ['D1', 'H4', 'H1']; construit(); } }, 300);
 
