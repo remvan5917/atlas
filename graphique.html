@@ -1031,7 +1031,7 @@
   <nav class="pc-nav"><button data-v="cartes" class="on"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8 14l3-3 2 2 3-4"/></svg><span>Marchés</span></button><button data-v="graph"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M7 15V9M7 7V5M12 16v-5M12 9V6M17 13V8M17 6V4"/></svg><span>Graphique</span></button><button data-v="voix" class="pc-mic" title="Maintiens et parle au copilote"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button><button data-v="trade"><svg viewBox="0 0 24 24"><path d="M4 16l5-5 4 4 7-7"/><path d="M15 8h5v5"/></svg><span>Trader</span></button><button data-v="plus"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span>Fonctions</span></button></nav></div>
 <div class="indic-p" id="mode-p"><div class="indic-b" style="width:min(560px,94vw)"><h3>OÙ TU TRADES</h3><p class="s">Atlas reconnaît ton appareil tout seul ; tu peux aussi choisir.</p><div class="meths" id="mode-l" style="grid-template-columns:repeat(2,1fr)"></div></div></div>
 <div class="bulle" id="bulle"></div>
-<div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button></div><div class="faits" id="visite-f"></div></div>
+<div class="visite" id="visite"><div class="q"><span>DEPUIS TA DERNIÈRE VISITE</span><em id="visite-d"></em><button class="x" id="visite-x" title="Fermer">×</button></div><ul id="visite-l"></ul><div class="bt"><button id="visite-lire">🔊 Lire</button><label><input type="checkbox" id="visite-voix"> toujours me le lire</label><button id="visite-plus">Les faits</button><button id="visite-rejoue" title="Les bougies de ton absence rejouées en 20 secondes, les dépêches qui tombent à leur heure sur l’axe du temps">▶ Rejouer mon absence</button></div><div class="faits" id="visite-f"></div></div>
 <div class="figc" id="figc"><div class="q">FIGURE REPÉRÉE</div><b id="figc-n"></b><p id="figc-t"></p><div class="bt"><button id="figc-g">Garder — elle devient tes lignes</button><button id="figc-c">Le copilote l'explique</button><button id="figc-i">Ignorer</button></div></div>
 <div class="tv" id="tv"><div class="gen" id="tv-gen"><div class="t"><small>ATLAS PRÉSENTE</small><h1>Tes marchés</h1><div class="date" id="tv-date"></div><div class="trait"></div><div class="prep" id="tv-prep">Atlas regarde tes marchés et prépare l'émission…</div></div></div>
   <div class="bande h"></div><div class="bande b"></div><div class="prog" id="tv-prog"></div><div class="num" id="tv-num"></div><div class="aide2">Espace pause · → suivant · Échap quitter</div>
@@ -2276,7 +2276,14 @@ async function coachReplay(raison) {
 }
 $('#rp-coach').onclick = () => { if (!REPLAY) return; REPLAY.coach = !REPLAY.coach; REPLAY.nz = null; $('#rp-coach').classList.toggle('on', REPLAY.coach); toast(REPLAY.coach ? 'Coach : le replay s’arrête à chaque événement et le copilote commente l’instant (E : un commentaire tout de suite)' : 'Coach arrêté'); if (REPLAY.coach && !REPLAY.jeu) coachReplay(''); };
 function joue(on) { if (!REPLAY) return; clearInterval(REPLAY.jeu); REPLAY.jeu = null; if (on) REPLAY.jeu = setInterval(() => avance(1), 1000 / REPLAY.v); $('#rp-jouer').textContent = on ? '⏸' : '▶'; $('#rp-jouer').classList.toggle('on', !!on); }
-function quitteReplay() { if (REPLAY) clearInterval(REPLAY.jeu); REPLAY = null; $('#replay').classList.remove('on'); $('#b-replay').classList.remove('on'); appliqueReplay(); }
+// le rattrapage : les bougies de ton absence rejouées en ~20 secondes sur toutes tes fenêtres, puis retour au direct
+var VISITE_T0 = null, RATTRAPE = null;
+function rattrapage(t0) { if (!t0 || ROLE === 'ensemble' || ROLE === 'terminal' || !panes.length) return; const pas = pasReplay(), maint = Date.now() / 1000; if (maint - t0 < 2 * pas) { toast('Ton absence tient en moins de deux bougies : rien à rejouer'); return; }
+  $('#visite').classList.remove('on'); demarreReplay(t0); const n = Math.ceil((maint - t0) / pas), dt = Math.max(40, Math.round(20000 / n)); clearInterval(RATTRAPE);
+  const dur = maint - t0; toast(`▶ Ton absence (${dur >= 86400 ? Math.round(dur / 86400) + ' j' : Math.round(dur / 3600) + ' h'}) en 20 secondes · Échap pour revenir au direct`);
+  RATTRAPE = setInterval(() => { if (!REPLAY || REPLAY.choix) { clearInterval(RATTRAPE); RATTRAPE = null; return; } avance(1); if (!REPLAY || REPLAY.t >= Date.now() / 1000 - 1) { clearInterval(RATTRAPE); RATTRAPE = null; setTimeout(() => { if (REPLAY) quitteReplay(); toast('✓ De retour en direct'); }, 900); } }, dt); }
+$('#visite-rejoue').onclick = () => rattrapage(VISITE_T0);
+function quitteReplay() { clearInterval(RATTRAPE); RATTRAPE = null; if (REPLAY) clearInterval(REPLAY.jeu); REPLAY = null; $('#replay').classList.remove('on'); $('#b-replay').classList.remove('on'); appliqueReplay(); }
 $('#b-replay').onclick = choisirReplay; $('#rp-x').onclick = quitteReplay; $('#rp-av').onclick = () => avance(1); $('#rp-arr').onclick = () => avance(-1); $('#rp-jouer').onclick = () => joue(!REPLAY.jeu);
 document.querySelectorAll('#replay [data-v]').forEach(b => b.onclick = () => { REPLAY.v = +b.dataset.v; document.querySelectorAll('#replay [data-v]').forEach(x => x.classList.toggle('on', x === b)); if (REPLAY.jeu) joue(true); });
 /* --- l'étude d'annonce : les dernières fois superposées --- */
@@ -3037,7 +3044,7 @@ setInterval(vu, 30000); addEventListener('beforeunload', vu);
 async function verifieVisite(quoi) {
   if (ROLE === 'ensemble' || REPLAY || !ROOT) return; const c = code, t0 = (JSON.parse(lit('g-visites', '{}')) || {})[c] || VISITES[c], maint = Math.floor(Date.now() / 1000);
   if (!t0 || maint - t0 < VISITE_ABS || (VISITE_MONTREE[c] && VISITE_MONTREE[c] >= t0)) { vu(); return; }
-  VISITE_MONTREE[c] = t0; vu();
+  VISITE_MONTREE[c] = t0; VISITE_T0 = t0; vu();
   try { const r = await api(`/maison/graphique?visite=${t0}&code=${c}`); if (!r.ok || c !== code) return; montreVisite(r); } catch (e) { /* hors liaison */ }
 }
 function montreVisite(r) {
