@@ -300,6 +300,9 @@
   .sem-a { display: grid; grid-template-columns: 130px 50px 1fr auto; gap: 10px; padding: 7px 6px; border-bottom: 1px solid #14213a; font: 500 12.5px 'Inter'; color: #c6ccd8; align-items: baseline; } .sem-a time { font: 600 12px 'JetBrains Mono', monospace; color: #8a91a0; } .sem-a b { color: #e6e9ef; } .sem-a small { color: #8a91a0; }
   @media (max-width: 700px) { .scn.sem { grid-template-columns: 1fr 1fr 1fr; } .scn.sem > :nth-child(4), .scn.sem > :nth-child(5) { display: none; } .sem-a { grid-template-columns: 90px 1fr; } .sem-a span, .sem-a small { display: none; } }
   .scn.esq { grid-template-columns: 1fr .9fr 1fr 1fr 1.6fr; } .scn.esq > span:last-child { position: relative; padding-right: 18px; } .esq-x { position: absolute; right: 0; top: 0; font-style: normal; color: #6f7787; cursor: pointer; padding: 0 4px; } .esq-x:hover { color: #ff3d5a; }
+  /* la barre d'outils de gauche tient dans la hauteur de l'écran : boutons plus serrés quand l'écran est bas, et une fine barre de défilement pour ce qui reste */
+  @media (max-height: 1150px) { .outils .outil, .outils .outil-d { height: 30px !important; width: 38px !important; } .outils { gap: 1px !important; } .outils svg { width: 18px !important; height: 18px !important; } }
+  .outils { scrollbar-width: thin !important; scrollbar-color: #26365a transparent; } .outils::-webkit-scrollbar { width: 4px !important; } .outils::-webkit-scrollbar-thumb { background: #26365a; border-radius: 4px; }
   .niv-p { display: flex; gap: 3px; margin-top: 4px; } .niv-p i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #4cc9f0; } .niv-p i.tenue { background: #4cc9f0; } .niv-p i.traversee { background: none; } .niv-p i.indecis, .niv-p i.encours { border-color: #4a5670; background: #4a5670; }
   .seas b { display: block; font: 700 11.5px 'JetBrains Mono', monospace; margin-top: 4px; } .seas small { display: block; font: 800 10px 'Inter'; letter-spacing: .1em; color: #8a91a0; } .seas em { display: block; font: 600 10.5px 'JetBrains Mono', monospace; color: #8a91a0; font-style: normal; }
   @media (max-width: 700px) { .seas { grid-template-columns: repeat(6, 1fr); } .mov { grid-template-columns: 1.4fr .9fr 1.4fr; } .mov > :nth-child(3), .mov > :nth-child(5), .mov > :nth-child(6) { display: none; } }
@@ -866,7 +869,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v80</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v81</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -1397,6 +1400,7 @@ class Pane {
       if (z === 'graphe' && this.T && ev.altKey) { const [t, pr] = aimant(this, x, y), l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`Horizontale à ${nb(pr, this.d.dec)} · alerte active`); return; }
       // la règle : Ctrl + glisser (ou le bouton du milieu) = ticks, dollars, barres, durée
       if (z === 'graphe' && this.T && (ev.ctrlKey || ev.metaKey || ev.button === 1)) { ev.preventDefault(); const t = this.iT(x), pr = this.iY(y); this.regle = { t1: t, p1: pr, t2: t, p2: pr }; glisse = { mode: 'regle' }; return; }
+      if (z === 'graphe' && outil === 'curseur' && this.T) { const e = esqProche(this, x, y); if (e) { esqChoisie(e); return; } else if (ESQ_SEL) { ESQ_SEL = null; toutDessine(); } }  // (un clic sur une esquisse la choisit : Effacer, ou Suppr)
       if (this.figSurvol && outil === 'curseur' && !proche(this, x, y)) { ouvreFigure(this.figSurvol, ev.clientX, ev.clientY); return; }
       if (this.survol && outil === 'curseur' && this.survol.genre === 'config' && REPLAY) { return; }
       if (this.survol && outil === 'curseur' && this.survol.genre === 'config') { const n = this.survol; MARQUE_PASSE = { t: n.at, fin: n.fin, txt: `${n.cf.nom} · ${quand(n.at)} · ${n.ca.fin > 0 ? '+' : ''}${n.ca.fin} t ensuite` }; this.survol = null; montreBulle(null); toutDessine(); return; }
@@ -1850,8 +1854,9 @@ document.addEventListener('keydown', ev => {
   if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
   if (k === 'f') { $('#plein').click(); return; }
   if (k === 'p') { $('#photo').click(); return; }
-  if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
+  if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; ESQ_SEL = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c' && !ev.shiftKey) choisieOutil('canal');
+  else if ((k === 'delete' || k === 'backspace') && ESQ_SEL) esqEfface(ESQ_SEL);
   else if (k === 'delete' || k === 'backspace') efface();
   else if (/^[1-8]$/.test(k)) { if (ev.repeat) return; const p0 = panes[actif] || panes[0]; coupDoeil = { k: ev.key, t: performance.now(), avant: p0 ? p0.ut : utSeul }; choisirUT(ORDRE_UT[+k - 1]); }
 });
@@ -3780,8 +3785,18 @@ function esqMesure(e, B) {  // la comparaison, seulement sur les bougies closes 
     dS: Math.round(dS / tk), dR: Math.round(dR / tk), ampS: Math.round(ampS / tk), ampR: Math.round(ampR / tk), ecart: Math.round(ecart / tk), decalage: Math.round((tR - tS) / du), n: R.length }; }
 function esqDessine(p, g) { const { c, T, Y, pw } = g, B = p.d && p.d.bougies; if (!B || !B.length) return; const du = DUREE[p.ut] || 3600, der = B[B.length - 1][0];
   const L = ESQ.filter(e => e.code === code && e.ut === p.ut && e.pts[e.pts.length - 1][0] > der - 24 * du); if (ESQ_EN && ESQ_EN.pane === p) L.push(ESQ_EN.e);
-  for (const e of L) { const fini = e.pts[e.pts.length - 1][0] <= der; c.save(); c.strokeStyle = fini ? 'rgba(124,77,255,.35)' : 'rgba(124,77,255,.9)'; c.lineWidth = 1.6; c.setLineDash([5, 4]); c.beginPath();
+  { const fut = L.filter(e => e.pts[e.pts.length - 1][0] > der).map(e => Math.ceil((e.pts[e.pts.length - 1][0] - der) / du) + 2), cle = `${code}|${p.ut}|${fut.length}`;  // (une esquisse en cours reste visible : une fois par marché et unité, le graphique laisse la place à droite)
+    if (fut.length && p._esqCle !== cle) { p._esqCle = cle; const besoin = -Math.min(Math.max(...fut), Math.round(p.n * .6)); if (p.fin > besoin) { p.fin = besoin; setTimeout(() => p.dessine(), 0); } } }
+  for (const e of L) { const fini = e.pts[e.pts.length - 1][0] <= der, sel = e.id === ESQ_SEL; c.save(); c.strokeStyle = sel ? 'rgba(124,77,255,1)' : fini ? 'rgba(124,77,255,.35)' : 'rgba(124,77,255,.9)'; c.lineWidth = sel ? 2.8 : 1.6; c.setLineDash([5, 4]); c.beginPath();
     e.pts.forEach(([t, pr], k) => { const x = T(t), y = Y(pr); if (k) c.lineTo(x, y); else c.moveTo(x, y); }); c.stroke(); c.setLineDash([]); const [ta, pa] = e.pts[0]; c.fillStyle = c.strokeStyle; c.beginPath(); c.arc(T(ta), Y(pa), 3, 0, 7); c.fill(); c.restore(); } }
+var ESQ_SEL = null;
+function esqProche(p, x, y) { const B = p.d && p.d.bougies; if (!B || !B.length || !p.T) return null; const du = DUREE[p.ut] || 3600, der = B[B.length - 1][0]; let mieux = null, dmin = 8;
+  for (const e of ESQ.filter(z => z.code === code && z.ut === p.ut && z.pts[z.pts.length - 1][0] > der - 24 * du)) for (let k = 1; k < e.pts.length; k++) {
+    const x1 = p.T(e.pts[k - 1][0]), y1 = p.Y(e.pts[k - 1][1]), x2 = p.T(e.pts[k][0]), y2 = p.Y(e.pts[k][1]), L2 = (x2 - x1) ** 2 + (y2 - y1) ** 2, u = L2 ? Math.max(0, Math.min(1, ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / L2)) : 0, d = Math.hypot(x - (x1 + u * (x2 - x1)), y - (y1 + u * (y2 - y1)));
+    if (d < dmin) { dmin = d; mieux = e; } }
+  return mieux; }
+function esqChoisie(e) { ESQ_SEL = e.id; choisie = null; try { majBarreLigne(); } catch (er) { /* rien */ } toutDessine(); toast(`Esquisse du ${new Date(e.cree * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · Suppr pour l’effacer`, ['Effacer', () => esqEfface(e.id)]); }
+function esqEfface(id) { const e = ESQ.find(z => z.id === id); if (!e) return; ESQ = ESQ.filter(z => z.id !== id); ESQ_SEL = null; gardeEsq(); toutDessine(); toast('Esquisse effacée', ['Annuler', () => { ESQ.push(e); ESQ.sort((a, b) => a.cree - b.cree); gardeEsq(); toutDessine(); }]); }
 function esqDebut(p, x, y) { const t = p.iT(x), pr = p.iY(y); ESQ_EN = { pane: p, e: { id: idNeuf(), code, ut: p.ut, cree: Math.floor(Date.now() / 1000), tk: (p.d && p.d.tick) || 1, pts: [[t, pr]] }, lx: x }; }
 function esqAjoute(p, x, y) { if (!ESQ_EN || ESQ_EN.pane !== p || x < ESQ_EN.lx + 3) return; ESQ_EN.lx = x; ESQ_EN.e.pts.push([p.iT(x), p.iY(y)]); p.dessine(); }
 function esqFin(p) { const en = ESQ_EN; ESQ_EN = null; if (!en) return; const e = en.e; if (e.pts.length < 3) { toast('Esquisse trop courte : dessine de gauche à droite, en restant appuyé'); p.dessine(); return; }
