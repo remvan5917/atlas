@@ -888,7 +888,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v87</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v88</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -3197,9 +3197,10 @@ function majPosH() { const e = $('#pos-h'); if (!e) return; const l = POSD.posit
   let tot = 0, ok = true; const dec = c => (L.find(x => x.code === c) || {}).dec ?? 2;
   const parts = l.map(ps => { const tk = ps.pas || 1, der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null;
     if (usd == null) ok = false; else tot += usd; const ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
-    return `<span class="s">${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille}</span><span>${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t</span>${usd != null ? `<b class="v">${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $</b>` : ''}<small>entrée ${nb(ps.prix_moyen, dec(ps.instr))}${ds != null ? ` · stop à ${ds} t` : ''}</small>`; });
+    return `<span class="s">${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille}${ps.taille > MAX_LOTS ? ' <b style="color:#fff;background:#d01c2c;padding:1px 6px;border-radius:5px;font-size:11px">⚠ RÈGLE : 1 LOT</b>' : ''}</span><span>${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t</span>${usd != null ? `<b class="v">${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $</b>` : ''}<small>entrée ${nb(ps.prix_moyen, dec(ps.instr))}${ds != null ? ` · stop à ${ds} t` : ''}</small>`; });
   e.className = `pos-h ${ok ? (tot > 0 ? 'h' : tot < 0 ? 'r' : '') : ''}`; e.innerHTML = `<span>EN COURS</span>${parts.join('<span>·</span>')}`; e.hidden = false; }
 // l'alerte rouge : une nouvelle critique ou un mouvement anormal pendant qu'il est en position — en grand, avec une alarme, jusqu'à ce qu'il la touche
+const MAX_LOTS = 1;  // (SA règle : 1 lot maximum par compte, quel que soit le marché)
 const ROUGE_VU = new Set(JSON.parse(lit('g-rouge-vu', '[]'))); let rougeSon = null, ROUGE_ACT = null;
 function alarme() { try { const c = 'g-rouge-son', m = Date.now(), d = +localStorage.getItem(c) || 0; if (m - d < 2500) return; localStorage.setItem(c, String(m)); } catch (e) { /* rien */ }  // (une seule fenêtre sonne)
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
@@ -3210,7 +3211,7 @@ function alerteRouge(l) {
   if (!e) { e = document.createElement('div'); e.id = 'rouge'; document.body.appendChild(e); }
   const pos = (POSD.positions || []).map(ps => { const tk = ps.pas || 1, der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null, ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
     return `<span>${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille} · ${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t${usd != null ? ` · ${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $` : ''}${ds != null ? ` · stop à ${ds} t` : ' · SANS STOP'}</span>`; }).join('');
-  e.innerHTML = `<div class="t">⚠ ALERTE ROUGE · ${n.genre === 'mouvement' ? 'MOUVEMENT ANORMAL' : 'NOUVELLE CRITIQUE'} · TU ES EN POSITION · ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div><h2>${esc(n.titre)}</h2>${n.texte ? `<p>${esc(n.texte)}</p>` : ''}<div class="pos">${pos}</div><button type="button" id="rouge-vu">J’ai vu</button>`;
+  e.innerHTML = `<div class="t">⚠ ALERTE ROUGE · ${n.genre === 'mouvement' ? 'MOUVEMENT ANORMAL' : n.genre === 'taille' ? 'TA RÈGLE : 1 LOT PAR COMPTE' : 'NOUVELLE CRITIQUE'} · TU ES EN POSITION · ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div><h2>${esc(n.titre)}</h2>${n.texte ? `<p>${esc(n.texte)}</p>` : ''}<div class="pos">${pos}</div><button type="button" id="rouge-vu">J’ai vu</button>`;
   e.classList.add('on'); try { navigator.vibrate && navigator.vibrate([400, 150, 400, 150, 400]); } catch (er) { /* rien */ }
   if (ROUGE_ACT !== n.id) { ROUGE_ACT = n.id; clearInterval(rougeSon); alarme(); rougeSon = setInterval(alarme, 4000); try { halo('rouge'); } catch (er) { /* rien */ } }
   $('#rouge-vu').onclick = () => { ROUGE_VU.add(n.id); ecrit('g-rouge-vu', JSON.stringify([...ROUGE_VU].slice(-50))); e.classList.remove('on'); clearInterval(rougeSon); rougeSon = null; ROUGE_ACT = null; };
@@ -3221,6 +3222,8 @@ async function chargePositions() {
   if ((!ROOT && !voy) || document.hidden || ROLE === 'ensemble') return;
   try { POSD = voy ? await vPositions() : await api('/maison/graphique?direct=1'); } catch (e) { return; }
   try { annonceExecutions(POSD.positions || []); } catch (e) { /* rien */ }
+  try { const cas = Math.floor(Date.now() / 120000), trop = (POSD.positions || []).filter(ps => (ps.taille || 0) > MAX_LOTS).map(ps => ({ id: `tl-${ps.compte}-${ps.instr}-${ps.taille}-${cas}`, at: Math.floor(Date.now() / 1000), genre: 'taille', titre: `TAILLE AU-DESSUS DE TA RÈGLE : ${ps.taille} lots sur ${ps.instr}`, texte: `Ta règle : ${MAX_LOTS} lot maximum par compte, quel que soit le marché. Pour plus de lots, un autre compte.`, codes: [ps.instr] }));
+    POSD.rouge = (POSD.rouge || []).filter(r => r.genre !== 'taille').concat(trop); } catch (e) { /* rien */ }
   try { majCompte(); majPosH(); alerteRouge(POSD.rouge || []); } catch (e) { /* rien */ }
   const l = POSD.positions || [], f = $('#pos-f'); f.hidden = !l.length;
   if (l.length) { let latent = 0;
