@@ -1354,7 +1354,8 @@ class Pane {
       const ticks = Math.round((r.p2 - r.p1) / tk), usd = VAL_TICK[code] != null ? ticks * VAL_TICK[code] : null, nbar = Math.round((r.t2 - r.t1) / (DUREE[this.ut] || 3600)), dur = Math.abs(r.t2 - r.t1);
       const txt = `${sg(ticks)} ticks${usd != null ? ` · ${sg(usd)} $ / contrat` : ''} · ${Math.abs(nbar)} barres · ${dur >= 86400 ? Math.round(dur / 86400) + ' j' : dur >= 3600 ? Math.floor(dur / 3600) + ' h ' + String(Math.round(dur % 3600 / 60)).padStart(2, '0') : Math.round(dur / 60) + ' min'}`;
       c.font = '700 12px Inter, sans-serif'; const tw = c.measureText(txt).width + 18, bx = Math.min(pw - tw - 6, Math.max(6, x2 - tw / 2)), by = haut ? Math.max(6, y2 - 32) : Math.min(ph - 30, y2 + 8);
-      c.fillStyle = haut ? '#2962ff' : '#f23645'; c.beginPath(); c.roundRect(bx, by, tw, 24, 7); c.fill(); c.fillStyle = '#fff'; c.fillText(txt, bx + 9, by + 16); }
+      c.fillStyle = haut ? '#2962ff' : '#f23645'; c.beginPath(); c.roundRect(bx, by, tw, 24, 7); c.fill(); c.fillStyle = '#fff'; c.fillText(txt, bx + 9, by + 16);
+      const t2 = regleInfos(Math.abs(ticks), usd); if (t2.length) { c.font = '600 11px Inter, sans-serif'; const tw2 = Math.max(...t2.map(z => c.measureText(z).width)) + 16, hh = 8 + 15 * t2.length, bx2 = Math.min(pw - tw2 - 6, Math.max(6, x2 - tw2 / 2)), by2 = haut ? Math.max(6, by - hh - 4) : Math.min(ph - hh - 4, by + 28); c.fillStyle = 'rgba(12,18,32,.9)'; c.beginPath(); c.roundRect(bx2, by2, tw2, hh, 6); c.fill(); c.fillStyle = '#e6e9ef'; t2.forEach((z, q) => c.fillText(z, bx2 + 8, by2 + 16 + 15 * q)); } }
     // le pivot du zigzag sous la souris s'offre : double-clic = support / résistance
     if (this.souris && outil === 'curseur' && !brouillon) { const pv = pivotProche(this, this.souris[0], this.souris[1]);
       if (pv) { const xp = T(pv[0]), yp = Y(pv[1]); c.strokeStyle = '#ff9800'; c.lineWidth = 2; c.beginPath(); c.arc(xp, yp, 8, 0, 7); c.stroke(); c.setLineDash([3, 3]); c.beginPath(); c.moveTo(xp, yp); c.lineTo(pw, yp); c.stroke(); c.setLineDash([]);
@@ -1557,6 +1558,17 @@ async function chargeTout() {
   const ok = (await Promise.all(panes.map(p => p.charge()))).some(Boolean);
   if (typeof majLiaisons === 'function') majLiaisons();
 }
+// la règle (Ctrl + glisser) dit aussi ce que la distance représente pour TOI : part de ta limite du jour, ton stop habituel sur ce marché, et combien de fois le marché fait cette distance en 1 h et en 4 h
+const REGLE_ST = {};
+function regleInfos(t, usd) { if (!t) return []; const c = code; let z = REGLE_ST[c];
+  if (!z) { z = REGLE_ST[c] = { stop: null, B: null }; api('/maison/graphique?perf=1').then(r => { const v = (r.trades || []).filter(x => x.instr === c && x.stop_ticks > 0).map(x => x.stop_ticks).sort((a, b) => a - b); if (v.length >= 2) z.stop = v[v.length >> 1]; toutDessine(); }).catch(() => {});
+    barresDe(c, '15m').then(d => { z.B = (d.bougies || []).slice(-1500); z.tk = d.tick || 1; z.m = new Map(); toutDessine(); }).catch(() => {}); }
+  const out = [], dll = (POSD && POSD.dll) || (TRADE && TRADE.reg && TRADE.reg.dll) || null;
+  if (dll && usd != null) out.push(`${Math.round(Math.abs(usd) / dll * 100)} % de ta limite du jour`);
+  if (z.stop) out.push(`${nb(t / z.stop, 1)} × ton stop habituel (${z.stop} t)`);
+  if (z.B && z.B.length > 100) { const f = n => { const k = `${t}|${n}`; if (z.m.has(k)) return z.m.get(k); let hit = 0, N = 0; for (let i = 0; i + n <= z.B.length; i++) { const o = z.B[i][1]; let lo = Infinity, hi = -Infinity; for (let q = i; q < i + n; q++) { if (z.B[q][3] < lo) lo = z.B[q][3]; if (z.B[q][2] > hi) hi = z.B[q][2]; } N++; if ((hi - o) / z.tk >= t || (o - lo) / z.tk >= t) hit++; } const v = N ? Math.round(hit / N * 100) : null; z.m.set(k, v); return v; };
+    const a = f(4), b = f(16); if (a != null) out.push(`distance faite ${a} % des heures, ${b} % des 4 h`); }
+  return out; }
 function choisieOutil(o) { outil = o; brouillon = null; document.querySelectorAll('[data-o]').forEach(b => b.classList.toggle('on', b.dataset.o === o)); panes.forEach(p => p.cv.style.cursor = o === 'curseur' ? 'default' : 'crosshair'); }
 document.querySelector('.outils').addEventListener('click', ev => { const b = ev.target.closest('[data-o]'); if (!b) return; if (b.dataset.o === 'efface') { if (choisie) efface(); else choisieOutil('efface'); } else choisieOutil(b.dataset.o); });
 document.querySelectorAll('[data-ut]').forEach(b => b.addEventListener('click', () => choisirUT(b.dataset.ut)));
