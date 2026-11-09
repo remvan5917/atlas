@@ -1583,14 +1583,17 @@ function spark(v, up) {
   return `<svg viewBox="0 0 54 22" preserveAspectRatio="none"><polyline points="${v.map((x, i) => `${(i * 54 / (v.length - 1)).toFixed(1)},${(20 - (x - lo) / r * 18).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#0aa37f' : '#f23645'}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 // la petite ligne sous le prix du moniteur : au choix (clic sur l'en-tête)
-const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'LIGNE / NIVEAU'], ['filtre', 'FILTRE']];
-let MON_FILTRE = null;  // (la colonne FILTRE : l'état de chaque marché dans son filtre SCAN, rempli par monFiltreMaj plus bas)
+const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'LIGNE / NIVEAU'], ['filtre', 'FILTRE'], ['jambe', 'JAMBE H4']];
+let MON_FILTRE = null, MON_JAMBE = { at: 0, m: {} };  // (la colonne FILTRE : l'état de chaque marché dans son filtre SCAN, rempli par monFiltreMaj plus bas)
 let COL_MON = COLS_MON.some(c => c[0] === lit('g-moncol', 'pct')) ? lit('g-moncol', 'pct') : 'pct';
 const nivTxt = n => n ? `${n.d > 0 ? '▼' : '▲'} ${Math.abs(n.d)} t · ${esc(n.auto ? n.court || 'niveau' : 'ta ligne')}` : '';
 function colMon(x) { const n = x.niveau, proche = n && n.etat === 'proche';
   const flag = proche && COL_MON !== 'ligne' ? `<small class="niv proche" title="Le prix s’approche ${esc(n.nom)} (Atlas te l’a dit)">◉ ${nivTxt(n)}</small>` : '';
   return colMon0(x) + flag; }
 function colMon0(x) {
+  if (COL_MON === 'jambe') { const j = MON_JAMBE.m[x.code]; if (!j) return `<small style="color:#6f7787" title="La jambe H4 en cours de ton zigzag, face aux jambes passées de ce marché (ZZ)">${MON_JAMBE.at ? '—' : '…'}</small>`;
+    const fl = j.s > 0 ? '▲' : '▼', t = `Jambe ${j.s > 0 ? 'haussière' : 'baissière'} H4 en cours : ${j.tk} ticks${j.prov ? ' (pas encore confirmée)' : ''}`;
+    return j.petite ? `<small style="color:#6f7787" title="${t} — pas encore les 5 % d’une jambe de ton zigzag">${fl} &lt; 5 %</small>` : `<small class="${j.plus >= 90 ? 'chaud' : j.s > 0 ? 'h' : 'r'}" title="${t}, plus grande que ${j.plus} % des ${j.n} jambes ${j.s > 0 ? 'haussières' : 'baissières'} passées (ZZ)">${fl} ${j.plus} %</small>`; }
   if (COL_MON === 'filtre') { const f = MON_FILTRE, m = f && f.m[x.code]; if (!f) return `<small title="Écris un filtre dans SCAN (Terminal ou / SCAN) : cette colonne montre quels marchés y sont">${SCAN_G_VIDE() ? 'aucun filtre' : '…'}</small>`;
     return m && m.oui ? `<small class="h" title="${esc(f.titre)} : oui${m.depuis > 1 ? `, depuis ${m.depuis} bougies` : ''}">● oui${m.depuis > 1 ? ` · ${m.depuis} b` : ''}</small>` : `<small title="${esc(f.titre)} : non${m && m.il_y_a != null ? `, dernière fois il y a ${m.il_y_a} bougies` : ''}" style="color:#6f7787">${m && m.il_y_a != null && m.il_y_a <= 3 ? `il y a ${m.il_y_a} b` : '—'}</small>`; }
   if (COL_MON === 'ligne') return x.niveau ? `<small class="niv ${x.niveau.etat === 'proche' ? 'proche' : ''}" title="La ligne ou le niveau le plus proche du prix : ${esc(x.niveau.nom)}${x.niveau.auto ? ' (tracé par la plateforme)' : ' (ta ligne)'}">${nivTxt(x.niveau)}</small>` : '<small title="Aucune ligne ni niveau">—</small>';
@@ -4093,6 +4096,12 @@ function testAffiche(cur, r) { const s = r.stats, h = r.hasard, v = VAL_TICK[r.m
     <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Entrée à l’ouverture de la bougie qui suit le signal, une position à la fois, sans frais ni glissement. Le stop, l’objectif et la durée sont les tiens : Atlas n’en propose aucun.</p>`);
   testBranche(); }
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['TEST', 'ta règle (entrée, stop, objectif) rejouée sur le passé · TEST achète quand…, stop 40 ticks, objectif 80', a => fnTest(a)]);
+// la colonne JAMBE H4 du moniteur : la place de la jambe en cours de chaque marché face à ses jambes passées (la mesure de ZZ), au plus toutes les 5 minutes
+async function monJambeMaj() { if (COL_MON !== 'jambe' || ROLE === 'terminal' || ROLE === 'ensemble' || Date.now() - MON_JAMBE.at < 300000 || !L.length) return; MON_JAMBE.at = Date.now(); const m = {};
+  for (const x of L) { try { const z = zzMesure(await barresDe(x.code, 'H4')); if (!z) continue; const c = z.cur, memes = z.J.filter(j => j.s === c.s); if (memes.length < 4) continue;
+    m[x.code] = { s: c.s, tk: Math.round(c.px / z.tk), prov: c.prov, petite: !c.prov && c.pc < .05, plus: Math.round(memes.filter(j => j.pc < c.pc).length / memes.length * 100), n: memes.length }; } catch (e) { /* ce marché sans données */ } }
+  MON_JAMBE.m = m; if (!Object.keys(m).length) MON_JAMBE.at = Date.now() - 240000; majListe(); }  // (rien reçu : on réessaie dans une minute)
+setInterval(monJambeMaj, 60000); setTimeout(monJambeMaj, 12000); $('#b-moncol').addEventListener('click', () => setTimeout(monJambeMaj, 50));
 // la colonne FILTRE du moniteur : le filtre surveillé (sinon le dernier utilisé), repassé au plus toutes les 5 minutes
 function SCAN_G_VIDE() { try { return !SCAN_G.length; } catch (e) { return true; } }
 async function monFiltreMaj() { if (COL_MON !== 'filtre' || ROLE === 'terminal' || ROLE === 'ensemble') return; await scanSurvLit();
