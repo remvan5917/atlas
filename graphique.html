@@ -316,6 +316,10 @@
   .pos-h { flex: none; display: flex; gap: 14px; align-items: center; padding: 0 14px; border-left: 1px solid var(--bord, #1b2a44); font: 700 10px 'Inter'; letter-spacing: .12em; color: #9aa4b8; white-space: nowrap; }
   .pos-h b { font: 800 15px 'JetBrains Mono', monospace; letter-spacing: 0; } .pos-h.h { background: rgba(10, 163, 127, .14); } .pos-h.r { background: rgba(242, 54, 69, .14); }
   .pos-h.h b.v { color: var(--vert); } .pos-h.r b.v { color: var(--rouge); } .pos-h .s { color: #e2e8f0; } .pos-h small { font: 600 10px 'Inter'; color: #7d889e; letter-spacing: .06em; }
+  #rouge { position: fixed; left: 0; right: 0; top: 0; z-index: 90; background: linear-gradient(180deg, #b30f1f, #7d0814); color: #fff; padding: 14px 22px 16px; box-shadow: 0 12px 50px rgba(220, 20, 40, .55); border-bottom: 3px solid #ff4d5e; font-family: 'Inter', system-ui; display: none; }
+  #rouge.on { display: block; animation: rougeP 1.2s ease-in-out infinite alternate; } @keyframes rougeP { from { box-shadow: 0 12px 50px rgba(220, 20, 40, .35); } to { box-shadow: 0 12px 70px rgba(255, 40, 60, .9); } }
+  #rouge .t { font: 800 13px 'Inter'; letter-spacing: .22em; opacity: .9; } #rouge h2 { margin: 4px 0 6px; font: 800 24px 'Inter'; line-height: 1.2; } #rouge p { margin: 0 0 8px; font-size: 15px; line-height: 1.45; opacity: .95; }
+  #rouge .pos { display: flex; flex-wrap: wrap; gap: 18px; font: 700 16px 'JetBrains Mono', monospace; } #rouge button { position: absolute; right: 18px; top: 14px; padding: 12px 20px; border: 0; border-radius: 10px; background: #fff; color: #7d0814; font: 800 15px 'Inter'; cursor: pointer; }
   .cpt { flex: none; display: flex; gap: 16px; align-items: baseline; padding: 0 14px; border-left: 1px solid var(--bord, #1b2a44); font: 700 10px 'Inter'; letter-spacing: .12em; color: #7d889e; white-space: nowrap; } .cpt b { font: 700 13px 'JetBrains Mono', monospace; letter-spacing: 0; color: #e6e9ef; margin-left: 4px; } .cpt b.h { color: #19d38c; } .cpt b.r { color: #ff3d5a; } .cpt b.a { color: #ffab1a; } .cpt small { font: 600 10px 'Inter'; letter-spacing: 0; color: #8a91a0; margin-left: 5px; }
   .ticker-v { flex: 1; min-width: 0; }
   .niv-p { display: flex; gap: 3px; margin-top: 4px; } .niv-p i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #4cc9f0; } .niv-p i.tenue { background: #4cc9f0; } .niv-p i.traversee { background: none; } .niv-p i.indecis, .niv-p i.encours { border-color: #4a5670; background: #4a5670; }
@@ -884,7 +888,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v86</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v87</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -3195,12 +3199,29 @@ function majPosH() { const e = $('#pos-h'); if (!e) return; const l = POSD.posit
     if (usd == null) ok = false; else tot += usd; const ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
     return `<span class="s">${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille}</span><span>${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t</span>${usd != null ? `<b class="v">${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $</b>` : ''}<small>entrée ${nb(ps.prix_moyen, dec(ps.instr))}${ds != null ? ` · stop à ${ds} t` : ''}</small>`; });
   e.className = `pos-h ${ok ? (tot > 0 ? 'h' : tot < 0 ? 'r' : '') : ''}`; e.innerHTML = `<span>EN COURS</span>${parts.join('<span>·</span>')}`; e.hidden = false; }
+// l'alerte rouge : une nouvelle critique ou un mouvement anormal pendant qu'il est en position — en grand, avec une alarme, jusqu'à ce qu'il la touche
+const ROUGE_VU = new Set(JSON.parse(lit('g-rouge-vu', '[]'))); let rougeSon = null, ROUGE_ACT = null;
+function alarme() { try { const c = 'g-rouge-son', m = Date.now(), d = +localStorage.getItem(c) || 0; if (m - d < 2500) return; localStorage.setItem(c, String(m)); } catch (e) { /* rien */ }  // (une seule fenêtre sonne)
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
+    [0, .32, .64].forEach((d, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(i % 2 ? 660 : 880, t + d); g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(.13, t + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d + .28); o.connect(g).connect(actx.destination); o.start(t + d); o.stop(t + d + .3); }); } catch (e) { /* rien */ } }
+function alerteRouge(l) {
+  const n = (l || []).filter(r => !ROUGE_VU.has(r.id)).sort((a, b) => b.at - a.at)[0]; let e = $('#rouge');
+  if (!n) { if (e && ROUGE_ACT && !l.some(r => r.id === ROUGE_ACT)) { e.classList.remove('on'); clearInterval(rougeSon); rougeSon = null; ROUGE_ACT = null; } return; }
+  if (!e) { e = document.createElement('div'); e.id = 'rouge'; document.body.appendChild(e); }
+  const pos = (POSD.positions || []).map(ps => { const tk = ps.pas || 1, der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null, ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
+    return `<span>${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille} · ${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t${usd != null ? ` · ${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $` : ''}${ds != null ? ` · stop à ${ds} t` : ' · SANS STOP'}</span>`; }).join('');
+  e.innerHTML = `<div class="t">⚠ ALERTE ROUGE · ${n.genre === 'mouvement' ? 'MOUVEMENT ANORMAL' : 'NOUVELLE CRITIQUE'} · TU ES EN POSITION · ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div><h2>${esc(n.titre)}</h2>${n.texte ? `<p>${esc(n.texte)}</p>` : ''}<div class="pos">${pos}</div><button type="button" id="rouge-vu">J’ai vu</button>`;
+  e.classList.add('on'); try { navigator.vibrate && navigator.vibrate([400, 150, 400, 150, 400]); } catch (er) { /* rien */ }
+  if (ROUGE_ACT !== n.id) { ROUGE_ACT = n.id; clearInterval(rougeSon); alarme(); rougeSon = setInterval(alarme, 4000); try { halo('rouge'); } catch (er) { /* rien */ } }
+  $('#rouge-vu').onclick = () => { ROUGE_VU.add(n.id); ecrit('g-rouge-vu', JSON.stringify([...ROUGE_VU].slice(-50))); e.classList.remove('on'); clearInterval(rougeSon); rougeSon = null; ROUGE_ACT = null; };
+}
+window.addEventListener('storage', ev => { if (ev.key && ev.key.endsWith('g-rouge-vu')) { try { JSON.parse(ev.newValue || '[]').forEach(x => ROUGE_VU.add(x)); } catch (e) { /* rien */ } alerteRouge(POSD.rouge || []); } });  // (vu dans une fenêtre = vu partout)
 async function chargePositions() {
   const voy = !ICI_PC && TXD_PRET() && TXD.cfg.compte;  // (en voyage : directement chez TopstepX, depuis cet appareil)
   if ((!ROOT && !voy) || document.hidden || ROLE === 'ensemble') return;
   try { POSD = voy ? await vPositions() : await api('/maison/graphique?direct=1'); } catch (e) { return; }
   try { annonceExecutions(POSD.positions || []); } catch (e) { /* rien */ }
-  try { majCompte(); majPosH(); } catch (e) { /* rien */ }
+  try { majCompte(); majPosH(); alerteRouge(POSD.rouge || []); } catch (e) { /* rien */ }
   const l = POSD.positions || [], f = $('#pos-f'); f.hidden = !l.length;
   if (l.length) { let latent = 0;
     f.innerHTML = l.map(ps => { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null; if (usd != null) latent += usd;
