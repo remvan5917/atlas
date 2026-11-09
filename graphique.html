@@ -313,6 +313,9 @@
   @media (max-width: 700px) { .qui-t { grid-template-columns: 70px repeat(5, 1fr) !important; gap: 3px; } .qui-h { font-size: 7.5px; letter-spacing: .02em; } .qui-v { min-width: 0; padding: 12px 2px 3px; font-size: 11px; } .qui-v small { display: none; } .scn.qui { grid-template-columns: 1fr 1fr 1fr; } .scn.qui > :nth-child(4), .scn.qui > :nth-child(5) { display: none; } }
   #exec-b { position: fixed; top: 64px; left: 50%; transform: translate(-50%, -20px); z-index: 9000; display: flex; gap: 12px; align-items: baseline; padding: 14px 22px; border-radius: 14px; background: #0b1426; border: 2px solid #4cc9f0; color: #fff; font: 600 17px 'Inter', sans-serif; box-shadow: 0 18px 50px rgba(0, 0, 0, .55); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; cursor: pointer; } #exec-b.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
   #exec-b b { font: 800 13px 'Inter'; letter-spacing: .14em; color: #4cc9f0; } #exec-b span { font: 700 15px 'JetBrains Mono', monospace; color: #c6ccd8; } #exec-b span.h { color: #19d38c; } #exec-b span.r, #exec-b span.a { color: #ff3d5a; } #exec-b i { font-style: normal; color: #6f7787; margin-left: 6px; } #exec-b.gagne { border-color: #19d38c; } #exec-b.perd { border-color: #ff3d5a; }
+  .pos-h { flex: none; display: flex; gap: 14px; align-items: center; padding: 0 14px; border-left: 1px solid var(--bord, #1b2a44); font: 700 10px 'Inter'; letter-spacing: .12em; color: #9aa4b8; white-space: nowrap; }
+  .pos-h b { font: 800 15px 'JetBrains Mono', monospace; letter-spacing: 0; } .pos-h.h { background: rgba(10, 163, 127, .14); } .pos-h.r { background: rgba(242, 54, 69, .14); }
+  .pos-h.h b.v { color: var(--vert); } .pos-h.r b.v { color: var(--rouge); } .pos-h .s { color: #e2e8f0; } .pos-h small { font: 600 10px 'Inter'; color: #7d889e; letter-spacing: .06em; }
   .cpt { flex: none; display: flex; gap: 16px; align-items: baseline; padding: 0 14px; border-left: 1px solid var(--bord, #1b2a44); font: 700 10px 'Inter'; letter-spacing: .12em; color: #7d889e; white-space: nowrap; } .cpt b { font: 700 13px 'JetBrains Mono', monospace; letter-spacing: 0; color: #e6e9ef; margin-left: 4px; } .cpt b.h { color: #19d38c; } .cpt b.r { color: #ff3d5a; } .cpt b.a { color: #ffab1a; } .cpt small { font: 600 10px 'Inter'; letter-spacing: 0; color: #8a91a0; margin-left: 5px; }
   .ticker-v { flex: 1; min-width: 0; }
   .niv-p { display: flex; gap: 3px; margin-top: 4px; } .niv-p i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #4cc9f0; } .niv-p i.tenue { background: #4cc9f0; } .niv-p i.traversee { background: none; } .niv-p i.indecis, .niv-p i.encours { border-color: #4a5670; background: #4a5670; }
@@ -881,9 +884,9 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v85</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v86</span></span>
   </div>
-  <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
+  <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
     <span class="sep2"></span>
@@ -3161,7 +3164,7 @@ const positionsDe = c => (POSD.positions || []).filter(p => p.instr === c || (p.
 var CPT = null;
 async function chargeCompte() { if (!ROOT || ROLE === 'terminal' || document.hidden) return; try { const r = await api('/maison/graphique?compte=1'); CPT = r && r.ok ? r : null; } catch (e) { /* rien */ } majCompte(); }
 function majCompte() { const e = $('#cpt'); if (!e) return; if (!CPT || CPT.solde == null) { e.hidden = true; return; }
-  let latent = 0; for (const ps of (POSD.positions || [])) { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen; if (ps.valeur) latent += Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1) * ps.valeur * ps.taille; }
+  let latent = 0; for (const ps of (POSD.positions || [])) { const tk = ps.pas || 1, der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen; if (ps.valeur) latent += Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1) * ps.valeur * ps.taille; }
   const jour = (CPT.pnl_jour || 0) + latent, reste = CPT.dll ? CPT.dll + jour : null, d$ = x => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(Math.round(x)).toLocaleString('fr-FR')} $`;
   e.innerHTML = `<span>SOLDE <b>${Math.round(CPT.solde + latent).toLocaleString('fr-FR')} $</b></span><span>JOUR <b class="${jour > 0 ? 'h' : jour < 0 ? 'r' : ''}">${d$(jour)}</b>${latent ? `<small>dont ${d$(latent)} en cours</small>` : ''}</span>${reste != null ? `<span>LIMITE <b class="${reste < CPT.dll * .3 ? 'a' : ''}">${Math.round(reste).toLocaleString('fr-FR')} $</b></span>` : ''}`; e.hidden = false; }
 setTimeout(chargeCompte, 1500); setInterval(chargeCompte, 20000);
@@ -3183,12 +3186,21 @@ function annonceExecutions(l) { const cle = ps => ps.instr, maint = {}; l.forEac
     const t0 = Date.now() / 1000; let essais = 0; const cherche = async () => { essais++; try { const r = await api('/maison/graphique?perf=1'), x = (r.trades || []).filter(z => z.instr === c && z.fin && z.fin > t0 - 180).sort((p, q) => q.fin - p.fin)[0];
       if (x) { const t = Math.round((x.sortie - x.prix) / tk) * (x.sens === 'long' ? 1 : -1); bandeauExec(`<b>FERMÉ</b> ${x.sens === 'long' ? 'LONG' : 'SHORT'} ${x.lots} ${esc(c)} · ${nb(x.prix, dec(c))} → ${nb(x.sortie, dec(c))} <span class="${x.pnl >= 0 ? 'h' : 'r'}">${t > 0 ? '+' : ''}${t} t · ${x.pnl > 0 ? '+' : ''}${nb(x.pnl, 2)} $</span>`, x.pnl >= 0 ? 'ferme gagne' : 'ferme perd'); return; } } catch (e) { /* rien */ }
       if (essais < 6) setTimeout(cherche, 5000); }; setTimeout(cherche, 2500); } }
+// le prix le plus frais pour une position : le prix en direct (3 s) si c'est le marché affiché, sinon celui de la maison (5 s)
+function prixVif(ps) { return VIF_PX && Date.now() - VIF_PX.at < 10000 && positionsDe(VIF_PX.c).includes(ps) ? VIF_PX.px : null; }
+// ton trade en cours, en grand en haut : gain ou perte latente en ticks et en dollars
+function majPosH() { const e = $('#pos-h'); if (!e) return; const l = POSD.positions || []; if (!l.length) { e.hidden = true; return; }
+  let tot = 0, ok = true; const dec = c => (L.find(x => x.code === c) || {}).dec ?? 2;
+  const parts = l.map(ps => { const tk = ps.pas || 1, der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null;
+    if (usd == null) ok = false; else tot += usd; const ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
+    return `<span class="s">${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille}</span><span>${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t</span>${usd != null ? `<b class="v">${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $</b>` : ''}<small>entrée ${nb(ps.prix_moyen, dec(ps.instr))}${ds != null ? ` · stop à ${ds} t` : ''}</small>`; });
+  e.className = `pos-h ${ok ? (tot > 0 ? 'h' : tot < 0 ? 'r' : '') : ''}`; e.innerHTML = `<span>EN COURS</span>${parts.join('<span>·</span>')}`; e.hidden = false; }
 async function chargePositions() {
   const voy = !ICI_PC && TXD_PRET() && TXD.cfg.compte;  // (en voyage : directement chez TopstepX, depuis cet appareil)
   if ((!ROOT && !voy) || document.hidden || ROLE === 'ensemble') return;
   try { POSD = voy ? await vPositions() : await api('/maison/graphique?direct=1'); } catch (e) { return; }
   try { annonceExecutions(POSD.positions || []); } catch (e) { /* rien */ }
-  try { majCompte(); } catch (e) { /* rien */ }
+  try { majCompte(); majPosH(); } catch (e) { /* rien */ }
   const l = POSD.positions || [], f = $('#pos-f'); f.hidden = !l.length;
   if (l.length) { let latent = 0;
     f.innerHTML = l.map(ps => { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null; if (usd != null) latent += usd;
@@ -4838,13 +4850,13 @@ versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 300
 /* le prix en direct du marché affiché : une petite demande toutes les 3 s (les barres d'une minute, mises en commun à la maison) ;
    la bougie en cours de chaque graphique suit le marché, sans recharger les graphiques (TopstepX limite le nombre de demandes) */
 const DUREE_UT = { '5m': 300, '15m': 900, '30m': 1800, 'H1': 3600, 'H4': 14400, 'D1': 86400 };
-let vifOcc = false, VIF_AT = 0;
+let vifOcc = false, VIF_AT = 0; var VIF_PX = null;
 async function vif() {
   if (vifOcc || document.hidden || REPLAY || !panes.length || (typeof marcheFerme === 'function' && marcheFerme())) return;
   vifOcc = true;
   try {
     const r = await api(`/maison/graphique?vif=1&code=${code}`); if (!r || !r.ok || r.code !== code || !(r.barres || []).length) return;
-    const M = r.barres, px = M[M.length - 1][4]; VIF_AT = Date.now();
+    const M = r.barres, px = M[M.length - 1][4]; VIF_AT = Date.now(); VIF_PX = { c: code, px, at: VIF_AT };
     for (const p of panes) {
       const d = p.dReel, dur = DUREE_UT[p.ut]; if (!d || d.code !== code || !dur || !(d.bougies || []).length) continue; const B = d.bougies;
       for (const m of M) { const der = B[B.length - 1]; if (m[0] < der[0]) continue;
@@ -4852,6 +4864,7 @@ async function vif() {
         else if (dur <= 3600) B.push([Math.floor(m[0] / dur) * dur, m[1], m[2], m[3], m[4], m[5] || 0]); }  // (une nouvelle bougie intraday commence ; H4 et D1 : au prochain rechargement)
       if (p.d === p.dReel) p.dessine();
     }
+    try { majPosH(); majCompte(); } catch (e) { /* rien */ }
     const x = L.find(y => y.code === code);
     if (x && x.dernier != null) { const veille = x.dernier - (x.chg || 0); x.dernier = px; x.chg = px - veille; if (veille) x.pct = Math.round((px / veille - 1) * 10000) / 100; try { majSym(); } catch (e) { /* rien */ } }
   } catch (e) { /* hors liaison */ } finally { vifOcc = false; }
