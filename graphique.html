@@ -881,7 +881,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v84</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v85</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1124,7 +1124,7 @@ class Pane {
   async charge() {
     const ch = this.el.querySelector('.charge'); if (!this.d && ch) ch.style.display = '';
     try { const kc = `${code}|${this.ut}`, cc = CACHE_D[kc];  /* (fin : la position est gardée d'un rechargement à l'autre) */
-      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { if (cc && (!this.d || this.d.code !== code)) { this.d = REPLAY ? decoupe(cc.d, this.ut, REPLAY.t) : cc.d; if (ch) ch.style.display = 'none'; this.dessine(); } this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); chargeConfigsBientot(); if (CMP && CMP.code !== code) chargeCmp(this); else this.cmpD = this.cmpReel = null; return true; }
+      if (cc && Date.now() - cc.at < 15000) this.dReel = cc.d; else { if (cc && (!this.d || this.d.code !== code)) { this.d = REPLAY ? decoupe(cc.d, this.ut, REPLAY.t) : cc.d; if (ch) ch.style.display = 'none'; this.dessine(); } this.dReel = await api(`/maison/graphique?code=${code}&ut=${this.ut}&vue=1`); CACHE_D[kc] = { at: Date.now(), d: this.dReel }; } this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (this.fin == null) this.fin = -6; if (ch) ch.style.display = 'none'; this.dessine(); chargeConfigsBientot(); if (CMP && CMP.code !== code) chargeCmp(this); else this.cmpD = this.cmpReel = null; return true; }
     catch (e) {  // en voyage, sans la maison : les bougies directement chez TopstepX, depuis cet appareil
       if (!ICI_PC && TXD_PRET()) try { this.dReel = await txdGraphique(code, this.ut); CACHE_D[`${code}|${this.ut}`] = { at: Date.now(), d: this.dReel }; this.d = REPLAY ? decoupe(this.dReel, this.ut, REPLAY.t) : this.dReel; if (ch) ch.style.display = 'none'; this.dessine(); return true; } catch (e2) { /* rien */ }
       if (ch && !this.d) ch.textContent = 'Pas de liaison avec la maison'; return false; }
@@ -4835,6 +4835,28 @@ document.addEventListener('keydown', ev => {
 document.addEventListener('keyup', ev => { const k = ev.key.toLowerCase(); if ((k === 'q' || k === 'v') && rec && rec.mode === k) arreteMicro(); });
 try { document.fonts.ready.then(() => setTimeout(toutDessine, 50)); } catch (e) { /* rien */ }
 versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 30000);
+/* le prix en direct du marché affiché : une petite demande toutes les 3 s (les barres d'une minute, mises en commun à la maison) ;
+   la bougie en cours de chaque graphique suit le marché, sans recharger les graphiques (TopstepX limite le nombre de demandes) */
+const DUREE_UT = { '5m': 300, '15m': 900, '30m': 1800, 'H1': 3600, 'H4': 14400, 'D1': 86400 };
+let vifOcc = false, VIF_AT = 0;
+async function vif() {
+  if (vifOcc || document.hidden || REPLAY || !panes.length || (typeof marcheFerme === 'function' && marcheFerme())) return;
+  vifOcc = true;
+  try {
+    const r = await api(`/maison/graphique?vif=1&code=${code}`); if (!r || !r.ok || r.code !== code || !(r.barres || []).length) return;
+    const M = r.barres, px = M[M.length - 1][4]; VIF_AT = Date.now();
+    for (const p of panes) {
+      const d = p.dReel, dur = DUREE_UT[p.ut]; if (!d || d.code !== code || !dur || !(d.bougies || []).length) continue; const B = d.bougies;
+      for (const m of M) { const der = B[B.length - 1]; if (m[0] < der[0]) continue;
+        if (m[0] < der[0] + dur) { der[2] = Math.max(der[2], m[2]); der[3] = Math.min(der[3], m[3]); der[4] = m[4]; }
+        else if (dur <= 3600) B.push([Math.floor(m[0] / dur) * dur, m[1], m[2], m[3], m[4], m[5] || 0]); }  // (une nouvelle bougie intraday commence ; H4 et D1 : au prochain rechargement)
+      if (p.d === p.dReel) p.dessine();
+    }
+    const x = L.find(y => y.code === code);
+    if (x && x.dernier != null) { const veille = x.dernier - (x.chg || 0); x.dernier = px; x.chg = px - veille; if (veille) x.pct = Math.round((px / veille - 1) * 10000) / 100; try { majSym(); } catch (e) { /* rien */ } }
+  } catch (e) { /* hors liaison */ } finally { vifOcc = false; }
+}
+setInterval(vif, 3000); setTimeout(vif, 1500);
 /* ================= le TERMINAL : un écran dédié aux fonctions, sans rien taper (graphique.html#role=terminal) =================
    à gauche les fonctions par thème (clic, ou ↑ ↓) ; en haut tes marchés (clic : le terminal ET tes graphiques changent) ; au centre la fonction
    en grand, rafraîchie seule ; taper au clavier filtre directement les fonctions, Entrée ouvre. */
