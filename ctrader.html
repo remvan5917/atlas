@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas · cTrader</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #060b16; color: #e6e9ef; font: 15px/1.55 Inter, system-ui, sans-serif; }
+  main { max-width: 520px; padding: 32px; border: 1px solid #1d2c49; border-radius: 14px; background: #0b1426; }
+  h1 { margin: 0 0 6px; font-size: 20px; letter-spacing: .02em; } small { color: #8a94a8; }
+  p { margin: 14px 0; } .ok { color: #19d38c; } .ko { color: #ff6b81; }
+  button, a.b { display: inline-block; margin-top: 8px; padding: 10px 16px; border: 0; border-radius: 9px; background: linear-gradient(135deg, #67dcff, #2f7bff); color: #03121f; font: 700 14px Inter, system-ui, sans-serif; cursor: pointer; text-decoration: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Atlas Marchés · cTrader</h1>
+  <small>Accès en lecture seule : voir les cours et l'historique des CFD, jamais passer d'ordre.</small>
+  <div id="m"><p>Je regarde où on en est…</p></div>
+</main>
+<script>
+// la page de retour de cTrader : elle lance l'autorisation, reçoit le code et le confie à la maison ; le jeton reste dans la maison
+const ROOT = location.hostname === '127.0.0.1' || location.hostname === 'localhost' ? location.origin : 'http://127.0.0.1:11435';
+const RETOUR = location.origin + location.pathname, m = document.getElementById('m');
+const api = async corps => { const r = await fetch(ROOT + '/maison/graphique', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); return r.json(); };
+const dit = h => { m.innerHTML = h; };
+(async () => {
+  const q = new URLSearchParams(location.search), code = q.get('code'), err = q.get('error') || q.get('error_description');
+  try {
+    if (code) { history.replaceState(null, '', location.pathname); dit('<p>cTrader a répondu, je range l’accès dans la maison…</p>');
+      const r = await api({ action: 'ctrader', op: 'jeton', code, retour: RETOUR });
+      dit(r.ok ? `<p class="ok">✓ C'est branché. L'accès en lecture seule est rangé sur ton PC, valable environ 30 jours et renouvelé tout seul.</p><p>Tu peux fermer cette page.</p><a class="b" href="graphique.html">Retour à la salle</a>` : `<p class="ko">cTrader a refusé : ${String(r.raison || 'raison inconnue').replace(/</g, '&lt;')}</p><button id="go">Réessayer</button>`); }
+    else { const e = await api({ action: 'ctrader', op: 'etat' });
+      if (!e || e.ok === false) { dit('<p class="ko">La maison ne connaît pas encore cTrader : elle doit être redémarrée une fois.</p>'); return; }
+      dit((err ? `<p class="ko">cTrader a répondu : ${String(err).replace(/</g, '&lt;')}</p>` : '') + (e.autorise ? `<p class="ok">✓ Déjà branché${e.expire ? `, accès valable jusqu’au ${new Date(e.expire * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}` : ''}.</p><button id="go">Refaire l'autorisation</button>` : '<p>Un clic : cTrader te demande de te connecter avec <b>ton</b> identifiant et d’accepter l’accès <b>en lecture seule</b> (« accounts »). Atlas ne voit jamais ton mot de passe.</p><button id="go">Autoriser Atlas sur cTrader</button>')); }
+  } catch (x) { dit('<p class="ko">Pas de liaison avec la maison (le PC doit être allumé, la salle ouverte).</p>'); return; }
+  const b = document.getElementById('go'); if (b) b.onclick = async () => { const r = await api({ action: 'ctrader', op: 'url', retour: RETOUR }); if (r.ok && r.url) location.href = r.url; else dit(`<p class="ko">${r.raison || 'la maison n’a pas répondu'}</p>`); };
+})();
+</script>
+</body>
+</html>
