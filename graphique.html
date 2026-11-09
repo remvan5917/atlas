@@ -303,6 +303,9 @@
   /* la barre d'outils de gauche tient dans la hauteur de l'écran : boutons plus serrés quand l'écran est bas, et une fine barre de défilement pour ce qui reste */
   @media (max-height: 1150px) { .outils .outil, .outils .outil-d { height: 30px !important; width: 38px !important; } .outils { gap: 1px !important; } .outils svg { width: 18px !important; height: 18px !important; } }
   .outils { scrollbar-width: thin !important; scrollbar-color: #26365a transparent; } .outils::-webkit-scrollbar { width: 4px !important; } .outils::-webkit-scrollbar-thumb { background: #26365a; border-radius: 4px; }
+  /* la bulle d'explication : flottante, au-dessus de tout (la barre de gauche défile et coupait les bulles collées à ses boutons) */
+  [data-tip]:hover::after { display: none !important; content: none !important; }
+  #tipf { position: fixed; z-index: 10000; pointer-events: none; max-width: 340px; background: rgba(10, 13, 20, .97); color: #fff; border: 1px solid #2a3d61; border-radius: 9px; padding: 7px 10px; font: 600 11.5px/1.45 'Inter', sans-serif; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); opacity: 0; transition: opacity .12s; } #tipf.on { opacity: 1; } #tipf small { display: block; margin-top: 3px; color: #8fb3d9; font-weight: 700; letter-spacing: .04em; }
   .niv-p { display: flex; gap: 3px; margin-top: 4px; } .niv-p i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #4cc9f0; } .niv-p i.tenue { background: #4cc9f0; } .niv-p i.traversee { background: none; } .niv-p i.indecis, .niv-p i.encours { border-color: #4a5670; background: #4a5670; }
   .seas b { display: block; font: 700 11.5px 'JetBrains Mono', monospace; margin-top: 4px; } .seas small { display: block; font: 800 10px 'Inter'; letter-spacing: .1em; color: #8a91a0; } .seas em { display: block; font: 600 10.5px 'JetBrains Mono', monospace; color: #8a91a0; font-style: normal; }
   @media (max-width: 700px) { .seas { grid-template-columns: repeat(6, 1fr); } .mov { grid-template-columns: 1.4fr .9fr 1.4fr; } .mov > :nth-child(3), .mov > :nth-child(5), .mov > :nth-child(6) { display: none; } }
@@ -838,7 +841,7 @@
     <button class="grp-c" id="grp-c" data-tip="Groupe de liaison : les fenêtres de la même couleur changent de marché ensemble (clic : changer de couleur)"><i></i></button>
     <button class="sym" id="sym" data-tip="Changer de marché ( / )"><span class="ic" id="sym-ic">SIL</span><span><b id="sym-code">SIL</b><small id="sym-nom">Micro argent</small></span><span class="px num" id="sym-px"></span></button>
     <button class="cmd-b" id="b-cmd" data-tip="Chercher un marché, une fonction (SIL D1, RISK, CAL…) ou demander en français"><kbd>/</kbd>chercher ou demander</button>
-    <div class="seg" id="seg-ut"><button data-ut="5m">5m</button><button data-ut="15m">15m</button><button data-ut="30m">30m</button><button data-ut="H1">1h</button><button data-ut="H4">4h</button><button data-ut="D1">D</button><button data-ut="W">W</button><button data-ut="M">M</button></div>
+    <div class="seg" id="seg-ut"><button data-ut="5m" data-tip="Unité de temps : une bougie = 5 minutes">5m</button><button data-ut="15m" data-tip="Unité de temps : une bougie = 15 minutes">15m</button><button data-ut="30m" data-tip="Unité de temps : une bougie = 30 minutes">30m</button><button data-ut="H1" data-tip="Unité de temps : une bougie = 1 heure (H1)">1h</button><button data-ut="H4" data-tip="Unité de temps : une bougie = 4 heures (H4)">4h</button><button data-ut="D1" data-tip="Unité de temps : une bougie = 1 jour (D1)">D</button><button data-ut="W" data-tip="Unité de temps : une bougie = 1 semaine">W</button><button data-ut="M" data-tip="Unité de temps : une bougie = 1 mois">M</button></div>
     <div class="grp">
       <button class="ico" id="vue-un" data-tip="Un graphique"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
       <button class="ico" id="vue-pp" data-tip="Un grand graphique et deux petits (touche un petit : il devient le grand)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="12" height="14" rx="2"/><rect x="16.5" y="5" width="4.5" height="6.2" rx="1"/><rect x="16.5" y="12.8" width="4.5" height="6.2" rx="1"/></svg></button>
@@ -868,8 +871,8 @@
     <a class="lien trade-b" id="b-simu-h" data-tip="Simuler une position (Maj + S) : 3 clics — ton entrée, ton stop, ton objectif"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1"/><rect x="4" y="13" width="16" height="7" rx="1"/></svg>Simuler</a>
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
-    <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v81</span></span>
+    <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v82</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
   <div class="outils">
@@ -4897,6 +4900,16 @@ const RACC = [['#sym', '/'], ['#b-cmd', '/'], ['#t-indic', 'I'], ['#b-copilote',
   ['#b-config', 'Maj + C'], ['#b-simu', 'Maj + S'], ['#b-simu-h', 'Maj + S'], ['#b-passe', 'Maj + H'], ['#b-memoire', 'M'], ['#b-journal', 'V maintenu'], ['#b-presente', 'B'], ['#b-trade', 'T'],
   ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="efface"]', 'Suppr']];
 for (const [sel, k] of RACC) document.querySelectorAll(sel).forEach(b => { b.dataset.rac = k; if (b.dataset.tip) b.dataset.tip = b.dataset.tip.replace(/\s*\((?:Maj \+ [A-Z]|[A-Z]|Échap|Suppr|\s*\/\s*)\)/g, '').trim(); });
+document.querySelectorAll('#seg-ut [data-ut]').forEach((b, i) => { b.dataset.rac = `touche ${i + 1}`; });
+
+/* la bulle d'explication de chaque bouton : on survole, elle apparaît à côté (à droite pour la barre de gauche, dessous ailleurs), toujours dans l'écran */
+{ const tip = document.createElement('div'); tip.id = 'tipf'; document.body.appendChild(tip); let cible = null, minut = 0;
+  const cache = () => { clearTimeout(minut); cible = null; tip.classList.remove('on'); };
+  const montre = el => { const t = el.dataset.tip; if (!t) return; tip.innerHTML = esc(t) + (el.dataset.rac ? `<small>${esc(el.dataset.rac)}</small>` : ''); const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, cote = !!el.closest('.outils');
+    let x = cote ? r.right + 12 : r.left + r.width / 2 - w / 2, y = cote ? r.top + r.height / 2 - h / 2 : r.bottom + 8; if (!cote && y + h > innerHeight - 6) y = r.top - h - 8;
+    tip.style.left = `${Math.max(6, Math.min(innerWidth - w - 6, x))}px`; tip.style.top = `${Math.max(6, Math.min(innerHeight - h - 6, y))}px`; tip.classList.add('on'); };
+  document.addEventListener('pointerover', ev => { if (ev.pointerType === 'touch') return; const el = ev.target.closest && ev.target.closest('[data-tip]'); if (el === cible) return; cache(); if (!el) return; cible = el; minut = setTimeout(() => { if (cible === el && el.isConnected) montre(el); }, 280); }, true);
+  ['pointerdown', 'wheel', 'keydown'].forEach(t => document.addEventListener(t, cache, true)); document.addEventListener('scroll', cache, true); document.addEventListener('pointerleave', cache); }
 const aideNorm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 function filtreAide() { const q = aideNorm($('#aide-q').value.trim()), mots = q.split(/\s+/).filter(Boolean); let n = 0;
   $('#aide-k').querySelectorAll('section').forEach(sec => { const titre = aideNorm(sec.querySelector('h4').textContent); let vus = 0;
