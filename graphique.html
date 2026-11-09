@@ -311,6 +311,10 @@
   .qui-v i { position: absolute; top: 4px; width: 2px; height: 8px; background: #e6e9ef; transform: translateX(-1px); border-radius: 1px; } .qui-v small { font: 600 10px 'Inter'; color: #8a91a0; } .qui-v.ext { outline: 1px solid #4cc9f0; }
   .scn.qui { grid-template-columns: 1.3fr 1fr 1.2fr 1.3fr 1.5fr; } .qui-s { width: 100%; height: 36px; display: block; }
   @media (max-width: 700px) { .qui-t { grid-template-columns: 70px repeat(5, 1fr) !important; gap: 3px; } .qui-h { font-size: 7.5px; letter-spacing: .02em; } .qui-v { min-width: 0; padding: 12px 2px 3px; font-size: 11px; } .qui-v small { display: none; } .scn.qui { grid-template-columns: 1fr 1fr 1fr; } .scn.qui > :nth-child(4), .scn.qui > :nth-child(5) { display: none; } }
+  #exec-b { position: fixed; top: 64px; left: 50%; transform: translate(-50%, -20px); z-index: 9000; display: flex; gap: 12px; align-items: baseline; padding: 14px 22px; border-radius: 14px; background: #0b1426; border: 2px solid #4cc9f0; color: #fff; font: 600 17px 'Inter', sans-serif; box-shadow: 0 18px 50px rgba(0, 0, 0, .55); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; cursor: pointer; } #exec-b.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  #exec-b b { font: 800 13px 'Inter'; letter-spacing: .14em; color: #4cc9f0; } #exec-b span { font: 700 15px 'JetBrains Mono', monospace; color: #c6ccd8; } #exec-b span.h { color: #19d38c; } #exec-b span.r, #exec-b span.a { color: #ff3d5a; } #exec-b i { font-style: normal; color: #6f7787; margin-left: 6px; } #exec-b.gagne { border-color: #19d38c; } #exec-b.perd { border-color: #ff3d5a; }
+  .cpt { flex: none; display: flex; gap: 16px; align-items: baseline; padding: 0 14px; border-left: 1px solid var(--bord, #1b2a44); font: 700 10px 'Inter'; letter-spacing: .12em; color: #7d889e; white-space: nowrap; } .cpt b { font: 700 13px 'JetBrains Mono', monospace; letter-spacing: 0; color: #e6e9ef; margin-left: 4px; } .cpt b.h { color: #19d38c; } .cpt b.r { color: #ff3d5a; } .cpt b.a { color: #ffab1a; } .cpt small { font: 600 10px 'Inter'; letter-spacing: 0; color: #8a91a0; margin-left: 5px; }
+  .ticker-v { flex: 1; min-width: 0; }
   .niv-p { display: flex; gap: 3px; margin-top: 4px; } .niv-p i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #4cc9f0; } .niv-p i.tenue { background: #4cc9f0; } .niv-p i.traversee { background: none; } .niv-p i.indecis, .niv-p i.encours { border-color: #4a5670; background: #4a5670; }
   .seas b { display: block; font: 700 11.5px 'JetBrains Mono', monospace; margin-top: 4px; } .seas small { display: block; font: 800 10px 'Inter'; letter-spacing: .1em; color: #8a91a0; } .seas em { display: block; font: 600 10.5px 'JetBrains Mono', monospace; color: #8a91a0; font-style: normal; }
   @media (max-width: 700px) { .seas { grid-template-columns: repeat(6, 1fr); } .mov { grid-template-columns: 1.4fr .9fr 1.4fr; } .mov > :nth-child(3), .mov > :nth-child(5), .mov > :nth-child(6) { display: none; } }
@@ -879,7 +883,7 @@
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
     <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v83</span></span>
   </div>
-  <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div></div>
+  <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
     <button class="outil on" data-o="curseur" data-tip="Curseur (Échap)"><svg viewBox="0 0 24 24"><path d="M5 4l13 7-6 1.5L9.5 19z"/></svg></button>
     <span class="sep2"></span>
@@ -3152,10 +3156,39 @@ async function pourquoiBougie(p, t) {
 // rien sur les bougies : des repères sur l'échelle des prix, et une ligne dans la barre des dépêches ; Atlas ne passe aucun ordre
 var POSD = { positions: [] }, optPos = lit('g-pos-axe', '1') === '1';
 const positionsDe = c => (POSD.positions || []).filter(p => p.instr === c || (p.instr && c && c.endsWith(p.instr)) || p.instr === ({ GC: 'MGC', CL: 'MCL', NQ: 'MNQ', YM: 'MYM', ES: 'MES' }[c]));
+/* tes exécutions, impossibles à rater : un bandeau en haut du graphique + un son quand une position s'ouvre, change ou se ferme ; à la fermeture, le résultat (ticks, dollars) */
+// ton compte en permanence, en haut (au bout de la ligne des marchés) : solde, résultat du jour (avec la position ouverte), ce qui reste avant ta limite du jour
+var CPT = null;
+async function chargeCompte() { if (!ROOT || ROLE === 'terminal' || document.hidden) return; try { const r = await api('/maison/graphique?compte=1'); CPT = r && r.ok ? r : null; } catch (e) { /* rien */ } majCompte(); }
+function majCompte() { const e = $('#cpt'); if (!e) return; if (!CPT || CPT.solde == null) { e.hidden = true; return; }
+  let latent = 0; for (const ps of (POSD.positions || [])) { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen; if (ps.valeur) latent += Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1) * ps.valeur * ps.taille; }
+  const jour = (CPT.pnl_jour || 0) + latent, reste = CPT.dll ? CPT.dll + jour : null, d$ = x => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(Math.round(x)).toLocaleString('fr-FR')} $`;
+  e.innerHTML = `<span>SOLDE <b>${Math.round(CPT.solde + latent).toLocaleString('fr-FR')} $</b></span><span>JOUR <b class="${jour > 0 ? 'h' : jour < 0 ? 'r' : ''}">${d$(jour)}</b>${latent ? `<small>dont ${d$(latent)} en cours</small>` : ''}</span>${reste != null ? `<span>LIMITE <b class="${reste < CPT.dll * .3 ? 'a' : ''}">${Math.round(reste).toLocaleString('fr-FR')} $</b></span>` : ''}`; e.hidden = false; }
+setTimeout(chargeCompte, 1500); setInterval(chargeCompte, 20000);
+var POS_AVANT = null;
+function sonExec(genre) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
+  const note = (f, d, dur, vol) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(vol, t + d + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d + dur); o.connect(g).connect(actx.destination); o.start(t + d); o.stop(t + d + dur + .05); };
+  if (genre === 'ouvre') { note(660, 0, .25, .14); note(990, .16, .4, .14); } else { note(990, 0, .25, .12); note(660, .16, .45, .12); } } catch (e) { /* rien */ } }
+function bandeauExec(html, genre) { let e = $('#exec-b'); if (!e) { e = document.createElement('div'); e.id = 'exec-b'; document.body.appendChild(e); e.onclick = () => e.classList.remove('on'); }
+  e.className = genre; e.innerHTML = html + '<i>×</i>'; void e.offsetWidth; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 15000);
+  try { navigator.vibrate && navigator.vibrate([30, 60, 30]); } catch (er) { /* rien */ }
+  const cle = 'g-exec-son', maint = Date.now(); try { const der = +localStorage.getItem(cle) || 0; if (maint - der > 3000) { localStorage.setItem(cle, String(maint)); sonExec(genre); } } catch (er) { sonExec(genre); } }  // (un seul son pour toutes les fenêtres de la salle)
+function annonceExecutions(l) { const cle = ps => ps.instr, maint = {}; l.forEach(ps => { maint[cle(ps)] = ps; }); const avant = POS_AVANT; POS_AVANT = maint; if (!avant) return;  // (la première lecture ne dit rien)
+  const dec = c => (L.find(x => x.code === c) || {}).dec ?? 2;
+  for (const [c, ps] of Object.entries(maint)) { const a = avant[c], s = ps.sens === 'long' ? 'ACHAT' : 'VENTE';
+    if (!a) bandeauExec(`<b>EXÉCUTÉ</b> ${s} ${ps.taille} ${esc(c)} à ${nb(ps.prix_moyen, dec(c))}${ps.stop != null ? ` <span>stop à ${Math.round(Math.abs(ps.prix_moyen - ps.stop) / (ps.pas || 1))} t</span>` : ' <span class="a">sans stop</span>'}`, 'ouvre');
+    else if (a.sens !== ps.sens || a.taille !== ps.taille) bandeauExec(`<b>POSITION MODIFIÉE</b> ${esc(c)} : ${ps.sens === 'long' ? 'LONG' : 'SHORT'} ${ps.taille} à ${nb(ps.prix_moyen, dec(c))}`, 'ouvre'); }
+  for (const [c, a] of Object.entries(avant)) if (!maint[c]) { const tk = a.pas || 1, est = a.dernier != null ? Math.round((a.dernier - a.prix_moyen) / tk) * (a.sens === 'long' ? 1 : -1) : null;
+    bandeauExec(`<b>FERMÉ</b> ${a.sens === 'long' ? 'LONG' : 'SHORT'} ${a.taille} ${esc(c)}${est != null ? ` <span class="${est >= 0 ? 'h' : 'r'}">≈ ${est > 0 ? '+' : ''}${est} t</span>` : ''} <span>résultat exact dans un instant…</span>`, 'ferme');
+    const t0 = Date.now() / 1000; let essais = 0; const cherche = async () => { essais++; try { const r = await api('/maison/graphique?perf=1'), x = (r.trades || []).filter(z => z.instr === c && z.fin && z.fin > t0 - 180).sort((p, q) => q.fin - p.fin)[0];
+      if (x) { const t = Math.round((x.sortie - x.prix) / tk) * (x.sens === 'long' ? 1 : -1); bandeauExec(`<b>FERMÉ</b> ${x.sens === 'long' ? 'LONG' : 'SHORT'} ${x.lots} ${esc(c)} · ${nb(x.prix, dec(c))} → ${nb(x.sortie, dec(c))} <span class="${x.pnl >= 0 ? 'h' : 'r'}">${t > 0 ? '+' : ''}${t} t · ${x.pnl > 0 ? '+' : ''}${nb(x.pnl, 2)} $</span>`, x.pnl >= 0 ? 'ferme gagne' : 'ferme perd'); return; } } catch (e) { /* rien */ }
+      if (essais < 6) setTimeout(cherche, 5000); }; setTimeout(cherche, 2500); } }
 async function chargePositions() {
   const voy = !ICI_PC && TXD_PRET() && TXD.cfg.compte;  // (en voyage : directement chez TopstepX, depuis cet appareil)
   if ((!ROOT && !voy) || document.hidden || ROLE === 'ensemble') return;
   try { POSD = voy ? await vPositions() : await api('/maison/graphique?direct=1'); } catch (e) { return; }
+  try { annonceExecutions(POSD.positions || []); } catch (e) { /* rien */ }
+  try { majCompte(); } catch (e) { /* rien */ }
   const l = POSD.positions || [], f = $('#pos-f'); f.hidden = !l.length;
   if (l.length) { let latent = 0;
     f.innerHTML = l.map(ps => { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null; if (usd != null) latent += usd;
