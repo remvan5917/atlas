@@ -731,9 +731,17 @@ function courbeM(v, up) { if (!v || v.length < 2) return ''; const lo = Math.min
 let squawk = lit('radar-squawk', '1') === '1', fileVoix = Promise.resolve(); const VUS_DITS = new Set();
 $('#b-squawk').classList.toggle('on', squawk);
 $('#b-squawk').onclick = () => { squawk = !squawk; ecrit('radar-squawk', squawk ? '1' : '0'); $('#b-squawk').classList.toggle('on', squawk); };
+// un seul appareil parle (comme la plateforme) : la maison élit celui dont il s'est servi en dernier ; une même phrase, une fois en 2 minutes
+const APPAREIL = (() => { try { let a = localStorage.getItem('atlas-appareil'); if (!a) { a = Math.random().toString(36).slice(2, 10); localStorage.setItem('atlas-appareil', a); } return a; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 8); } })();
+const paroleMaison = async (op, cle) => { const r = await fetch(`${ROOT}/maison/graphique`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'parole', op, appareil: APPAREIL, cle }) }); return r.ok ? r.json() : null; };
+let gesteR = 0; ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => { if (ROOT && Date.now() - gesteR > 15000) { gesteR = Date.now(); paroleMaison('actif').catch(() => {}); } }, true));
+setInterval(() => { if (ROOT && !document.hidden) paroleMaison('vivant').catch(() => {}); }, 30000);
 function dis(texte) {
   if (!squawk || !texte || !ROOT) return;
   fileVoix = fileVoix.then(async () => {
+    try { let h = 0; for (const c of texte) h = (h * 31 + c.charCodeAt(0)) | 0;
+      const ok = await paroleMaison('puis-je', `p${h}:${texte.length}`).catch(() => null); if (ok && typeof ok.parle === 'boolean' && !ok.parle) return;
+    } catch (e) { /* sans réponse : on parle */ }
     try { const r = await fetch(`${ROOT}/maison/voix-atlas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texte.slice(0, 400) }) }); if (!r.ok) return;
       const c = bip.ac || (bip.ac = new (window.AudioContext || window.webkitAudioContext)()); if (c.state === 'suspended') await c.resume();
       const buf = await c.decodeAudioData(await r.arrayBuffer()), s = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain(); s.buffer = buf; hp.type = 'highpass'; hp.frequency.value = 75; g.gain.value = .95;

@@ -2086,7 +2086,7 @@ async function chargeEtat() {
   try { const r = await api('/maison/copilote', { action: 'etat', bpm: bpmMedian() }), t = $('#tilt');
     t.className = 'tilt masque-mobile ' + r.niveau; t.querySelector('b').textContent = { lucide: 'Lucide', vigilance: 'Vigilance', alerte: 'Pause ?' }[r.niveau];
     t.dataset.tip = r.raisons && r.raisons.length ? 'Ton état : ' + r.raisons.join(' · ') : `Ton état : rien d'anormal (${r.trades_jour} trade${r.trades_jour > 1 ? 's' : ''} aujourd'hui)`;
-    if (r.niveau === 'alerte' && niveauAvant !== 'alerte') { toast('Attention : ' + r.raisons.join(', ')); dire(`Attention : ${r.raisons.join(', ')}. Une pause de cinq minutes ?`); }
+    if (r.niveau === 'alerte' && niveauAvant !== 'alerte') { toast('Attention : ' + r.raisons.join(', ')); direAuto(`Attention : ${r.raisons.join(', ')}. Une pause de cinq minutes ?`); }
     niveauAvant = r.niveau;
   } catch (e) { /* hors liaison */ }
 }
@@ -2600,7 +2600,7 @@ majAmbiance(); setInterval(majAmbiance, 60000);
 let SONS = lit('g-sons', '1') === '1'; $('#b-sons').classList.toggle('on', SONS);
 $('#b-sons').onclick = () => { SONS = !SONS; ecrit('g-sons', SONS ? '1' : '0'); $('#b-sons').classList.toggle('on', SONS); toast(SONS ? 'Les sons de la salle sont allumés' : 'Les sons de la salle sont coupés'); if (SONS) sonne('pose'); };
 function sonne(genre) {
-  if (!SONS) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
+  if (!SONS || PARLEUR === false) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
     const note = (f, d, dur, vol, type = 'sine') => { const o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(vol, t + d + .008); g.gain.exponentialRampToValueAtTime(.0008, t + d + dur); o.connect(g); g.connect(actx.destination); o.start(t + d); o.stop(t + d + dur + .05); };
     if (genre === 'ligne') { note(1318.5, 0, 1.1, .09); note(1975.5, .0, .9, .035); }                  // un tintement clair : le prix touche ta ligne
     else if (genre === 'critique') { note(880, 0, .22, .1, 'triangle'); note(659.3, .2, .35, .1, 'triangle'); note(880, .5, .22, .08, 'triangle'); }  // deux tons : nouvelle critique
@@ -2640,8 +2640,20 @@ function rappelPubs() { if (!QUI_SONNE || ROLE === 'terminal' || marcheFerme() |
 let VOIX_PUB = lit('g-voix-pub', '1') === '1'; const voixPubDites = new Set();
 let ITEMS = [], EVT = null, evtReac = null, evtCharge = 0; const evtFermes = new Set(JSON.parse(lit('g-evt-fermes', '[]')));
 const QUI_SONNE = FEN === '1' || ROLE === 'structure';  // (une seule fenêtre sonne : la principale)
+// un seul APPAREIL parle (ordinateur, tablette…) : la maison élit celui dont il s'est servi en dernier ; sans maison, chacun parle comme avant
+const APPAREIL = (() => { try { let a = localStorage.getItem('atlas-appareil'); if (!a) { a = Math.random().toString(36).slice(2, 10); localStorage.setItem('atlas-appareil', a); } return a; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 8); } })();
+var PARLEUR = true;  // (var : lu par les sons, définis plus haut)
+const nomAppareil = () => /iPad|Tablet|Android(?!.*Mobile)/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)) ? 'tablette' : /Mobile|iPhone/i.test(navigator.userAgent) ? 'téléphone' : 'ordinateur';
+async function signeParole(op) { if (!ROOT || !QUI_SONNE) return; try { const r = await api('/maison/graphique', { action: 'parole', op, appareil: APPAREIL, nom: nomAppareil() }); PARLEUR = r && typeof r.parleur === 'boolean' ? r.parleur : true; } catch (e) { PARLEUR = true; } }
+let gesteAt = 0; ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => { if (Date.now() - gesteAt > 15000) { gesteAt = Date.now(); signeParole('actif'); } }, true));
+setInterval(() => { if (!document.hidden) signeParole('vivant'); }, 30000); setTimeout(() => signeParole('vivant'), 1500);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) signeParole('vivant'); });
+const cleTexte = t => { let h = 0; for (const c of String(t)) h = (h * 31 + c.charCodeAt(0)) | 0; return `p${h}:${String(t).length}`; };
+async function direAuto(texte) {  // une annonce que personne n'a demandée : seulement sur l'appareil élu, et une seule fois en 2 minutes
+  if (ROOT) try { const r = await api('/maison/graphique', { action: 'parole', op: 'puis-je', appareil: APPAREIL, cle: cleTexte(texte) }); if (r && typeof r.parle === 'boolean') { PARLEUR = !!r.parleur; if (!r.parle) return; } } catch (e) { /* sans maison : on parle */ }
+  return dire(texte); }
 function cloche() {  // une cloche de Bourse, discrète (des partiels inharmoniques qui s'éteignent lentement)
-  if (!SONS || !QUI_SONNE) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
+  if (!SONS || !QUI_SONNE || PARLEUR === false) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
     [[523.25, .10], [1046.5, .05], [1311, .035], [1568, .03], [2093, .018]].forEach(([f, v]) => [0, .9].forEach(d => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(v, t + d + .005); g.gain.exponentialRampToValueAtTime(.0005, t + d + 2.4); o.connect(g); g.connect(actx.destination); o.start(t + d); o.stop(t + d + 2.5); }));
   } catch (e) { /* rien */ }
 }
@@ -2681,7 +2693,7 @@ async function majEvt() {
   // une minute avant : Atlas le dit, une fois (la fenêtre principale seulement, coupable avec le bouton « voix » du bandeau)
   if (e.genre === 'chiffre' && VOIX_PUB && QUI_SONNE && e.at - now <= 62 && e.at - now >= 45 && !voixPubDites.has(e.cle)) { voixPubDites.add(e.cle);
     const pos = (POS || []).map(x => `${x.sens === 'short' ? 'vendeur' : 'acheteur'} sur ${x.instr}`).join(' et ');
-    dire(`${e.titre.replace(/^\w/, c => c.toUpperCase())} dans une minute${e.prevision ? `, attendu ${String(e.prevision).replace('.', ',')}` : ''}.${pos ? ` Tu es ${pos}.` : ''}`); }
+    direAuto(`${e.titre.replace(/^\w/, c => c.toUpperCase())} dans une minute${e.prevision ? `, attendu ${String(e.prevision).replace('.', ',')}` : ''}.${pos ? ` Tu es ${pos}.` : ''}`); }
   if (e.genre === 'chiffre' && now >= e.at && now - e.at < 3 && !e.sonne) { e.sonne = true; if (QUI_SONNE) sonne('critique'); halo('rouge'); }
   $('#pub-q').innerHTML = e.genre === 'chiffre' ? `<small>${now < e.at ? 'PUBLICATION IMMINENTE' : 'CHIFFRE PUBLIÉ'}</small><b>${esc(e.titre)}</b><span>${esc(e.pays || '')} · ${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>`
     : `<small>LA CLOCHE</small><b>${esc(e.titre)}</b><span>${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · les premières minutes</span>`;
@@ -3146,7 +3158,7 @@ function montreVisite(r) {
   const e = $('#visite'); $('#visite-d').textContent = `${r.code} · il y a ${r.duree}`; $('#visite-l').innerHTML = r.lignes.map(x => `<li>${esc(x)}</li>`).join('');
   $('#visite-f').innerHTML = (r.faits || []).map(x => esc(x)).join('<br>'); $('#visite-f').classList.remove('on'); $('#visite-plus').hidden = !(r.faits || []).length; e.classList.add('on'); e._r = r;
   clearTimeout(visiteMinuteur); visiteMinuteur = setTimeout(() => { if (!e.matches(':hover')) e.classList.remove('on'); }, 60000);
-  if (QUI_SONNE && lit('g-visite-voix', '0') === '1') dire(r.lignes.join(' '));
+  if (QUI_SONNE && lit('g-visite-voix', '0') === '1') direAuto(r.lignes.join(' '));
 }
 $('#aide-k').addEventListener('click', ev => { if (ev.target.id === 'aide-k') $('#aide-k').classList.remove('on'); });
 $('#visite-x').onclick = () => $('#visite').classList.remove('on');
@@ -3261,7 +3273,7 @@ function majPosH() { const e = $('#pos-h'); if (!e) return; const l = POSD.posit
 // l'alerte rouge : une nouvelle critique ou un mouvement anormal pendant qu'il est en position — en grand, avec une alarme, jusqu'à ce qu'il la touche
 const MAX_LOTS = 1;  // (SA règle : 1 lot maximum par compte, quel que soit le marché)
 const ROUGE_VU = new Set(JSON.parse(lit('g-rouge-vu', '[]'))); let rougeSon = null, ROUGE_ACT = null;
-function alarme() { try { const c = 'g-rouge-son', m = Date.now(), d = +localStorage.getItem(c) || 0; if (m - d < 2500) return; localStorage.setItem(c, String(m)); } catch (e) { /* rien */ }  // (une seule fenêtre sonne)
+function alarme() { if (PARLEUR === false) return; try { const c = 'g-rouge-son', m = Date.now(), d = +localStorage.getItem(c) || 0; if (m - d < 2500) return; localStorage.setItem(c, String(m)); } catch (e) { /* rien */ }  // (une seule fenêtre sonne)
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); const t = actx.currentTime;
     [0, .32, .64].forEach((d, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(i % 2 ? 660 : 880, t + d); g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(.13, t + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d + .28); o.connect(g).connect(actx.destination); o.start(t + d); o.stop(t + d + .3); }); } catch (e) { /* rien */ } }
 function alerteRouge(l) {
@@ -5156,7 +5168,7 @@ async function termMaintenant() { const e = $('#term-now'); if (!e) return; cons
   for (const x of liaisons()) if (x.e === 'ko') items.push({ c: 'ko', t: `<b>${esc(x.n)}</b> ${esc(x.t)}`, k: 'ETAT' });
   const rg = await chargeRegles(); if (rg) { for (const x of rg.enfreintes || []) items.push({ c: 'ko', t: `<b>TA RÈGLE</b> ${esc(x.texte)}`, k: 'REGLES' });
     for (const x of (rg.proches || []).filter(x => !(rg.enfreintes || []).some(z => z.regle === x.regle))) items.push({ c: 'mvt', t: `<b>TA RÈGLE</b> ${esc(x.texte)}`, k: 'REGLES' });
-    const cle = (rg.enfreintes || []).map(x => x.texte).join('|'); if (cle && cle !== TERM_REG_DIT) { TERM_REG_DIT = cle; dire('Attention, ta règle : ' + rg.enfreintes[rg.enfreintes.length - 1].texte); } }
+    const cle = (rg.enfreintes || []).map(x => x.texte).join('|'); if (cle && cle !== TERM_REG_DIT) { TERM_REG_DIT = cle; direAuto('Attention, ta règle : ' + rg.enfreintes[rg.enfreintes.length - 1].texte); } }
   for (const ps of (POSD.positions || [])) { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, sg = ps.sens === 'long' ? 1 : -1, t = Math.round((der - ps.prix_moyen) / tk) * sg, usd = ps.valeur ? Math.round(t * ps.valeur * ps.taille) : null, ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
     items.push({ c: 'pos', t: `<b>${esc(ps.instr)} ${ps.sens === 'long' ? 'LONG' : 'SHORT'} ${ps.taille}</b> <span class="${t >= 0 ? 'h' : 'r'}">${t > 0 ? '+' : ''}${t} t${usd != null ? ` · ${usd > 0 ? '+' : ''}${usd} $` : ''}</span> · ${ds != null ? `stop à ${ds} t` : '<span class="r">SANS STOP</span>'}`, k: 'RISK', code: ps.instr }); }
   const ag = (AGENDA || []).filter(a => a.at > now - 120 && a.at - now < 45 * 60).sort((a, b) => a.at - b.at)[0];
