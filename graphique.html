@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Atlas Marchés">
 <title>Atlas · Salle de marché</title>
+<link rel="manifest" href="salle.webmanifest"><link rel="icon" href="icons/marches-192.png"><link rel="apple-touch-icon" href="icons/marches-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -304,6 +305,12 @@
   .scn.esq { grid-template-columns: 1fr .9fr 1fr 1fr 1.6fr; } .scn.esq > span:last-child { position: relative; padding-right: 18px; } .esq-x { position: absolute; right: 0; top: 0; font-style: normal; color: #6f7787; cursor: pointer; padding: 0 4px; } .esq-x:hover { color: #ff3d5a; }
   /* la barre d'outils de gauche tient dans la hauteur de l'écran : boutons plus serrés quand l'écran est bas, et une fine barre de défilement pour ce qui reste */
   @media (max-height: 1150px) { .outils .outil, .outils .outil-d { height: 30px !important; width: 38px !important; } .outils { gap: 1px !important; } .outils svg { width: 18px !important; height: 18px !important; } }
+  /* les portables étroits (moins de 1366 px de large) : la barre du haut se resserre pour que rien ne sorte de l'écran */
+  @media (max-width: 1365px) { .haut { gap: 4px !important; } .haut .sym { min-width: 0 !important; width: 190px !important; flex: none !important; } .haut .seg button, .haut .grp button { padding-left: 5px !important; padding-right: 5px !important; } }
+  /* les écrans de portable (moins de 960 px de haut) : les outils sur deux colonnes serrées, tout tient sans défiler */
+  @media (max-height: 960px) { .outils { display: grid !important; grid-template-columns: 26px 26px; justify-content: center; align-content: start; column-gap: 2px; row-gap: 2px !important; }
+    .outils .outil, .outils .outil-d { width: 26px !important; height: 26px !important; padding: 0 !important; } .outils svg, .outils .outil-d svg { width: 16px !important; height: 16px !important; }
+    .outils > :not(button) { grid-column: 1 / -1; justify-self: center; } }
   .outils { scrollbar-width: thin !important; scrollbar-color: #26365a transparent; } .outils::-webkit-scrollbar { width: 4px !important; } .outils::-webkit-scrollbar-thumb { background: #26365a; border-radius: 4px; }
   /* la bulle d'explication : flottante, au-dessus de tout (la barre de gauche défile et coupait les bulles collées à ses boutons) */
   [data-tip]:hover::after { display: none !important; content: none !important; }
@@ -1092,6 +1099,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
+try { if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* rien */ }  // (la salle s'installe comme une appli, comme Atlas)
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 const diese = new URLSearchParams(location.hash.slice(1)); if (diese.get('maison')) ROOT = diese.get('maison').replace(/\/+$/, '');
