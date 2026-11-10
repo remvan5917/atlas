@@ -641,7 +641,7 @@
   /* la carte « Ta salle » : sans les boutons du copilote */
   .copi.salle .copi-pied { display: none; }
 
-  .pub { position: fixed; top: 96px; left: 84px; right: 352px; z-index: 46; display: none; grid-template-columns: minmax(220px, 1.1fr) 1.6fr 2fr auto; gap: 18px; align-items: center; padding: 14px 18px; border-radius: 12px;
+  .pub { position: fixed; top: 96px; left: 84px; right: 352px; z-index: 46; display: none; grid-template-columns: minmax(220px, 1.1fr) 1.6fr 2fr auto auto; gap: 18px; align-items: center; padding: 14px 18px; border-radius: 12px;
     background: linear-gradient(135deg, rgba(40, 8, 14, .96), rgba(14, 10, 12, .96)); border: 1px solid rgba(255, 61, 90, .55); box-shadow: 0 20px 60px rgba(0, 0, 0, .6), 0 0 40px rgba(214, 31, 58, .25); }
   .pub.on { display: grid; animation: monte .3s ease-out; } .pub.ouverture { background: linear-gradient(135deg, rgba(8, 26, 44, .96), rgba(6, 12, 24, .96)); border-color: rgba(76, 201, 240, .6); box-shadow: 0 20px 60px rgba(0, 0, 0, .6), 0 0 40px rgba(47, 123, 255, .25); }
   .pub .q small { display: block; font: 800 10px 'Inter'; letter-spacing: .26em; color: #ff8fa1; } .pub.ouverture .q small { color: var(--ambre); } .pub .q b { display: block; font: 800 18px 'Inter'; color: #fff; margin-top: 4px; line-height: 1.25; } .pub .q span { font: 600 12px var(--mono); color: var(--doux); }
@@ -649,9 +649,10 @@
   .pub .chiffres div b { font: 800 26px var(--mono); color: #fff; } .pub .chiffres .publie b { font-size: 32px; color: #ffd37a; } .pub .chiffres .compte b { font-size: 34px; color: #fff; } .pub .chiffres .titre-p { font: 700 15px 'Inter'; color: #ffd37a; max-width: 420px; line-height: 1.35; }
   .pub .reac { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; } .pub .reac div { background: rgba(255, 255, 255, .05); border-radius: 8px; padding: 6px 8px; text-align: center; }
   .pub .reac div small { display: block; font: 700 9.5px var(--mono); color: var(--ambre); letter-spacing: .06em; } .pub .reac div b { font: 800 16px var(--mono); } .pub .reac div em { display: block; font: 600 9.5px var(--mono); font-style: normal; color: var(--tres-doux); }
-  @media (max-width: 1300px) { .pub { left: 8px; right: 8px; grid-template-columns: 1fr 1fr auto; } .pub .reac { grid-column: 1 / -1; grid-row: 2; } }
+  @media (max-width: 1300px) { .pub { left: 8px; right: 8px; grid-template-columns: 1fr 1fr auto auto; } .pub .reac { grid-column: 1 / -1; grid-row: 2; } }
   .pub .reac .memo { grid-column: 1 / -1; background: none; text-align: left; padding: 2px 0 0; font: 600 12px 'Inter'; color: var(--doux); line-height: 1.45; } .pub .reac .memo small { display: inline; margin-right: 8px; } .pub .reac .memo b { font: 800 13px var(--mono); color: #fff; }
   .pub .chiffres .publie em { display: block; font: 600 12px 'Inter'; font-style: normal; color: var(--doux); max-width: 150px; line-height: 1.3; margin-top: 4px; }
+  .pub .v { background: none; border: 1px solid rgba(255, 255, 255, .15); color: var(--tres-doux); border-radius: 8px; padding: 6px 9px; font: 600 11px 'Inter'; cursor: pointer; margin-right: 6px; } .pub .v.on { color: #fff; border-color: rgba(255, 255, 255, .35); }
   .pub .x { background: none; border: 1px solid rgba(255, 255, 255, .15); color: var(--doux); border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; }
 
   /* le moniteur rétractable : rentré sur les écrans de graphique de la salle, toujours là sur la vue d'ensemble */
@@ -966,7 +967,7 @@
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
   <div class="copi-pied"><button id="copi-encore">Et maintenant ?<kbd>E</kbd></button><button id="copi-parle">🎙 Maintiens pour parler<kbd>Q</kbd></button><button id="copi-appris" title="Ce qu'Atlas a appris de tes habitudes (reste sur cet ordinateur)" style="flex:0 0 auto">Ce que j'ai appris</button></div></div>
 <div class="amb asie" id="amb-asie"></div><div class="amb londres" id="amb-londres"></div><div class="amb ny" id="amb-ny"></div>
-<div class="pub" id="pub"><div class="q" id="pub-q"></div><div class="chiffres" id="pub-c"></div><div class="reac" id="pub-r"></div><button class="x" id="pub-x">×</button></div>
+<div class="pub" id="pub"><div class="q" id="pub-q"></div><div class="chiffres" id="pub-c"></div><div class="reac" id="pub-r"></div><button class="v" id="pub-v" title="Atlas annonce à voix haute chaque publication forte, une minute avant">🔈 voix</button><button class="x" id="pub-x">×</button></div>
 <button class="onglet-mon" id="mon-o" title="Sortir le moniteur">MONITEUR</button>
 <div class="indic-p" id="indic-p"><div class="indic-b">
   <h3>TA MÉTHODE</h3><p class="s">En un clic, le graphique, les alertes et le copilote suivent la méthode choisie.</p><div class="meths" id="meths"></div>
@@ -2626,6 +2627,7 @@ $('#b-salle').onclick = installeSalleMaison;
 $('#b-mur').onclick = () => { const m = ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
 
 /* ================= le tableau du chiffre en direct · la cloche des ouvertures ================= */
+let VOIX_PUB = lit('g-voix-pub', '1') === '1'; const voixPubDites = new Set();
 let ITEMS = [], EVT = null, evtReac = null, evtCharge = 0; const evtFermes = new Set(JSON.parse(lit('g-evt-fermes', '[]')));
 const QUI_SONNE = FEN === '1' || ROLE === 'structure';  // (une seule fenêtre sonne : la principale)
 function cloche() {  // une cloche de Bourse, discrète (des partiels inharmoniques qui s'éteignent lentement)
@@ -2666,6 +2668,10 @@ async function majEvt() {
   if (!e || evtFermes.has(e.cle)) { if (EVT) { EVT = null; p.classList.remove('on'); } return; }
   const neuf = !EVT || EVT.cle !== e.cle; EVT = e; const now = Date.now() / 1000;
   if (neuf) { evtReac = null; p.className = 'pub on' + (e.genre === 'ouverture' ? ' ouverture' : ''); if (e.genre === 'ouverture') { cloche(); halo('ambre'); } }
+  // une minute avant : Atlas le dit, une fois (la fenêtre principale seulement, coupable avec le bouton « voix » du bandeau)
+  if (e.genre === 'chiffre' && VOIX_PUB && QUI_SONNE && e.at - now <= 62 && e.at - now >= 45 && !voixPubDites.has(e.cle)) { voixPubDites.add(e.cle);
+    const pos = (POS || []).map(x => `${x.sens === 'short' ? 'vendeur' : 'acheteur'} sur ${x.instr}`).join(' et ');
+    dire(`${e.titre.replace(/^\w/, c => c.toUpperCase())} dans une minute${e.prevision ? `, attendu ${String(e.prevision).replace('.', ',')}` : ''}.${pos ? ` Tu es ${pos}.` : ''}`); }
   if (e.genre === 'chiffre' && now >= e.at && now - e.at < 3 && !e.sonne) { e.sonne = true; if (QUI_SONNE) sonne('critique'); halo('rouge'); }
   $('#pub-q').innerHTML = e.genre === 'chiffre' ? `<small>${now < e.at ? 'PUBLICATION IMMINENTE' : 'CHIFFRE PUBLIÉ'}</small><b>${esc(e.titre)}</b><span>${esc(e.pays || '')} · ${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>`
     : `<small>LA CLOCHE</small><b>${esc(e.titre)}</b><span>${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · les premières minutes</span>`;
@@ -2684,6 +2690,8 @@ async function majEvt() {
   // l'alerte rouge (en position) garde le haut de l'écran : le bandeau se range juste dessous
   const rg = $('#rouge'); p.style.top = rg && rg.classList.contains('on') ? `${rg.offsetHeight + 8}px` : '';
 }
+function majPubV() { $('#pub-v').classList.toggle('on', VOIX_PUB); $('#pub-v').textContent = VOIX_PUB ? '🔈 voix' : '🔇 voix'; } majPubV();
+$('#pub-v').onclick = () => { VOIX_PUB = !VOIX_PUB; ecrit('g-voix-pub', VOIX_PUB ? '1' : '0'); majPubV(); toast(VOIX_PUB ? 'Atlas annoncera chaque publication forte, une minute avant' : 'Plus d’annonce à voix haute avant les publications'); };
 $('#pub-x').onclick = () => { if (EVT) { evtFermes.add(EVT.cle); ecrit('g-evt-fermes', JSON.stringify([...evtFermes].slice(-40))); } $('#pub').classList.remove('on'); EVT = null; };
 setInterval(majEvt, 1000);
 
