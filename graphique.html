@@ -2535,7 +2535,7 @@ $('#piste').addEventListener('click', ev => { const t = ev.target.closest('.tk[d
 async function chargeFil() {
   if (!ROOT) return;
   try { const r = await api('/maison/radar'), l = (r.items || []).slice().sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 14);
-    AGENDA = (r.agenda || []).filter(a => a.fort); CLIMAT = r.climat || {}; ITEMS = r.items || []; majTicker();
+    AGENDA = (r.agenda || []).filter(a => a.fort); CLIMAT = r.climat || {}; ITEMS = r.items || []; majTicker(); try { rappelPubs(); } catch (er) { /* rien */ }
     const h = l.map(i => `<span class="dp"><time>${new Date((i.publie || i.at) * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time>${i.urgence === 'critique' ? '<span class="fl">FLASH</span>' : i.urgence === 'importante' ? '<span class="im">IMPORTANT</span>' : ''}${esc(i.titre)}${(i.marches || []).length ? `<small>${esc(i.marches.join(' '))}</small>` : ''}</span>`).join('') || '<span class="dp">Aucune dépêche importante pour l’instant.</span>';
     const p = $('#piste2'); p.innerHTML = h + h; p.style.setProperty('--duree', `${Math.max(50, l.length * 9)}s`);
     SANTE.radar = true; boot('radar', true); majSante();
@@ -2627,6 +2627,16 @@ $('#b-salle').onclick = installeSalleMaison;
 $('#b-mur').onclick = () => { const m = ROOT && !/^\/salle(-dev)?\//.test(location.pathname) ? '&maison=' + encodeURIComponent(ROOT) : ''; window.open(`radar.html#mur=1${m}`, 'radar', `popup,width=${Math.min(1920, screen.availWidth)},height=${Math.min(1080, screen.availHeight)}`); toast('Le Radar s\u2019ouvre en mode mur : glisse-le sur ton autre écran (F11 pour le plein écran, W pour revenir au mode lecture)'); };
 
 /* ================= le tableau du chiffre en direct · la cloche des ouvertures ================= */
+// les annonces fortes du jour de trading (de 23 h la veille à 23 h), à l'heure de Paris
+const pubsDuJour = () => { const j = verrouJour(); return (AGENDA || []).filter(a => new Date(a.at * 1000 + 3600e3).toLocaleDateString('fr-CA') === j).sort((a, b) => a.at - b.at); };
+const hParis = at => new Date(at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+const listePubs = (l, html) => { const vus = new Set(); return l.filter(a => { const k = a.at + (a.titre_fr || a.titre); if (vus.has(k)) return false; vus.add(k); return true; })
+  .map(a => html ? `<b>${hParis(a.at)}</b> ${esc(a.titre_fr || a.titre)}${a.pays ? ` <small>${esc(a.pays)}</small>` : ''}` : `${hParis(a.at)} ${a.titre_fr || a.titre}`).join(html ? ' · ' : ' · '); };
+// le rappel du matin : à la première ouverture d'un jour de marché, une fois (vu dans une fenêtre = vu partout), jamais sur le graphique
+function rappelPubs() { if (!QUI_SONNE || ROLE === 'terminal' || marcheFerme() || !AGENDA.length || lit('g-pubs-jour', '') === verrouJour()) return;
+  ecrit('g-pubs-jour', verrouJour()); const l = pubsDuJour(), now = Date.now() / 1000, rest = l.filter(a => a.at > now - 60);
+  const t = l.length ? `Aujourd’hui, ${l.length} annonce${l.length > 1 ? 's' : ''} forte${l.length > 1 ? 's' : ''} : ${listePubs(l)}${rest.length < l.length ? ` (${l.length - rest.length} déjà passée${l.length - rest.length > 1 ? 's' : ''})` : ''}` : 'Aujourd’hui : aucune annonce forte à l’agenda';
+  const e = document.createElement('div'); e.className = 'toast toast-act'; e.style.animation = 'toast 14s ease forwards'; e.append('📅 ' + t); const b = document.createElement('button'); b.textContent = 'L’agenda'; b.onclick = () => { e.remove(); fnCal(); }; e.appendChild(b); $('#toasts').appendChild(e); setTimeout(() => e.remove(), 14000); }
 let VOIX_PUB = lit('g-voix-pub', '1') === '1'; const voixPubDites = new Set();
 let ITEMS = [], EVT = null, evtReac = null, evtCharge = 0; const evtFermes = new Set(JSON.parse(lit('g-evt-fermes', '[]')));
 const QUI_SONNE = FEN === '1' || ROLE === 'structure';  // (une seule fenêtre sonne : la principale)
@@ -4767,7 +4777,7 @@ async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; for (let i = 0
   const dessine = fini => { const ag = (AGENDA || []).filter(a => a.at > Date.now() / 1000 - 60).sort((a, b) => a.at - b.at)[0];
     const carte = (k, titre, txt) => `<div class="brief-c" data-brief="${k}"><div class="bt"><b>${k}</b><span>${esc(titre)}</span><em>ouvrir →</em></div><p>${txt}</p></div>`;
     ouvreFn('BRIEF', `le point du moment · ${t0.toLocaleString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}${fini ? '' : ' · je rassemble…'}${marcheFerme() ? ' · ' + marcheFerme() : ''}`,
-      `<div class="brief">${ag ? carte('CAL', 'La prochaine annonce forte', `<b>${esc(ag.titre_fr || ag.titre)}</b> · ${new Date(ag.at * 1000).toLocaleString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}${ag.prevision ? ` · attendu ${esc(ag.prevision)}` : ''}${res.ECO ? `<br>${res.ECO}` : ''}`) : ''}
+      `<div class="brief">${pubsDuJour().length > 1 ? carte('CAL', 'Les annonces fortes d’aujourd’hui', `${listePubs(pubsDuJour(), true)}${ag ? `<br>La prochaine : <b>${esc(ag.titre_fr || ag.titre)}</b> à ${hParis(ag.at)}${ag.prevision ? ` · attendu ${esc(ag.prevision)}` : ''}` : ''}${res.ECO ? `<br>${res.ECO}` : ''}`) : ag ? carte('CAL', 'La prochaine annonce forte', `<b>${esc(ag.titre_fr || ag.titre)}</b> · ${new Date(ag.at * 1000).toLocaleString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}${ag.prevision ? ` · attendu ${esc(ag.prevision)}` : ''}${res.ECO ? `<br>${res.ECO}` : ''}`) : ''}
       ${BRIEF_L.map(([k, titre]) => res[k] === undefined ? `<div class="brief-c attend"><div class="bt"><b>${k}</b><span>${esc(titre)}</span></div><p>…</p></div>` : res[k] ? carte(k, titre, res[k]) : '').join('')}</div>
       <p style="margin:12px 6px 0;color:#6f7787;font-size:11.5px">Chaque carte reprend la phrase « À retenir » de sa fonction ; un clic l’ouvre en entier. « ✦ Explique-moi » : le copilote fait la synthèse de tout l’écran. Des faits, jamais un conseil.</p>`);
     document.querySelectorAll('#fn-c [data-brief]').forEach(e => e.onclick = () => { const f = e.dataset.brief === 'CAL' ? () => fnCal() : (BRIEF_L.find(z => z[0] === e.dataset.brief) || [])[2]; if (f) f(); }); };
