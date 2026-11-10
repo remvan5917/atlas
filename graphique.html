@@ -650,6 +650,8 @@
   .pub .reac { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; } .pub .reac div { background: rgba(255, 255, 255, .05); border-radius: 8px; padding: 6px 8px; text-align: center; }
   .pub .reac div small { display: block; font: 700 9.5px var(--mono); color: var(--ambre); letter-spacing: .06em; } .pub .reac div b { font: 800 16px var(--mono); } .pub .reac div em { display: block; font: 600 9.5px var(--mono); font-style: normal; color: var(--tres-doux); }
   @media (max-width: 1300px) { .pub { left: 8px; right: 8px; grid-template-columns: 1fr 1fr auto; } .pub .reac { grid-column: 1 / -1; grid-row: 2; } }
+  .pub .reac .memo { grid-column: 1 / -1; background: none; text-align: left; padding: 2px 0 0; font: 600 12px 'Inter'; color: var(--doux); line-height: 1.45; } .pub .reac .memo small { display: inline; margin-right: 8px; } .pub .reac .memo b { font: 800 13px var(--mono); color: #fff; }
+  .pub .chiffres .publie em { display: block; font: 600 12px 'Inter'; font-style: normal; color: var(--doux); max-width: 150px; line-height: 1.3; margin-top: 4px; }
   .pub .x { background: none; border: 1px solid rgba(255, 255, 255, .15); color: var(--doux); border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter'; }
 
   /* le moniteur rétractable : rentré sur les écrans de graphique de la salle, toujours là sur la vue d'ensemble */
@@ -2638,12 +2640,27 @@ function evtCourant() {
   const now = Date.now() / 1000, jour = new Date().getDay();
   // une annonce à fort impact : de 2 minutes avant à 15 minutes après
   const a = AGENDA.filter(x => now >= x.at - 120 && now <= x.at + 900).sort((x, y) => x.at - y.at)[0];
-  if (a) return { cle: `a${a.at}${a.titre}`, genre: 'chiffre', titre: a.titre_fr || a.titre, pays: a.pays, at: a.at, prevision: a.prevision, precedent: a.precedent };
+  if (a) return { cle: `a${a.at}${a.titre}`, genre: 'chiffre', titre: a.titre_fr || a.titre, titreEn: a.titre, pays: a.pays, at: a.at, prevision: a.prevision, precedent: a.precedent, resultat: a.resultats || a.actuel || null };
   if (jour >= 1 && jour <= 5) for (const [nom, tz, h, m] of [['LONDRES', 'Europe/London', 8, 0], ['NEW YORK', 'America/New_York', 9, 30]]) {
     const t = ouvertureDu(tz, h, m); if (now >= t && now <= t + 150) return { cle: `o${nom}${new Date().toDateString()}`, genre: 'ouverture', titre: `Ouverture de ${nom === 'LONDRES' ? 'Londres' : 'New York'}`, at: t };
   }
   return null;
 }
+// la mémoire des annonces (ECO) : à quelle famille appartient l'annonce de l'agenda
+const ECO_FAM = [[/press conference/i, t => /ecb|lagarde/i.test(t) ? 'bce-presse' : 'fomc-presse'], [/non-?farm|payroll/i, 'nfp'], [/fomc|federal funds|fed interest/i, 'fomc'], [/\bppi\b/i, 'ppi'], [/\bcpi\b/i, 'cpi'], [/\bpce\b/i, 'pce'],
+  [/retail sales/i, 'ventes'], [/\bgdp\b/i, 'pib'], [/ism manufacturing/i, 'ism-ind'], [/ism (services|non-manufacturing)/i, 'ism-serv'], [/jobless|unemployment claims/i, 'chomage'], [/jolts/i, 'jolts'],
+  [/ecb|main refinancing/i, 'bce'], [/crude oil inventories/i, 'petrole'], [/michigan|\buom\b/i, 'michigan'], [/cb consumer confidence/i, 'conf']];
+function ecoFamille(t) { for (const [re, c] of ECO_FAM) if (re.test(t || '')) return typeof c === 'function' ? c(t) : c; return null; }
+const ecoMem = {};  // une lecture par famille et par quart d'heure
+async function ecoPour(e) { const f = ecoFamille(e.titreEn || e.titre); if (!f) return null; const m = ecoMem[f];
+  if (!m || Date.now() - m.t > 900000) { ecoMem[f] = { t: Date.now(), r: m ? m.r : null }; try { ecoMem[f].r = await api(`/maison/graphique?eco=${encodeURIComponent(f)}`); } catch (er) { /* rien */ } }
+  return ecoMem[f].r; }
+function ecoLigne(r) {  // une ligne : ce qu'a fait le marché affiché les fois précédentes (la taille, jamais le sens)
+  if (!r || !r.cle) return '';
+  const C = Object.keys(r.resume || {}), c = C.includes(code) ? code : C[0], x = c && r.resume[c], v = c != null ? VAL_TICK[c] : null, d = t => v != null ? ` (≈ ${Math.round(t * v)} $)` : '';
+  if (!x) return `<div class="memo"><small>LES FOIS PRÉCÉDENTES</small>Première fois en mémoire pour ${esc(r.nom || 'cette annonce')} : le radar la mesure aujourd’hui.</div>`;
+  return `<div class="memo"><small>LES FOIS PRÉCÉDENTES · ${esc(c)}${c !== code ? ' (ton marché n’est pas encore en mémoire)' : ''}</small>`
+    + (x.n5 ? `en 5 min <b>${x.p5_med} t</b>${d(x.p5_med)} · ` : '') + `dans l’heure <b>${x.amp60_med ?? '—'} t</b>${x.amp60_med != null ? d(x.amp60_med) : ''}, jusqu’à ${x.amp60_max ?? '—'} t · sur ${x.n} fois · la taille du mouvement, jamais son sens</div>`; }
 async function majEvt() {
   const e = evtCourant(), p = $('#pub');
   if (!e || evtFermes.has(e.cle)) { if (EVT) { EVT = null; p.classList.remove('on'); } return; }
@@ -2657,12 +2674,15 @@ async function majEvt() {
     const d = Math.max(0, e.at - now), mm = Math.floor(d / 60), ss = Math.floor(d % 60);
     $('#pub-c').innerHTML = (now < e.at ? `<div class="compte"><small>DANS</small><b>${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}</b></div>` : '')
       + `<div><small>ATTENDU</small><b>${esc(e.prevision || '—')}</b></div><div><small>PRÉCÉDENT</small><b>${esc(e.precedent || '—')}</b></div>`
-      + (now >= e.at ? (pub ? `<div class="titre-p">${esc(pub.titre)}</div>` : `<div class="publie"><small>PUBLIÉ</small><b>…</b></div>`) : '');
+      + (now >= e.at ? (e.resultat ? `<div class="publie"><small>PUBLIÉ</small><b>${esc(e.resultat)}</b></div>` : pub ? `<div class="titre-p">${esc(pub.titre)}</div>` : now - e.at < 180 ? `<div class="publie"><small>PUBLIÉ</small><b>…</b></div>` : `<div class="publie"><small>PUBLIÉ</small><em>pas encore reçu par tes sources</em></div>`) : '');
   } else $('#pub-c').innerHTML = '';
   // la réaction de ses marchés depuis l'instant, toutes les 10 secondes
   if (now >= e.at && Date.now() - evtCharge > 10000) { evtCharge = Date.now(); try { evtReac = await api(`/maison/graphique?reaction=${e.at}`); } catch (er) { /* rien */ } }
-  $('#pub-r').innerHTML = now < e.at ? '<div style="grid-column:1/-1;color:var(--doux);font:600 12px Inter;text-align:left;background:none">La réaction de tes marchés s’affichera ici, en ticks, dès la publication.</div>'
-    : Object.entries((evtReac || {}).marches || {}).map(([c, v]) => `<div><small>${c}</small><b class="${v.ticks > 0 ? 'h' : v.ticks < 0 ? 'r' : ''}">${v.ticks > 0 ? '+' : ''}${v.ticks} t</b><em>${v.haut > 0 ? '+' : ''}${v.haut} / ${v.bas} t</em></div>`).join('') || '<div style="grid-column:1/-1;background:none;color:var(--doux)">…</div>';
+  const memo = e.genre === 'chiffre' ? ecoLigne(await ecoPour(e)) : '';
+  $('#pub-r').innerHTML = (now < e.at ? '<div style="grid-column:1/-1;color:var(--doux);font:600 12px Inter;text-align:left;background:none">La réaction de tes marchés s’affichera ici, en ticks, dès la publication.</div>'
+    : Object.entries((evtReac || {}).marches || {}).map(([c, v]) => `<div><small>${c}</small><b class="${v.ticks > 0 ? 'h' : v.ticks < 0 ? 'r' : ''}">${v.ticks > 0 ? '+' : ''}${v.ticks} t</b><em>${v.haut > 0 ? '+' : ''}${v.haut} / ${v.bas} t</em></div>`).join('') || '<div style="grid-column:1/-1;background:none;color:var(--doux)">…</div>') + memo;
+  // l'alerte rouge (en position) garde le haut de l'écran : le bandeau se range juste dessous
+  const rg = $('#rouge'); p.style.top = rg && rg.classList.contains('on') ? `${rg.offsetHeight + 8}px` : '';
 }
 $('#pub-x').onclick = () => { if (EVT) { evtFermes.add(EVT.cle); ecrit('g-evt-fermes', JSON.stringify([...evtFermes].slice(-40))); } $('#pub').classList.remove('on'); EVT = null; };
 setInterval(majEvt, 1000);
