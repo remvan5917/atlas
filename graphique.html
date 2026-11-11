@@ -966,7 +966,7 @@
       <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
   </div>
-  <div class="fil"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="piste2"></div></div><span class="pos-f" id="pos-f" hidden title="Ta position (lecture seule). Clic : montrer / cacher les repères sur l'échelle des prix"></span><span class="fil-e" id="fil-e"></span></div>
+  <div class="fil"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="piste2"></div></div><span class="pos-f" id="pos-f" hidden title="Ta position (lecture seule). Clic : montrer / cacher sa zone sur le graphique et ses repères sur l'échelle des prix"></span><span class="fil-e" id="fil-e"></span></div>
 </div>
 <div class="barre-ligne" id="barre-ligne">
   <button data-l="alerte" title="Alerte (touche / cassure)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg></button>
@@ -1242,6 +1242,14 @@ class Pane {
     // les zones des indicateurs : un fond coloré, ou la bougie surlignée (sous les bougies)
     IC.forEach(r => r.zones.forEach(z => { for (let k = i; k < j; k++) { if (!z.v[k]) continue; const x0 = X(k) - bw / 2;
       if (z.cible === 'bougie') { c.fillStyle = z.couleur + '66'; c.fillRect(x0, Y(B[k][2]) - 2, bw, Y(B[k][3]) - Y(B[k][2]) + 4); } else { c.fillStyle = z.couleur + '1f'; c.fillRect(x0, HAUT - 20, bw + .5, BASP - HAUT + 20); } } }));
+    // sa position : une zone pâle entre son entrée et le prix, verte quand il gagne, rouge quand il perd ; elle bouge avec le prix (sous les bougies, rien de caché)
+    if (optPos && optPosFond && !REPLAY) for (const ps of positionsDe(code)) { if (ps.prix_moyen == null) continue; const px = prixVif(ps) ?? B[B.length - 1][4], gagne = (px - ps.prix_moyen) * (ps.sens === 'long' ? 1 : -1) >= 0;
+      const ye = Y(ps.prix_moyen), yp = Y(px), y0 = Math.max(HAUT - 20, Math.min(ye, yp)), y1 = Math.min(BASP, Math.max(ye, yp));
+      if (y1 > y0) { c.fillStyle = gagne ? (TH.nuit ? 'rgba(25,211,140,.13)' : 'rgba(8,153,129,.10)') : (TH.nuit ? 'rgba(255,61,90,.13)' : 'rgba(242,54,69,.10)'); c.fillRect(0, y0, pw, y1 - y0); }
+      c.save(); c.lineWidth = 1.2; c.setLineDash([6, 4]);
+      if (ye >= HAUT - 20 && ye <= BASP) { c.strokeStyle = gagne ? '#19d38c' : '#ff3d5a'; c.beginPath(); c.moveTo(0, Math.round(ye) + .5); c.lineTo(pw, Math.round(ye) + .5); c.stroke(); }
+      if (ps.stop != null) { const ys = Y(ps.stop); if (ys >= HAUT - 20 && ys <= BASP) { c.strokeStyle = 'rgba(255,61,90,.75)'; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(0, Math.round(ys) + .5); c.lineTo(pw, Math.round(ys) + .5); c.stroke(); } }
+      c.restore(); }
     // les barres OHLC, noires (son style) — ou la ligne, ou les bougies Heikin Ashi
     if (TYPE === 'ligne') { c.strokeStyle = TH.fg; c.lineWidth = 1.6; c.lineJoin = 'round'; c.beginPath(); for (let k = i; k < j; k++) { const x = X(k), y = Y(B[k][4]); k === i ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); }
     else if (opt.bougies) {
@@ -3255,6 +3263,7 @@ async function pourquoiBougie(p, t) {
 /* ================= sa position, en lecture seule (TopstepX, l'API classique, jamais le flux temps réel) ================= */
 // rien sur les bougies : des repères sur l'échelle des prix, et une ligne dans la barre des dépêches ; Atlas ne passe aucun ordre
 var POSD = { positions: [] }, optPos = lit('g-pos-axe', '1') === '1';
+var optPosFond = lit('g-pos-fond', '1') === '1', POS_TRACE = '';  // (la zone de sa position sur le graphique : allumée par défaut, à sa demande du 11/11)
 const positionsDe = c => (POSD.positions || []).filter(p => p.instr === c || (p.instr && c && c.endsWith(p.instr)) || p.instr === ({ GC: 'MGC', CL: 'MCL', NQ: 'MNQ', YM: 'MYM', ES: 'MES' }[c]));
 /* tes exécutions, impossibles à rater : un bandeau en haut du graphique + un son quand une position s'ouvre, change ou se ferme ; à la fermeture, le résultat (ticks, dollars) */
 // ton compte en permanence, en haut (au bout de la ligne des marchés) : solde, résultat du jour (avec la position ouverte), ce qui reste avant ta limite du jour
@@ -3339,6 +3348,7 @@ async function chargePositions() {
   try { const cas = Math.floor(Date.now() / 120000), trop = (POSD.positions || []).filter(ps => (ps.taille || 0) > MAX_LOTS).map(ps => ({ id: `tl-${ps.compte}-${ps.instr}-${ps.taille}-${cas}`, at: Math.floor(Date.now() / 1000), genre: 'taille', titre: `TAILLE AU-DESSUS DE TA RÈGLE : ${ps.taille} lots sur ${ps.instr}`, texte: `Ta règle : ${MAX_LOTS} lot maximum par compte, quel que soit le marché. Pour plus de lots, un autre compte.`, codes: [ps.instr] }));
     POSD.rouge = (POSD.rouge || []).filter(r => r.genre !== 'taille').concat(trop); } catch (e) { /* rien */ }
   try { majCompte(); majPosH(); alerteRouge(POSD.rouge || []); } catch (e) { /* rien */ }
+  try { const k = JSON.stringify(positionsDe(code).map(ps => [ps.prix_moyen, ps.stop, ps.dernier])); if (k !== POS_TRACE) { POS_TRACE = k; toutDessine(); } } catch (e) { /* rien */ }  // (la zone de la position suit le prix)
   const l = POSD.positions || [], f = $('#pos-f'); f.hidden = !l.length;
   if (l.length) { let latent = 0;
     f.innerHTML = l.map(ps => { const tk = ps.pas || 1, der = ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null; if (usd != null) latent += usd;
@@ -3347,7 +3357,7 @@ async function chargePositions() {
       + (POSD.dll ? `<span class="d">limite du jour : reste <b class="${POSD.dll + (POSD.pnl_jour || 0) + latent < POSD.dll * .3 ? 'a' : ''}">${Math.round(POSD.dll + (POSD.pnl_jour || 0) + latent)} $</b></span>` : ''); }
   toutDessine();
 }
-$('#pos-f').onclick = () => { optPos = !optPos; ecrit('g-pos-axe', optPos ? '1' : '0'); toast(optPos ? 'Repères de ta position sur l’échelle des prix : affichés' : 'Repères de ta position : cachés (la ligne du bas reste)'); toutDessine(); };
+$('#pos-f').onclick = () => { optPos = !optPos; ecrit('g-pos-axe', optPos ? '1' : '0'); toast(optPos ? 'Ta position sur le graphique : la zone verte / rouge et les repères sur l’échelle des prix' : 'Ta position : zone et repères cachés (la ligne du bas reste)'); toutDessine(); };
 setTimeout(chargePositions, 0); setInterval(chargePositions, 5000);  // (après tout le script : le mode voyage doit être prêt)
 /* ================= trader depuis le graphique : c'est LUI qui pose l'entrée, tire son stop et son objectif ================= */
 // Atlas ne propose aucun niveau et ne passe jamais d'ordre tout seul. La maison vérifie tout (compte permis par Topstep, stop obligatoire,
