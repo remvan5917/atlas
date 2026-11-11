@@ -865,6 +865,7 @@
   }
   /* l'ordinateur portable (≤ 1500 px) : le bandeau tient sur une ligne, sans rien cacher d'utile — les horloges restent dans le Radar, Simuler et les alertes dans la barre d'outils */
   @media (min-width: 901px) and (max-width: 1500px) { .haut #horloges, .haut #b-simu-h, .haut #b-alertes-h, .haut #b-cmd { display: none !important; } .haut { gap: 6px !important; } .haut #etat, .haut .etat > span:last-child { display: none; } .haut .etat { padding-left: 8px; padding-right: 8px; } }
+  .ligne-s.dort { opacity: .5; }  /* un CFD dont la séance est fermée */
 </style>
 </head>
 <body>
@@ -1146,7 +1147,8 @@ const SANTE = { maison: null, lat: null };
 async function api(chemin, corps) {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000), t0 = performance.now();
   try { const r = await fetch(`${ROOT}${chemin}`, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl.signal });
-    if (!r.ok) throw new Error(r.status); const j = await r.json(); try { if (j && Array.isArray(j.agenda)) j.agenda.forEach(x => { if (x && x.titre && !x.resultats) x.titre_fr = titreAg(x); }); } catch (er) { /* rien */ } if (!corps && /liste=1/.test(chemin)) SANTE.lat = Math.round(performance.now() - t0); SANTE.maison = true; if (typeof boot === 'function') boot('maison', true); return j; }
+    if (!r.ok) throw new Error(r.status); const j = await r.json(); try { if (j && Array.isArray(j.agenda)) j.agenda.forEach(x => { if (x && x.titre && !x.resultats) x.titre_fr = titreAg(x); }); } catch (er) { /* rien */ }
+    try { valsDe(j); } catch (er) { /* rien */ } if (!corps && /liste=1/.test(chemin)) SANTE.lat = Math.round(performance.now() - t0); SANTE.maison = true; if (typeof boot === 'function') boot('maison', true); return j; }
   catch (e) { SANTE.maison = false; throw e; } finally { clearTimeout(tm); }
 }
 
@@ -1402,7 +1404,7 @@ class Pane {
       c.fillStyle = haut ? 'rgba(41,98,255,.12)' : 'rgba(242,54,69,.12)'; c.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
       c.strokeStyle = haut ? '#2962ff' : '#f23645'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
       const ticks = Math.round((r.p2 - r.p1) / tk), usd = VAL_TICK[code] != null ? ticks * VAL_TICK[code] : null, nbar = Math.round((r.t2 - r.t1) / (DUREE[this.ut] || 3600)), dur = Math.abs(r.t2 - r.t1);
-      const txt = `${sg(ticks)} ticks${usd != null ? ` · ${sg(usd)} $ / contrat` : ''} · ${Math.abs(nbar)} barres · ${dur >= 86400 ? Math.round(dur / 86400) + ' j' : dur >= 3600 ? Math.floor(dur / 3600) + ' h ' + String(Math.round(dur % 3600 / 60)).padStart(2, '0') : Math.round(dur / 60) + ' min'}`;
+      const cfd = estCfd(code), txt = `${sg(ticks)} ${cfd ? 'pips' : 'ticks'}${usd != null ? ` · ${sg(Math.round(usd * 100) / 100)} $ / ${cfd ? 'lot' : 'contrat'}` : ''} · ${Math.abs(nbar)} barres · ${dur >= 86400 ? Math.round(dur / 86400) + ' j' : dur >= 3600 ? Math.floor(dur / 3600) + ' h ' + String(Math.round(dur % 3600 / 60)).padStart(2, '0') : Math.round(dur / 60) + ' min'}`;
       c.font = '700 12px Inter, sans-serif'; const tw = c.measureText(txt).width + 18, bx = Math.min(pw - tw - 6, Math.max(6, x2 - tw / 2)), by = haut ? Math.max(6, y2 - 32) : Math.min(ph - 30, y2 + 8);
       c.fillStyle = haut ? '#2962ff' : '#f23645'; c.beginPath(); c.roundRect(bx, by, tw, 24, 7); c.fill(); c.fillStyle = '#fff'; c.fillText(txt, bx + 9, by + 16);
       const t2 = regleInfos(Math.abs(ticks), usd); if (t2.length) { c.font = '600 11px Inter, sans-serif'; const tw2 = Math.max(...t2.map(z => c.measureText(z).width)) + 16, hh = 8 + 15 * t2.length, bx2 = Math.min(pw - tw2 - 6, Math.max(6, x2 - tw2 / 2)), by2 = haut ? Math.max(6, by - hh - 4) : Math.min(ph - hh - 4, by + 28); c.fillStyle = 'rgba(12,18,32,.9)'; c.beginPath(); c.roundRect(bx2, by2, tw2, hh, 6); c.fill(); c.fillStyle = '#e6e9ef'; t2.forEach((z, q) => c.fillText(z, bx2 + 8, by2 + 16 + 15 * q)); } }
@@ -1685,7 +1687,8 @@ function majListe(fams) {
   }
   $('#liste').innerHTML = FAMS.map(f => `<div class="fam ${fermees.has(f) ? 'ferme' : ''}" data-f="${esc(f)}">${esc(f.toUpperCase())}<i>▾</i></div>` + (fermees.has(f) ? '' : L.filter(x => x.famille === f).map(x => {
     const fl = avantPx[x.code] != null && avantPx[x.code] !== x.dernier ? (x.dernier > avantPx[x.code] ? 'flash-h' : 'flash-r') : '';
-    return `<div class="ligne-s ${x.code === code ? 'sel' : ''}" data-c="${esc(x.code)}"><div class="c"><b>${esc(x.code)}</b><small>${esc(x.nom)}</small></div>${spark(x.spark, x.pct >= 0)}
+    const fx = x.seance && !x.seance.ouvert ? ` data-tip="Fermé en ce moment · reprise ${hRep(x.seance.reprise)}"` : '';
+    return `<div class="ligne-s ${x.code === code ? 'sel' : ''} ${fx ? 'dort' : ''}" data-c="${esc(x.code)}"${fx}><div class="c"><b>${esc(x.code)}</b><small>${esc(x.nom)}</small></div>${spark(x.spark, x.pct >= 0)}
       <div class="v"><div class="${fl}">${odo(avantPx[x.code] != null ? nb(avantPx[x.code], x.dec) : '', nb(x.dernier, x.dec), x.dernier >= (avantPx[x.code] ?? x.dernier))}</div>${colMon(x)}</div></div>`; }).join(''))).join('');
   L.forEach(x => { avantPx[x.code] = x.dernier; });
   setTimeout(() => document.querySelectorAll('.flash-h, .flash-r').forEach(e => e.classList.remove('flash-h', 'flash-r')), 50);
@@ -3787,8 +3790,8 @@ async function fnDes(a) { const c = (a || '').trim().toUpperCase() && L.some(x =
   const an = B.slice(-252), h52 = an.length ? Math.max(...an.map(b => b[2])) : null, l52 = an.length ? Math.min(...an.map(b => b[3])) : null, hT = n ? Math.max(...B.map(b => b[2])) : null, lT = n ? Math.min(...B.map(b => b[3])) : null;
   const usd = t => v != null && t != null ? Math.round(t * v) + ' $' : '—', ligne = (k, val, p = '') => `<div><small>${k}</small><b>${val}</b>${p ? `<p>${p}</p>` : ''}</div>`;
   ouvreFn('DES', `${c} · ${x.nom || d.nom || ''} · ${x.famille || ''}`,
-    `<div class="rk">${ligne('DERNIER COURS', der != null ? nb(der, dec) : '—', d.source ? 'source : ' + esc(d.source) : '')}${ligne('LE TICK', `${nb(tk, Math.max(0, (String(tk).split('.')[1] || '').length))} = ${v != null ? nb(v, 2) + ' $' : '?'}`, 'par contrat')}
-      ${ligne('MOUVEMENT MOYEN D’UNE JOURNÉE (ATR 14)', atr != null ? `${Math.round(atr)} t · ${usd(atr)}` : '—', 'par contrat')}${ligne('UN STOP DE 10 / 20 / 40 TICKS', v != null ? `${usd(10)} · ${usd(20)} · ${usd(40)}` : '—', 'par contrat')}
+    `<div class="rk">${ligne('DERNIER COURS', der != null ? nb(der, dec) : '—', d.source ? 'source : ' + esc(d.source) : '')}${ligne(estCfd(c) ? 'LE PIP' : 'LE TICK', `${nb(tk, Math.max(0, (String(tk).split('.')[1] || '').length))} = ${v != null ? nb(v, 2) + ' $' : '?'}`, estCfd(c) ? 'par lot, approché (au cours de sa devise)' : 'par contrat')}
+      ${ligne('MOUVEMENT MOYEN D’UNE JOURNÉE (ATR 14)', atr != null ? `${Math.round(atr)} t · ${usd(atr)}` : '—', estCfd(c) ? 'par lot (valeur du pip approchée)' : 'par contrat')}${ligne('UN STOP DE 10 / 20 / 40 TICKS', v != null ? `${usd(10)} · ${usd(20)} · ${usd(40)}` : '—', 'par contrat')}
       ${ligne('PLUS HAUT / PLUS BAS SUR 1 AN', h52 != null ? `${nb(h52, dec)} · ${nb(l52, dec)}` : '—', h52 != null && der != null ? `à ${Math.round((h52 - der) / tk)} t du haut, ${Math.round((der - l52) / tk)} t du bas` : '')}
       ${ligne('PLUS HAUT / PLUS BAS DE L’HISTORIQUE', hT != null ? `${nb(hT, dec)} · ${nb(lT, dec)}` : '—', n ? `${n} séances depuis le ${new Date(B[0][0] * 1000).toLocaleDateString('fr-FR')}` : '')}
       ${ligne('HORAIRES (HEURE DE PARIS)', 'dim. 23 h → ven. 23 h', 'pause chaque jour de 23 h à minuit · CME Globex')}${ligne('AUJOURD’HUI', x.amp != null ? `${x.amp} t parcourus` : '—', x.amp_hab ? `habitude : ${Math.round(x.amp_hab)} t (× ${nb(x.amp / x.amp_hab, 1)})` : '')}</div>`); }
@@ -4887,6 +4890,14 @@ const _changeCode0 = changeCode;
 changeCode = async function (c, diffuse = true) { const r = await _changeCode0(c, diffuse); if (diffuse && GROUPE && GRP_BC) GRP_BC.postMessage({ g: GROUPE, c, de: FEN }); return r; };
 // la fraîcheur : l'heure de la dernière mise à jour ; « figé » au-delà d'une minute (sauf marché fermé, dit tel quel)
 var L_AT = 0;
+// un CFD a ses horaires à lui (cTrader) : ouvert quand le CME dort (bitcoin le samedi, DAX le matin…), fermé quand il tourne (Hang Seng le soir)
+const INFO_M = {};  // code → { cfd, seance } : ce que la maison dit de chaque marché (liste ou bougies)
+const estCfd = c => !!(L.find(y => y.code === c) || INFO_M[c] || {}).cfd;
+const valsDe = j => { if (!j) return; const vu = (x, cfd) => { if (!x || !x.code) return; if (x.val != null && VAL_TICK[x.code] == null) VAL_TICK[x.code] = x.val; if ('seance' in x) INFO_M[x.code] = { cfd: !!cfd, seance: x.seance }; };
+  vu(j, j.source === 'ctrader'); if (Array.isArray(j.liste)) j.liste.forEach(x => vu(x, x.cfd)); };
+const hRep = t => { const d = new Date(t * 1000), auj = new Date(), dem = new Date(Date.now() + 86400000), h = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ').replace(' h 00', ' h');
+  return d.toDateString() === auj.toDateString() ? `à ${h}` : d.toDateString() === dem.toDateString() ? `demain ${h}` : `${d.toLocaleDateString('fr-FR', { weekday: 'long' })} ${h}`; };
+function marcheFermeDe(c) { const x = L.find(y => y.code === c && y.seance) || INFO_M[c]; if (!x || !x.seance) return marcheFerme(); return x.seance.ouvert ? '' : `marché fermé · reprise ${hRep(x.seance.reprise)}`; }
 function marcheFerme() { const d = new Date(), j = d.getDay(), h = d.getHours() + d.getMinutes() / 60; return j === 6 || (j === 0 && h < 23) || (j === 5 && h >= 23) ? 'marché fermé · reprise dimanche 23 h' : h >= 22 && h < 23 ? 'pause du soir · reprise 23 h' : ''; }
 function majFraicheur() { const e = $('#mon-frais'); if (!e) return; const f = marcheFerme(), age = L_AT ? (Date.now() - L_AT) / 1000 : null;
   if (f) { e.textContent = `TopstepX · ${f}`; e.classList.remove('fige'); }
@@ -5059,7 +5070,7 @@ versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 300
 const DUREE_UT = { '5m': 300, '15m': 900, '30m': 1800, 'H1': 3600, 'H4': 14400, 'D1': 86400 };
 let vifOcc = false, VIF_AT = 0; var VIF_PX = null;
 async function vif() {
-  if (vifOcc || document.hidden || REPLAY || !panes.length || (typeof marcheFerme === 'function' && marcheFerme())) return;
+  if (vifOcc || document.hidden || REPLAY || !panes.length || (typeof marcheFermeDe === 'function' && marcheFermeDe(code))) return;
   vifOcc = true;
   try {
     const r = await api(`/maison/graphique?vif=1&code=${code}`); if (!r || !r.ok || r.code !== code || !(r.barres || []).length) return;
@@ -5258,7 +5269,7 @@ function ouvreAide() { $('#aide-k').classList.add('on'); $('#aide-q').value = ''
 $('#aide-q').addEventListener('input', filtreAide);
 $('#aide-q').addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Escape') { if ($('#aide-q').value) { $('#aide-q').value = ''; filtreAide(); } else $('#aide-k').classList.remove('on'); } });
 $('#b-cmd').addEventListener('click', () => ouvreRecherche());
-setInterval(() => { const sp = $('#sym-px'), b = $('#sym'); if (!sp || !b) return; const f = marcheFerme(), age = L_AT ? (Date.now() - L_AT) / 1000 : null, fg = !f && age != null && age > 60;
+setInterval(() => { const sp = $('#sym-px'), b = $('#sym'); if (!sp || !b) return; const f = marcheFermeDe(code), age = L_AT ? (Date.now() - L_AT) / 1000 : null, fg = !f && age != null && age > 60;
   sp.classList.toggle('fige', fg);
   b.dataset.tip = 'Changer de marché' + (f ? ` — ${f}` : age == null ? '' : fg ? ` — cours figé depuis ${age > 3600 ? Math.round(age / 3600) + ' h' : Math.round(age / 60) + ' min'}` : ` — cours de ${new Date(L_AT).toLocaleTimeString('fr-FR')}`); }, 1000);
 
