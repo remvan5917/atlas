@@ -19,6 +19,9 @@
   <h1>Le Point Marchés sur LinkedIn</h1>
   <small>Chaque jour de marché, ta note publique est publiée sur ton profil. Le jeton d'accès reste sur ton PC.</small>
   <div id="m"><p>Je regarde où on en est…</p></div>
+  <h1 style="margin-top:28px">La page La rue du financement</h1>
+  <small>Les posts de la semaine, publiés tout seuls au nom de la page, à leur jour et à leur heure.</small>
+  <div id="m2"><p>…</p></div>
 </main>
 <script>
 // la page de retour de LinkedIn : elle lance l'autorisation, reçoit le code et le confie à la maison ; le jeton reste dans la maison
@@ -32,6 +35,7 @@ const ETATS = { pret: 'prête', publie: 'publiée ✓', echec: 'échec', annule:
   try {
     if (code) { history.replaceState(null, '', location.pathname); dit('<p>LinkedIn a répondu, je range l’accès dans la maison…</p>');
       const r = await api({ action: 'linkedin', op: 'jeton', code, state, retour: RETOUR });
+      if (String(state || '').startsWith('lrf-')) { dit(r.ok ? `<p class="ok">✓ La page ${esc(r.nom || 'La rue du financement')} est branchée. Ses posts partiront seuls, à leur heure.</p>` : `<p class="ko">LinkedIn a refusé : ${esc(r.raison || 'raison inconnue')}</p>`); return lrf(); }
       dit(r.ok ? `<p class="ok">✓ C'est branché${r.nom ? ` sur le profil de ${esc(r.nom)}` : ''}. Accès valable environ 2 mois : Atlas te préviendra une semaine avant de le renouveler.</p><p>À partir de maintenant, ta note publique est publiée toute seule chaque jour de marché, puis tu reçois une notification. Tu peux fermer cette page.</p>`
         : `<p class="ko">LinkedIn a refusé : ${esc(r.raison || 'raison inconnue')}</p><button id="go">Réessayer</button>`); }
     else { const e = await api({ action: 'linkedin', op: 'etat' });
@@ -44,7 +48,20 @@ const ETATS = { pret: 'prête', publie: 'publiée ✓', echec: 'échec', annule:
     }
   } catch (x) { dit('<p class="ko">Pas de liaison avec la maison (le PC doit être allumé).</p>'); return; }
   const b = document.getElementById('go'); if (b) b.onclick = async () => { const r = await api({ action: 'linkedin', op: 'url', retour: RETOUR }); if (r.ok && r.url) location.href = r.url; else dit(`<p class="ko">${esc(r.raison || 'la maison n’a pas répondu')}</p>`); };
+  lrf();
 })();
+// la page La rue du financement (accès « Community Management » de LinkedIn)
+const ET2 = { pret: 'prévu', publie: 'publié ✓', echec: 'échec', trop_tard: 'pas publié (maison éteinte)' };
+async function lrf() {
+  const m2 = document.getElementById('m2'); let e;
+  try { e = await api({ action: 'linkedin', compte: 'lrf', op: 'etat' }); } catch (x) { m2.innerHTML = '<p class="ko">Pas de liaison avec la maison.</p>'; return; }
+  if (!e || e.ok === false) { m2.innerHTML = '<p class="ko">La maison doit être redémarrée une fois.</p>'; return; }
+  if (!e.application) { m2.innerHTML = '<p>Il manque l’application de La rue du financement dans la maison. Dans un terminal :</p><p><code>python3 ~/.local/share/shadow/linkedin_lrf.py cles</code></p>'; return; }
+  const f = (e.file || []).slice(-6).reverse();
+  m2.innerHTML = (e.autorise ? `<p class="ok">✓ Page branchée${e.page ? ` : ${esc(e.page)}` : ''}, encore ${e.jours_restants} jours (renouvelé tout seul).</p><button id="go2">Refaire l'autorisation</button>` : '<p>Un clic : LinkedIn te demande d’autoriser la publication au nom de la page.</p><button id="go2">Connecter la page La rue du financement</button>')
+    + (f.length ? `<p><b>Les posts de la page</b></p><ul>${f.map(x => `<li>${esc(x.quand)} : ${ET2[x.etat] || esc(x.etat)}${x.erreur ? ` — ${esc(x.erreur)}` : ''}</li>`).join('')}</ul>` : '');
+  document.getElementById('go2').onclick = async () => { const r = await api({ action: 'linkedin', compte: 'lrf', op: 'url', retour: RETOUR }); if (r.ok && r.url) location.href = r.url; else m2.innerHTML = `<p class="ko">${esc(r.raison || 'la maison n’a pas répondu')}</p>`; };
+}
 </script>
 </body>
 </html>
