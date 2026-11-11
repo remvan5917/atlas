@@ -163,7 +163,7 @@ const SECURITE = (() => {
   }
 
   /* =================== la sentinelle : ce qu'elle a vu de suspect (réseau, Tailscale, ordinateur, caméra, alarme, prises) =================== */
-  let vuJusqua = 0, alertesRecentes = [], absent = false, retourAt = 0, enfantMaison = null, sante = null, nuitDehors = false; // nuitDehors : « je ne dors pas à la maison » (la maison se tait, tout part sur le téléphone) // retourAt : son téléphone vient de rentrer à la maison (la sentinelle le voit)
+  let vuJusqua = 0, alertesRecentes = [], absent = false, retourAt = 0, enfantMaison = null, sante = null, nuitDehors = false, dodo = false; // nuitDehors : « je ne dors pas à la maison » (la maison se tait, tout part sur le téléphone) // retourAt : son téléphone vient de rentrer à la maison (la sentinelle le voit)
   try { vuJusqua = +localStorage.getItem('atlas-alertes-vues') || 0; } catch (e) { /* rien */ }
   const quand = at => { const d = new Date(at), auj = dayKey() === dayKey(d); return `${auj ? "aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'long' })} à ${hhmm(d)}`; };
   async function photoAlerte(a) {
@@ -187,7 +187,7 @@ const SECURITE = (() => {
   async function releveAlertes() {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
-    absent = !!j.absent; retourAt = j.retour_at || 0; if (j.enfant_maison != null) enfantMaison = !!j.enfant_maison; sante = j.sante || sante; nuitDehors = !!j.nuit_dehors;
+    absent = !!j.absent; retourAt = j.retour_at || 0; if (j.enfant_maison != null) enfantMaison = !!j.enfant_maison; sante = j.sante || sante; nuitDehors = !!j.nuit_dehors; dodo = !!j.dodo;
     let l = (j.alertes || []).filter(a => a.id > vuJusqua);
     if (!l.length) return;
     if (!vuJusqua) { vuJusqua = Math.max(...l.map(a => a.id)); try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ } return; } // un nouvel appareil : il ne raconte pas toute la semaine
@@ -199,6 +199,7 @@ const SECURITE = (() => {
     const tard = l.filter(a => Date.now() - quandA(a) >= fenetre(a) && a.gravite !== 'info' && a.genre !== 'reveil');
     if (tard.length) PROACTIF.annonce(`alertes-manquees-${vuJusqua}`, `Pendant que j'étais en veille, il y a eu ${tard.length} alerte${tard.length > 1 ? 's' : ''}. Dis « rapport de sécurité » pour le détail.`, { expire: Date.now() + 30 * 60000 });
     l = l.filter(a => Date.now() - quandA(a) < fenetre(a));
+    if (dodo && !nuitDehors) l = l.filter(a => !['radar', 'agenda', 'boite-noire'].includes(a.genre) && a.gravite !== 'annonce'); // « je vais me coucher » : la bourse et l'agenda attendent le matin (ils sont sur le téléphone), seules les vraies alertes réveillent
     if (nuitDehors) l = l.filter(a => a.gravite === 'urgent' && !['radar', 'agenda', 'reveil', 'boite-noire', 'accueil'].includes(a.genre)); // la nuit dehors : la maison vide ne parle pas (tout est sur son téléphone), sauf une vraie alerte
     if (!l.length) return;
     // plusieurs « nouvel appareil » d'un coup (des ampoules, des prises qu'on installe) : une seule annonce, pas une liste
