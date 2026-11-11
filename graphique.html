@@ -976,6 +976,7 @@
   <button data-c="#f23645" title="Rouge"><span class="pastille" style="background:#f23645"></span></button>
   <button data-c="#089981" title="Vert"><span class="pastille" style="background:#089981"></span></button>
   <span class="sep3"></span>
+  <button data-l="rayon" title="Demi-droite : la ligne part de son point d'ancrage (le pivot, le clic) au lieu de traverser tout le graphique"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><path d="M8 12h13"/></svg></button>
   <button data-l="style" title="Plein / pointillés"><svg viewBox="0 0 24 24"><path d="M3 12h4M10 12h4M17 12h4"/></svg></button>
   <button data-l="efface" title="Effacer (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
   <span class="bl-niv" id="bl-niv" hidden></span>
@@ -1290,7 +1291,7 @@ class Pane {
     const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : epaisseurLigne(l, this); c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
       const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
       const rgba = (hex, a) => { const h = String(hex).replace('#', ''); if (h.length !== 6) return `rgba(128,128,128,${a})`; return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`; };
-      if (l.genre === 'horizontale') { const y = Y(l.p1); c.beginPath(); c.moveTo(0, y); c.lineTo(pw, y); c.stroke(); }
+      if (l.genre === 'horizontale') { const y = Y(l.p1), x0 = l.rayon && l.t1 != null ? Math.max(0, T(l.t1)) : 0; if (x0 < pw) { c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); if (l.rayon && x0 > 0) { c.fillStyle = coul(l.couleur); c.beginPath(); c.arc(x0, y, sel ? 3.2 : 2.4, 0, 7); c.fill(); } } }
       else if (l.genre === 'fibo') {  // du départ (100 %) à l'arrivée (0 %), prolongé à droite, la zone 38,2 – 61,8 % teintée
         const col = l.couleur ? coul(l.couleur) : '#ff8a00', x0 = Math.min(T(l.t1), T(l.t2)), N = [0, .236, .382, .5, .618, .786, 1, 1.272, 1.618], P = r => l.p2 + (l.p1 - l.p2) * r;
         c.fillStyle = rgba(col.startsWith('#') ? col : '#ff8a00', .07); c.fillRect(x0, Math.min(Y(P(.382)), Y(P(.618))), pw - x0, Math.abs(Y(P(.618)) - Y(P(.382))));
@@ -1478,7 +1479,7 @@ class Pane {
       if (glisse && glisse.mode === 'regle') { this.regle.t2 = this.iT(x); this.regle.p2 = this.iY(y); this.dessine(); return; }
       if (glisse && glisse.mode === 'graphe' && !glisse.ligne) { const mt = performance.now(); if (glisse.lt) glisse.v = .6 * (glisse.v || 0) + .4 * (x - glisse.lx) / Math.max(1, mt - glisse.lt); glisse.lx = x; glisse.lt = mt; }
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
-        l.t1 = o.t1 + (l.genre === 'horizontale' ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; toutDessine(); return; }
+        l.t1 = o.t1 + (l.genre === 'horizontale' && !l.rayon ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; toutDessine(); return; }
       if (glisse && !glisse.ligne && this.bw > 0) {
         const nbB = ((this.d && this.d.bougies) || []).length, [lo0, hi0] = glisse.y0, h = hi0 - lo0;
         if (glisse.mode === 'prix') { // étirer les prix : vers le haut = plus grand, vers le bas = plus petit (autour du milieu)
@@ -1560,7 +1561,7 @@ function proche(p, x, y) {
     else if (l.genre === 'rect') { const xa = Math.min(p.T(l.t1), p.T(l.t2)), xb = Math.max(p.T(l.t1), p.T(l.t2)), ya = Math.min(p.Y(l.p1), p.Y(l.p2)), yb = Math.max(p.Y(l.p1), p.Y(l.p2)); d = x >= xa && x <= xb && y >= ya && y <= yb ? 3 : 99; }
     else if (l.genre === 'fleche') d = segD(p.T(l.t1), p.Y(l.p1), p.T(l.t2), p.Y(l.p2));
     else if (l.genre === 'texte') { const xa = p.T(l.t1), ya = p.Y(l.p1); d = x >= xa - 4 && x <= xa + 8 * (l.texte || '').length + 8 && y >= ya - 16 && y <= ya + 6 ? 2 : 99; }
-    else if (l.genre === 'horizontale') d = Math.abs(p.Y(l.p1) - y);
+    else if (l.genre === 'horizontale') d = l.rayon && l.t1 != null && x < p.T(l.t1) - 4 ? 99 : Math.abs(p.Y(l.p1) - y);
     else { const x1 = p.T(l.t1), y1 = p.Y(l.p1), x2 = p.T(l.t2), y2 = p.Y(l.p2), k = (y2 - y1) / ((x2 - x1) || 1);
       d = x >= Math.min(x1, x2) - 4 ? Math.abs(y1 + k * (x - x1) - y) : 99; if (l.genre === 'canal' && l.ecart != null) d = Math.min(d, Math.abs(y1 + k * (x - x1) + (p.Y(l.p1 + l.ecart) - y1) - y)); }
     if (d < dmin) { dmin = d; mieux = l; } });
@@ -1583,7 +1584,7 @@ const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
 function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
-  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
+  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, rayon: l.rayon || undefined, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
   ecrit('g-lignes-' + code, JSON.stringify(lignes));
   try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
@@ -1847,6 +1848,7 @@ function majBarreLigne() {
   bl.style.left = `${Math.max(8, Math.min(innerWidth - lw - 8, Math.max(r.left + 8, x)))}px`; bl.style.top = `${Math.min(r.bottom - 50, Math.max(r.top + 8, y - 52))}px`;
   bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false);
   bl.querySelector('[data-l="style"]').classList.toggle('on', choisie.style === 'tirets');
+  const br = bl.querySelector('[data-l="rayon"]'); br.hidden = choisie.genre !== 'horizontale'; br.classList.toggle('on', !!choisie.rayon);
 }
 // le passé de la ligne choisie, dans l'unité du graphique (la mesure de NIV) : une ligne de texte dans sa petite barre, rien sur les bougies
 let BL_NIV = { cle: '', txt: '' };
@@ -1877,6 +1879,7 @@ $('#barre-ligne').addEventListener('click', ev => {
   if (b.dataset.c) { choisie.couleur = b.dataset.c; sauve(); }
   else if (b.dataset.l === 'alerte') { choisie.alerte = choisie.alerte === false; sauve(); toast(choisie.alerte ? 'Alerte activée : Atlas te prévient quand le prix touche ou casse cette ligne' : 'Alerte coupée pour cette ligne'); }
   else if (b.dataset.l === 'style') { choisie.style = choisie.style === 'tirets' ? 'plein' : 'tirets'; sauve(); }
+  else if (b.dataset.l === 'rayon') { choisie.rayon = !choisie.rayon; if (choisie.rayon && choisie.t1 == null) { const pp = panes[actif] || panes[0], B = (pp && pp.d && pp.d.bougies) || []; choisie.t1 = B.length ? B[Math.max(0, B.length - 40)][0] : Date.now() / 1000; } sauve(); majBarreLigne(); toast(choisie.rayon ? 'Demi-droite : la ligne part de son point d’ancrage · glisse-la pour déplacer son départ' : 'La ligne traverse de nouveau tout le graphique'); }
   else if (b.dataset.l === 'efface') efface();
   toutDessine();
 });
