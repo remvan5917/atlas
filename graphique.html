@@ -2712,7 +2712,7 @@ function ecoLigne(r) {  // une ligne : ce qu'a fait le marché affiché les fois
   const C = Object.keys(r.resume || {}), c = C.includes(code) ? code : C[0], x = c && r.resume[c], v = c != null ? VAL_TICK[c] : null, d = t => v != null ? ` (≈ ${Math.round(t * v)} $)` : '';
   if (!x) return `<div class="memo"><small>LES FOIS PRÉCÉDENTES</small>Première fois en mémoire pour ${esc(r.nom || 'cette annonce')} : le radar la mesure aujourd’hui.</div>`;
   return `<div class="memo"><small>LES FOIS PRÉCÉDENTES · ${esc(c)}${c !== code ? ' (ton marché n’est pas encore en mémoire)' : ''}</small>`
-    + (x.n5 ? `en 5 min <b>${x.p5_med} t</b>${d(x.p5_med)} · ` : '') + `dans l’heure <b>${x.amp60_med ?? '—'} t</b>${x.amp60_med != null ? d(x.amp60_med) : ''}, jusqu’à ${x.amp60_max ?? '—'} t · sur ${x.n} fois · la taille du mouvement, jamais son sens</div>`; }
+    + (x.n5 ? `en 5 min <b>${x.p5_med} t</b>${d(x.p5_med)} · ` : '') + `dans l’heure <b>${x.amp60_med ?? '—'} t</b>${x.amp60_med != null ? d(x.amp60_med) : ''}, jusqu’à ${x.amp60_max ?? '—'} t · sur ${x.n} fois · la taille du mouvement, jamais son sens${(() => { const ps = positionsDe(c)[0]; if (!ps) return ''; if (ps.stop == null) return ' · <b style="color:#ff3d5a">ta position n’a pas de stop</b>'; const der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen; return ` · <b>ton stop : ${Math.round(Math.abs(der - ps.stop) / (ps.pas || 1))} t</b>`; })()}</div>`; }
 async function majEvt() {
   const e = evtCourant(), p = $('#pub');
   if (!e || evtFermes.has(e.cle)) { if (EVT) { EVT = null; p.classList.remove('on'); } return; }
@@ -2721,7 +2721,12 @@ async function majEvt() {
   // une minute avant : Atlas le dit, une fois (la fenêtre principale seulement, coupable avec le bouton « voix » du bandeau)
   if (e.genre === 'chiffre' && VOIX_PUB && QUI_SONNE && e.at - now <= 62 && e.at - now >= 45 && !voixPubDites.has(e.cle)) { voixPubDites.add(e.cle);
     const pos = (POS || []).map(x => `${x.sens === 'short' ? 'vendeur' : 'acheteur'} sur ${x.instr}`).join(' et ');
-    direAuto(`${e.titre.replace(/^\w/, c => c.toUpperCase())} dans une minute${e.prevision ? `, attendu ${String(e.prevision).replace('.', ',')}` : ''}.${pos ? ` Tu es ${pos}.` : ''}`); }
+    // ta position face à l'habitude : la distance de ton stop comparée au mouvement habituel de ce marché après cette annonce (des faits, jamais un conseil)
+    let gard = ''; try { const r = await ecoPour(e), R = (r && r.resume) || {};
+      for (const ps of (POSD.positions || [])) { const m = R[ps.instr] || R[{ GC: 'MGC', CL: 'MCL', NQ: 'MNQ', YM: 'MYM', ES: 'MES' }[ps.instr]], tk = ps.pas || 1, der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen;
+        const ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null, hab = m && (m.n5 ? m.p5_med : m.amp60_med);
+        gard += ds == null ? ` Ta position sur ${ps.instr} n’a pas de stop.` : hab ? ` Ton stop sur ${ps.instr} est à ${ds} ticks ; d’habitude, ${ps.instr} bouge de ${hab} ticks ${m.n5 ? 'dans les cinq minutes' : 'dans l’heure'} après cette annonce.` : ` Ton stop sur ${ps.instr} est à ${ds} ticks.`; } } catch (er) { /* rien */ }
+    direAuto(`${e.titre.replace(/^\w/, c => c.toUpperCase())} dans une minute${e.prevision ? `, attendu ${String(e.prevision).replace('.', ',')}` : ''}.${pos ? ` Tu es ${pos}.` : ''}${gard}`); }
   if (e.genre === 'chiffre' && now >= e.at && now - e.at < 3 && !e.sonne) { e.sonne = true; if (QUI_SONNE) sonne('critique'); halo('rouge'); }
   $('#pub-q').innerHTML = e.genre === 'chiffre' ? `<small>${now < e.at ? 'PUBLICATION IMMINENTE' : 'CHIFFRE PUBLIÉ'}</small><b>${esc(e.titre)}</b><span>${esc(e.pays || '')} · ${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>`
     : `<small>LA CLOCHE</small><b>${esc(e.titre)}</b><span>${new Date(e.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · les premières minutes</span>`;
