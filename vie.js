@@ -191,8 +191,8 @@ const VIE = (() => {
     let r = null;
     try { r = json(await AI.chat([{ role: 'system', content: `Aujourd'hui : ${JS[new Date().getDay()]} ${auj()}. Un changement exceptionnel de garde : quels jours (AAAA-MM-JJ) l'enfant est avec son père (true) ou pas (false). JSON UNIQUEMENT : {"jours": {"AAAA-MM-JJ": true}}` }, { role: 'user', content: t }], { maxTokens: 300, temperature: 0, json: true })); } catch (e) { r = null; }
     const j = (r && r.jours) || {}; const k = Object.keys(j).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)); if (!k.length) return say("Je n'ai pas compris quels jours. Dis par exemple : il reste avec moi jusqu'à mardi.");
-    const ex = Object.assign({}, garde.exceptions || {}); k.forEach(x => { ex[x] = !!j[x]; });
-    garde = Object.assign({}, garde, { exceptions: ex });
+    const ex = Object.assign({}, garde.exceptions || {}), jo = Object.assign({}, garde.jours || {}); k.forEach(x => { ex[x] = !!j[x]; delete jo[x]; }); // (un changement dit remplace le jour détaillé)
+    garde = Object.assign({}, garde, { exceptions: ex, jours: jo });
     try { await carnet('famille', { action: 'cle', cle: 'garde', valeur: garde }); } catch (e) { return injoignable(); }
     fx.ok(); return say(`C'est noté : ${k.map(x => `${JS[new Date(`${x}T12:00:00`).getDay()]} ${new Date(`${x}T12:00:00`).getDate()}, ${j[x] ? 'avec toi' : 'chez sa maman'}`).join(' ; ')}.`);
   }
@@ -202,6 +202,54 @@ const VIE = (() => {
     const dates = Array.from({ length: 7 }, (v, i) => plusJours(i));
     const p = dates.find(d => avec(d));
     return say(`${phraseSemaine(dates)}${!dates.some(d => avec(d)) ? '' : ''}${!p ? (() => { const q = Array.from({ length: 21 }, (v, i) => plusJours(i)).find(d => avec(d)); return q ? ` Tu le retrouves ${dLong(q)}.` : ''; })() : ''}`);
+  }
+  // un jour précis, à la demi-journée : { m, a, s (matin, après-midi, soir et nuit : avec lui ?), note, vac (vacances pas encore réparties) }
+  function jourGarde(iso, g) {
+    g = g || garde; if (!g || !g.cycle) return null;
+    if (g.exceptions && g.exceptions[iso] != null && !(g.jours && g.jours[iso])) { const x = !!g.exceptions[iso]; return { m: x, a: x, s: x, note: '' }; }
+    if (g.jours && g.jours[iso]) return Object.assign({ note: '' }, g.jours[iso]);
+    const v = (g.vacances || []).find(x => x.du <= iso && iso <= x.au);
+    const d = Math.round((new Date(`${iso}T12:00:00`) - new Date(`${g.ref}T12:00:00`)) / 86400000), k = ((d % g.cycle.length) + g.cycle.length) % g.cycle.length;
+    const dm = (g.demi && g.demi[k]) || [g.cycle[k], g.cycle[k]];
+    return { m: !!dm[0], a: !!dm[1], s: !!dm[1], note: '', vac: v ? v.nom : '' };
+  }
+  function phraseJour(iso, g) {
+    g = g || garde; const j = jourGarde(iso, g); if (!j) return '';
+    const p = prenom(), autre = g.autre || 'sa maman', chez = `chez ${autre}`, d = dLong(iso);
+    if (j.vac) return `Le ${d}, ce sont les vacances ${j.vac} : vous n'avez pas encore réparti les jours entre toi et ${autre}. En période d'école, ${p} serait ${j.m && j.a ? 'avec toi' : !j.m && !j.a ? chez : j.m ? 'avec toi le matin' : "avec toi l'après-midi"}.`;
+    const note = j.note ? ` ${j.note}` : '';
+    if (j.m && j.a && j.s) return `Oui, le ${d}, ${p} est avec toi toute la journée.${note}`;
+    if (!j.m && !j.a && !j.s) {
+      let q = null; for (let i = 1; i <= 21 && !q; i++) { const x = plusJours(i, iso), y = jourGarde(x, g); if (y && !y.vac && (y.m || y.a)) q = [x, y]; }
+      return `Non, le ${d}, ${p} est ${chez}.${note}${q ? ` Tu le retrouves le ${dLong(q[0])}${q[1].m ? '' : ' à partir de midi'}.` : ''}`;
+    }
+    const blocs = [];
+    [['le matin', j.m], ["l'après-midi", j.a], ['le soir', j.s]].forEach(([lab, v]) => { const b = blocs[blocs.length - 1]; if (b && b.v === v) b.l.push(lab); else blocs.push({ v, l: [lab] }); });
+    const qui = b => `${b.v ? 'avec toi' : chez} ${b.l.join(' et ').replace("le matin et l'après-midi", 'la journée')}`;
+    return `Le ${d}, ${p} est ${blocs.map(qui).join(', puis ')}.${note}`;
+  }
+  // « est-ce que j'ai mon fils le 24 décembre ? » : la date dite → AAAA-MM-JJ (les cas simples ici, le reste par le cerveau)
+  async function dateDite(t, n) {
+    const MO = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+    const JN = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    if (/\bapres demain\b/.test(n)) return plusJours(2);
+    if (/\bdemain\b/.test(n)) return plusJours(1);
+    if (/\b(aujourd hui|ce soir|ce matin|cet apres midi)\b/.test(n)) return auj();
+    const an = (y, mo, j, fixe) => { let x = dJ(new Date(y, mo, j)); if (!fixe && x < plusJours(-1)) x = dJ(new Date(y + 1, mo, j)); return x; };
+    let m = n.match(new RegExp(`\\b(1er|premier|\\d{1,2}) (${MO.join('|')})(?: (20\\d\\d))?\\b`));
+    if (m) return an(m[3] ? +m[3] : new Date().getFullYear(), MO.indexOf(m[2]), parseInt(m[1], 10) || 1, !!m[3]);
+    m = String(t).match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+    if (m) return an(m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : new Date().getFullYear(), +m[2] - 1, +m[1], !!m[3]);
+    m = n.match(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)( prochain)?\b/);
+    if (m) { let k = (JN.indexOf(m[1]) - new Date().getDay() + 7) % 7; if (m[2] && k === 0) k = 7; return plusJours(k); }
+    return (typeof SECRETAIRE !== 'undefined' && SECRETAIRE._date) ? await SECRETAIRE._date(t) : '';
+  }
+  async function quandDate(t, n) {
+    await chargeGarde(); if (!garde || !garde.cycle) return say("Je ne connais pas encore ton calendrier de garde. Dis « on règle mon calendrier de garde ».");
+    const iso = await dateDite(t, n); if (!iso) return say(`Pour quel jour ? Dis par exemple : est-ce que j'ai ${prenom()} le 24 décembre ?`);
+    const j = jourGarde(iso), coul = v => (v ? 'background:#1e3a8a;color:#dbeafe' : 'background:#701a75;color:#fae8ff');
+    if (j && !j.vac) showBoard(carte(`LA GARDE · ${dLong(iso).toUpperCase()}`, '#93c5fd', `<div style="display:flex;gap:8px;margin-top:10px">${[['Matin', j.m], ['Après-midi', j.a], ['Soir et nuit', j.s]].map(([l, v]) => `<div style="flex:1;border-radius:10px;padding:10px;text-align:center;${coul(v)}"><small style="opacity:.8">${l}</small><div style="font-size:20px;font-weight:700">${v ? 'Toi' : esc(garde.autre || 'Sa maman')}</div></div>`).join('')}</div>${j.note ? `<div style="margin-top:10px;font-size:15px;color:#fcd34d">${esc(j.note)}</div>` : ''}`));
+    return say(phraseJour(iso));
   }
 
   /* =================== 4. LE CARNET DE SANTÉ DE LA FAMILLE =================== */
@@ -327,6 +375,12 @@ const VIE = (() => {
     // la garde
     if (/\b(regle|reglons|configure|on fait)\b.*\bcalendrier de garde\b|\bmon calendrier de garde\b/.test(n)) return regleGarde;
     if (/\b(exceptionnellement|exception|il reste avec moi|elle le garde|il part chez sa mere|il va chez sa maman)\b/.test(n) && /\b(jusqu|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|semaine|week end)\b/.test(n)) return () => exception(t);
+    { // un jour précis : « est-ce que j'ai mon fils le 24 décembre ? », « il est avec moi samedi ? », « qui a mon fils le 3 janvier ? »
+      const pf = N(LIEN.prenom() || ''), fils = `(mon fils|le petit${pf ? `|${pf}` : ''})`;
+      const date = /\b(demain|apres demain|aujourd hui|ce soir|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|1er|premier|\d{1,2} (janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre))\b/;
+      const question = new RegExp(`\\b(j ai|j aurai|qui a|qui aura|qui garde|chez qui (est|sera))\\b.*\\b${fils}\\b|\\b${fils}\\b.*\\b(est|sera) (avec moi|chez moi)\\b|\\b(il est|il sera) (avec moi|chez moi)\\b|\\b(je l ai|je l aurai)\\b|\\b(ma garde|la garde)\\b`);
+      if (question.test(n) && (date.test(n) || /\b\d{1,2}\/\d{1,2}\b/.test(t)) && !/\bce week end\b/.test(n) && !/\b(regle|exceptionnellement|exception)\b/.test(n)) return () => quandDate(t, n);
+    }
     if (/\b(quand est ce que j ai|quand j ai|il est avec moi|j ai mon fils|mon fils est avec moi|c est ma semaine|semaine avec mon fils)\b/.test(n)) return () => quandFils(n);
     // la santé
     if (/\b(on remplit|remplis|remplir)\b.*\bcarnet de sante\b/.test(n)) return remplitSante;
@@ -340,5 +394,5 @@ const VIE = (() => {
     if (/\b(arrete|plus de|stop)\b.*\b(lecons?|prof)\b/.test(n)) return () => { S.settings.prof = false; save(); return say("D'accord, plus de leçon le matin. Dis « ma leçon du jour » quand tu veux."); };
     return null;
   }
-  return { route, ecoute, debrief, avec, chargeGarde, phraseSemaine, ligneTrading, _tableau: tableau, _cloture: cloture, _imprimeMois: imprimeMois };
+  return { route, ecoute, debrief, avec, chargeGarde, phraseSemaine, ligneTrading, _tableau: tableau, _cloture: cloture, _imprimeMois: imprimeMois, _phraseJour: phraseJour, _dateDite: dateDite };
 })();
