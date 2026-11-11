@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>La rue du financement · rapport</title>
+<style>
+  :root { color-scheme: dark; --fond: #0b0f1a; --carte: #121a2b; --trait: #22304d; --texte: #e7e5e4; --doux: #94a3b8; --or: #fcd34d; --violet: #c4b5fd; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 15.5px/1.55 Inter, system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 18px 16px 60px; }
+  header { position: sticky; top: 0; background: linear-gradient(var(--fond) 80%, transparent); padding: 10px 0 12px; z-index: 2; }
+  .marque { font: 700 11px/1 system-ui; letter-spacing: .28em; color: var(--violet); text-transform: uppercase; }
+  h1 { font-size: 21px; margin: 6px 0 0; }
+  nav { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  nav a { font-size: 13px; color: var(--texte); text-decoration: none; border: 1px solid var(--trait); border-radius: 99px; padding: 4px 11px; background: var(--carte); }
+  nav a.ici { border-color: var(--violet); color: var(--violet); }
+  section { background: var(--carte); border: 1px solid var(--trait); border-radius: 14px; padding: 6px 16px 12px; margin: 14px 0; scroll-margin-top: 110px; }
+  section.ici { border-color: var(--violet); }
+  h2 { font-size: 17px; color: var(--or); margin: 12px 0 4px; } h3 { font-size: 15px; margin: 14px 0 4px; color: #e7e5e4; }
+  ul { margin: 4px 0; padding-left: 20px; } li { margin: 4px 0; } p { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13.5px; } th, td { border: 1px solid var(--trait); padding: 5px 7px; text-align: left; vertical-align: top; }
+  .info { color: var(--doux); padding: 30px 0; text-align: center; }
+  code { color: var(--or); font: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header><div class="marque">La rue du financement · la plateforme</div><h1 id="titre">Le rapport</h1><nav id="nav"></nav></header>
+  <div id="corps"><p class="info">Je lis le rapport sur l'ordinateur de la maison…</p></div>
+</main>
+<script>
+// le rapport de la plateforme, lu sur l'ordinateur de la maison (par Tailscale) : rien n'est stocké ailleurs
+const q = new URLSearchParams(location.hash.slice(1));
+const MAISON = (q.get('maison') || (location.hostname === '127.0.0.1' ? location.origin : '')).replace(/\/$/, '');
+const F = (q.get('f') || '').replace(/[^0-9A-Za-z._ -]/g, ''), S = q.get('s');
+const corps = document.getElementById('corps'), esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const inl = t => esc(t)
+  .replace(/`(?:(?:src|supabase|docs|scripts)\/[^`]*|[^`\s]*\.(?:tsx?|jsx?|py|sql|json|md)(?::[\d, -]+)?)`(?::[\d, -]+)?/g, '')  // (pas de chemins de fichiers)
+  .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+function rend(md) {
+  const secs = []; let cur = null, liste = false, tab = [];
+  const out = () => cur.html;
+  const ferme = () => { if (!cur) return; if (liste) { cur.html.push('</ul>'); liste = false; } if (tab.length) { const l = tab.filter(r => !/^\|[\s:|-]+\|$/.test(r)); cur.html.push('<table>' + l.map((r, i) => '<tr>' + r.replace(/^\||\|$/g, '').split('|').map(c => `<${i ? 'td' : 'th'}>${inl(c.trim())}</${i ? 'td' : 'th'}>`).join('') + '</tr>').join('') + '</table>'); tab = []; } };
+  let titre = '';
+  for (const l of String(md).split('\n')) {
+    const h = l.match(/^(#{1,4})\s+(.*)$/);
+    if (h && h[1].length === 1) { titre = h[2]; continue; }
+    if (h && h[1].length === 2) { ferme(); cur = { nom: h[2], html: [] }; secs.push(cur); continue; }
+    if (!cur) { cur = { nom: '', html: [] }; secs.push(cur); }
+    if (/^\s*\|/.test(l)) { if (liste) { out().push('</ul>'); liste = false; } tab.push(l.trim()); continue; }
+    if (tab.length) ferme();
+    if (h) { ferme(); out().push(`<h3>${inl(h[2])}</h3>`); continue; }
+    const li = l.match(/^\s*[-*]\s+(.*)$/);
+    if (li) { if (!liste) { out().push('<ul>'); liste = true; } out().push(`<li>${inl(li[1])}</li>`); continue; }
+    if (!l.trim() || /^\s*---+\s*$/.test(l)) { ferme(); continue; }
+    ferme(); out().push(`<p>${inl(l)}</p>`);
+  }
+  ferme();
+  return { titre, secs: secs.filter(s => s.nom || s.html.length) };
+}
+(async () => {
+  if (!MAISON || !F) { corps.innerHTML = '<p class="info">Ce lien est incomplet. Ouvre la dernière notification.</p>'; return; }
+  let r;
+  try { r = await (await fetch(MAISON + '/maison/bureau', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'detail', rapport: F }) })).json(); }
+  catch (e) { corps.innerHTML = "<p class=\"info\">L'ordinateur de la maison ne répond pas (il doit être allumé, et ton téléphone sur Tailscale).</p>"; return; }
+  if (!r || !r.ok) { corps.innerHTML = `<p class="info">${esc((r && r.raison) || 'Rapport introuvable.')}</p>`; return; }
+  const { titre, secs } = rend(r.texte);
+  if (titre) document.getElementById('titre').textContent = titre.replace(/\s*—\s*version de travail du\s*/i, ' · ');
+  const ici = S != null && secs[+S] ? +S : secs.length - 1;
+  document.getElementById('nav').innerHTML = secs.map((s, i) => s.nom ? `<a href="#s${i}" data-i="${i}" class="${i === ici ? 'ici' : ''}">${esc(s.nom)}</a>` : '').join('');
+  corps.innerHTML = secs.map((s, i) => `<section id="s${i}" class="${i === ici ? 'ici' : ''}">${s.nom ? `<h2>${esc(s.nom)}</h2>` : ''}${s.html.join('')}</section>`).join('');
+  document.querySelectorAll('nav a').forEach(a => a.onclick = ev => { ev.preventDefault(); document.getElementById('s' + a.dataset.i).scrollIntoView({ behavior: 'smooth' }); });
+  const el = document.getElementById('s' + ici); if (el && ici > 0) setTimeout(() => el.scrollIntoView(), 50);
+})();
+</script>
+</body>
+</html>
