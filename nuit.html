@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Atlas · la nuit</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(120% 90% at 50% 0%, #1e1b4b 0%, #0b0f1a 60%); color: #e7e5e4; font: 16px/1.55 Inter, system-ui, sans-serif; padding: 16px; }
+  main { width: min(440px, 100%); text-align: center; }
+  .lune { font-size: 64px; line-height: 1; filter: drop-shadow(0 0 24px rgba(167,139,250,.55)); }
+  h1 { font-size: 22px; margin: 14px 0 6px; }
+  p { color: #c4c9d4; margin: 8px 0; }
+  .ok { color: #86efac; } .ko { color: #fca5a5; }
+  button { display: block; width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: 14px; font: 700 16px Inter, system-ui, sans-serif; cursor: pointer; }
+  .dehors { background: linear-gradient(135deg, #a78bfa, #6d28d9); color: #fff; } .maison { background: #1f2937; color: #e7e5e4; border: 1px solid #374151; }
+</style>
+</head>
+<body>
+<main>
+  <div class="lune" id="ic">🌙</div>
+  <h1 id="t">Tu dors à la maison ce soir ?</h1>
+  <div id="m"><p>Un instant…</p></div>
+</main>
+<script>
+// les boutons de la question de 23 h (ntfy) : la réponse va à l'ordinateur de la maison, par Tailscale
+const q = new URLSearchParams(location.hash.slice(1)), MAISON = (q.get('maison') || '').replace(/\/$/, ''), R = q.get('r');
+const m = document.getElementById('m'), esc = t => String(t || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const choix = () => { m.innerHTML = '<button class="dehors" id="d">🌙 Je dors dehors</button><button class="maison" id="r">🏠 Je rentre ce soir</button>'; document.getElementById('d').onclick = () => envoie('dehors'); document.getElementById('r').onclick = () => envoie('maison'); };
+async function envoie(r) {
+  m.innerHTML = '<p>Je préviens la maison…</p>';
+  try {
+    const j = await (await fetch(MAISON + '/maison/nuit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(r === 'dehors' ? { dehors: true, source: 'telephone', eteins: true } : { rentre: true }) })).json();
+    if (!j || j.ok === false) throw new Error((j && j.raison) || 'refus');
+    document.getElementById('ic').textContent = r === 'dehors' ? '🛡️' : '🏠';
+    document.getElementById('t').textContent = r === 'dehors' ? 'Bonne nuit dehors' : 'La maison t’attend';
+    m.innerHTML = `<p class="ok">${esc(j.texte || (r === 'dehors' ? 'La maison est en garde.' : 'Rien ne change.'))}</p>` + (r === 'dehors' ? '<p>En revenant, dis « Atlas, je suis rentré » : le résumé de la nuit t’attend.</p>' : '');
+  } catch (e) { m.innerHTML = '<p class="ko">La maison ne répond pas (l’ordinateur doit être allumé, et ton téléphone sur Tailscale).</p>'; setTimeout(choix, 2500); }
+}
+if (!MAISON) m.innerHTML = '<p class="ko">Ce lien est incomplet : ouvre la notification.</p>';
+else if (R === 'dehors' || R === 'maison') envoie(R); else choix();
+</script>
+</body>
+</html>

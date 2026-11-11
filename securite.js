@@ -163,7 +163,7 @@ const SECURITE = (() => {
   }
 
   /* =================== la sentinelle : ce qu'elle a vu de suspect (réseau, Tailscale, ordinateur, caméra, alarme, prises) =================== */
-  let vuJusqua = 0, alertesRecentes = [], absent = false, retourAt = 0, enfantMaison = null, sante = null; // retourAt : son téléphone vient de rentrer à la maison (la sentinelle le voit)
+  let vuJusqua = 0, alertesRecentes = [], absent = false, retourAt = 0, enfantMaison = null, sante = null, nuitDehors = false; // nuitDehors : « je ne dors pas à la maison » (la maison se tait, tout part sur le téléphone) // retourAt : son téléphone vient de rentrer à la maison (la sentinelle le voit)
   try { vuJusqua = +localStorage.getItem('atlas-alertes-vues') || 0; } catch (e) { /* rien */ }
   const quand = at => { const d = new Date(at), auj = dayKey() === dayKey(d); return `${auj ? "aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'long' })} à ${hhmm(d)}`; };
   async function photoAlerte(a) {
@@ -187,7 +187,7 @@ const SECURITE = (() => {
   async function releveAlertes() {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
-    absent = !!j.absent; retourAt = j.retour_at || 0; if (j.enfant_maison != null) enfantMaison = !!j.enfant_maison; sante = j.sante || sante;
+    absent = !!j.absent; retourAt = j.retour_at || 0; if (j.enfant_maison != null) enfantMaison = !!j.enfant_maison; sante = j.sante || sante; nuitDehors = !!j.nuit_dehors;
     let l = (j.alertes || []).filter(a => a.id > vuJusqua);
     if (!l.length) return;
     if (!vuJusqua) { vuJusqua = Math.max(...l.map(a => a.id)); try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ } return; } // un nouvel appareil : il ne raconte pas toute la semaine
@@ -199,6 +199,7 @@ const SECURITE = (() => {
     const tard = l.filter(a => Date.now() - quandA(a) >= fenetre(a) && a.gravite !== 'info' && a.genre !== 'reveil');
     if (tard.length) PROACTIF.annonce(`alertes-manquees-${vuJusqua}`, `Pendant que j'étais en veille, il y a eu ${tard.length} alerte${tard.length > 1 ? 's' : ''}. Dis « rapport de sécurité » pour le détail.`, { expire: Date.now() + 30 * 60000 });
     l = l.filter(a => Date.now() - quandA(a) < fenetre(a));
+    if (nuitDehors) l = l.filter(a => a.gravite === 'urgent' && !['radar', 'agenda', 'reveil', 'boite-noire', 'accueil'].includes(a.genre)); // la nuit dehors : la maison vide ne parle pas (tout est sur son téléphone), sauf une vraie alerte
     if (!l.length) return;
     // plusieurs « nouvel appareil » d'un coup (des ampoules, des prises qu'on installe) : une seule annonce, pas une liste
     const res = l.filter(a => a.genre === 'reseau' && a.gravite !== 'info');
@@ -239,6 +240,10 @@ const SECURITE = (() => {
   async function modeAbsent(oui) {
     try { await appel('/maison/sentinelle', { absent: oui }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     absent = oui; fx.ok();
+    if (!oui) { // le retour d'une nuit dehors : le résumé de la nuit, et ce qui attendait s'imprime
+      let r = null; try { r = await appel('/maison/nuit', { dehors: false }, 20000); } catch (e) { r = null; }
+      if (r && r.texte) { nuitDehors = false; return say(`${r.texte} La maison reprend son rythme normal.`); }
+    }
     if (!oui) return say('Bon retour. La maison repasse en mode présence : la caméra ne surveille plus que la nuit.');
     return say("Mode absent : je surveille la caméra en continu, le réseau et les prises, et je te préviens au moindre doute. Pense à activer l'alarme si tu veux : dis « active l'alarme en mode total ».");
   }
@@ -327,7 +332,35 @@ const SECURITE = (() => {
     etat: /\b(l alarme|alarme) (est|est elle|elle est|c est|tu peux me dire si) .*\b(activee|active|allumee|mise|en marche|branchee|desactivee|coupee)\b|\b(etat de l alarme|est ce que l alarme|elle est mise l alarme|l alarme elle est)\b|^(et )?l alarme( \?)?$/,
     camera: /\b(montre|affiche|fais voir|regarde|fais moi ecouter|ecoute|direct|photo|image)\b.*\b(camera|entree|jardin|garage|porte|terrasse|portail|salon|allee|devant|cours?)\b|\b(qu est ce qui se passe|qu est ce qu il se passe|il y a quelqu un|y a quelqu un|qui est la|qui sonne|il se passe quoi)\b.*\b(dans|devant|a l|au|sur)\b/,
   };
+  // « je ne dors pas à la maison ce soir » : la maison en garde, la ronde de départ, et demain matin tout sur le téléphone
+  async function nuitDehorsOn() {
+    let r; try { r = await appel('/maison/nuit', { dehors: true, source: 'voix' }, 40000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    if (!r || !r.ok) return say("Je n'ai pas réussi à mettre la maison en garde.");
+    nuitDehors = true; absent = true; fx.ok();
+    await say(`${r.deja ? "C'est déjà noté" : "D'accord, bonne nuit dehors"}. La maison passe en garde : surveillance complète, et ce soir les lumières s'allumeront comme si tu étais là. Pas de réveil demain matin, et tout ce que je devais te dire ou imprimer arrivera sur ton téléphone.`);
+    const al = r.allumes || [];
+    if (al.length && await askYesNo(`Encore allumé : ${al.map(a => a.nom).join(', ')}. Je ${al.length > 1 ? 'les' : "l'"}éteins ?`)) {
+      try { await appel('/maison/commande', { ids: al.map(a => a.id), allume: false }, 15000); await say('Éteint.'); } catch (e) { await say("Je n'ai pas réussi à éteindre."); }
+    }
+    if ((r.prises || []).length) await say(`Encore branché : ${r.prises.join(', ')}.`);
+    if (r.alarme && r.alarme.pret && r.alarme.code === 'D') { if (await askYesNo("Ton alarme n'est pas activée. Je l'active en mode total ?")) await activer('total', dlg.qui); }
+    else if (!(r.alarme && r.alarme.pret)) await say("Pense à activer ton alarme Verisure en partant.");
+    if ((r.menus || []).length) await say(`J'ai noté ${r.menus.join(' et ')} dehors, dans tes menus.`);
+    if ((r.a_finir || []).length) await say(`Dans le frigo, à finir vite : ${r.a_finir.join(', ')}.`);
+    return say("En revenant, dis « je suis rentré » : je te fais le résumé de la nuit.");
+  }
+  async function nuitDehorsOff() {
+    try { await appel('/maison/nuit', { dehors: false }, 20000); await appel('/maison/sentinelle', { absent: false }, 10000); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    nuitDehors = false; absent = false; fx.ok();
+    return say("D'accord, tu dors à la maison : je reprends le rythme normal, réveils compris.");
+  }
+  function routeNuit(t, n) {
+    if (/\b(je (ne )?dors pas (a la maison|ici|chez moi|la)|je ne rentre pas (dormir|ce soir|cette nuit)|je dors (dehors|ailleurs|a l hotel|chez (?!moi\b)\w+)|je decouche|nuit dehors|mode nuit dehors)\b/.test(n) && !/\b(finalement|annule|plus)\b/.test(n)) return nuitDehorsOn;
+    if (nuitDehors && /\b(finalement|annule|en fait)\b.*\b(je dors (a la maison|ici|chez moi)|je rentre|nuit dehors)\b|\bannule la nuit dehors\b/.test(n)) return nuitDehorsOff;
+    return null;
+  }
   function route(t, n) {
+    const nd = routeNuit(t, n); if (nd) return nd;
     if (/\b(mode absent|je pars|on part|je m en vais|je sors de la maison|on s en va de la maison|surveille la maison)\b/.test(n) && !/\balarme\b/.test(n)) return () => modeAbsent(true);
     if (/\b(bilan de sante|etat de sante|tout fonctionne|tout marche|est ce que tout va bien|tu vas bien atlas|diagnostic de la maison)\b/.test(n)) return async () => {
       let j; try { j = await appel('/maison/alertes?depuis=99999999999999', null, 8000); sante = j.sante || sante; } catch (e) { return say("L'ordinateur de la maison ne répond pas : c'est déjà un problème."); }
@@ -358,7 +391,7 @@ const SECURITE = (() => {
     return null;
   }
   const nomsCameras = () => cams.map(x => x.nom).concat(ezCams.map(x => x.nom));
-  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent, enfantAbsent: () => enfantMaison === false, sante: () => sante,
+  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent, nuitDehors: () => nuitDehors, routeNuit, enfantAbsent: () => enfantMaison === false, sante: () => sante,
     // son téléphone est revenu sur le Wi-Fi il y a moins de 15 min : « je suis rentré » n'a pas besoin de sa voix (elle se trompe parfois)
     retourRecent: async () => { try { const j = await appel('/maison/alertes?depuis=99999999999999', null, 5000); absent = !!j.absent; retourAt = j.retour_at || 0; } catch (e) { /* le dernier relevé */ } return !!retourAt && Date.now() - retourAt < 15 * 60000; }, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
 })();
