@@ -912,7 +912,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v92</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v94</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1245,7 +1245,7 @@ class Pane {
     // sa position : une zone pâle entre son entrée et le prix, verte quand il gagne, rouge quand il perd ; elle bouge avec le prix (sous les bougies, rien de caché)
     if (optPos && optPosFond && !REPLAY) for (const ps of positionsDe(code)) { if (ps.prix_moyen == null) continue; const px = prixVif(ps) ?? B[B.length - 1][4], gagne = (px - ps.prix_moyen) * (ps.sens === 'long' ? 1 : -1) >= 0;
       const ye = Y(ps.prix_moyen), yp = Y(px), y0 = Math.max(HAUT - 20, Math.min(ye, yp)), y1 = Math.min(BASP, Math.max(ye, yp));
-      if (y1 > y0) { c.fillStyle = gagne ? (TH.nuit ? 'rgba(25,211,140,.13)' : 'rgba(8,153,129,.10)') : (TH.nuit ? 'rgba(255,61,90,.13)' : 'rgba(242,54,69,.10)'); c.fillRect(0, y0, pw, y1 - y0); }
+      if (y1 > y0) { c.fillStyle = gagne ? (TH.nuit ? 'rgba(25,211,140,.27)' : 'rgba(8,153,129,.22)') : (TH.nuit ? 'rgba(255,61,90,.27)' : 'rgba(242,54,69,.22)'); /* (assez franc pour se voir vert ou rouge, les bougies restent lisibles) */ c.fillRect(0, y0, pw, y1 - y0); }
       c.save(); c.lineWidth = 1.2; c.setLineDash([6, 4]);
       if (ye >= HAUT - 20 && ye <= BASP) { c.strokeStyle = gagne ? '#19d38c' : '#ff3d5a'; c.beginPath(); c.moveTo(0, Math.round(ye) + .5); c.lineTo(pw, Math.round(ye) + .5); c.stroke(); }
       if (ps.stop != null) { const ys = Y(ps.stop); if (ys >= HAUT - 20 && ys <= BASP) { c.strokeStyle = 'rgba(255,61,90,.75)'; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(0, Math.round(ys) + .5); c.lineTo(pw, Math.round(ys) + .5); c.stroke(); } }
