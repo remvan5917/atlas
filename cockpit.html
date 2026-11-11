@@ -397,6 +397,7 @@ const COMMANDES = [
   ['maison', 'ampoule', 'Les lumières qui parlent', 'montre-moi les lumières qui parlent'],
   ['surete', 'porte', 'Je pars', 'je pars'],
   ['surete', 'maison', 'Je suis rentré', 'je suis rentré'],
+  ['surete', 'lune', 'Je dors dehors', 'je ne dors pas à la maison ce soir'],
   ['surete', 'bouclier', 'Scan de sécurité', 'scan de sécurité'],
   ['surete', 'journal', 'Rapport de sécurité', 'rapport de sécurité'],
   ['surete', 'radar', 'Rapport de nuit', 'rapport de nuit'],
@@ -631,7 +632,7 @@ function cartes() {
       <section class="carte grand z-log"><h2><div><i>07</i>JOURNAL</div><span id="al-res"></span></h2><div class="defile log" id="alertes"></div></section>
       <div class="reserve"></div>
     </div>`;
-  sc = [['power', 'Tout éteindre', null, toutEteindre], [absent ? 'maison' : 'porte', absent ? 'Je suis rentré' : 'Je pars', null, basculeAbsent]]
+  sc = [['power', 'Tout éteindre', null, toutEteindre], [absent ? 'maison' : 'porte', absent ? 'Je suis rentré' : 'Je pars', null, basculeAbsent], ['lune', 'Je dors dehors', null, nuitDehors]]
     .concat(ATLAS ? SCENES : []).concat([['alerte', 'Danger', null, danger, 'danger']]).concat(ATLAS ? [['grille', 'Toutes les commandes', null, panneau, 'tout']] : []);
   $('#scenes').innerHTML = sc.map(([i, t, , , cls], k) => `<button class="scene ${cls || ''}" data-k="${k}">${ic(i)}<span>${esc(t)}</span></button>`).join('');
   document.querySelectorAll('.scene').forEach(b => b.onclick = () => { const x = sc[+b.dataset.k]; if (x[3]) x[3](b); else dis(x[2], b); });
@@ -783,6 +784,8 @@ async function chargeSentinelle() {
   majEtat();
   if (avant !== absent && sc[1] && POSTE !== 'travail') { sc[1][0] = absent ? 'maison' : 'porte'; sc[1][1] = absent ? 'Je suis rentré' : 'Je pars'; const b = document.querySelector('.scene[data-k="1"]'); if (b) b.innerHTML = `${ic(sc[1][0])}<span>${sc[1][1]}</span>`; }
 }
+// « je ne dors pas à la maison ce soir » : la maison en garde, pas de réveil, tout sur le téléphone (Atlas fait la ronde de départ)
+async function nuitDehors(b) { if (ATLAS) { dis('je ne dors pas à la maison ce soir', b); setTimeout(chargeSentinelle, 6000); return; } try { await appel('/maison/nuit', { dehors: true, source: 'cockpit', eteins: true }); } catch (e) { /* rien */ } setTimeout(chargeSentinelle, 800); }
 async function basculeAbsent(b) { if (ATLAS) { dis(absent ? 'je suis rentré' : 'je pars', b); setTimeout(chargeSentinelle, 4000); return; } try { await appel('/maison/sentinelle', { absent: !absent }); } catch (e) { /* rien */ } setTimeout(chargeSentinelle, 500); }
 
 /* ---------- les caméras ---------- */
