@@ -3300,11 +3300,18 @@ function annonceExecutions(l) { const cle = ps => ps.instr, maint = {}; l.forEac
 // le prix le plus frais pour une position : le prix en direct (3 s) si c'est le marché affiché, sinon celui de la maison (5 s)
 function prixVif(ps) { return VIF_PX && Date.now() - VIF_PX.at < 10000 && positionsDe(VIF_PX.c).includes(ps) ? VIF_PX.px : null; }
 // ton trade en cours, en grand en haut : gain ou perte latente en ticks et en dollars
+// ton stop face au bruit, en direct (la mesure de STOP) : la part des heures où le seul mouvement du marché, contre ta position, aurait atteint la distance de ton stop
+const BRUIT = {};
+function bruitStop(c, t, long) { if (!c || !(t > 0)) return null; let z = BRUIT[c];
+  if (!z || Date.now() - z.at > 1800000) { z = BRUIT[c] = { at: Date.now(), B: null, m: new Map() }; barresDe(c, '15m').then(d => { z.B = (d.bougies || []).slice(-1500); z.tk = d.tick || 1; majPosH(); }).catch(() => {}); }
+  if (!z.B || z.B.length < 100) return null; const k = `${t}|${long}`; if (z.m.has(k)) return z.m.get(k);
+  let hit = 0, N = 0; for (let i = 0; i + 4 <= z.B.length; i++) { const o = z.B[i][1]; let lo = Infinity, hi = -Infinity; for (let q = i; q < i + 4; q++) { if (z.B[q][3] < lo) lo = z.B[q][3]; if (z.B[q][2] > hi) hi = z.B[q][2]; } N++; if ((long ? o - lo : hi - o) / z.tk >= t) hit++; }
+  const v = N ? Math.round(hit / N * 100) : null; z.m.set(k, v); if (z.m.size > 300) z.m.delete(z.m.keys().next().value); return v; }
 function majPosH() { const e = $('#pos-h'); if (!e) return; const l = POSD.positions || []; if (!l.length) { e.hidden = true; return; }
   let tot = 0, ok = true; const dec = c => (L.find(x => x.code === c) || {}).dec ?? 2;
   const parts = l.map(ps => { const tk = ps.pas || 1, der = prixVif(ps) ?? ps.dernier ?? ps.prix_moyen, t = Math.round((der - ps.prix_moyen) / tk) * (ps.sens === 'long' ? 1 : -1), usd = ps.valeur ? t * ps.valeur * ps.taille : null;
     if (usd == null) ok = false; else tot += usd; const ds = ps.stop != null ? Math.round(Math.abs(der - ps.stop) / tk) : null;
-    return `<span class="s">${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille}${ps.taille > MAX_LOTS ? ' <b style="color:#fff;background:#d01c2c;padding:1px 6px;border-radius:5px;font-size:11px">⚠ RÈGLE : 1 LOT</b>' : ''}</span><span>${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t</span>${usd != null ? `<b class="v">${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $</b>` : ''}<small>entrée ${nb(ps.prix_moyen, dec(ps.instr))}${ds != null ? ` · stop à ${ds} t` : ''}</small>`; });
+    return `<span class="s">${esc(ps.instr)} ${ps.sens === 'long' ? '▲ LONG' : '▼ SHORT'} ${ps.taille}${ps.taille > MAX_LOTS ? ' <b style="color:#fff;background:#d01c2c;padding:1px 6px;border-radius:5px;font-size:11px">⚠ RÈGLE : 1 LOT</b>' : ''}</span><span>${t > 0 ? '+' : t < 0 ? '−' : ''}${Math.abs(t)} t</span>${usd != null ? `<b class="v">${usd > 0 ? '+' : usd < 0 ? '−' : ''}${Math.abs(Math.round(usd)).toLocaleString('fr-FR')} $</b>` : ''}<small>entrée ${nb(ps.prix_moyen, dec(ps.instr))}${ds != null ? ` · stop à ${ds} t${(b => b != null ? ` · <span title="La part des heures (sur ses derniers mois en 15 minutes) où le seul mouvement du marché, dans le sens contraire à ta position, a fait au moins cette distance. Une mesure, pas un conseil.">bruit : ${b} % des heures</span>` : '')(bruitStop(L.some(x => x.code === ps.instr) ? ps.instr : (positionsDe(code).includes(ps) ? code : null), ds, ps.sens === 'long'))}` : ''}</small>`; });
   e.className = `pos-h ${ok ? (tot > 0 ? 'h' : tot < 0 ? 'r' : '') : ''}`; e.innerHTML = `<span>EN COURS</span>${parts.join('<span>·</span>')}`; e.hidden = false; }
 // l'alerte rouge : une nouvelle critique ou un mouvement anormal pendant qu'il est en position — en grand, avec une alarme, jusqu'à ce qu'il la touche
 const MAX_LOTS = 1;  // (SA règle : 1 lot maximum par compte, quel que soit le marché)
