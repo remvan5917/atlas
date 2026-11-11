@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Point Marchés · LinkedIn</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #060b16; color: #e6e9ef; font: 15px/1.55 Inter, system-ui, sans-serif; }
+  main { max-width: 560px; padding: 32px; border: 1px solid #1d2c49; border-radius: 14px; background: #0b1426; }
+  h1 { margin: 0 0 6px; font-size: 20px; letter-spacing: .02em; } small { color: #8a94a8; }
+  p { margin: 14px 0; } .ok { color: #19d38c; } .ko { color: #ff6b81; }
+  button, a.b { display: inline-block; margin-top: 8px; padding: 10px 16px; border: 0; border-radius: 9px; background: linear-gradient(135deg, #67dcff, #2f7bff); color: #03121f; font: 700 14px Inter, system-ui, sans-serif; cursor: pointer; text-decoration: none; }
+  ul { padding-left: 18px; } li { margin: 4px 0; color: #c3cad6; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Le Point Marchés sur LinkedIn</h1>
+  <small>Chaque jour de marché, ta note publique est publiée sur ton profil. Le jeton d'accès reste sur ton PC.</small>
+  <div id="m"><p>Je regarde où on en est…</p></div>
+</main>
+<script>
+// la page de retour de LinkedIn : elle lance l'autorisation, reçoit le code et le confie à la maison ; le jeton reste dans la maison
+const ROOT = location.hostname === '127.0.0.1' || location.hostname === 'localhost' ? location.origin : 'http://127.0.0.1:11435';
+const RETOUR = location.origin + location.pathname, m = document.getElementById('m');
+const api = async corps => { const r = await fetch(ROOT + '/maison/graphique', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); return r.json(); };
+const dit = h => { m.innerHTML = h; }, esc = t => String(t || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const ETATS = { pret: 'prête', publie: 'publiée ✓', echec: 'échec', annule: 'non publiée' };
+(async () => {
+  const q = new URLSearchParams(location.search), code = q.get('code'), state = q.get('state'), err = q.get('error_description') || q.get('error');
+  try {
+    if (code) { history.replaceState(null, '', location.pathname); dit('<p>LinkedIn a répondu, je range l’accès dans la maison…</p>');
+      const r = await api({ action: 'linkedin', op: 'jeton', code, state, retour: RETOUR });
+      dit(r.ok ? `<p class="ok">✓ C'est branché${r.nom ? ` sur le profil de ${esc(r.nom)}` : ''}. Accès valable environ 2 mois : Atlas te préviendra une semaine avant de le renouveler.</p><p>À partir de maintenant, ta note publique est publiée toute seule chaque jour de marché, puis tu reçois une notification. Tu peux fermer cette page.</p>`
+        : `<p class="ko">LinkedIn a refusé : ${esc(r.raison || 'raison inconnue')}</p><button id="go">Réessayer</button>`); }
+    else { const e = await api({ action: 'linkedin', op: 'etat' });
+      if (!e || e.ok === false) { dit('<p class="ko">La maison ne connaît pas encore LinkedIn : elle doit être redémarrée une fois.</p>'); return; }
+      if (!e.application) { dit('<p>Il manque l’application LinkedIn dans la maison. Dans un terminal, sur le PC de la maison :</p><p><code>python3 ~/.local/share/shadow/linkedin.py cles</code></p><p>puis reviens ici.</p>'); return; }
+      const f = (e.file || []).slice(-5).reverse();
+      dit((err ? `<p class="ko">LinkedIn a répondu : ${esc(err)}</p>` : '') + (e.autorise ? `<p class="ok">✓ Branché${e.nom ? ` sur le profil de ${esc(e.nom)}` : ''}, encore ${e.jours_restants} jours. Mode : ${e.mode === 'auto' ? 'publication automatique' : 'avec ta validation'}.</p><button id="go">Refaire l'autorisation</button>`
+        : '<p>Un clic : LinkedIn te demande de te connecter avec <b>ton</b> compte et d’autoriser la publication.</p><button id="go">Connecter LinkedIn</button>')
+        + (f.length ? `<p><b>Les dernières publications</b></p><ul>${f.map(x => `<li>${esc(x.date)} : ${ETATS[x.etat] || esc(x.etat)}${x.erreur ? ` — ${esc(x.erreur)}` : ''}</li>`).join('')}</ul>` : ''));
+    }
+  } catch (x) { dit('<p class="ko">Pas de liaison avec la maison (le PC doit être allumé).</p>'); return; }
+  const b = document.getElementById('go'); if (b) b.onclick = async () => { const r = await api({ action: 'linkedin', op: 'url', retour: RETOUR }); if (r.ok && r.url) location.href = r.url; else dit(`<p class="ko">${esc(r.raison || 'la maison n’a pas répondu')}</p>`); };
+})();
+</script>
+</body>
+</html>
