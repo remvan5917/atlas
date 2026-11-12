@@ -715,7 +715,7 @@
   .pcas { display: grid; grid-template-columns: 150px 1fr 80px 120px; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 8px; cursor: pointer; font-size: 12.5px; } .pcas:hover { background: rgba(76, 201, 240, .08); }
   .pcas svg { width: 100%; height: 26px; } .pcas b { font: 700 13px var(--mono); } .pcas small { color: var(--tres-doux); font: 600 10.5px var(--mono); }
   /* sa liste à lui : modifier, glisser, ajouter */
-  .cols-t .b-ml { all: unset; cursor: pointer; margin-left: 8px; font: 700 8.5px 'Inter'; letter-spacing: .14em; color: var(--ambre); opacity: .75; } .cols-t .b-ml:hover { opacity: 1; }
+  .cols-t .b-ml { all: unset; cursor: pointer; margin-left: 8px; font: 700 8.5px 'Inter'; letter-spacing: .14em; color: var(--ambre); opacity: .75; } .cols-t .b-ml:hover { opacity: 1; } .cols-t .b-ml.on { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
   .liste-pied { display: none; flex-wrap: wrap; gap: 6px; padding: 10px 14px 12px; border-top: 1px solid var(--bord); }
   body.liste-edit .liste-pied { display: flex; }
   .liste-pied button, .liste-pied input { font: 600 11px 'Inter'; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--bord2); background: transparent; color: var(--texte); cursor: pointer; }
@@ -963,7 +963,7 @@
     <div class="tete"><b><i class="led"></i>MONITEUR</b><span class="frais" id="mon-frais">TopstepX</span><button class="retracte" id="mon-x" title="Rentrer le moniteur (il reste sur ta vue d'ensemble)">▸</button></div>
     <div class="fam" style="cursor:default">LIENS ENTRE MARCHÉS<i title="Chaque couple : ses deux courbes des 4 dernières heures. Clique pour agrandir, clique un nom pour ouvrir ce marché. Ambre : ils se séparent.">?</i></div>
     <div class="liens" id="liens"><div class="lien-m relache"><i></i><span>chargement…</span></div></div>
-    <div class="cols-t"><span>MARCHÉ<button class="b-ml" id="b-maliste" data-tip="Ta liste : ajouter n'importe quel contrat TopstepX, retirer, réordonner, tes familles">MODIFIER</button></span><span>5 JOURS</span><span>PRIX · <button class="b-ml" id="b-moncol" data-tip="Ce que montre la petite ligne sous le prix : la variation en %, en ticks, l'amplitude du jour (par rapport à l'habitude) ou la distance à ta ligne la plus proche">VAR %</button></span></div>
+    <div class="cols-t"><span>MARCHÉ<button class="b-ml" id="b-maliste" data-tip="Ta liste : ajouter n'importe quel contrat TopstepX, retirer, réordonner, tes familles">MODIFIER</button></span><span>5 JOURS</span><span>PRIX · <button class="b-ml" id="b-moncol" data-tip="Ce que montre la petite ligne sous le prix : la variation en %, en ticks, l'amplitude du jour (par rapport à l'habitude) ou la distance à ta ligne la plus proche">VAR %</button><button class="b-ml" id="b-montri" data-tip="Trier tous tes marchés selon cette colonne (un second clic : ton ordre et tes familles)">⇅</button></span></div>
     <div id="liste"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></div>
     <div class="liste-pied" id="liste-pied"><button id="ml-ajout">+ Ajouter un marché</button><button id="ml-fam">+ Famille</button><input id="ml-fam-n" placeholder="Nom de la famille, Entrée" maxlength="30" hidden><button id="ml-defaut">Liste d'origine</button><button id="ml-fini">Terminé</button></div>
     <div class="aide">
@@ -1704,7 +1704,18 @@ function colMon0(x) {
   return `<small class="${x.pct >= 0 ? 'h' : 'r'}">${x.pct > 0 ? '+' : ''}${nb(x.pct, 2)} %</small>`;
 }
 function majColMon() { const b = $('#b-moncol'); if (b) b.textContent = (COLS_MON.find(c => c[0] === COL_MON) || COLS_MON[0])[1]; }
+$('#b-montri').classList.toggle('on', TRI_MON); $('#b-montri').onclick = ev => { ev.stopPropagation(); TRI_MON = !TRI_MON; ecrit('g-montri', TRI_MON ? '1' : '0'); $('#b-montri').classList.toggle('on', TRI_MON); majListe(); toast(TRI_MON ? 'Moniteur trié selon la colonne affichée · ⇅ pour revenir à ton ordre' : 'Moniteur : ton ordre et tes familles'); };
 majColMon(); $('#b-moncol').onclick = ev => { ev.stopPropagation(); const k = COLS_MON.findIndex(c => c[0] === COL_MON); COL_MON = COLS_MON[(k + 1) % COLS_MON.length][0]; ecrit('g-moncol', COL_MON); majColMon(); majListe(); };
+// trier le moniteur selon la colonne affichée (le plus fort, le plus proche ou le plus « chaud » en premier) ; un second clic : son ordre et ses familles
+var TRI_MON = lit('g-montri', '0') === '1';  // (var : majListe peut être appelée avant cette ligne)
+function valTri(x) { const v = (a) => a == null || !isFinite(a) ? null : a;
+  if (COL_MON === 'pct') return v(x.pct == null ? null : -Math.abs(x.pct)); if (COL_MON === 'ticks') return v(x.ticks == null ? null : -Math.abs(x.ticks));
+  if (COL_MON === 'amp') return v(x.amp != null && x.amp_hab ? -x.amp / x.amp_hab : null); if (COL_MON === 'ligne') return v(x.niveau ? Math.abs(x.niveau.d) : x.ligne ? Math.abs(x.ligne.d) : null);
+  if (COL_MON === 'filtre') { const m = MON_FILTRE && MON_FILTRE.m[x.code]; return m ? (m.oui ? -1000 + (m.depuis || 0) : m.il_y_a ?? 999) : null; }
+  if (COL_MON === 'jambe') { const j = MON_JAMBE.m[x.code]; return j ? -j.plus : null; }
+  if (COL_MON === 'lect') { const e = MON_LECT.m[x.code]; if (!e) return null; const S = e.map(z => z === 'haussière' ? 1 : z === 'baissière' ? -1 : 0); return -Math.abs(S.reduce((a, b) => a + b, 0)); }
+  if (COL_MON === 'd1') { const z = MON_D1.m[x.code]; if (!z || x.dernier == null) return null; return Math.min(...z.P.map(q => Math.abs(q[1] - x.dernier))) / z.amp; }
+  return null; }
 function majListe(fams) {
   FAMS = fams && fams.length ? fams : FAMS.length ? FAMS : [...new Set(L.map(x => x.famille))];
   if (EDIT) {
@@ -1714,7 +1725,8 @@ function majListe(fams) {
           : `<div class="vide-f" data-f="${esc(f)}">Glisse un marché ici</div>`); }).join('');
     majSym(); return;
   }
-  $('#liste').innerHTML = FAMS.map(f => `<div class="fam ${fermees.has(f) ? 'ferme' : ''}" data-f="${esc(f)}">${esc(f.toUpperCase())}<i>▾</i></div>` + (fermees.has(f) ? '' : L.filter(x => x.famille === f).map(x => {
+  const tri = TRI_MON ? [...L].map(x => [x, valTri(x)]).sort((a, b) => (a[1] ?? 1e18) - (b[1] ?? 1e18)).map(z => z[0]) : null, nomCol = (COLS_MON.find(c => c[0] === COL_MON) || COLS_MON[0])[1];
+  $('#liste').innerHTML = (tri ? [`TRIÉ · ${nomCol}`] : FAMS).map(f => `<div class="fam ${!tri && fermees.has(f) ? 'ferme' : ''}" data-f="${esc(f)}">${esc(f.toUpperCase())}<i>${tri ? '' : '▾'}</i></div>` + (!tri && fermees.has(f) ? '' : (tri || L.filter(x => x.famille === f)).map(x => {
     const fl = avantPx[x.code] != null && avantPx[x.code] !== x.dernier ? (x.dernier > avantPx[x.code] ? 'flash-h' : 'flash-r') : '';
     const fx = x.seance && !x.seance.ouvert ? ` data-tip="Fermé en ce moment · reprise ${hRep(x.seance.reprise)}"` : '';
     return `<div class="ligne-s ${x.code === code ? 'sel' : ''} ${fx ? 'dort' : ''}" data-c="${esc(x.code)}"${fx}><div class="c"><b>${esc(x.code)}</b><small>${esc(x.nom)}</small></div>${spark(x.spark, x.pct >= 0)}
