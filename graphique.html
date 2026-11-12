@@ -986,6 +986,7 @@
   <span class="sep3"></span>
   <button data-l="rayon" title="Demi-droite : la ligne part de son point d'ancrage (le pivot, le clic) au lieu de traverser tout le graphique"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.2"/><path d="M8 12h13"/></svg></button>
   <button data-l="style" title="Plein / pointillés"><svg viewBox="0 0 24 24"><path d="M3 12h4M10 12h4M17 12h4"/></svg></button>
+  <button data-l="approche" title="Pré-alerte : être prévenu quand le prix arrive à quelques ticks de cette ligne, avant de la toucher"><svg viewBox="0 0 24 24"><path d="M3 12h7M21 12h-3"/><path d="M7 8l4 4-4 4"/><path d="M15 5v14"/></svg></button>
   <button data-l="double" title="Dupliquer (ou Alt + glisser la ligne)"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
   <button data-l="verrou" title="Verrouiller : la ligne ne bouge plus quand tu cliques dessus"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
   <button data-l="efface" title="Effacer (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
@@ -1603,7 +1604,7 @@ const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
 function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
-  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
+  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, approche: l.approche || undefined, nom: l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
   ecrit('g-lignes-' + code, JSON.stringify(lignes));
   try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
@@ -1869,6 +1870,7 @@ function majBarreLigne() {
   bl.querySelector('[data-l="style"]').classList.toggle('on', choisie.style === 'tirets');
   const br = bl.querySelector('[data-l="rayon"]'); br.hidden = choisie.genre !== 'horizontale'; br.classList.toggle('on', !!choisie.rayon);
   bl.querySelector('[data-l="verrou"]').classList.toggle('on', !!choisie.verrou);
+  const ba = bl.querySelector('[data-l="approche"]'); ba.hidden = !['horizontale', 'droite'].includes(choisie.genre); ba.classList.toggle('on', choisie.approche > 0); ba.title = choisie.approche > 0 ? `Pré-alerte à ${choisie.approche} ticks de la ligne · clic pour changer` : 'Pré-alerte : être prévenu quand le prix arrive à quelques ticks de cette ligne, avant de la toucher';
 }
 // dupliquer une ligne (bouton, ou Alt + glisser) : la copie garde tout (couleur, style, alerte, demi-droite), elle n'est jamais verrouillée
 function dupliqueLigne(l, dp) { const n = { ...l, id: idNeuf(), verrou: undefined }; if (dp) { n.p1 += dp; if (n.p2 != null) n.p2 += dp; } lignes.push(n); choisie = n; sauve(); toutDessine(); return n; }
@@ -1907,6 +1909,10 @@ $('#barre-ligne').addEventListener('click', ev => {
   else if (b.dataset.l === 'style') { choisie.style = choisie.style === 'tirets' ? 'plein' : 'tirets'; sauve(); }
   else if (b.dataset.l === 'rayon') { choisie.rayon = !choisie.rayon; if (choisie.rayon && choisie.t1 == null) { const pp = panes[actif] || panes[0], B = (pp && pp.d && pp.d.bougies) || []; choisie.t1 = B.length ? B[Math.max(0, B.length - 40)][0] : Date.now() / 1000; } sauve(); majBarreLigne(); toast(choisie.rayon ? 'Demi-droite : la ligne part de son point d’ancrage · glisse-la pour déplacer son départ' : 'La ligne traverse de nouveau tout le graphique'); }
   else if (b.dataset.l === 'double') { const pp = panes[actif] || panes[0], dp = pp && pp.iY ? pp.iY(0) - pp.iY(18) : 0; dupliqueLigne(choisie, choisie.genre === 'texte' ? 0 : dp); toast('Ligne dupliquée juste au-dessus · glisse-la où tu veux'); majBarreLigne(); }
+  else if (b.dataset.l === 'approche') { const l = choisie; (async () => { let sug = 20; try { const d = await barresDe(code, 'D1'), B = (d.bougies || []).slice(-21, -1), tk = d.tick || 1; if (B.length >= 10) sug = Math.max(5, Math.round(B.map(x => x[2] - x[3]).sort((a, c) => a - c)[B.length >> 1] * .1 / tk)); } catch (e) { /* suggestion par défaut */ }
+      const r = prompt(`Te prévenir quand le prix arrive à combien de ticks de cette ligne ?\n(suggestion : ${sug} ticks = un dixième d’une journée habituelle ; 0 ou vide = pas de pré-alerte)`, l.approche > 0 ? String(l.approche) : String(sug)); if (r == null) return;
+      const n = Math.round(parseFloat(String(r).replace(',', '.'))); l.approche = n > 0 ? Math.min(n, 100000) : undefined; if (l.approche && l.alerte === false) l.alerte = true; sauve(); majBarreLigne(); toutDessine();
+      toast(l.approche ? `Pré-alerte : Atlas te prévient quand le prix arrive à ${l.approche} ticks de cette ligne (une fois, puis 30 min de calme)` : 'Pré-alerte coupée pour cette ligne'); })(); }
   else if (b.dataset.l === 'verrou') { choisie.verrou = !choisie.verrou || undefined; sauve(); majBarreLigne(); toast(choisie.verrou ? 'Ligne verrouillée : elle ne bouge plus au clic' : 'Ligne déverrouillée'); }
   else if (b.dataset.l === 'efface') efface();
   toutDessine();
