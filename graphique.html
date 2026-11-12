@@ -3078,6 +3078,7 @@ function alertesMethode(p, M, B) {  // une fois quand ça DEVIENT vrai (pas au c
 function ecranTexte(p, enReplay) {  // ce que montre son écran, pour le copilote : la méthode, ses niveaux, ses indicateurs, ses configurations
   try { const L = [], dec = p && p.d ? p.d.dec : 2, B = p && p.d ? p.d.bougies : null, M = METHODE !== 'dow' && p && B ? calculeMethode(p, B) : null;
     L.push(`Méthode choisie : ${METHODES[METHODE].nom}.`);
+    if (BILAN && !enReplay) L.push(`SON bilan de trading (ses trades fermés, journal TopstepX, au calendrier de Paris, datés à leur sortie ; des faits, ne le juge pas) : ${['jour', 'sem', 'mois'].map(x => bilanPhrase(x)).join(' ')}`);
     const ind = indicsActifs(); if (ind.length && p && B && B.length) { try { const IC = calculeIndics(p, B, ind), k = B.length - 1, der = B[k][4];
         L.push('Indicateurs affichés (valeur sur la dernière bougie) : ' + IC.map(r => `${r.nom} : ` + r.lignes.map(l => { const v = l.v[k]; return isFinite(v) ? `${l.nom || r.nom} ${nb(v, l.panneau === 'prix' ? dec : 1)}${l.panneau === 'prix' ? ` (prix ${der >= v ? 'AU-DESSUS' : 'EN DESSOUS'})` : ''}` : ''; }).filter(Boolean).join(', ') + (r.niveaux && r.niveaux.length ? ` [niveaux ${r.niveaux.join(' / ')}]` : '')).join(' ; ') + '.'); } catch (e) { L.push('Indicateurs affichés : ' + ind.map(r => r.nom).join(', ') + '.'); } }
     else if (ind.length) L.push('Indicateurs affichés : ' + ind.map(r => r.nom).join(', ') + '.');
@@ -3280,6 +3281,11 @@ function bilanDe(T) { const auj = jourParis(Date.now() / 1000), o = {}; for (con
 async function chargeBilan(force) { if (!ROOT || document.hidden || (!force && Date.now() - BILAN_AT < 60000)) return; BILAN_AT = Date.now(); try { BILAN = bilanDe((await api('/maison/graphique?perf=1')).trades || []); } catch (e) { return; } majCompte(); majBilanPoche(); }
 const bilan$ = x => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(Math.round(x)).toLocaleString('fr-FR')} $`;
 const bilanTip = (p, b, latent) => `${{ jour: 'Aujourd’hui', sem: 'Cette semaine (depuis lundi)', mois: 'Ce mois (depuis le 1er)' }[p]}, heure de Paris : ${b.n ? `${b.n} trade${b.n > 1 ? 's' : ''} fermé${b.n > 1 ? 's' : ''}, ${b.g} gagnant${b.g > 1 ? 's' : ''} · ${b.m.map(([k, v]) => `${k} ${bilan$(v)}`).join(' · ')}` : 'aucun trade fermé'}${latent ? ` · plus ta position en cours (${bilan$(latent)})` : ''}. Clic = le détail (PERF).`;
+const bilanMots = x => `${x < 0 ? 'moins ' : x > 0 ? 'plus ' : ''}${Math.abs(Math.round(x)).toLocaleString('fr-FR')} dollars`;
+function bilanPhrase(p, oral) { if (!BILAN) return ''; const b = BILAN[p], lib = { jour: 'Aujourd’hui', sem: 'Cette semaine', mois: 'Ce mois-ci' }[p], m$ = oral ? bilanMots : bilan$;
+  if (!b.n) return `${lib} : aucun trade fermé.`; const hi = b.m[0], lo = b.m[b.m.length - 1];
+  const nm = k => oral ? ((L.find(z => z.code === k) || {}).nom || k) : k;  // (à la voix : « Micro argent », pas « S-I-L »)
+  return `${lib} : ${m$(b.net)} sur ${b.n} trade${b.n > 1 ? 's' : ''}, ${b.g} gagnant${b.g > 1 ? 's' : ''}.${b.m.length > 1 ? ` ${nm(hi[0])} ${m$(hi[1])}, ${nm(lo[0])} ${m$(lo[1])}.` : ''}`; }
 function majBilanPoche() { const e = $('#pc-bilan'); if (!e) return; if (!BILAN || MODE !== 'poche') { e.hidden = true; return; } e.hidden = false;
   e.innerHTML = ['jour', 'sem', 'mois'].map(p => { const b = BILAN[p]; return `<button data-bp="${p}">${{ jour: 'JOUR', sem: 'SEMAINE', mois: 'MOIS' }[p]}<b class="${b.net > 0 ? 'h' : b.net < 0 ? 'r' : ''}">${b.n ? bilan$(b.net) : '—'}</b><small>${b.n} trade${b.n > 1 ? 's' : ''}</small></button>`; }).join(''); }
 const bilanBande = (ps, latent) => ps.map(p => { const v = BILAN[p].net + latent; return `<span class="cpt-b" data-bp="${p}" data-tip="${esc(bilanTip(p, BILAN[p], latent))}">${{ jour: 'JOUR', sem: 'SEM', mois: 'MOIS' }[p]} <b class="${v > 0 ? 'h' : v < 0 ? 'r' : ''}">${BILAN[p].n || latent ? bilan$(v) : '—'}</b></span>`; }).join('');
@@ -5288,7 +5294,8 @@ function fnVoix(n) {
   if (m[1] === 'PERF') arg = /\b7 jours\b/.test(n) ? '7' : /\b30 jours\b/.test(n) ? '30' : /\b90 jours\b/.test(n) ? '90' : /\bsemaine\b/.test(n) ? 'sem' : /\bmois\b/.test(n) ? 'mois' : /\b(jour|journee|aujourd hui)\b/.test(n) ? 'jour' : /\b(tout|depuis le debut)\b/.test(n) ? 'tout' : ''; return { k: m[1], arg }; }
 async function lanceFnVoix(v) { const f = FONCTIONS.find(z => z[0] === v.k); if (!f) return null;
   if (ROLE === 'terminal') await termOuvre(v.k, false, v.arg); else await f[2](v.arg);
-  if (v.k === 'BRIEF') { await expliqueFn(); const t = (document.querySelector('#fn-c .fn-copi') || {}).innerText || ''; if (t) dire(t.replace(/^COPILOTE\s*/, '')); }
+  if (v.k === 'PERF' && BILAN_LIB[PERF_P] && BILAN) dire(bilanPhrase(PERF_P, true) + (PERF_P === 'jour' ? ' ' + bilanPhrase('sem', true) : ''));  // « Atlas, mon bilan de la semaine » : la réponse dite
+  else if (v.k === 'BRIEF') { await expliqueFn(); const t = (document.querySelector('#fn-c .fn-copi') || {}).innerText || ''; if (t) dire(t.replace(/^COPILOTE\s*/, '')); }
   else { const r = document.querySelector('#fn-c .fn-retenir'); if (r) dire(r.innerText.replace(/^À RETENIR\s*/, '')); }
   return `${v.k} · ${(FONCTIONS.find(z => z[0] === v.k) || [])[1] || ''}`.slice(0, 60); }
 /* --- le Terminal qui anticipe : la bande « MAINTENANT » fait remonter seule ce qui compte à l'instant --- */
