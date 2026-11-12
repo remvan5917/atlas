@@ -1678,7 +1678,7 @@ function spark(v, up) {
   return `<svg viewBox="0 0 54 22" preserveAspectRatio="none"><polyline points="${v.map((x, i) => `${(i * 54 / (v.length - 1)).toFixed(1)},${(20 - (x - lo) / r * 18).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#0aa37f' : '#f23645'}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 // la petite ligne sous le prix du moniteur : au choix (clic sur l'en-tête)
-const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'LIGNE / NIVEAU'], ['filtre', 'FILTRE'], ['jambe', 'JAMBE H4'], ['lect', 'D1 · H4 · H1'], ['d1', 'SOMMET / CREUX D1']];
+const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'LIGNE / NIVEAU'], ['filtre', 'FILTRE'], ['jambe', 'JAMBE H4'], ['lect', 'D1 · H4 · H1'], ['d1', 'NIVEAU D1']];
 let MON_FILTRE = null, MON_JAMBE = { at: 0, m: {} }, MON_LECT = { at: 0, m: {} }, MON_D1 = { at: 0, m: {} };  // (la colonne FILTRE : l'état de chaque marché dans son filtre SCAN, rempli par monFiltreMaj plus bas)
 let COL_MON = COLS_MON.some(c => c[0] === lit('g-moncol', 'pct')) ? lit('g-moncol', 'pct') : 'pct';
 const nivTxt = n => n ? `${n.d > 0 ? '▼' : '▲'} ${Math.abs(n.d)} t · ${esc(n.auto ? n.court || 'niveau' : 'ta ligne')}` : '';
