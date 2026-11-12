@@ -1678,8 +1678,8 @@ function spark(v, up) {
   return `<svg viewBox="0 0 54 22" preserveAspectRatio="none"><polyline points="${v.map((x, i) => `${(i * 54 / (v.length - 1)).toFixed(1)},${(20 - (x - lo) / r * 18).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#0aa37f' : '#f23645'}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 // la petite ligne sous le prix du moniteur : au choix (clic sur l'en-tête)
-const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'LIGNE / NIVEAU'], ['filtre', 'FILTRE'], ['jambe', 'JAMBE H4'], ['lect', 'D1 · H4 · H1']];
-let MON_FILTRE = null, MON_JAMBE = { at: 0, m: {} }, MON_LECT = { at: 0, m: {} };  // (la colonne FILTRE : l'état de chaque marché dans son filtre SCAN, rempli par monFiltreMaj plus bas)
+const COLS_MON = [['pct', 'VAR %'], ['ticks', 'VAR TICKS'], ['amp', 'AMPLITUDE'], ['ligne', 'LIGNE / NIVEAU'], ['filtre', 'FILTRE'], ['jambe', 'JAMBE H4'], ['lect', 'D1 · H4 · H1'], ['d1', 'SOMMET / CREUX D1']];
+let MON_FILTRE = null, MON_JAMBE = { at: 0, m: {} }, MON_LECT = { at: 0, m: {} }, MON_D1 = { at: 0, m: {} };  // (la colonne FILTRE : l'état de chaque marché dans son filtre SCAN, rempli par monFiltreMaj plus bas)
 let COL_MON = COLS_MON.some(c => c[0] === lit('g-moncol', 'pct')) ? lit('g-moncol', 'pct') : 'pct';
 const nivTxt = n => n ? `${n.d > 0 ? '▼' : '▲'} ${Math.abs(n.d)} t · ${esc(n.auto ? n.court || 'niveau' : 'ta ligne')}` : '';
 function colMon(x) { const n = x.niveau, proche = n && n.etat === 'proche';
@@ -1689,6 +1689,9 @@ function colMon0(x) {
   if (COL_MON === 'lect') { const e = MON_LECT.m[x.code]; if (!e) return `<small style="color:#6f7787" title="La structure de ton zigzag en D1, H4 et H1 (LECT)">${MON_LECT.at ? '—' : '…'}</small>`;
     const S = e.map(z => z === 'haussière' ? 1 : z === 'baissière' ? -1 : 0), acc = S.every(z => z === 1) || S.every(z => z === -1);
     return `<small class="mon-lect${acc ? ' acc' : ''}" title="Ton zigzag : D1 ${e[0]} · H4 ${e[1]} · H1 ${e[2]}${acc ? ' — les trois dans le même sens' : ''} (LECT)">${S.map(z => `<i class="${z > 0 ? 'h' : z < 0 ? 'r' : ''}">${z > 0 ? '▲' : z < 0 ? '▼' : '◆'}</i>`).join('')}</small>`; }
+  if (COL_MON === 'd1') { const z = MON_D1.m[x.code], px = x.dernier; if (!z || px == null) return `<small style="color:#6f7787" title="Le sommet ou le creux confirmé de ton zigzag D1 le plus proche du prix (ta méthode)">${MON_D1.at ? '—' : '…'}</small>`;
+    const pv = z.P.reduce((m, q) => Math.abs(q[1] - px) < Math.abs(m[1] - px) ? q : m), t = Math.round(Math.abs(pv[1] - px) / z.tk), sur = Math.abs(pv[1] - px) <= .3 * z.amp, nom = pv[2] === 'h' ? 'sommet' : 'creux';
+    return `<small class="${sur ? 'chaud' : ''}" title="Le ${nom} D1 le plus proche : ${nb(pv[1], z.dec)}, ${pv[1] > px ? 'au-dessus' : 'en dessous'} du prix, à ${t} ticks (${Math.round(Math.abs(pv[1] - px) / z.amp * 100)} % d’une journée habituelle)${sur ? ' — le prix est sur ce niveau (moins de 30 % d’une journée)' : ''}. Ta méthode, en un coup d’œil ; pas un conseil.">${sur ? '◉ ' : ''}${pv[1] > px ? '▲' : '▼'} ${t} t · ${nom}</small>`; }
   if (COL_MON === 'jambe') { const j = MON_JAMBE.m[x.code]; if (!j) return `<small style="color:#6f7787" title="La jambe H4 en cours de ton zigzag, face aux jambes passées de ce marché (ZZ)">${MON_JAMBE.at ? '—' : '…'}</small>`;
     const fl = j.s > 0 ? '▲' : '▼', t = `Jambe ${j.s > 0 ? 'haussière' : 'baissière'} H4 en cours : ${j.tk} ticks${j.prov ? ' (pas encore confirmée)' : ''}`;
     return j.petite ? `<small style="color:#6f7787" title="${t} — pas encore les 5 % d’une jambe de ton zigzag">${fl} &lt; 5 %</small>` : `<small class="${j.plus >= 90 ? 'chaud' : j.s > 0 ? 'h' : 'r'}" title="${t}, plus grande que ${j.plus} % des ${j.n} jambes ${j.s > 0 ? 'haussières' : 'baissières'} passées (ZZ)">${fl} ${j.plus} %</small>`; }
@@ -4680,6 +4683,12 @@ async function monJambeMaj() { if (COL_MON !== 'jambe' || ROLE === 'terminal' ||
 async function monLectMaj() { if (COL_MON !== 'lect' || ROLE === 'terminal' || ROLE === 'ensemble' || Date.now() - MON_LECT.at < 300000 || !L.length) return; MON_LECT.at = Date.now(); const m = {};
   for (const x of L) { const e = []; for (const u of LECT_U) { try { const z = zzMesure(await barresDe(x.code, u)); e.push(z ? z.etat : '—'); } catch (er) { e.push('—'); } } if (e.some(z => z !== '—')) m[x.code] = e; }
   MON_LECT.m = m; if (!Object.keys(m).length) MON_LECT.at = Date.now() - 240000; majListe(); }
+// la colonne SOMMET / CREUX D1 : les sommets et creux confirmés de son zigzag D1 (10 derniers) et l'amplitude habituelle d'une journée, au plus toutes les 5 minutes ; la distance suit le prix en direct
+async function monD1Maj() { if (COL_MON !== 'd1' || ROLE === 'terminal' || ROLE === 'ensemble' || Date.now() - MON_D1.at < 300000 || !L.length) return; MON_D1.at = Date.now(); const m = {};
+  for (const x of L) { try { const d = await barresDe(x.code, 'D1'), B = d.bougies || [], P = (d.zigzag || []).filter(q => q[2] === 'h' || q[2] === 'l').slice(-10); if (B.length < 22 || !P.length) continue;
+    const amp = B.slice(-21, -1).map(b => b[2] - b[3]).sort((a, b) => a - b)[10]; if (amp > 0) m[x.code] = { P, amp, tk: d.tick || 1, dec: d.dec ?? x.dec ?? 2 }; } catch (e) { /* ce marché sans données */ } }
+  MON_D1.m = m; if (!Object.keys(m).length) MON_D1.at = Date.now() - 240000; majListe(); }
+setInterval(monD1Maj, 60000); setTimeout(monD1Maj, 16000); $('#b-moncol').addEventListener('click', () => setTimeout(monD1Maj, 50));
 setInterval(monLectMaj, 60000); setTimeout(monLectMaj, 14000); $('#b-moncol').addEventListener('click', () => setTimeout(monLectMaj, 50));
 setInterval(monJambeMaj, 60000); setTimeout(monJambeMaj, 12000); $('#b-moncol').addEventListener('click', () => setTimeout(monJambeMaj, 50));
 // la colonne FILTRE du moniteur : le filtre surveillé (sinon le dernier utilisé), repassé au plus toutes les 5 minutes
