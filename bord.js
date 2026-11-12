@@ -180,15 +180,40 @@ const BORD = (() => {
     if (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role !== 'tablette') return;
     const seg = await ecrit(false); if (seg && seg.length) pretee = { seg, at: Date.now() };
   }, 5 * 60000);
+  // le bureau pour la radio : ce qui attend (l'urgent d'abord), l'atelier, les mails préparés, les décisions, les tâches
+  async function bureauDuJour() {
+    const r0 = VOIXMAISON.root(); if (!r0) return '';
+    const get = async (u, corps) => { try { return await (await fetch(`${r0}${u}`, corps ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps), cache: 'no-store' } : { cache: 'no-store' })).json(); } catch (e) { return null; } };
+    const [b, pt, ta] = await Promise.all([get('/maison/bureau'), get('/maison/bureau', { action: 'point' }), get('/maison/carnet/taches')]);
+    if (!b && !pt) return '';
+    const propre = t => String(t || '').replace(/\s*\(fait par [^)]*\)/gi, '').replace(/\s+/g, ' ').trim();
+    const auj = new Date().toISOString().slice(0, 10), dd = e => e ? e.split('-').reverse().slice(0, 2).join('/') : '';
+    const l = (b && b.a_valider) || [], ent = { lrf: 'La rue du financement', micro: 'micro-entreprise', perso: 'perso' };
+    const presse = l.filter(x => x.urgence === 'haute' || (x.echeance && x.echeance <= new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)));
+    const docs = l.filter(x => x.livrable), mails = l.filter(x => ['repondre', 'relancer', 'envoyer_document'].includes(x.type) && !x.livrable);
+    const nb = k => l.filter(x => (x.entite || 'perso') === k).length;
+    const t = [];
+    const total = (pt && pt.a_valider) || l.length;
+    t.push(`Son bureau : ${total} chose${total > 1 ? 's' : ''} à valider (les principales : ${nb('lrf')} pour La rue du financement, ${nb('micro')} pour la micro-entreprise, ${nb('perso')} perso)${presse.length ? `, dont ${presse.length} urgente${presse.length > 1 ? 's' : ''} ou bientôt dues` : ''}.`);
+    if (presse.length) t.push(`Les plus pressées : ${presse.slice(0, 5).map(x => `${x.de} — ${propre(x.a_faire || x.sujet)}${x.echeance ? (x.echeance < auj ? ` (en retard, c'était pour le ${dd(x.echeance)})` : ` (pour le ${dd(x.echeance)})`) : ''} [${ent[x.entite] || 'perso'}]`).join(' ; ')}.`);
+    if (docs.length) t.push(`Documents de l'atelier prêts à relire : ${docs.length} (${docs.slice(0, 3).map(x => `« ${propre(x.livrable_titre || x.sujet)} »`).join(', ')}).`);
+    if (mails.length) t.push(`Réponses aux mails préparées, à relire puis envoyer : ${mails.length}${mails.length ? ` (dont ${mails.slice(0, 3).map(x => x.de).join(', ')})` : ''}.`);
+    const dec = (pt && pt.decisions) || [];
+    if (dec.length) t.push(`Décisions qui l'attendent dans son bureau : ${dec.length >= 5 ? 'au moins 5' : dec.length}, dont : ${dec.slice(0, 3).map(propre).join(' ; ')}.`);
+    const tc = ((ta && (ta.doc || ta).items) || []).filter(x => !x.fait).map(x => propre(x.texte || x.titre)).filter(Boolean);
+    if (tc.length) t.push(`Ses tâches notées : ${tc.slice(0, 4).join(' ; ')}.`);
+    return t.join('\n');
+  }
   async function ecrit(longue) {
     const sujets = S.settings.emissionSujets || ['', 'géopolitique', 'bourse marchés pétrole or', 'Lille'];
     const v = S.settings.ville, ac = typeof AbortController !== 'undefined';
-    const [actus, ag, w, msg, tr] = await Promise.all([
+    const [actus, ag, w, msg, tr, bur] = await Promise.all([
       Promise.all(sujets.map(titres)),
       (async () => { try { const r0 = VOIXMAISON.root(); return ((await (await fetch(`${r0}/maison/agenda?jours=1`, { cache: 'no-store' })).json()).evenements || []).filter(e => !/\b(MYM|MNQ|MGC|M6E|Open US|Fen[êe]tre active|Impact)\b/i.test(e.titre)); } catch (e) { return []; } })(),
       v ? fetch(`https://api.open-meteo.com/v1/forecast?latitude=${v.lat}&longitude=${v.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone=auto&forecast_days=1`).then(r => r.json()).catch(() => null) : null,
       (async () => { try { const r0 = VOIXMAISON.root(); return ((await (await fetch(`${r0}/maison/messages?pour=papa`, { cache: 'no-store' })).json()).messages || []).slice(-2); } catch (e) { return []; } })(),
       (async () => { try { const r0 = VOIXMAISON.root(); return await (await fetch(`${r0}/maison/trading`, { cache: 'no-store' })).json(); } catch (e) { return null; } })(),
+      bureauDuJour(),
     ]);
     const vus = new Set(); const net = l => l.filter(t => { const k = N(t).slice(0, 40); if (vus.has(k)) return false; vus.add(k); return true; });
     const now = Date.now() / 1000;
@@ -203,12 +228,14 @@ const BORD = (() => {
       w ? `Météo à ${v.name || 'la maison'} : de ${Math.round(w.daily.temperature_2m_min[0])} à ${Math.round(w.daily.temperature_2m_max[0])} degrés, ${w.daily.precipitation_probability_max[0]} % de risque de pluie.` : '',
       `Son fils avec Shadow (hier et aujourd'hui) : ${/pas encore la m[ée]moire|doit être allumé/i.test(LIEN.journee()) ? 'rien de noté' : LIEN.journee()}.`,
       msg.length ? `Messages de son fils pour lui : ${msg.map(m => `« ${m.texte} »`).join(' ; ')}.` : '',
+      bur || '',
     ].filter(Boolean).join('\n');
     const musique = S.settings.emissionMusique || 'FIP';
     let seg = null;
     try {
       const r = String(await AI.chat([{ role: 'system', content: `Tu es Atlas, l'animateur de « Radio Atlas », l'émission personnelle de ${S.nom || 'papa'} (il trade les marchés et s'intéresse à la géopolitique). Ton style : une IA de film, chaleureuse, vive, élégante, un brin pince-sans-rire. Écris le script d'une émission parlée d'environ ${longue ? '4 minutes (550 mots)' : '2 minutes (250 mots)'}, pour être dite à voix haute. Tu le tutoies, toujours.
-Réponds UNIQUEMENT en JSON : {"segments": [{"titre": "OUVERTURE", "texte": "…"}, {"titre": "LE MONDE", …}, {"titre": "LES MARCHÉS", …}, {"titre": "LILLE", …}, {"titre": "TA JOURNÉE", …}, {"titre": "LA MÉTÉO", …}, {"titre": "LE MOT DE SHADOW", …}, {"titre": "FIN", …}]}. Supprime un segment s'il n'y a rien à dire.
+Réponds UNIQUEMENT en JSON : {"segments": [{"titre": "OUVERTURE", "texte": "…"}, {"titre": "LE MONDE", …}, {"titre": "LES MARCHÉS", …}, {"titre": "LILLE", …}, {"titre": "TA JOURNÉE", …}, {"titre": "TON BUREAU", …}, {"titre": "LA MÉTÉO", …}, {"titre": "LE MOT DE SHADOW", …}, {"titre": "FIN", …}]}. Supprime un segment s'il n'y a rien à dire.
+Le segment TON BUREAU lui dit clairement ce qu'il a à faire : d'abord ce qui est en retard ou urgent (qui, quoi, pour quand), puis les documents de l'atelier à relire, les réponses aux mails prêtes à envoyer, les décisions qui l'attendent et ses tâches, avec les chiffres ; il finit par « Si tu ne fais qu'une chose ce matin : … » (la plus pressée). Pas une liste lue ligne à ligne : regroupe, parle comme un bon chef de cabinet, ${longue ? '150' : '90'} mots au plus.
 Utilise UNIQUEMENT les faits fournis : reformule les titres sans inventer de détails ni de chiffres, cite parfois la source à l'oral (« d'après Les Échos »). Jamais de conseil d'achat ou de vente. Le segment FIN annonce la musique : ${musique}. Pas de symbole, pas d'astérisque, pas d'indication de jeu.` }, { role: 'user', content: faits }], { maxTokens: longue ? 1500 : 900, temperature: 0.6 }) || '');
       const j = JSON.parse(r.slice(r.indexOf('{'), r.lastIndexOf('}') + 1)); seg = (j.segments || []).filter(x => x && x.texte).map(x => ({ titre: String(x.titre || '').toUpperCase().slice(0, 20), texte: sansJeu(String(x.texte)).replace(/[*`#]/g, '').trim() }));
     } catch (e) { seg = null; }
