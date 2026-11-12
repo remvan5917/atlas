@@ -1637,7 +1637,7 @@ async function chargeTout() {
 // la règle (Ctrl + glisser) dit aussi ce que la distance représente pour TOI : part de ta limite du jour, ton stop habituel sur ce marché, et combien de fois le marché fait cette distance en 1 h et en 4 h
 const REGLE_ST = {};
 function regleInfos(t, usd) { if (!t) return []; const c = code; let z = REGLE_ST[c];
-  if (!z) { z = REGLE_ST[c] = { stop: null, B: null }; api('/maison/graphique?perf=1').then(r => { const v = (r.trades || []).filter(x => x.instr === c && x.stop_ticks > 0).map(x => x.stop_ticks).sort((a, b) => a - b); if (v.length >= 2) z.stop = v[v.length >> 1]; toutDessine(); }).catch(() => {});
+  if (!z) { z = REGLE_ST[c] = { stop: null, B: null }; api('/maison/graphique?perf=1').then(r => { const v = (r.trades || []).filter(x => x.instr === c && x.stop_ticks > 0 && stopCoteperte(x)).map(x => x.stop_ticks).sort((a, b) => a - b); if (v.length >= 2) z.stop = v[v.length >> 1]; toutDessine(); }).catch(() => {});
     barresDe(c, '15m').then(d => { z.B = (d.bougies || []).slice(-1500); z.tk = d.tick || 1; z.m = new Map(); toutDessine(); }).catch(() => {}); }
   const out = [], dll = (POSD && POSD.dll) || (TRADE && TRADE.reg && TRADE.reg.dll) || null;
   if (dll && usd != null) out.push(`${Math.round(Math.abs(usd) / dll * 100)} % de ta limite du jour`);
@@ -4399,7 +4399,7 @@ async function fnStop(a) { const mots = String(a || '').trim().toUpperCase().spl
   let d15 = null, dH = null; try { [d15, dH] = await Promise.all([barresDe(c, '15m'), barresDe(c, 'H1')]); } catch (e) { ouvreFn('STOP', c, '<p>Pas de liaison avec la maison.</p>'); return; }
   const B = d15.bougies || [], BH = dH.bougies || [], tk = d15.tick || dH.tick || 1, v$ = VAL_TICK[c] ?? null, usd = t => v$ != null ? `${Math.round(t * v$).toLocaleString('fr-FR')} $` : '';
   if (B.length < 200) { ouvreFn('STOP', c, '<p>Pas assez d’historique en 15 minutes pour ce marché.</p>'); return; }
-  let T = []; try { T = ((await api('/maison/graphique?perf=1')).trades || []).filter(x => x.instr === c && x.stop_ticks > 0); } catch (e) { /* sans son journal */ }
+  let T = []; try { T = ((await api('/maison/graphique?perf=1')).trades || []).filter(x => x.instr === c && x.stop_ticks > 0 && stopCoteperte(x)); } catch (e) { /* sans son journal */ }
   const med = v => { if (!v.length) return null; const s = [...v].sort((p, q) => p - q), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
   const sienStop = T.length >= 2 ? Math.round(med(T.map(x => x.stop_ticks))) : null, sienDur = T.filter(x => x.fin).length >= 2 ? med(T.filter(x => x.fin).map(x => (x.fin - x.at) / 60)) : null;
   const touche = (BB, n, s) => { let l = 0, h = 0, N = 0; for (let k = 0; k + n <= BB.length; k++) { const o = BB[k][1]; let lo = Infinity, hi = -Infinity; for (let q = k; q < k + n; q++) { if (BB[q][3] < lo) lo = BB[q][3]; if (BB[q][2] > hi) hi = BB[q][2]; } N++; if ((o - lo) / tk >= s) l++; if ((hi - o) / tk >= s) h++; } return N ? { l: l / N, h: h / N, n: N } : null; };
@@ -4786,7 +4786,8 @@ function perfCalLie(TT) { const w = $('#pcal-w'); if (!w) return;
     $('#pcal-d').querySelectorAll('[data-pcv]').forEach(b => b.onclick = () => { const t = TT.find(x => x.id === b.dataset.pcv); if (t) envoieTrade(t, false); });
     $('#pcal-nf').onsubmit = async ev => { ev.preventDefault(); const texte = $('#pcal-nt').value.trim(); try { const r = await api('/maison/graphique', { action: 'note_jour', op: 'ecris', jour: j, texte }); if (!r || !r.ok) throw 0; NOTES_J = r.notes || {}; toast(texte ? 'Note gardée' : 'Note effacée'); c.classList.toggle('nt', !!texte); if (texte) c.dataset.tip = 'Ta note : ' + texte; else delete c.dataset.tip; } catch (e) { toast('Pas de liaison avec la maison : note pas gardée'); } }; }); }
 // un vrai risque seulement si le stop est du côté de la perte : un stop déjà remonté dans le gain (lu par le journal après coup) donnerait des « 30 R » qui ne veulent rien dire
-const risqueVrai = x => x.risque > 0 && (x.stop_prix == null || x.prix == null || (x.sens === 'long' ? x.stop_prix < x.prix : x.stop_prix > x.prix));
+function stopCoteperte(x) { return x.stop_prix == null || x.prix == null || (x.sens === 'long' ? x.stop_prix < x.prix : x.stop_prix > x.prix); }  // (déclarée : sert aussi à la règle et à STOP, appelées avant cette ligne)
+const risqueVrai = x => x.risque > 0 && stopCoteperte(x);
 // exporter ses trades pour le tableur (Excel / LibreOffice en français : « ; » entre les colonnes, virgule décimale, heure de Paris)
 function perfExporte(T, nom) { const hp = (t, o) => t ? new Date(t * 1000).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', ...o }) : '', dec = v => v == null || !isFinite(v) ? '' : String(Math.round(v * 10000) / 10000).replace('.', ','), cel = v => /[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
   const lignes = [['date de sortie', 'heure d’entrée', 'heure de sortie', 'marché', 'sens', 'lots', 'prix d’entrée', 'prix de sortie', 'stop', 'résultat ($)', 'R', 'durée (min)', 'stop élargi', 'compte']]
