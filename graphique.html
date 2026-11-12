@@ -971,7 +971,7 @@
       <b>Le graphique</b> : <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
       <b>Souris</b> : glisser = déplacer (avec élan) · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
       <b>La salle</b> : <kbd>/</kbd> écris ce que tu veux (un marché, une commande, une question) · <kbd>E</kbd> copilote · <kbd>Q</kbd> maintenu : lui parler · <kbd>V</kbd> maintenu : journal · <kbd>D</kbd> structure de Dow · <kbd>A</kbd> étude d'annonce · <kbd>R</kbd> replay · <kbd>M</kbd> mémoire · <kbd>Z</kbd> focus · survole un repère de nouvelle (clic = explication)<br>
-      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
+      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>X</kbd> masquer tes dessins · <kbd>Alt</kbd> + glisser une ligne = la copier · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
   </div>
   <div class="fil"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="piste2"></div></div><span class="pos-f" id="pos-f" hidden title="Ta position (lecture seule). Clic : montrer / cacher sa zone sur le graphique et ses repères sur l'échelle des prix"></span><span class="fil-e" id="fil-e"></span></div>
@@ -1040,7 +1040,7 @@
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
   <p><kbd>Échap</kbd>fermer une fenêtre, revenir au curseur</p></section>
   <section><h4>Dessiner</h4>
-  <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie · <kbd>Ctrl + Z</kbd>annuler · <kbd>Ctrl + Y</kbd>rétablir</p>
+  <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie · <kbd>X</kbd>masquer / montrer tes dessins · <kbd>Alt</kbd> + glisser une ligne : la copier · <kbd>Ctrl + Z</kbd>annuler · <kbd>Ctrl + Y</kbd>rétablir</p>
   <p><kbd>Maj</kbd>+ glisser : une tendance · <kbd>Alt</kbd>+ clic : une horizontale · double-clic sur un pivot : support / résistance · <kbd>Ctrl</kbd>+ glisser : la règle</p>
   <p>Fibonacci, zone de prix (rectangle, avec alerte), flèche, texte : dans la barre d'outils à gauche</p></section>
   <section><h4>Analyser</h4>
@@ -5433,7 +5433,7 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0, ['TERM', 'le Terminal : toutes les fon
 /* --- audit : le raccourci dans chaque info-bulle (« Indicateurs · I »), l'aide qui se cherche, la barre / visible, le cours figé --- */
 const RACC = [['#sym', '/'], ['#b-cmd', '/'], ['#t-indic', 'I'], ['#b-copilote', 'E'], ['#b-dow', 'D'], ['#b-etude', 'A'], ['#b-replay', 'R'], ['#b-alertes', 'Maj + L'], ['#b-alertes-h', 'Maj + L'],
   ['#b-config', 'Maj + C'], ['#b-simu', 'Maj + S'], ['#b-simu-h', 'Maj + S'], ['#b-passe', 'Maj + H'], ['#b-memoire', 'M'], ['#b-journal', 'V maintenu'], ['#b-presente', 'B'], ['#b-trade', 'T'],
-  ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="efface"]', 'Suppr']];
+  ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="efface"]', 'Suppr'], ['#t-dessins', 'X']];
 for (const [sel, k] of RACC) document.querySelectorAll(sel).forEach(b => { b.dataset.rac = k; if (b.dataset.tip) b.dataset.tip = b.dataset.tip.replace(/\s*\((?:Maj \+ [A-Z]|[A-Z]|Échap|Suppr|\s*\/\s*)\)/g, '').trim(); });
 document.querySelectorAll('#seg-ut [data-ut]').forEach((b, i) => { b.dataset.rac = `touche ${i + 1}`; });
 
