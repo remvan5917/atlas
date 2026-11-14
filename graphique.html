@@ -1649,7 +1649,9 @@ let tSauve = 0;
 function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
   const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, approche: l.approche || undefined, etiquette: l.etiquette || undefined, nom: l.etiquette ? `ta ligne « ${l.etiquette} »` : l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : l.genre === 'position' ? 'ta position' : l.genre === 'regression' ? 'ton canal de régression' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
-    if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
+    if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id });
+    // la position avec sa cloche allumée : la maison surveille son entrée, son stop et son objectif comme trois lignes horizontales (cachées sur le graphique), chacune avec son nom dans le message
+    if (l.genre === 'position' && l.alerte === true && l.ecart) [['e', l.p1, 'l’entrée de ta position'], ['s', l.p2, 'le stop de ta position'], ['o', +(l.p1 + l.ecart).toFixed(8), 'l’objectif de ta position']].forEach(([k, v, nom]) => env.push({ id: l.id + k, genre: 'horizontale', t1: l.t1, p1: v, nom, alerte: true, double: l.id })); });
   ecrit('g-lignes-' + code, JSON.stringify(lignes));
   try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
 async function chargeLignes() {
@@ -1985,7 +1987,7 @@ $('#bl-niv').addEventListener('click', ev => { ev.stopPropagation(); if (choisie
 $('#barre-ligne').addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b || !choisie) return;
   if (b.dataset.c) { choisie.couleur = b.dataset.c; sauve(); }
-  else if (b.dataset.l === 'alerte') { choisie.alerte = choisie.alerte === false; sauve(); toast(choisie.alerte ? 'Alerte activée : Atlas te prévient quand le prix touche ou casse cette ligne' : 'Alerte coupée pour cette ligne'); }
+  else if (b.dataset.l === 'alerte') { choisie.alerte = choisie.alerte === false; sauve(); toast(choisie.genre === 'position' ? (choisie.alerte ? 'Alerte activée : Atlas te prévient quand le prix touche ton entrée, ton stop ou ton objectif' : 'Alerte coupée pour cette position') : choisie.alerte ? 'Alerte activée : Atlas te prévient quand le prix touche ou casse cette ligne' : 'Alerte coupée pour cette ligne'); }
   else if (b.dataset.l === 'style') { choisie.style = choisie.style === 'tirets' ? 'plein' : 'tirets'; sauve(); }
   else if (b.dataset.l === 'rayon') { choisie.rayon = !choisie.rayon; if (choisie.rayon && choisie.t1 == null) { const pp = panes[actif] || panes[0], B = (pp && pp.d && pp.d.bougies) || []; choisie.t1 = B.length ? B[Math.max(0, B.length - 40)][0] : Date.now() / 1000; } sauve(); majBarreLigne(); toast(choisie.rayon ? 'Demi-droite : la ligne part de son point d’ancrage · glisse-la pour déplacer son départ' : 'La ligne traverse de nouveau tout le graphique'); }
   else if (b.dataset.l === 'double') { const pp = panes[actif] || panes[0], dp = pp && pp.iY ? pp.iY(0) - pp.iY(18) : 0; dupliqueLigne(choisie, choisie.genre === 'texte' ? 0 : dp); toast('Ligne dupliquée juste au-dessus · glisse-la où tu veux'); majBarreLigne(); }
@@ -4070,7 +4072,7 @@ async function fnNiv(a) { const mots = String(a || '').trim().toUpperCase().spli
   if (N < 60) { ouvreFn('NIV', `${c} · ${ut}`, `${ch}<p>Pas assez d’historique ${esc(ut)} pour ce marché.</p>`); nivBranche(c); return; }
   const rg = B.map(b => b[2] - b[3]).filter(x => x > 0), D = Math.max(4 * tk, (r5 => r5.length ? r5[r5.length >> 1] : 0)(rg.slice(-500).sort((p, q) => p - q))), Dt = Math.round(D / tk), H = 10, der = B[N - 1][4], tN = B[N - 1][0];
   const LG = [];
-  for (const l of brut) { const g = l.genre; if (!['horizontale', 'droite', 'canal', 'rect'].includes(g) || l.p1 == null) continue;
+  for (const l of brut) { const g = l.genre; if (!['horizontale', 'droite', 'canal', 'rect'].includes(g) || l.p1 == null || (l.double && brut.some(x => x.id === l.double && x.genre === 'position'))) continue;
     if (g === 'rect') { if (l.p2 == null) continue; const lo = Math.min(l.p1, l.p2), hi = Math.max(l.p1, l.p2), ta = Math.min(l.t1, l.t2 ?? l.t1), tb = Math.max(l.t1, l.t2 ?? l.t1);
       LG.push({ l, lib: 'zone', z: () => [lo, hi], hors: t => t >= ta - 2 * du && t <= tb + 2 * du, px: `${nb(lo, dec)} – ${nb(hi, dec)}` }); continue; }
     const plat = g === 'horizontale' || l.t2 == null || l.t2 === l.t1, ta = plat ? l.t1 : Math.min(l.t1, l.t2), tb = plat ? l.t1 : Math.max(l.t1, l.t2);
