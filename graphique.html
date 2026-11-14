@@ -1349,6 +1349,10 @@ class Pane {
     if (optDessins) lignes.forEach(l => tracer(l, l === choisie)); if (brouillon) tracer(brouillon, true);
     const ydl = Y(B[B.length - 1][4]);
     (optDessins ? lignes : []).filter(l => l.genre === 'horizontale').forEach(l => { let y = Y(l.p1); if (y < 0 || y > ph) return; if (Math.abs(y - ydl) < 21) y = y <= ydl ? ydl - 21 : ydl + 21; y = Math.max(11, Math.min(ph - 11, y)); c.fillStyle = coul(l.couleur); c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = TH.nuit ? TH.bg : '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
+    // la dernière valeur de tes indicateurs sur l'échelle de prix, dans leur couleur, en cadre fin (pour ne pas les confondre avec tes lignes) ; jamais sur l'étiquette du dernier prix ni sur celles de tes lignes
+    if (IC.length && !REPLAY) { const pris = [ydl, ...(optDessins ? lignes : []).filter(l => l.genre === 'horizontale').map(l => Y(l.p1))], k = B.length - 1; c.font = '600 9.5px "JetBrains Mono", monospace'; c.textAlign = 'left';
+      IC.forEach(r => r.lignes.filter(l => l.panneau === 'prix').forEach(l => { const v = l.v[k]; if (!isFinite(v)) return; const y = Y(v); if (y < 9 || y > BASP - 9 || pris.some(q => Math.abs(q - y) < 16)) return; pris.push(y);
+        c.fillStyle = TH.nuit ? TH.bg : '#fff'; c.strokeStyle = l.couleur; c.lineWidth = 1; c.setLineDash([]); c.beginPath(); c.roundRect(pw + 3.5, y - 7.5, AX - 7, 15, 4); c.fill(); c.stroke(); c.fillStyle = l.couleur; c.fillText(nb(v, dec), pw + 7, y + 3.5); })); }
     // la mémoire du marché : l'éventail de ce qui a suivi les moments les plus ressemblants (des statistiques, pas une prévision)
     if (MEM && MEM.code === code && MEM.ut === this.ut && (MEM.eventail || []).length) {
       const x0 = T(MEM.t0), y0 = Y(MEM.dernier), a = MEM.atr_ticks * MEM.pas, ev = MEM.eventail;
