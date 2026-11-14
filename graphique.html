@@ -1932,13 +1932,34 @@ function nivLigne(l, B, tk, ut) {  // une ligne du trader, mesurée comme dans N
   else return null;
   const ep = nivEpisodes(B, z, tk, D, 10, hors).filter(x => x.issue !== 'encours'), zN = z(B[B.length - 1][0]);
   return { n: ep.length, te: ep.filter(x => x.issue === 'tenue').length, tr: ep.filter(x => x.issue === 'traversee').length, v: zN, der: ep[ep.length - 1] || null }; }
+// ta position face au passé de ta méthode : si ton entrée est sur un sommet / creux D1 (à moins de 30 % d'une journée), chaque arrivée passée sur un niveau D1 de ce marché,
+// du même côté, rejouée avec TON entrée, TON stop et TON objectif placés pareil par rapport au niveau (en journées habituelles) : lequel aurait été touché d'abord, jour par jour en D1
+// (le jour où l'entrée se fait, seul le stop compte ; stop et objectif le même jour = on ne sait pas lequel d'abord)
+let POS_D1 = { c: '', at: 0, d: null, charge: false };
+function posPasse(l) { if (!l || l.genre !== 'position' || !l.ecart) return null;
+  if (POS_D1.c !== code || Date.now() - POS_D1.at > 600000) { if (!POS_D1.charge) { POS_D1.charge = true; const c0 = code; barresDe(c0, 'D1').then(d => { POS_D1 = { c: c0, at: Date.now(), d, charge: false }; if (choisie) majBlNiv(panes[actif] || panes[0]); }).catch(() => { POS_D1.charge = false; }); } return null; }
+  const d = POS_D1.d, B = (d.bougies || []).slice(0, -1), N = B.length; if (N < 30) return null;
+  const amp = B.slice(-20).map(b => b[2] - b[3]).sort((a, b) => a - b)[10], s = Math.sign(l.p1 - l.p2); if (!(amp > 0) || !s) return null;
+  const q = scPiv(d).filter(z => Math.abs(z[1] - l.p1) <= .3 * amp).sort((a, b) => Math.abs(a[1] - l.p1) - Math.abs(b[1] - l.p1))[0]; if (!q) return { hors: true };
+  const en = s * (l.p1 - q[1]) / amp, st = s * (q[1] - l.p2) / amp, ob = s * (l.p1 + l.ecart - q[1]) / amp;  // (en journées habituelles, depuis le niveau : l'entrée, le stop au-delà, l'objectif)
+  const I = new Map(B.map((b, i) => [b[0], i])), R = { n: 0, ob: 0, st: 0, deux: 0, rien: 0, sans: 0 };
+  for (const e of scPasse(d)) { if (e.s !== s) continue; const j = I.get(e.t); if (j == null || j + 5 >= N) continue; const a = e.am || amp, E0 = e.v + s * en * a, S0 = e.v - s * st * a, O0 = e.v + s * ob * a; let pris = false, fin = null;
+    for (let m = j; m <= j + 5 && !fin; m++) { const b = B[m], bas = s > 0 ? b[3] : b[2], haut = s > 0 ? b[2] : b[3], sous = v => s > 0 ? bas <= v : bas >= v, sur = v => s > 0 ? haut >= v : haut <= v;
+      if (!pris) { if (!sous(E0)) continue; pris = true; if (sous(S0)) fin = 'st'; continue; }
+      const hs = sous(S0), ho = sur(O0); fin = hs && ho ? 'deux' : hs ? 'st' : ho ? 'ob' : null; }
+    if (!pris) { R.sans++; continue; } R.n++; R[fin || 'rien']++; }
+  return { R, q, s, st, ob, en }; }
 function majBlNiv(p) { const e = $('#bl-niv'), l = choisie; if (!e) return; const B = p && p.d && p.d.bougies;
+  if (l && l.genre === 'position') { const z = posPasse(l); if (!z || z.hors) { e.hidden = !z; if (z) { e.textContent = 'entrée loin d’un sommet / creux D1'; e.title = 'Le passé de ta position se mesure quand ton entrée est sur un sommet ou un creux D1 de ton zigzag (à moins de 30 % d’une journée habituelle)'; } return; }
+    const { R, q } = z, nom = q[2] === 'h' ? 'sommet' : 'creux';
+    e.textContent = R.n >= 5 ? `${nom} D1 · ${R.n} fois : objectif ${R.ob} · stop ${R.st}${R.deux ? ` · ? ${R.deux}` : ''} · rien ${R.rien}` : `${nom} D1 · trop peu de cas (${R.n})`;
+    e.title = `Le passé de ta position sur ${code} : les ${R.n} fois où le prix est arrivé ${z.s > 0 ? 'par au-dessus' : 'par en dessous'} sur un sommet ou un creux D1 de ton zigzag et a atteint une entrée placée comme la tienne (${nom} D1 ${nb(q[1], (p && p.d && p.d.dec) ?? 2)}), avec ton stop et ton objectif placés pareil par rapport au niveau (en journées habituelles : stop ${nb(z.st, 2)} au-delà, objectif ${nb(z.ob, 2)}) — dans les 5 jours, l’objectif touché d’abord ${R.ob} fois, le stop d’abord ${R.st} fois${R.deux ? `, les deux le même jour ${R.deux} fois (on ne sait pas lequel d’abord)` : ''}, ni l’un ni l’autre ${R.rien} fois${R.sans ? ` ; ${R.sans} autres fois, le prix n’est pas allé jusqu’à ton entrée` : ''}. Mesuré jour par jour en D1. Des faits passés, pas un conseil · un clic ouvre SC`; e.hidden = false; return; }
   if (!l || !B || B.length < 60 || !['horizontale', 'droite', 'canal', 'rect'].includes(l.genre) || REPLAY) { e.hidden = true; return; }
   const cle = `${l.id}|${l.p1}|${l.p2}|${l.t1}|${l.t2}|${p.ut}|${B.length}|${B[B.length - 1][0]}`;
   if (BL_NIV.cle !== cle) { const m = nivLigne(l, B, p.d.tick || 1, p.ut); if (!m) { e.hidden = true; return; }
     BL_NIV = { cle, txt: m.n ? `${m.n} contact${m.n > 1 ? 's' : ''} ${p.ut} · ${m.te} reparti${m.te > 1 ? 's' : ''} · ${m.tr} traversée${m.tr > 1 ? 's' : ''}` : `jamais touchée en ${p.ut}`, ut: p.ut }; }
   e.textContent = (l.etiquette ? `« ${l.etiquette} » · ` : '') + BL_NIV.txt; e.title = `Le passé de cette ligne en ${p.ut} (la mesure de NIV, sur l’historique chargé) · un clic ouvre NIV`; e.hidden = false; }
-$('#bl-niv').addEventListener('click', ev => { ev.stopPropagation(); const p = panes[actif] || panes[0], ut = p && ['H1', 'H4', 'D1'].includes(p.ut) ? p.ut : 'H1'; fnNiv(`${ut} ${code}`); });
+$('#bl-niv').addEventListener('click', ev => { ev.stopPropagation(); if (choisie && choisie.genre === 'position') { fnSc(); return; } const p = panes[actif] || panes[0], ut = p && ['H1', 'H4', 'D1'].includes(p.ut) ? p.ut : 'H1'; fnNiv(`${ut} ${code}`); });
 $('#barre-ligne').addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b || !choisie) return;
   if (b.dataset.c) { choisie.couleur = b.dataset.c; sauve(); }
@@ -4402,7 +4423,7 @@ function scPasse(d) { const B = (d.bougies || []).slice(0, -1), N = B.length, H 
       let r = null, k; for (k = j; k < Math.min(N, j + 6); k++) { const e = s * (B[k][4] - p.v); if (e <= -.3 * amp) { r = 'tr'; break; } if (e >= amp) { r = 'rep'; break; } }
       if (!r && j + 5 >= N) continue;  // (trop récent pour savoir)
       let pen = 0; for (let m = j; m <= Math.min(k, j + 5, N - 1); m++) pen = Math.max(pen, s > 0 ? p.v - B[m][3] : B[m][2] - p.v);  // (de combien le prix a dépassé le niveau, mèches comprises, avant l'issue)
-      der[p.t] = j; E.push({ t: B[j][0], p: p.t, v: p.v, ty: p.ty, s, r: r || 'ind', j: k - j, pen: Math.max(0, pen), pa: Math.max(0, pen) / amp, st: et === 0 ? 0 : et === s ? 1 : -1, vi: j >= 3 ? -s * (B[j][4] - B[j - 3][4]) / amp : 0 }); } }  // (vi : le chemin fait vers le niveau sur les 3 dernières clôtures, en journées habituelles)
+      der[p.t] = j; E.push({ t: B[j][0], p: p.t, v: p.v, ty: p.ty, s, am: amp, r: r || 'ind', j: k - j, pen: Math.max(0, pen), pa: Math.max(0, pen) / amp, st: et === 0 ? 0 : et === s ? 1 : -1, vi: j >= 3 ? -s * (B[j][4] - B[j - 3][4]) / amp : 0 }); } }  // (vi : le chemin fait vers le niveau sur les 3 dernières clôtures, en journées habituelles)
   return E; }
 // la première bougie H4 qui touche le niveau (mèche comprise), entre l'arrivée et l'issue : a-t-elle clôturé du côté d'où venait le prix (« rej ») ou au-delà (« aud ») ?
 // e.h4 reste null quand le prix est reparti sans toucher, ou quand l'historique H4 (un an environ) ne remonte pas jusque-là
