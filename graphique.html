@@ -2041,6 +2041,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'p') { $('#photo').click(); return; }
   if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; ESQ_SEL = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c' && !ev.shiftKey) choisieOutil('canal');
+  else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression');  // (O : la position ; G : le canal de régression)
   else if (k === 'x' && !ev.shiftKey && !ev.repeat) basculeDessins();
   else if ((k === 'delete' || k === 'backspace') && ESQ_SEL) esqEfface(ESQ_SEL);
   else if (k === 'delete' || k === 'backspace') efface();
@@ -5903,7 +5904,7 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0, ['TERM', 'le Terminal : toutes les fon
 /* --- audit : le raccourci dans chaque info-bulle (« Indicateurs · I »), l'aide qui se cherche, la barre / visible, le cours figé --- */
 const RACC = [['#sym', '/'], ['#b-cmd', '/'], ['#t-indic', 'I'], ['#b-copilote', 'E'], ['#b-dow', 'D'], ['#b-etude', 'A'], ['#b-replay', 'R'], ['#b-alertes', 'Maj + L'], ['#b-alertes-h', 'Maj + L'],
   ['#b-config', 'Maj + C'], ['#b-simu', 'Maj + S'], ['#b-simu-h', 'Maj + S'], ['#b-passe', 'Maj + H'], ['#b-memoire', 'M'], ['#b-journal', 'V maintenu'], ['#b-presente', 'B'], ['#b-trade', 'T'],
-  ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="efface"]', 'Suppr'], ['#t-dessins', 'X']];
+  ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="position"]', 'O'], ['[data-o="regression"]', 'G'], ['[data-o="efface"]', 'Suppr'], ['#t-dessins', 'X']];
 for (const [sel, k] of RACC) document.querySelectorAll(sel).forEach(b => { b.dataset.rac = k; if (b.dataset.tip) b.dataset.tip = b.dataset.tip.replace(/\s*\((?:Maj \+ [A-Z]|[A-Z]|Échap|Suppr|\s*\/\s*)\)/g, '').trim(); });
 document.querySelectorAll('#seg-ut [data-ut]').forEach((b, i) => { b.dataset.rac = `touche ${i + 1}`; });
 
