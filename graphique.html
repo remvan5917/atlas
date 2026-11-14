@@ -931,6 +931,7 @@
     <button class="outil" data-o="canal" data-tip="Canal parallèle (C) : trois clics"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
     <button class="outil" data-o="fibo" data-tip="Retracement de Fibonacci : du départ du mouvement à son arrivée (deux clics)"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 9.5h18M3 13h18M3 19h18" opacity=".9"/><path d="M5 19L19 5" stroke-dasharray="2 2"/></svg></button>
     <button class="outil" data-o="rect" data-tip="Zone de prix (rectangle) : deux coins · alerte quand le prix y entre ou en sort"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="1.5"/></svg></button>
+    <button class="outil" data-o="position" data-tip="Position : trois clics — ton entrée, ton stop, ton objectif (c’est toi qui places les trois prix) · le risque et le gain en ticks et en dollars par contrat, et le rapport gain / risque · glisse le bord rouge ou vert pour changer le stop ou l’objectif"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="7" rx="1"/><rect x="4" y="12" width="16" height="6" rx="1" opacity=".45"/></svg></button>
     <button class="outil" data-o="fleche" data-tip="Flèche : deux clics"><svg viewBox="0 0 24 24"><path d="M5 19L19 5M11 5h8v8"/></svg></button>
     <button class="outil" data-o="esquisse" data-tip="Esquisse : dessine à main levée, à droite de la dernière bougie, le chemin que tu imagines · Atlas le compare ensuite au marché (ESQ)"><svg viewBox="0 0 24 24"><path d="M3 17c3-6 5 2 8-4s5 3 10-6" stroke-dasharray="3 2"/></svg></button>
     <button class="outil" data-o="texte" data-tip="Texte : un clic, puis écris (double-clic sur un texte pour le changer)"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg></button>
@@ -1321,6 +1322,15 @@ class Pane {
         c.strokeStyle = col; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(T(l.t1), Y(l.p1)); c.lineTo(T(l.t2), Y(l.p2)); c.stroke(); c.setLineDash([]); }
       else if (l.genre === 'rect') { const col = l.couleur ? coul(l.couleur) : '#3d7bff', x1 = T(l.t1), x2 = T(l.t2), y1 = Y(l.p1), y2 = Y(l.p2);
         c.fillStyle = rgba(col.startsWith('#') ? col : '#3d7bff', .12); c.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); c.strokeStyle = col; c.strokeRect(Math.min(x1, x2) + .5, Math.min(y1, y2) + .5, Math.abs(x2 - x1), Math.abs(y2 - y1)); }
+      else if (l.genre === 'position') {  // ta position : entrée, stop (zone rouge), objectif (zone verte), dans le cadre que tu as tracé ; les chiffres en petit dans le cadre
+        const xa = Math.min(T(l.t1), T(l.t2)), xb = Math.max(T(l.t1), T(l.t2), xa + 8), yE = Y(l.p1), yS = Y(l.p2), cib = l.ecart ? l.p1 + l.ecart : null, yC = cib != null ? Y(cib) : null, tk = (this.d && this.d.tick) || 0, v$ = VAL_TICK[code], dec = (this.d && this.d.dec) ?? 2;
+        const tks = v => tk ? Math.round(Math.abs(v) / tk) : null, usd = v => v$ != null && tk ? ` · ${Math.round(Math.abs(v) / tk * v$).toLocaleString('fr-FR')} $` : '', rS = Math.abs(l.p1 - l.p2), rC = cib != null ? Math.abs(cib - l.p1) : 0;
+        c.fillStyle = 'rgba(240,67,90,.13)'; c.fillRect(xa, Math.min(yE, yS), xb - xa, Math.abs(yS - yE)); if (yC != null) { c.fillStyle = 'rgba(20,184,135,.13)'; c.fillRect(xa, Math.min(yE, yC), xb - xa, Math.abs(yC - yE)); }
+        c.setLineDash([]); c.lineWidth = sel ? 1.6 : 1; [[yS, '#f0435a'], [yC, '#14b887'], [yE, TH.nuit ? '#c9d1e0' : '#3a4150']].forEach(([y, col]) => { if (y == null) return; c.strokeStyle = col; c.beginPath(); c.moveTo(xa, y + .5); c.lineTo(xb, y + .5); c.stroke(); });
+        if (xb - xa > 70) { c.font = '600 10px "JetBrains Mono", monospace'; c.textAlign = 'left'; const lo = l.p2 < l.p1, ecrit2 = (tx, y, col, dessous) => { c.lineWidth = 3; c.strokeStyle = TH.bg; const yy = y + (dessous ? 12 : -4); c.strokeText(tx, xa + 4, yy); c.fillStyle = col; c.fillText(tx, xa + 4, yy); };
+          ecrit2(`Stop ${nb(l.p2, dec)} · ${tks(rS)} t${usd(rS)}`, yS, '#f0435a', lo);
+          if (cib != null) ecrit2(`Objectif ${nb(cib, dec)} · ${tks(rC)} t${usd(rC)} · ${(rC / (rS || 1)).toFixed(1).replace('.', ',')} R`, yC, '#14b887', !lo);
+          ecrit2(`${lo ? 'Achat' : 'Vente'} ${nb(l.p1, dec)}`, yE, TH.nuit ? '#c9d1e0' : '#3a4150', !lo); } }
       else if (l.genre === 'fleche') { const x1 = T(l.t1), y1 = Y(l.p1), x2 = T(l.t2), y2 = Y(l.p2), a = Math.atan2(y2 - y1, x2 - x1), L = 11; c.lineWidth = sel ? 2.4 : 2;
         c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.fillStyle = coul(l.couleur); c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - L * Math.cos(a - .45), y2 - L * Math.sin(a - .45)); c.lineTo(x2 - L * Math.cos(a + .45), y2 - L * Math.sin(a + .45)); c.closePath(); c.fill(); }
       else if (l.genre === 'texte') { const x = T(l.t1), y = Y(l.p1); c.font = '700 13px Inter, sans-serif'; c.lineWidth = 4; c.strokeStyle = TH.bg; c.strokeText(l.texte || '', x, y); c.fillStyle = coul(l.couleur); c.fillText(l.texte || '', x, y);
@@ -1486,7 +1496,7 @@ class Pane {
       if (z === 'graphe' && outil === 'esquisse' && this.T) { esqDebut(this, x, y); glisse = { mode: 'esquisse' }; return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
       if (z === 'graphe') {
-        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (l.verrou) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l } }; return; } }
+        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (l.verrou) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l }, part: l.genre === 'position' ? (Math.abs(y - this.Y(l.p2)) < 6 ? 'stop' : Math.abs(y - this.Y(l.p1 + (l.ecart || 0))) < 6 ? 'cible' : null) : null }; return; } }
         else if (choisie) { choisie = null; toutDessine(); }
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
@@ -1506,6 +1516,8 @@ class Pane {
       if (glisse && glisse.mode === 'regle') { this.regle.t2 = this.iT(x); this.regle.p2 = this.iY(y); this.dessine(); return; }
       if (glisse && glisse.mode === 'graphe' && !glisse.ligne) { const mt = performance.now(); if (glisse.lt) glisse.v = .6 * (glisse.v || 0) + .4 * (x - glisse.lx) / Math.max(1, mt - glisse.lt); glisse.lx = x; glisse.lt = mt; }
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
+        if (glisse.part) { const tk = (this.d && this.d.tick) || 0, arr = v => +(tk ? Math.round(v / tk) * tk : v).toFixed(8);  // (la position : seulement le stop, ou seulement l'objectif, au tick près, sans passer de l'autre côté de l'entrée)
+          if (glisse.part === 'stop') { const v = arr(o.p2 + dp); if (Math.sign(o.p1 - v) === Math.sign(o.p1 - o.p2)) l.p2 = v; } else { const v = +(arr(o.p1 + o.ecart + dp) - o.p1).toFixed(8); if (Math.sign(v) === Math.sign(o.ecart)) l.ecart = v; } toutDessine(); return; }
         l.t1 = o.t1 + (l.genre === 'horizontale' && !l.rayon ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; toutDessine(); return; }
       if (glisse && !glisse.ligne && this.bw > 0) {
         const nbB = ((this.d && this.d.bougies) || []).length, [lo0, hi0] = glisse.y0, h = hi0 - lo0;
@@ -1571,12 +1583,14 @@ function cliqueDessin(p, x, y) { travail(true); setTimeout(() => { if (!brouillo
   const [t, pr] = aimant(p, x, y);
   if (outil === 'horizontale') { const l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(`Ligne posée à ${nb(pr, p.d.dec)} · alerte active`); return; }
   if (outil === 'texte') { const tx = prompt('Ton texte :', ''); if (tx && tx.trim()) { const l = { id: idNeuf(), genre: 'texte', t1: t, p1: pr, texte: tx.trim().slice(0, 80), alerte: false }; lignes.push(l); choisie = l; sauve(); } choisieOutil('curseur'); toutDessine(); return; }
-  if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : ['fibo', 'rect', 'fleche'].includes(outil) ? outil : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: outil !== 'fibo' && outil !== 'fleche' }; return; }
-  if (brouillon.genre === 'canal' && brouillon.etape === 1) { brouillon.etape = 2; brouillon.ecart = 0; return; }
-  const l = { ...brouillon }; delete l.pane; delete l.etape; lignes.push(l); brouillon = null; choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast({ canal: 'Canal tracé · alerte active sur ses deux bords', fibo: 'Fibonacci tracé', rect: 'Zone tracée · alerte quand le prix y entre ou en sort', fleche: 'Flèche posée' }[l.genre] || 'Ligne tracée · alerte active');
+  if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : ['fibo', 'rect', 'fleche', 'position'].includes(outil) ? outil : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: !['fibo', 'fleche', 'position'].includes(outil) }; return; }
+  if ((brouillon.genre === 'canal' || brouillon.genre === 'position') && brouillon.etape === 1) { if (brouillon.genre === 'position' && brouillon.p2 === brouillon.p1) return; brouillon.etape = 2; brouillon.ecart = 0; return; }  // (la position : le stop doit s'écarter de l'entrée)
+  if (brouillon.genre === 'position' && !(brouillon.ecart && Math.sign(brouillon.ecart) === Math.sign(brouillon.p1 - brouillon.p2))) return;  // (l'objectif, de l'autre côté de l'entrée que le stop)
+  const l = { ...brouillon }; delete l.pane; delete l.etape; if (l.genre === 'position' && Math.abs(l.t2 - l.t1) < 1) l.t2 = l.t1 + 20 * (DUREE[p.ut] || 3600); lignes.push(l); brouillon = null; choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast({ canal: 'Canal tracé · alerte active sur ses deux bords', fibo: 'Fibonacci tracé', rect: 'Zone tracée · alerte quand le prix y entre ou en sort', fleche: 'Flèche posée', position: 'Position tracée · glisse le bord rouge (stop) ou vert (objectif) pour les changer' }[l.genre] || 'Ligne tracée · alerte active');
 }
 function majBrouillon(p, x, y) {
   if (brouillon.etape === 1) { const [t, pr] = aimant(p, x, y); brouillon.t2 = t; brouillon.p2 = pr; }
+  else if (brouillon.etape === 2 && brouillon.genre === 'position') { const [, pr] = aimant(p, x, y); brouillon.ecart = +(pr - brouillon.p1).toFixed(8); }
   else if (brouillon.etape === 2) { const t = p.iT(x), base = brouillon.p1 + (brouillon.p2 - brouillon.p1) * (t - brouillon.t1) / ((brouillon.t2 - brouillon.t1) || 1); brouillon.ecart = p.iY(y) - base; }
   toutDessine();
 }
@@ -1586,6 +1600,7 @@ function proche(p, x, y) { if (!optDessins) return null;
   lignes.forEach(l => { let d;
     if (l.genre === 'fibo') { const x0 = Math.min(p.T(l.t1), p.T(l.t2)); d = x >= x0 - 4 ? Math.min(...[0, .236, .382, .5, .618, .786, 1, 1.272, 1.618].map(r => Math.abs(p.Y(l.p2 + (l.p1 - l.p2) * r) - y))) : 99; }
     else if (l.genre === 'rect') { const xa = Math.min(p.T(l.t1), p.T(l.t2)), xb = Math.max(p.T(l.t1), p.T(l.t2)), ya = Math.min(p.Y(l.p1), p.Y(l.p2)), yb = Math.max(p.Y(l.p1), p.Y(l.p2)); d = x >= xa && x <= xb && y >= ya && y <= yb ? 3 : 99; }
+    else if (l.genre === 'position') { const xa = Math.min(p.T(l.t1), p.T(l.t2)), xb = Math.max(p.T(l.t1), p.T(l.t2)), ys = [p.Y(l.p1), p.Y(l.p2), p.Y(l.p1 + (l.ecart || 0))]; d = x >= xa && x <= xb && y >= Math.min(...ys) - 4 && y <= Math.max(...ys) + 4 ? 3 : 99; }
     else if (l.genre === 'fleche') d = segD(p.T(l.t1), p.Y(l.p1), p.T(l.t2), p.Y(l.p2));
     else if (l.genre === 'texte') { const xa = p.T(l.t1), ya = p.Y(l.p1); d = x >= xa - 4 && x <= xa + 8 * (l.texte || '').length + 8 && y >= ya - 16 && y <= ya + 6 ? 2 : 99; }
     else if (l.genre === 'horizontale') d = l.rayon && l.t1 != null && x < p.T(l.t1) - 4 ? 99 : Math.abs(p.Y(l.p1) - y);
@@ -1611,7 +1626,7 @@ const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
 function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
-  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, approche: l.approche || undefined, etiquette: l.etiquette || undefined, nom: l.etiquette ? `ta ligne « ${l.etiquette} »` : l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
+  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, approche: l.approche || undefined, etiquette: l.etiquette || undefined, nom: l.etiquette ? `ta ligne « ${l.etiquette} »` : l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : l.genre === 'position' ? 'ta position' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id }); });
   ecrit('g-lignes-' + code, JSON.stringify(lignes));
   try { await api('/maison/graphique', { action: 'lignes', code, lignes: env }); if (canal) canal.postMessage({ code }); } catch (e) { /* hors liaison : on réessaiera au prochain tracé */ } }, 400); }
