@@ -2021,11 +2021,30 @@ function posPasse(l) { if (!l || l.genre !== 'position' || !l.ecart) return null
       const hs = sous(S0), ho = sur(O0); fin = hs && ho ? 'deux' : hs ? 'st' : ho ? 'ob' : null; }
     if (!pris) { R.sans++; continue; } R.n++; R[fin || 'rien']++; }
   return { R, q, s, st, ob, en }; }
+// le passé des CLÔTURES au-delà d'une ligne, dans l'unité de son alerte à la clôture (H1 / H4 / D1) : chaque fois qu'une bougie a clôturé de l'autre côté,
+// la clôture est-elle restée au-delà pendant les 5 bougies suivantes (« tenue ») ou une clôture est-elle revenue du côté d'avant (« revenue ») ? (la bougie en cours ne compte pas)
+let CL_B = { k: '', at: 0, d: null, charge: false }, BL_CL = { cle: '', txt: '', tip: '' };
+function clLigne(l, B, ut) { if (!B || B.length < 30 || !['horizontale', 'droite', 'canal'].includes(l.genre)) return null; const du = DUREE[ut] || 3600, plat = l.genre === 'horizontale' || l.t2 == null || l.t2 === l.t1, ta = plat ? -Infinity : Math.min(l.t1, l.t2) - du;
+  const val = (t, o) => plat ? l.p1 + o : l.p1 + o + (l.p2 - l.p1) * (t - l.t1) / (l.t2 - l.t1), C = B.slice(0, -1), R = { n: 0, te: 0, rv: 0, der: null, enc: 0 };
+  for (const o of l.genre === 'canal' && l.ecart != null ? [0, l.ecart] : [0]) { let av = 0;
+    for (let i = 0; i < C.length; i++) { if (C[i][0] < ta) continue; const v = val(C[i][0], o), c = C[i][4], sd = c > v ? 1 : c < v ? -1 : 0; if (!sd) continue;
+      if (av && sd !== av) { if (i + 5 >= C.length) { R.enc++; } else { let rv = false; for (let m = i + 1; m <= i + 5; m++) { const w = val(C[m][0], o); if (av > 0 ? C[m][4] > w : C[m][4] < w) { rv = true; break; } } R.n++; rv ? R.rv++ : R.te++; R.der = !R.der || C[i][0] > R.der.t ? { t: C[i][0], s: sd, rv } : R.der; } }
+      av = sd; } }
+  return R; }
+function clBarres(ut) { const p = panes.find(q => q.ut === ut && q.d && q.d.bougies && q.d.bougies.length >= 30); if (p) return p.d.bougies; const k = `${code}|${ut}`;
+  if (CL_B.k === k && Date.now() - CL_B.at < 600000) return CL_B.d && CL_B.d.bougies;
+  if (!CL_B.charge) { CL_B.charge = true; barresDe(code, ut).then(d => { CL_B = { k, at: Date.now(), d, charge: false }; if (choisie) majBlNiv(panes[actif] || panes[0]); }).catch(() => { CL_B.charge = false; }); } return null; }
 function majBlNiv(p) { const e = $('#bl-niv'), l = choisie; if (!e) return; const B = p && p.d && p.d.bougies;
   if (l && l.genre === 'position') { const z = posPasse(l); if (!z || z.hors) { e.hidden = !z; if (z) { e.textContent = 'entrée loin d’un sommet / creux D1'; e.title = 'Le passé de ta position se mesure quand ton entrée est sur un sommet ou un creux D1 de ton zigzag (à moins de 30 % d’une journée habituelle)'; } return; }
     const { R, q } = z, nom = q[2] === 'h' ? 'sommet' : 'creux';
     e.textContent = R.n >= 5 ? `${nom} D1 · ${R.n} fois : objectif ${R.ob} · stop ${R.st}${R.deux ? ` · ? ${R.deux}` : ''} · rien ${R.rien}` : `${nom} D1 · trop peu de cas (${R.n})`;
     e.title = `Le passé de ta position sur ${code} : les ${R.n} fois où le prix est arrivé ${z.s > 0 ? 'par au-dessus' : 'par en dessous'} sur un sommet ou un creux D1 de ton zigzag et a atteint une entrée placée comme la tienne (${nom} D1 ${nb(q[1], (p && p.d && p.d.dec) ?? 2)}), avec ton stop et ton objectif placés pareil par rapport au niveau (en journées habituelles : stop ${nb(z.st, 2)} au-delà, objectif ${nb(z.ob, 2)}) — dans les 5 jours, l’objectif touché d’abord ${R.ob} fois, le stop d’abord ${R.st} fois${R.deux ? `, les deux le même jour ${R.deux} fois (on ne sait pas lequel d’abord)` : ''}, ni l’un ni l’autre ${R.rien} fois${R.sans ? ` ; ${R.sans} autres fois, le prix n’est pas allé jusqu’à ton entrée` : ''}. Mesuré jour par jour en D1. Des faits passés, pas un conseil · un clic ouvre SC`; e.hidden = false; return; }
+  if (l && l.cloture && ['horizontale', 'droite', 'canal'].includes(l.genre) && !REPLAY) { const ut = l.cloture, CB = clBarres(ut); if (!CB) { e.hidden = true; return; }
+    const cle = `${l.id}|${l.p1}|${l.p2}|${l.t1}|${l.t2}|${l.ecart}|${ut}|${CB.length}|${CB[CB.length - 1][0]}`;
+    if (BL_CL.cle !== cle) { const R = clLigne(l, CB, ut), dj = t => new Date(t * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'short', ...(new Date(t * 1000).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}), ...(ut === 'D1' ? {} : { hour: '2-digit', minute: '2-digit' }) });
+      BL_CL = { cle, txt: !R ? '' : R.n ? `${R.n} clôture${R.n > 1 ? 's' : ''} ${ut} au-delà · ${R.te} tenue${R.te > 1 ? 's' : ''} · ${R.rv} revenue${R.rv > 1 ? 's' : ''}` : `jamais clôturée au-delà en ${ut}`,
+        tip: !R ? '' : `Le passé de ton alerte à la clôture ${ut} sur cette ligne, sur l’historique chargé (${CB.length} bougies ${ut}) : chaque fois qu’une bougie ${ut} a clôturé de l’autre côté, la clôture est-elle restée au-delà pendant les 5 bougies suivantes (« tenue »), ou une clôture est-elle revenue du côté d’avant (« revenue », un faux départ) ?${R.der ? ` La dernière fois : ${dj(R.der.t)}, clôture ${R.der.s > 0 ? 'au-dessus' : 'en dessous'}, ${R.der.rv ? 'revenue' : 'tenue'}.` : ''}${R.enc ? ` ${R.enc === 1 ? 'Une clôture récente' : R.enc + ' clôtures récentes'} au-delà, trop récente${R.enc > 1 ? 's' : ''} pour juger.` : ''} Des faits, pas une prévision · un clic ouvre NIV` }; }
+    if (BL_CL.txt) { e.textContent = (l.etiquette ? `« ${l.etiquette} » · ` : '') + BL_CL.txt; e.title = BL_CL.tip; e.hidden = false; return; } }
   if (!l || !B || B.length < 60 || !['horizontale', 'droite', 'canal', 'rect'].includes(l.genre) || REPLAY) { e.hidden = true; return; }
   const cle = `${l.id}|${l.p1}|${l.p2}|${l.t1}|${l.t2}|${p.ut}|${B.length}|${B[B.length - 1][0]}`;
   if (BL_NIV.cle !== cle) { const m = nivLigne(l, B, p.d.tick || 1, p.ut); if (!m) { e.hidden = true; return; }
