@@ -930,6 +930,7 @@
     <button class="outil" data-o="ligne" data-tip="Ligne de tendance (L) : deux clics"><svg viewBox="0 0 24 24"><path d="M4 19L20 5"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/></svg></button>
     <button class="outil" data-o="horizontale" data-tip="Ligne horizontale (H) : un clic"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="1.6"/></svg></button>
     <button class="outil" data-o="canal" data-tip="Canal parallèle (C) : trois clics"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
+    <button class="outil" data-o="fourche" data-tip="Fourche d’Andrews : trois clics — le départ du mouvement, puis les deux pivots suivants (aimantés aux sommets et creux du zigzag) · la médiane et ses deux parallèles, prolongées vers la droite"><svg viewBox="0 0 24 24"><path d="M3 13L20 9M9 6.5L21 3.5M9 19.5L21 16.5"/><path d="M9 6.5L9 19.5" stroke-dasharray="2 2" opacity=".6"/><circle cx="3" cy="13" r="1.5"/></svg></button>
     <button class="outil" data-o="regression" data-tip="Canal de régression : deux clics (début et fin du mouvement) · la droite qui passe au plus près des clôtures, et ses deux bords à ± 2 écarts-types, prolongés en pointillés · recalculé dans chaque unité"><svg viewBox="0 0 24 24"><path d="M4 16L20 8M4 20L20 12" opacity=".5"/><path d="M4 12L20 4" opacity=".5"/><path d="M4 18L20 10" stroke-dasharray="2 2"/></svg></button>
     <button class="outil" data-o="fibo" data-tip="Retracement de Fibonacci : du départ du mouvement à son arrivée (deux clics)"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 9.5h18M3 13h18M3 19h18" opacity=".9"/><path d="M5 19L19 5" stroke-dasharray="2 2"/></svg></button>
     <button class="outil" data-o="rect" data-tip="Zone de prix (rectangle) : deux coins · alerte quand le prix y entre ou en sort"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="1.5"/></svg></button>
@@ -1344,6 +1345,17 @@ class Pane {
         c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.fillStyle = coul(l.couleur); c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - L * Math.cos(a - .45), y2 - L * Math.sin(a - .45)); c.lineTo(x2 - L * Math.cos(a + .45), y2 - L * Math.sin(a + .45)); c.closePath(); c.fill(); }
       else if (l.genre === 'texte') { const x = T(l.t1), y = Y(l.p1); c.font = '700 13px Inter, sans-serif'; c.lineWidth = 4; c.strokeStyle = TH.bg; c.strokeText(l.texte || '', x, y); c.fillStyle = coul(l.couleur); c.fillText(l.texte || '', x, y);
         if (sel) { const w = c.measureText(l.texte || '').width; c.strokeStyle = '#4cc9f0'; c.lineWidth = 1; c.setLineDash([3, 3]); c.strokeRect(x - 4, y - 15, w + 8, 21); c.setLineDash([]); } }
+      else if (l.genre === 'fourche') {  // la fourche d'Andrews : la médiane part du premier point et passe par le milieu des deux autres ; ses parallèles partent de ces deux points ; prolongées à droite, jamais dans le volume
+        const F = fourcheGeo(l, T, Y); c.save(); c.beginPath(); c.rect(0, 0, pw, BASP); c.clip();
+        if (!F) { c.beginPath(); c.moveTo(T(l.t1), Y(l.p1)); c.lineTo(T(l.t2), Y(l.p2)); c.stroke(); }
+        else { const col = coul(l.couleur), fin = (x0, y0) => F.dx > 0 ? [pw, y0 + F.k * (pw - x0)] : [x0 + F.dx, y0 + F.dy];
+          const [xb2, yb2] = fin(F.xb, F.yb), [xc2, yc2] = fin(F.xc, F.yc), [xm2, ym2] = fin(F.xa, F.ya);
+          c.fillStyle = rgba(String(col).startsWith('#') ? col : '#3d7bff', .05); c.beginPath(); c.moveTo(F.xb, F.yb); c.lineTo(xb2, yb2); c.lineTo(xc2, yc2); c.lineTo(F.xc, F.yc); c.closePath(); c.fill();
+          c.beginPath(); c.moveTo(F.xa, F.ya); c.lineTo(xm2, ym2); c.stroke();
+          c.lineWidth = sel ? 1.8 : 1.1; [[F.xb, F.yb, xb2, yb2], [F.xc, F.yc, xc2, yc2]].forEach(([a, b, x2, y2]) => { c.beginPath(); c.moveTo(a, b); c.lineTo(x2, y2); c.stroke(); });
+          c.setLineDash([3, 3]); c.globalAlpha = .6; c.beginPath(); c.moveTo(F.xb, F.yb); c.lineTo(F.xc, F.yc); c.stroke(); c.globalAlpha = 1; c.setLineDash([]);
+          if (sel) { c.fillStyle = col; [[F.xa, F.ya], [F.xb, F.yb], [F.xc, F.yc]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 3, 0, 7); c.fill(); }); } }
+        c.restore(); }
       else { seg(l.t1, l.p1, l.t2, l.p2); if (l.genre === 'canal' && l.ecart != null) seg(l.t1, l.p1 + l.ecart, l.t2, l.p2 + l.ecart); }
       c.setLineDash([]);
       if (sel && l.genre !== 'horizontale' && l.genre !== 'texte') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = TH.bg; c.strokeStyle = coul(l.couleur); c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
@@ -1531,7 +1543,7 @@ class Pane {
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
         if (glisse.part) { const tk = (this.d && this.d.tick) || 0, arr = v => +(tk ? Math.round(v / tk) * tk : v).toFixed(8);  // (la position : seulement le stop, ou seulement l'objectif, au tick près, sans passer de l'autre côté de l'entrée)
           if (glisse.part === 'stop') { const v = arr(o.p2 + dp); if (Math.sign(o.p1 - v) === Math.sign(o.p1 - o.p2)) l.p2 = v; } else { const v = +(arr(o.p1 + o.ecart + dp) - o.p1).toFixed(8); if (Math.sign(v) === Math.sign(o.ecart)) l.ecart = v; } toutDessine(); return; }
-        l.t1 = o.t1 + (l.genre === 'horizontale' && !l.rayon ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; toutDessine(); return; }
+        l.t1 = o.t1 + (l.genre === 'horizontale' && !l.rayon ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; if (o.t3 != null) { l.t3 = o.t3 + dt; l.p3 = o.p3 + dp; } toutDessine(); return; }
       if (glisse && !glisse.ligne && this.bw > 0) {
         const nbB = ((this.d && this.d.bougies) || []).length, [lo0, hi0] = glisse.y0, h = hi0 - lo0;
         if (glisse.mode === 'prix') { // étirer les prix : vers le haut = plus grand, vers le bas = plus petit (autour du milieu)
@@ -1592,6 +1604,9 @@ function aimant(p, x, y) {
   const tk = p.d.tick, py = p.iY(y);
   return mieux || [p.iT(x), tk ? Math.round(py / tk) * tk : py];
 }
+// la fourche d'Andrews en pixels (l'écart entre les bougies, pas le calendrier : comme les autres dessins) : A le départ, B et C les deux pivots ; M le milieu de B et C ; la direction de la médiane A → M
+function fourcheGeo(l, T, Y) { if (l.t3 == null || l.p3 == null) return null; const xa = T(l.t1), ya = Y(l.p1), xb = T(l.t2), yb = Y(l.p2), xc = T(l.t3), yc = Y(l.p3), dx = (xb + xc) / 2 - xa, dy = (yb + yc) / 2 - ya;
+  if (![xa, ya, xb, yb, xc, yc].every(Number.isFinite)) return null; return { xa, ya, xb, yb, xc, yc, dx, dy, k: dx ? dy / dx : 0 }; }
 // le canal de régression : la droite des moindres carrés sur les clôtures entre t1 et t2 (par bougie, les pauses de cotation ne comptent pas), et l'écart-type autour d'elle
 function regLin(B, t1, t2) { if (!B || !B.length) return null; const ta = Math.min(t1, t2), tb = Math.max(t1, t2), ix = t => { let a = 0, z = B.length; while (a < z) { const m = (a + z) >> 1; if (B[m][0] < t) a = m + 1; else z = m; } return a; };
   const k0 = ix(ta), k1 = Math.min(B.length - 1, ix(tb + 1) - 1), n = k1 - k0 + 1; if (n < 3) return null; let sx = 0, sy = 0, sxx = 0, sxy = 0;
@@ -1602,16 +1617,18 @@ function cliqueDessin(p, x, y) { travail(true); setTimeout(() => { if (!brouillo
   const [t, pr] = aimant(p, x, y);
   if (outil === 'horizontale') { const l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(`Ligne posée à ${nb(pr, p.d.dec)} · alerte active`); return; }
   if (outil === 'texte') { const tx = prompt('Ton texte :', ''); if (tx && tx.trim()) { const l = { id: idNeuf(), genre: 'texte', t1: t, p1: pr, texte: tx.trim().slice(0, 80), alerte: false }; lignes.push(l); choisie = l; sauve(); } choisieOutil('curseur'); toutDessine(); return; }
-  if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : ['fibo', 'rect', 'fleche', 'position', 'regression'].includes(outil) ? outil : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: !['fibo', 'fleche', 'position', 'regression'].includes(outil) }; return; }
+  if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : ['fibo', 'rect', 'fleche', 'position', 'regression', 'fourche'].includes(outil) ? outil : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: !['fibo', 'fleche', 'position', 'regression', 'fourche'].includes(outil) }; return; }
+  if (brouillon.genre === 'fourche' && brouillon.etape === 1) { if (Math.abs(p.T(brouillon.t2) - p.T(brouillon.t1)) < 4) return; brouillon.etape = 2; brouillon.t3 = t; brouillon.p3 = pr; return; }  // (le deuxième pivot, puis le troisième)
   if ((brouillon.genre === 'canal' || brouillon.genre === 'position') && brouillon.etape === 1) { if (brouillon.genre === 'position' && brouillon.p2 === brouillon.p1) return; brouillon.etape = 2; brouillon.ecart = 0; return; }  // (la position : le stop doit s'écarter de l'entrée)
   if (brouillon.genre === 'position' && !(brouillon.ecart && Math.sign(brouillon.ecart) === Math.sign(brouillon.p1 - brouillon.p2))) return;  // (l'objectif, de l'autre côté de l'entrée que le stop)
   const l = { ...brouillon }; delete l.pane; delete l.etape; if (l.genre === 'position' && Math.abs(l.t2 - l.t1) < 1) l.t2 = l.t1 + 20 * (DUREE[p.ut] || 3600);
   if (l.genre === 'regression') { const g = regLin(p.d && p.d.bougies, l.t1, l.t2); if (!g) { toast('Le canal de régression demande au moins 3 bougies entre tes deux clics'); return; } const B = p.d.bougies, tk = p.d.tick || 0, r = v => +(tk ? Math.round(v / tk) * tk : v).toFixed(8);
     if (l.t1 > l.t2) [l.t1, l.t2] = [l.t2, l.t1]; l.p1 = r(g.v(g.k0)); l.p2 = r(g.v(g.k1)); l.ecart = r(2 * g.sd); }  // (gardé pour la maison et les autres fenêtres : la droite du milieu et l'écart des bords)
-  lignes.push(l); brouillon = null; choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast({ canal: 'Canal tracé · alerte active sur ses deux bords', fibo: 'Fibonacci tracé', rect: 'Zone tracée · alerte quand le prix y entre ou en sort', fleche: 'Flèche posée', regression: 'Canal de régression tracé · recalculé dans chaque unité', position: 'Position tracée · glisse le bord rouge (stop) ou vert (objectif) pour les changer' }[l.genre] || 'Ligne tracée · alerte active');
+  lignes.push(l); brouillon = null; choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast({ canal: 'Canal tracé · alerte active sur ses deux bords', fibo: 'Fibonacci tracé', rect: 'Zone tracée · alerte quand le prix y entre ou en sort', fleche: 'Flèche posée', fourche: 'Fourche d’Andrews tracée · la médiane et ses deux parallèles', regression: 'Canal de régression tracé · recalculé dans chaque unité', position: 'Position tracée · glisse le bord rouge (stop) ou vert (objectif) pour les changer' }[l.genre] || 'Ligne tracée · alerte active');
 }
 function majBrouillon(p, x, y) {
   if (brouillon.etape === 1) { const [t, pr] = aimant(p, x, y); brouillon.t2 = t; brouillon.p2 = pr; }
+  else if (brouillon.etape === 2 && brouillon.genre === 'fourche') { const [t, pr] = aimant(p, x, y); brouillon.t3 = t; brouillon.p3 = pr; }
   else if (brouillon.etape === 2 && brouillon.genre === 'position') { const [, pr] = aimant(p, x, y); brouillon.ecart = +(pr - brouillon.p1).toFixed(8); }
   else if (brouillon.etape === 2) { const t = p.iT(x), base = brouillon.p1 + (brouillon.p2 - brouillon.p1) * (t - brouillon.t1) / ((brouillon.t2 - brouillon.t1) || 1); brouillon.ecart = p.iY(y) - base; }
   toutDessine();
@@ -1625,6 +1642,8 @@ function proche(p, x, y) { if (!optDessins) return null;
     else if (l.genre === 'regression') { const g = regLin(p.d && p.d.bougies, l.t1, l.t2); if (!g) d = 99; else { const xa = p.X(g.k0) - 4; d = x < xa ? 99 : Math.min(...[-2, 0, 2].map(f => { const k = g.k0 + (x / p.bw + p.vis().i - .5 - g.k0); return Math.abs(p.Y(g.v(k) + f * g.sd) - y); })); } }
     else if (l.genre === 'position') { const xa = Math.min(p.T(l.t1), p.T(l.t2)), xb = Math.max(p.T(l.t1), p.T(l.t2)), ys = [p.Y(l.p1), p.Y(l.p2), p.Y(l.p1 + (l.ecart || 0))]; d = x >= xa && x <= xb && y >= Math.min(...ys) - 4 && y <= Math.max(...ys) + 4 ? 3 : 99; }
     else if (l.genre === 'fleche') d = segD(p.T(l.t1), p.Y(l.p1), p.T(l.t2), p.Y(l.p2));
+    else if (l.genre === 'fourche') { const F = fourcheGeo(l, p.T, p.Y); if (!F) d = segD(p.T(l.t1), p.Y(l.p1), p.T(l.t2), p.Y(l.p2)); else { const w = p.pw || 4000, bout = (x0, y0) => F.dx > 0 ? [w, y0 + F.k * (w - x0)] : [x0 + F.dx, y0 + F.dy];
+      d = Math.min(...[[F.xa, F.ya], [F.xb, F.yb], [F.xc, F.yc]].map(([a, b]) => segD(a, b, ...bout(a, b))), segD(F.xb, F.yb, F.xc, F.yc)); } }
     else if (l.genre === 'texte') { const xa = p.T(l.t1), ya = p.Y(l.p1); d = x >= xa - 4 && x <= xa + 8 * (l.texte || '').length + 8 && y >= ya - 16 && y <= ya + 6 ? 2 : 99; }
     else if (l.genre === 'horizontale') d = l.rayon && l.t1 != null && x < p.T(l.t1) - 4 ? 99 : Math.abs(p.Y(l.p1) - y);
     else { const x1 = p.T(l.t1), y1 = p.Y(l.p1), x2 = p.T(l.t2), y2 = p.Y(l.p2), k = (y2 - y1) / ((x2 - x1) || 1);
@@ -1649,7 +1668,7 @@ const idNeuf = () => Math.random().toString(36).slice(2, 10);
 let tSauve = 0;
 function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
-  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, approche: l.approche || undefined, etiquette: l.etiquette || undefined, nom: l.etiquette ? `ta ligne « ${l.etiquette} »` : l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : l.genre === 'position' ? 'ta position' : l.genre === 'regression' ? 'ton canal de régression' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
+  const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, t3: l.t3 ?? undefined, p3: l.p3 ?? undefined, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, approche: l.approche || undefined, etiquette: l.etiquette || undefined, nom: l.etiquette ? `ta ligne « ${l.etiquette} »` : l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : l.genre === 'position' ? 'ta position' : l.genre === 'regression' ? 'ton canal de régression' : l.genre === 'fourche' ? 'ta fourche d’Andrews' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id });
     // la position avec sa cloche allumée : la maison surveille son entrée, son stop et son objectif comme trois lignes horizontales (cachées sur le graphique), chacune avec son nom dans le message
     if (l.genre === 'position' && l.alerte === true && l.ecart) [['e', l.p1, 'l’entrée de ta position'], ['s', l.p2, 'le stop de ta position'], ['o', +(l.p1 + l.ecart).toFixed(8), 'l’objectif de ta position']].forEach(([k, v, nom]) => env.push({ id: l.id + k, genre: 'horizontale', t1: l.t1, p1: v, nom, alerte: true, double: l.id })); });
@@ -1928,14 +1947,14 @@ function majBarreLigne() {
   let x, y; if (choisie.genre === 'horizontale') { x = r.left + p.pw - 270; y = r.top + p.Y(choisie.p1); } else { const t2 = choisie.t2 != null ? choisie.t2 : choisie.t1, p2 = choisie.p2 != null ? choisie.p2 : choisie.p1; x = r.left + Math.min(p.pw - 270, Math.max(10, p.T(t2))); y = r.top + p.Y(p2); }
   bl.classList.add('on'); majBlNiv(p); const lw = bl.offsetWidth || 270; if (choisie.genre === 'horizontale') x = r.left + p.pw - lw; else x = Math.min(x, r.left + p.pw - lw);
   bl.style.left = `${Math.max(8, Math.min(innerWidth - lw - 8, Math.max(r.left + 8, x)))}px`; bl.style.top = `${Math.min(r.bottom - 50, Math.max(r.top + 8, y - 52))}px`;
-  bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false);
+  bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false); bl.querySelector('[data-l="alerte"]').hidden = ['fibo', 'fleche', 'texte', 'regression', 'fourche'].includes(choisie.genre);  // (la maison ne surveille pas ces dessins : pas de cloche qui ne sonnerait jamais)
   bl.querySelector('[data-l="style"]').classList.toggle('on', choisie.style === 'tirets');
   const br = bl.querySelector('[data-l="rayon"]'); br.hidden = choisie.genre !== 'horizontale'; br.classList.toggle('on', !!choisie.rayon);
   bl.querySelector('[data-l="verrou"]').classList.toggle('on', !!choisie.verrou); bl.querySelector('[data-l="nom"]').classList.toggle('on', !!choisie.etiquette);
   const ba = bl.querySelector('[data-l="approche"]'); ba.hidden = !['horizontale', 'droite'].includes(choisie.genre); ba.classList.toggle('on', choisie.approche > 0); ba.title = choisie.approche > 0 ? `Pré-alerte à ${choisie.approche} ticks de la ligne · clic pour changer` : 'Pré-alerte : être prévenu quand le prix arrive à quelques ticks de cette ligne, avant de la toucher';
 }
 // dupliquer une ligne (bouton, ou Alt + glisser) : la copie garde tout (couleur, style, alerte, demi-droite), elle n'est jamais verrouillée
-function dupliqueLigne(l, dp) { const n = { ...l, id: idNeuf(), verrou: undefined }; if (dp) { n.p1 += dp; if (n.p2 != null) n.p2 += dp; } lignes.push(n); choisie = n; sauve(); toutDessine(); return n; }
+function dupliqueLigne(l, dp) { const n = { ...l, id: idNeuf(), verrou: undefined }; if (dp) { n.p1 += dp; if (n.p2 != null) n.p2 += dp; if (n.p3 != null) n.p3 += dp; } lignes.push(n); choisie = n; sauve(); toutDessine(); return n; }
 // masquer / montrer tous ses dessins dans cette fenêtre (ils restent gardés, leurs alertes continuent) : bouton œil, touche X
 var optDessins = lit(K('g-dessins'), '1') === '1';
 function basculeDessins() { optDessins = !optDessins; ecrit(K('g-dessins'), optDessins ? '1' : '0'); if (!optDessins) { choisie = null; brouillon = null; } const b = $('#t-dessins'); if (b) b.classList.toggle('on', !optDessins); toutDessine(); toast(optDessins ? 'Tes dessins sont de nouveau visibles' : 'Tes dessins sont masqués dans cette fenêtre · leurs alertes continuent · X pour les remontrer'); }
@@ -2041,7 +2060,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'p') { $('#photo').click(); return; }
   if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; ESQ_SEL = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c' && !ev.shiftKey) choisieOutil('canal');
-  else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression');  // (O : la position ; G : le canal de régression)
+  else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression'); else if (k === 'u' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('fourche');  // (O : la position ; G : le canal de régression)
   else if (k === 'x' && !ev.shiftKey && !ev.repeat) basculeDessins();
   else if ((k === 'delete' || k === 'backspace') && ESQ_SEL) esqEfface(ESQ_SEL);
   else if (k === 'delete' || k === 'backspace') efface();
@@ -5907,7 +5926,7 @@ FONCTIONS.splice(FONCTIONS.length - 1, 0, ['TERM', 'le Terminal : toutes les fon
 /* --- audit : le raccourci dans chaque info-bulle (« Indicateurs · I »), l'aide qui se cherche, la barre / visible, le cours figé --- */
 const RACC = [['#sym', '/'], ['#b-cmd', '/'], ['#t-indic', 'I'], ['#b-copilote', 'E'], ['#b-dow', 'D'], ['#b-etude', 'A'], ['#b-replay', 'R'], ['#b-alertes', 'Maj + L'], ['#b-alertes-h', 'Maj + L'],
   ['#b-config', 'Maj + C'], ['#b-simu', 'Maj + S'], ['#b-simu-h', 'Maj + S'], ['#b-passe', 'Maj + H'], ['#b-memoire', 'M'], ['#b-journal', 'V maintenu'], ['#b-presente', 'B'], ['#b-trade', 'T'],
-  ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="position"]', 'O'], ['[data-o="regression"]', 'G'], ['[data-o="efface"]', 'Suppr'], ['#t-dessins', 'X']];
+  ['#photo', 'P'], ['#plein', 'F'], ['[data-o="curseur"]', 'Échap'], ['[data-o="ligne"]', 'L'], ['[data-o="horizontale"]', 'H'], ['[data-o="canal"]', 'C'], ['[data-o="position"]', 'O'], ['[data-o="regression"]', 'G'], ['[data-o="fourche"]', 'U'], ['[data-o="efface"]', 'Suppr'], ['#t-dessins', 'X']];
 for (const [sel, k] of RACC) document.querySelectorAll(sel).forEach(b => { b.dataset.rac = k; if (b.dataset.tip) b.dataset.tip = b.dataset.tip.replace(/\s*\((?:Maj \+ [A-Z]|[A-Z]|Échap|Suppr|\s*\/\s*)\)/g, '').trim(); });
 document.querySelectorAll('#seg-ut [data-ut]').forEach((b, i) => { b.dataset.rac = `touche ${i + 1}`; });
 
