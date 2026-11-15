@@ -937,6 +937,7 @@
     <span class="sep2"></span>
     <button class="outil" data-o="ligne" data-tip="Ligne de tendance (L) : deux clics"><svg viewBox="0 0 24 24"><path d="M4 19L20 5"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="5" r="1.6"/></svg></button>
     <button class="outil" data-o="horizontale" data-tip="Ligne horizontale (H) : un clic"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="1.6"/></svg></button>
+    <button class="outil" data-o="avwap" data-tip="VWAP ancré : un clic sur une bougie (un sommet, un creux, une annonce) · la moyenne des prix pondérée par le volume depuis ce moment, recalculée dans chaque unité · W"><svg viewBox="0 0 24 24"><path d="M4 18c3-1 4-6 8-7s6 2 8-3"/><circle cx="4" cy="18" r="1.8"/></svg></button>
     <button class="outil" data-o="verticale" data-tip="Ligne verticale : un clic sur une date (une annonce, le début d’une séance, le jour d’un trade) · sa date sur l’axe du temps · elle apparaît dans toutes les unités"><svg viewBox="0 0 24 24"><path d="M12 3v18"/><circle cx="12" cy="12" r="1.6"/></svg></button>
     <button class="outil" data-o="canal" data-tip="Canal parallèle (C) : trois clics"><svg viewBox="0 0 24 24"><path d="M4 15L18 6M6 19L20 10"/></svg></button>
     <button class="outil" data-o="fourche" data-tip="Fourche d’Andrews : trois clics — le départ du mouvement, puis les deux pivots suivants (aimantés aux sommets et creux du zigzag) · la médiane et ses deux parallèles, prolongées vers la droite"><svg viewBox="0 0 24 24"><path d="M3 13L20 9M9 6.5L21 3.5M9 19.5L21 16.5"/><path d="M9 6.5L9 19.5" stroke-dasharray="2 2" opacity=".6"/><circle cx="3" cy="13" r="1.5"/></svg></button>
@@ -1061,7 +1062,7 @@
   <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie · <kbd>X</kbd>masquer / montrer tes dessins · <kbd>Alt</kbd> + glisser une ligne : la copier · <kbd>Ctrl + Z</kbd>annuler · <kbd>Ctrl + Y</kbd>rétablir · <kbd>Ctrl + C / V</kbd>copier / coller un dessin, ici ou sur un autre marché</p>
   <p><kbd>Maj</kbd>+ glisser : une tendance · <kbd>Alt</kbd>+ clic : une horizontale · double-clic sur un pivot : support / résistance · <kbd>Ctrl</kbd>+ glisser : la règle</p>
   <p><kbd>O</kbd>position (entrée, stop, objectif) · <kbd>G</kbd>canal de régression · <kbd>U</kbd>fourche d’Andrews</p>
-  <p>ligne verticale, Fibonacci, zone de prix (rectangle, avec alerte), flèche, esquisse, texte : dans la barre d'outils à gauche · <b>DESSINS</b> : la liste de tous tes dessins</p></section>
+  <p>VWAP ancré (<kbd>W</kbd>), ligne verticale, Fibonacci, zone de prix (rectangle, avec alerte), flèche, esquisse, texte : dans la barre d'outils à gauche · <b>DESSINS</b> : la liste de tous tes dessins</p></section>
   <section><h4>Analyser</h4>
   <p><kbd>I</kbd>indicateurs et méthodes (Dow, Smart Money, Volume, Ichimoku)</p>
   <p><kbd>Maj</kbd><kbd>C</kbd>tes configurations · <kbd>Maj</kbd><kbd>H</kbd>interroger le passé</p>
@@ -1363,6 +1364,11 @@ class Pane {
         c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.fillStyle = coul(l.couleur); c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - L * Math.cos(a - .45), y2 - L * Math.sin(a - .45)); c.lineTo(x2 - L * Math.cos(a + .45), y2 - L * Math.sin(a + .45)); c.closePath(); c.fill(); }
       else if (l.genre === 'texte') { const x = T(l.t1), y = Y(l.p1); c.font = '700 13px Inter, sans-serif'; c.lineWidth = 4; c.strokeStyle = TH.bg; c.strokeText(l.texte || '', x, y); c.fillStyle = coul(l.couleur); c.fillText(l.texte || '', x, y);
         if (sel) { const w = c.measureText(l.texte || '').width; c.strokeStyle = '#4cc9f0'; c.lineWidth = 1; c.setLineDash([3, 3]); c.strokeRect(x - 4, y - 15, w + 8, 21); c.setLineDash([]); } }
+      else if (l.genre === 'avwap') {  // le VWAP ancré : une ligne fine depuis sa bougie de départ, sa valeur sur l'échelle des prix
+        const S = avwapSerie(l, B); if (S) { const k0 = Math.max(S.k0, i - 1); c.save(); c.beginPath(); c.rect(0, 0, pw, BASP); c.clip(); c.lineWidth = sel ? 2.2 : 1.5; c.beginPath(); let on = false;
+          for (let k = k0; k < j; k++) { const vv = S.v[k]; if (!isFinite(vv)) continue; const xx = X(k), yy = Y(vv); on ? c.lineTo(xx, yy) : c.moveTo(xx, yy); on = true; } c.stroke();
+          if (S.k0 >= i && S.k0 < j) { c.fillStyle = coul(l.couleur); c.beginPath(); c.arc(X(S.k0), Y(S.v[S.k0]), sel ? 4 : 3, 0, 7); c.fill(); }
+          c.restore(); const vd = S.v[B.length - 1], yv = Y(vd); if (isFinite(vd) && yv > HAUT && yv < BASP) { c.save(); c.setLineDash([]); c.font = '600 10px "JetBrains Mono", monospace'; const lab = nb(vd, dec), tw = c.measureText(lab).width + 8; c.fillStyle = coul(l.couleur); c.beginPath(); c.roundRect(pw + 1, yv - 8, tw, 16, 3); c.fill(); c.fillStyle = '#fff'; c.fillText(lab, pw + 5, yv + 3.5); c.restore(); } } }
       else if (l.genre === 'verticale') {  // la ligne verticale : du haut des prix jusqu'au volume (pas dedans), sa date en petit sur l'axe du temps
         const x = Math.round(T(l.t1)) + .5; if (x >= 0 && x <= pw) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, BASP); c.stroke();
           const tt = new Date(l.t1 * 1000), lab = ['D1', 'W', 'M'].includes(this.ut) ? tt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : tt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -1641,9 +1647,17 @@ function regLin(B, t1, t2) { if (!B || !B.length) return null; const ta = Math.m
   for (let k = k0; k <= k1; k++) { const x = k - k0, y = B[k][4]; sx += x; sy += y; sxx += x * x; sxy += x * y; }
   const m = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1), c = (sy - m * sx) / n; let e = 0; for (let k = k0; k <= k1; k++) { const d = B[k][4] - (c + m * (k - k0)); e += d * d; }
   return { k0, k1, m, c, sd: Math.sqrt(e / n), v: k => c + m * (k - k0) }; }
+// le VWAP ancré : depuis la bougie qui contient l'instant choisi, la moyenne du prix typique (haut + bas + clôture) / 3 pondérée par le volume (sans volume : chaque bougie compte pareil)
+const AVW = new Map();
+function avwapSerie(l, B) { if (!B || !B.length || l.t1 == null) return null; const cle = `${l.t1}|${B.length}|${B[0][0]}|${B[B.length - 1][0]}|${B[B.length - 1][4]}`, c0 = AVW.get(l.id); if (c0 && c0.cle === cle) return c0.r;
+  let k0 = -1; for (let k = B.length - 1; k >= 0; k--) if (B[k][0] <= l.t1) { k0 = k; break; } if (k0 < 0) k0 = 0; if (B[0][0] > l.t1 + 86400 * 3) { AVW.set(l.id, { cle, r: null }); return null; }
+  const sv = B.slice(k0).some(b => b[5] > 0), v = new Float64Array(B.length).fill(NaN); let pv = 0, vv = 0;
+  for (let k = k0; k < B.length; k++) { const w = sv ? (B[k][5] || 0) : 1, tp = (B[k][2] + B[k][3] + B[k][4]) / 3; pv += tp * w; vv += w; v[k] = vv > 0 ? pv / vv : tp; }
+  const r = { k0, v }; AVW.set(l.id, { cle, r }); if (AVW.size > 200) AVW.delete(AVW.keys().next().value); return r; }
 function cliqueDessin(p, x, y) { travail(true); setTimeout(() => { if (!brouillon) travail(false); }, 0);
   const [t, pr] = aimant(p, x, y);
   if (outil === 'horizontale') { const l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(`Ligne posée à ${nb(pr, p.d.dec)} · alerte active`); return; }
+  if (outil === 'avwap') { const l = { id: idNeuf(), genre: 'avwap', t1: t, p1: pr, alerte: false, couleur: '#2962ff' }; lignes.push(l); choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(`VWAP ancré au ${new Date(t * 1000).toLocaleString('fr-FR', ['D1', 'W', 'M'].includes(p.ut) ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · glisse-le pour changer son départ`); return; }
   if (outil === 'verticale') { const l = { id: idNeuf(), genre: 'verticale', t1: t, p1: pr, alerte: false }; lignes.push(l); choisie = l; sauve(); choisieOutil('curseur'); toutDessine(); toast(`Ligne verticale posée le ${new Date(t * 1000).toLocaleString('fr-FR', ['D1', 'W', 'M'].includes(p.ut) ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`); return; }
   if (outil === 'texte') { const tx = prompt('Ton texte :', ''); if (tx && tx.trim()) { const l = { id: idNeuf(), genre: 'texte', t1: t, p1: pr, texte: tx.trim().slice(0, 80), alerte: false }; lignes.push(l); choisie = l; sauve(); } choisieOutil('curseur'); toutDessine(); return; }
   if (!brouillon) { brouillon = { id: idNeuf(), genre: outil === 'canal' ? 'canal' : ['fibo', 'rect', 'fleche', 'position', 'regression', 'fourche'].includes(outil) ? outil : 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: p, etape: 1, alerte: !['fibo', 'fleche', 'position', 'regression', 'fourche'].includes(outil) }; return; }
@@ -1676,6 +1690,7 @@ function proche(p, x, y) { if (!optDessins) return null;
     else if (l.genre === 'position') { const xa = Math.min(p.T(l.t1), p.T(l.t2)), xb = Math.max(p.T(l.t1), p.T(l.t2)), ys = [p.Y(l.p1), p.Y(l.p2), p.Y(l.p1 + (l.ecart || 0))]; d = x >= xa && x <= xb && y >= Math.min(...ys) - 4 && y <= Math.max(...ys) + 4 ? 3 : 99; }
     else if (l.genre === 'fleche') d = segD(p.T(l.t1), p.Y(l.p1), p.T(l.t2), p.Y(l.p2));
     else if (l.genre === 'verticale') d = y <= (p.ph || 9e9) ? Math.abs(p.T(l.t1) - x) : 99;
+    else if (l.genre === 'avwap') { const S = avwapSerie(l, p.d && p.d.bougies), k = Math.floor(x / p.bw + p.vis().i); d = S && k >= S.k0 && isFinite(S.v[k]) ? Math.abs(p.Y(S.v[k]) - y) : 99; }
     else if (l.genre === 'fourche') { const F = fourcheGeo(l, p.T, p.Y); if (!F) d = segD(p.T(l.t1), p.Y(l.p1), p.T(l.t2), p.Y(l.p2)); else { const w = p.pw || 4000, bout = (x0, y0) => F.dx > 0 ? [w, y0 + F.k * (w - x0)] : [x0 + F.dx, y0 + F.dy];
       d = Math.min(...[[F.xa, F.ya], [F.xb, F.yb], [F.xc, F.yc]].map(([a, b]) => segD(a, b, ...bout(a, b))), segD(F.xb, F.yb, F.xc, F.yc)); } }
     else if (l.genre === 'texte') { const xa = p.T(l.t1), ya = p.Y(l.p1); d = x >= xa - 4 && x <= xa + 8 * (l.texte || '').length + 8 && y >= ya - 16 && y <= ya + 6 ? 2 : 99; }
@@ -1991,7 +2006,7 @@ function majBarreLigne() {
   let x, y; if (choisie.genre === 'horizontale') { x = r.left + p.pw - 270; y = r.top + p.Y(choisie.p1); } else { const t2 = choisie.t2 != null ? choisie.t2 : choisie.t1, p2 = choisie.p2 != null ? choisie.p2 : choisie.p1; x = r.left + Math.min(p.pw - 270, Math.max(10, p.T(t2))); y = r.top + p.Y(p2); }
   bl.classList.add('on'); majBlNiv(p); const lw = bl.offsetWidth || 270; if (choisie.genre === 'horizontale') x = r.left + p.pw - lw; else x = Math.min(x, r.left + p.pw - lw);
   bl.style.left = `${Math.max(8, Math.min(innerWidth - lw - 8, Math.max(r.left + 8, x)))}px`; bl.style.top = `${Math.min(r.bottom - 50, Math.max(r.top + 8, y - 52))}px`;
-  bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false); bl.querySelector('[data-l="alerte"]').hidden = ['fibo', 'fleche', 'texte', 'regression', 'fourche', 'verticale'].includes(choisie.genre);  // (la maison ne surveille pas ces dessins : pas de cloche qui ne sonnerait jamais)
+  bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false); bl.querySelector('[data-l="alerte"]').hidden = ['fibo', 'fleche', 'texte', 'regression', 'fourche', 'verticale', 'avwap'].includes(choisie.genre);  // (la maison ne surveille pas ces dessins : pas de cloche qui ne sonnerait jamais)
   bl.querySelector('[data-l="style"]').classList.toggle('on', choisie.style === 'tirets');
   const br = bl.querySelector('[data-l="rayon"]'); br.hidden = choisie.genre !== 'horizontale'; br.classList.toggle('on', !!choisie.rayon);
   bl.querySelector('[data-l="verrou"]').classList.toggle('on', !!choisie.verrou); bl.querySelector('[data-l="nom"]').classList.toggle('on', !!choisie.etiquette);
@@ -2127,7 +2142,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'p') { $('#photo').click(); return; }
   if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; ESQ_SEL = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c' && !ev.shiftKey) choisieOutil('canal');
-  else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression'); else if (k === 'u' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('fourche');  // (O : la position ; G : le canal de régression)
+  else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression'); else if (k === 'u' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('fourche'); else if (k === 'w' && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && ROLE !== 'terminal') choisieOutil('avwap');  // (O : la position ; G : le canal de régression)
   else if (k === 'x' && !ev.shiftKey && !ev.repeat) basculeDessins();
   else if ((k === 'delete' || k === 'backspace') && ESQ_SEL) esqEfface(ESQ_SEL);
   else if (k === 'delete' || k === 'backspace') efface();
@@ -4783,7 +4798,7 @@ async function fnAlertes() { ouvreFn('ALERTES', 'toutes tes alertes · je rassem
   document.querySelectorAll('#fn-c [data-alc]').forEach(e => e.onclick = () => changeCode(e.dataset.alc)); }
 // DESSINS : tous tes dessins, marché par marché (l'« arbre des objets » des plateformes) — ce qu'ils sont, leur prix, leur distance au prix, alerte, verrou, doublons, la place qu'il reste (la maison en garde 80 par marché) ; un clic l'ouvre et le choisit
 const DESS_MAX = 80;
-const dessNom = z => { const g = z.genre, et = z.etiquette ? ` « ${z.etiquette} »` : ''; return (g === 'horizontale' ? (z.rayon ? 'demi-droite' : 'ligne horizontale') : g === 'droite' ? (z.canal ? 'canal' : 'ligne de tendance') : g === 'rect' ? 'zone de prix' : g === 'fibo' ? 'Fibonacci' : g === 'texte' ? `texte « ${String(z.texte || '').slice(0, 30)} »` : g === 'fleche' ? 'flèche' : g === 'position' ? (z.p2 < z.p1 ? 'position · achat' : 'position · vente') : g === 'regression' ? 'canal de régression' : g === 'fourche' ? 'fourche d’Andrews' : g === 'verticale' ? 'ligne verticale' : g) + et; };
+const dessNom = z => { const g = z.genre, et = z.etiquette ? ` « ${z.etiquette} »` : ''; return (g === 'horizontale' ? (z.rayon ? 'demi-droite' : 'ligne horizontale') : g === 'droite' ? (z.canal ? 'canal' : 'ligne de tendance') : g === 'rect' ? 'zone de prix' : g === 'fibo' ? 'Fibonacci' : g === 'texte' ? `texte « ${String(z.texte || '').slice(0, 30)} »` : g === 'fleche' ? 'flèche' : g === 'position' ? (z.p2 < z.p1 ? 'position · achat' : 'position · vente') : g === 'regression' ? 'canal de régression' : g === 'fourche' ? 'fourche d’Andrews' : g === 'verticale' ? 'ligne verticale' : g === 'avwap' ? 'VWAP ancré' : g) + et; };
 function choisirDessin(c, id) { if (ROLE === 'terminal') { if (SALLE_BC) SALLE_BC.postMessage({ t: 'dessin', c, id }); toast('Ce dessin est choisi sur tes graphiques'); return; }
   fermeFn(); const go = () => { const l = lignes.find(x => x.id === id); if (!l) return; if (!optDessins) basculeDessins(); choisie = l; const p = panes[actif] || panes[0], B2 = p && p.d && p.d.bougies, t = l.t2 != null ? Math.max(l.t1, l.t2) : l.t1;
     if (B2 && t != null) { const k = B2.findIndex(b => b[0] >= t); if (k >= 0 && (B2.length - k) > p.n * .9) p.fin = Math.max(-6, B2.length - k - Math.round(p.n / 2)); } toutDessine(); majBarreLigne(); };
