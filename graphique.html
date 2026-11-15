@@ -1252,6 +1252,11 @@ class Pane {
       else if (!tp || t.getDate() !== tp.getDate()) lab = `${t.getDate()} ${MOIS[t.getMonth()]}`;
       if (lab && X(k) - dernierLab > 60) { c.beginPath(); c.moveTo(Math.round(X(k)) + .5, 0); c.lineTo(Math.round(X(k)) + .5, ph); c.stroke(); c.textAlign = 'center'; c.font = '500 10.5px Inter, sans-serif'; c.fillText(lab, X(k), H - 7); c.font = '500 10.5px "JetBrains Mono", monospace'; c.textAlign = 'left'; dernierLab = X(k); } }
     c.setLineDash([]);
+    // les séparateurs (SEP, éteints par défaut) : un trait fin pointillé au début de chaque séance en intraday (18 h à New York), de chaque semaine en D1, de chaque mois en W, de chaque année en M — derrière les bougies, jamais dans le volume
+    if (optSep && j - i > 2) { const cle = this.ut === 'D1' ? t => Math.floor(((t + 7200) / 86400 + 3) / 7) : this.ut === 'W' ? t => new Date(t * 1000).getMonth() : this.ut === 'M' ? t => new Date(t * 1000).getFullYear() : jourDe, yb = ph - BN - volH - 2;
+      c.save(); c.strokeStyle = TH.txt; c.globalAlpha = .28; c.setLineDash([2, 4]); c.beginPath();
+      for (let k = Math.max(1, i); k < j; k++) if (cle(B[k][0]) !== cle(B[k - 1][0])) { const x = Math.round(X(k) - bw / 2) + .5; c.moveTo(x, HAUT); c.lineTo(x, yb); }
+      c.stroke(); c.restore(); }
     // le projecteur : la nouvelle survolée éclaire les bougies de sa réaction (le quart d'heure qui suit)
     if (this.survol && (opt.news || this.survol.genre === 'config' || this.survol.genre === 'arrivee')) { const xa = T(this.survol.at), xb = Math.max(xa + Math.max(3, bw), T(this.survol.fin || this.survol.at + 900));
       c.fillStyle = 'rgba(41,98,255,.10)'; c.fillRect(xa, 0, xb - xa, ph); c.strokeStyle = 'rgba(41,98,255,.6)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(Math.round(xa) + .5, 0); c.lineTo(Math.round(xa) + .5, ph); c.stroke(); c.setLineDash([]); }
@@ -1981,7 +1986,7 @@ $('#t-dessins').onclick = basculeDessins; $('#t-dessins').classList.toggle('on',
 // le passé de la ligne choisie, dans l'unité du graphique (la mesure de NIV) : une ligne de texte dans sa petite barre, rien sur les bougies
 let BL_NIV = { cle: '', txt: '' };
 // option « tes lignes portent leur passé » : l'épaisseur d'une ligne suit sa solidité mesurée dans l'unité du graphique (repartie souvent : plus épaisse ; traversée souvent : plus fine) ; éteinte par défaut
-var optEpais = lit('g-epais', '0') === '1'; const EPAIS = new Map();
+var optSep = lit('g-sep', '0') === '1'; var optEpais = lit('g-epais', '0') === '1'; const EPAIS = new Map();
 function epaisseurLigne(l, p) { if (!optEpais || !['horizontale', 'droite', 'canal', 'rect'].includes(l.genre) || !p || !p.d || !p.d.bougies || p.d.bougies.length < 60 || REPLAY) return 1.2;
   const B = p.d.bougies, cle = `${l.id}|${l.p1}|${l.p2}|${l.t1}|${l.t2}|${p.ut}|${B.length}`; let e = EPAIS.get(cle);
   if (e == null) { const m = nivLigne(l, B, p.d.tick || 1, p.ut); e = !m || m.te + m.tr < 2 ? 1.2 : .8 + 2.6 * m.te / (m.te + m.tr); EPAIS.set(cle, e); if (EPAIS.size > 400) EPAIS.delete(EPAIS.keys().next().value); }
@@ -5139,6 +5144,7 @@ let ANA_UT = 'H1', ANA_N = 24, ANA_DER = [];
 async function allerA(c, ut, t, fin, txt) { if (ROLE === 'terminal') { if (SALLE_BC) SALLE_BC.postMessage({ t: 'va', c, ut, tt: t, fin, txt }); toast('Ce moment est affiché sur tes graphiques'); return; }
   fermeFn(); if (c !== code) await changeCode(c); MARQUE_PASSE = { t, fin, txt };
   setTimeout(() => { const p = panes.find(x => x.ut === ut) || panes[actif] || panes[0]; if (p && p.d) { const B2 = p.d.bougies, k = B2.findIndex(b => b[0] >= t); if (k >= 0) { p.fin = Math.max(-6, B2.length - k - Math.round(p.n / 2)); } } toutDessine(); }, 900); }
+if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'sep' && ROLE !== 'terminal') { optSep = !!m.on; ecrit('g-sep', optSep ? '1' : '0'); toutDessine(); } });
 if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'epais' && ROLE !== 'terminal') { optEpais = lit('g-epais', '0') !== '1'; basculeEpais(); } });  // (l'épaisseur selon la solidité, la même dans toutes les fenêtres)
 if (SALLE_BC && ROLE !== 'terminal' && ROLE !== 'ensemble') SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'va' && m.c && (ROLE === 'structure' || (!ROLE && FEN === '1'))) allerA(m.c, m.ut, m.tt, m.fin, m.txt); });
 const zNorm = v => { const m = v.reduce((s, x) => s + x, 0) / v.length, sd = Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) || 1; return v.map(x => (x - m) / sd); };
@@ -5988,6 +5994,7 @@ function dessineNiveaux(p, g) { if (!optNiv || ROLE === 'ensemble') return; cons
     if (yLs.some(yl => Math.abs(y - yl) < 14)) continue;  // (sur l'étiquette de prix d'une de TES lignes : le trait seul, ton prix reste lisible)
     const tw = c.measureText(n.court).width + 6; c.fillStyle = fond; c.fillRect(W - tw - 2, y - 6, tw, 12); c.fillStyle = encre; c.fillText(n.court, W - 5, y + 3.5); }
   c.restore(); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['SEP', 'les séparateurs : un trait fin au début de chaque séance (H1, H4…), de chaque semaine en D1 · activer / couper', () => { optSep = !optSep; ecrit('g-sep', optSep ? '1' : '0'); toutDessine(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'sep', on: optSep }); toast(optSep ? 'Séparateurs : un trait fin au début de chaque séance (18 h à New York), de chaque semaine en D1' : 'Séparateurs cachés'); }]);
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['EPAIS', 'tes lignes portent leur passé : leur épaisseur suit leur solidité (mesure NIV) · activer / couper', () => { basculeEpais(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'epais' }); }]);
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['REP', 'afficher / cacher les repères tracés par la plateforme (veille, sommets et creux du zigzag) contre l’échelle · REP', () => { optNiv = !optNiv; ecrit('g-niv', optNiv ? '1' : '0'); toutDessine(); toast(optNiv ? 'Niveaux de la plateforme : affichés (à droite, contre l’échelle)' : 'Niveaux de la plateforme : cachés (les alertes continuent)'); }]);
 /* --- le rejeu de tes trades : sur tes graphiques, l'entrée, la sortie et le stop ; « rejouer » lance le replay juste avant l'entrée --- */
