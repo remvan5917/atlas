@@ -985,7 +985,7 @@
       <b>Le graphique</b> : <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
       <b>Souris</b> : glisser = déplacer (avec élan) · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
       <b>La salle</b> : <kbd>/</kbd> écris ce que tu veux (un marché, une commande, une question) · <kbd>E</kbd> copilote · <kbd>Q</kbd> maintenu : lui parler · <kbd>V</kbd> maintenu : journal · <kbd>D</kbd> structure de Dow · <kbd>A</kbd> étude d'annonce · <kbd>R</kbd> replay · <kbd>M</kbd> mémoire · <kbd>Z</kbd> focus · survole un repère de nouvelle (clic = explication)<br>
-      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>X</kbd> masquer tes dessins · <kbd>Alt</kbd> + glisser une ligne = la copier · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>V</kbd> copier / coller un dessin (aussi vers un autre marché) · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
+      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>X</kbd> masquer tes dessins · <kbd>Alt</kbd> + glisser une ligne = la copier · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>V</kbd> copier / coller un dessin (aussi vers un autre marché) · clic droit sur l’échelle des prix = une alerte à ce prix · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
   </div>
   <div class="fil"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="piste2"></div></div><span class="pos-f" id="pos-f" hidden title="Ta position (lecture seule). Clic : montrer / cacher sa zone sur le graphique et ses repères sur l'échelle des prix"></span><span class="fil-e" id="fil-e"></span></div>
@@ -1604,6 +1604,12 @@ class Pane {
         this.fin = Math.max(-n1 * .8, this.fin + (n0 - n1) * (1 - k)); this.n = n1; }
       this.dessine(); }, { passive: false });
     // « pourquoi cette bougie ? » : clic droit sur une bougie → le copilote explique ce mouvement avec les faits de ce moment-là
+    // une alerte à ce prix : clic droit sur l'échelle des prix → une ligne horizontale avec alerte, posée au tick près (le « + » de l'échelle des grandes plateformes)
+    cv.addEventListener('contextmenu', ev => { const [x, y] = pos(ev); if (zone(x, y) !== 'prix' || !this.d || !this.iY || REPLAY || ROLE === 'terminal' || ROLE === 'ensemble' || y > (this.ph || 0)) return; ev.preventDefault();
+      if (lignes.length >= 80) { toast(`${code} a déjà 80 dessins, le maximum gardé par la maison`); return; }
+      const tk = this.d.tick || 0, v0 = this.iY(y), v = tk ? +(Math.round(v0 / tk) * tk).toFixed(8) : v0, B = this.d.bougies || [], der = B.length ? B[B.length - 1][4] : null;
+      const l = { id: idNeuf(), genre: 'horizontale', t1: B.length ? B[B.length - 1][0] : Date.now() / 1000, p1: v, alerte: true }; lignes.push(l); choisie = l; sauve(); majBarreLigne(); toutDessine();
+      toast(`🔔 Alerte posée à ${nb(v, this.d.dec)}${der != null && tk ? ` (${Math.round(Math.abs(v - der) / tk).toLocaleString('fr-FR')} ticks ${v > der ? 'au-dessus' : 'en dessous'} du prix)` : ''} : Atlas te prévient au contact · glisse-la pour l’ajuster, Ctrl + Z pour annuler`); });
     cv.addEventListener('contextmenu', ev => { const [x, y] = pos(ev); if (zone(x, y) !== 'graphe' || !this.d || REPLAY) return; ev.preventDefault();
       const { B, i, j } = this.vis(), k = Math.min(j - 1, Math.max(i, Math.floor(x / this.bw + i))); if (!B[k]) return; pourquoiBougie(this, B[k][0]); });
     cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev);
