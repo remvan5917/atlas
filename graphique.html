@@ -69,7 +69,7 @@
   .barre-ligne button:hover { background: #eef1f6; } .barre-ligne button.on { background: #e7eeff; color: var(--bleu); }
   .barre-ligne svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .barre-ligne .pastille { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #c9ced8; }
-  .sc-m { display: block; margin-top: 6px; padding-left: 10px; border-left: 2px solid rgba(255,171,26,.55); } .sc-m:first-child { margin-top: 4px; }
+  .sc-m { display: block; margin-top: 6px; padding-left: 10px; border-left: 2px solid rgba(255,171,26,.55); } .sc-m:first-child { margin-top: 4px; } .sc-m .sc-f { display: block; padding-left: 12px; text-indent: -10px; margin-top: 1px; } .sc-m .sc-f::before { content: '· '; color: rgba(255,171,26,.8); }  /* (un fait par ligne : plus lisible qu'un pavé) */
   .bl-niv { font: 600 11.5px 'JetBrains Mono', monospace; color: #3a4252; padding: 0 8px 0 6px; white-space: nowrap; cursor: pointer; border-left: 1px solid #e2e5eb; margin-left: 2px; } .bl-niv:hover { color: var(--bleu); }
   .barre-ligne .sep3 { width: 1px; height: 20px; background: #e2e5eb; margin: 0 3px; }
   /* ---- la liste de suivi ---- */
@@ -4693,7 +4693,7 @@ async function fnSc() { ouvreFn('SC', 'tes sommets et creux D1 · je calcule…'
     if (h4Ok && r.h4) b.push(r.h4.etat === 'pas' ? 'aucune bougie H4 close au contact pour l’instant' : `la 1<sup>re</sup> bougie H4 au contact (${new Date(r.h4.t * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}) <b>${r.h4.etat === 'rej' ? 'a clôturé de son côté' : 'a clôturé au-delà'}</b> (ces fois-là, reparti ${scPc(H4C[r.h4.etat].rep, H4C[r.h4.etat].n)}, traversé ${scPc(H4C[r.h4.etat].tr, H4C[r.h4.etat].n)})`);
  { const t = nxIci(r); if (t) b.push(t); }
     if (mxOk) b.push(`une journée habituelle = ${t(1).toLocaleString('fr-FR')} t, un rebond médian = ${t(qx(.5)).toLocaleString('fr-FR')} t${v$ != null ? ` (${Math.round(t(qx(.5)) * v$).toLocaleString('fr-FR')} $ par contrat)` : ''}`);
-    return `<span class="sc-m"><b>${esc(r.x.code)}</b> · ${nomN(r.pr)} ${nb(r.pr[1], r.dec)}, ${Math.round(Math.abs(r.pr[1] - r.px) / r.tk)} t${b.length ? ' — ' + b.join(' · ') : ''}</span>`; });  // (des span : BRIEF reprend « À retenir » jusqu'au premier </div>)
+    return `<span class="sc-m"><b>${esc(r.x.code)}</b> · ${nomN(r.pr)} ${nb(r.pr[1], r.dec)}, ${Math.round(Math.abs(r.pr[1] - r.px) / r.tk)} t${b.map(x => `<span class="sc-f">${x}</span>`).join('')}</span>`; });  // (des span : BRIEF reprend « À retenir » jusqu'au premier </div>)
   ouvreFn('SC', `tes sommets et creux D1 · ${R.length} marchés · ta méthode, des faits, pas un conseil`,
     retenir((sur.length ? `Sur un sommet ou un creux D1 en ce moment (à moins de 30 % d’une journée habituelle) :${parM.join('')}` : `Aucun de tes marchés n’est sur un sommet ou un creux D1 en ce moment ; le plus proche : <b>${esc(R[0].x.code)}</b>, à ${Math.round(R[0].f * 100)} % d’une journée de son ${nomN(R[0].pr)} ${nb(R[0].pr[1], R[0].dec)}.`) + ensTxt)
     + poTxt + (semTxt ? `<div class="sc-passe" id="sc-sem">${semTxt}</div>` : '')
@@ -5739,7 +5739,9 @@ async function fnBrief() { if (BRIEF_EN) return; BRIEF_EN = true; for (let i = 0
     for (const [k, , f] of BRIEF_L) { if (!$('#fn-p').classList.contains('on') || $('#fn-nom').textContent !== 'BRIEF') break;  // (il a fermé ou ouvert autre chose : on s'arrête)
       if (k === 'SEM' && ![0, 1, 6].includes(new Date().getDay())) { res[k] = ''; continue; }  // (ta semaine D1 : le week-end pour préparer, le lundi pour reprendre)
       CAPT = {}; try { await f(); } catch (e) { /* cette carte-là manque */ } const h = CAPT[k] ? CAPT[k].html : ''; CAPT = null;
-      const m = /<div class="fn-retenir"><small>À RETENIR<\/small>([\s\S]*?)<\/div>/.exec(h); res[k] = m ? m[1] : ''; if (k === 'SEM') res[k] = res[k].includes('<b>Ta méthode</b>') ? res[k].slice(res[k].indexOf('<b>Ta méthode</b>')) : ''; dessine(false); }
+      const m = /<div class="fn-retenir"><small>À RETENIR<\/small>([\s\S]*?)<\/div>/.exec(h); res[k] = m ? m[1] : ''; if (k === 'SEM') res[k] = res[k].includes('<b>Ta méthode</b>') ? res[k].slice(res[k].indexOf('<b>Ta méthode</b>')) : '';
+      if (k === 'SC' && res[k]) { const d = document.createElement('div'); d.innerHTML = res[k]; d.querySelectorAll('.sc-m').forEach(m => [...m.querySelectorAll('.sc-f')].slice(2).forEach(f => f.remove())); res[k] = d.innerHTML; }  // (dans BRIEF, les deux premiers faits de chaque marché ; le reste dans SC)
+      dessine(false); }
     if ($('#fn-nom').textContent === 'BRIEF') dessine(true); }
   finally { CAPT = null; BRIEF_EN = false; } }
 // BETA : de combien tes marchés bougent quand le dollar, le S&P 500, l'or ou le pétrole bougent de 1 %
