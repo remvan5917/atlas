@@ -162,9 +162,9 @@ ${espace || `<div class="bx-vide">${l.length ? 'Rien de ce côté-là.' : '✓ T
 ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border-radius:10px;background:rgba(255,255,255,.05);border-left:3px solid ${e.sens === 'recu' ? '#38bdf8' : '#4ade80'}"><small style="color:#94a3b8">${new Date(e.at * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${e.sens === 'recu' ? 'reçu' : 'envoyé'}</small><div style="font-size:14px">${esc(e.resume || e.sujet)}</div></div>`).join('')}</div>`);
     return say(r.texte);
   }
-  async function bureau() {
+  async function bureau(vue) {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
-    await ecran(r);
+    if (typeof ESPACE !== 'undefined') await ESPACE.ouvre(vue, r); else await ecran(r); // l'espace bureau, plein écran (16/11)
     const f = S.bureauFiltre || 'tout', tous = r.a_valider || [], pro_ = x => x.entite === 'lrf' || x.entite === 'micro';
     const l = f === 'pro' ? tous.filter(pro_) : f === 'perso' ? tous.filter(x => !pro_(x)) : tous, urg = l.filter(x => x.urgence === 'haute'), rep = l.filter(avecTexte).length;
     const part = f === 'tout' && tous.length ? ` (${tous.filter(pro_).length} en pro, ${tous.filter(x => !pro_(x)).length} en perso)` : f === 'pro' ? ' en pro' : f === 'perso' ? ' en perso' : '';
@@ -339,21 +339,20 @@ ${html || '<div class="bx-vide">Rien de ce côté-là ces 14 derniers jours.</di
   }
   async function activite() {
     let r; try { r = await api({ action: 'activite' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
-    derniereAct = r.activite || []; ecranActivite();
+    derniereAct = r.activite || []; if (typeof ESPACE !== 'undefined') ESPACE.ouvre('journal'); else ecranActivite();
     const auj = derniereAct.filter(x => new Date(x.at * 1000).toDateString() === new Date().toDateString());
     const compte = k => auj.filter(x => x.genre === k).length;
     return say(derniereAct.length ? `Ces quatorze derniers jours, ${derniereAct.length} choses. Aujourd'hui : ${[['mails', 'mails traités'], ['atelier', 'documents faits'], ['compta', 'actions de compta'], ['agenda', 'dates ajoutées à ton agenda'], ['toi', 'choses que tu as faites toi-même']].filter(([k]) => compte(k)).map(([k, t]) => `${compte(k)} ${t}`).join(', ') || 'rien de nouveau'}. Tout est à l'écran.` : "Je n'ai encore rien noté ces quatorze derniers jours.");
   }
   // ---------- la revue de la semaine : une page pour tout piloter (le dimanche soir, ou à la demande) ----------
-  async function revue() {
-    let r; try { r = await (await fetch(`${root()}/maison/revue`, { cache: 'no-store' })).json(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+  function revueHtml(r, tete = true) {
     const eur = x => `${Math.round(Number(x || 0)).toLocaleString('fr-FR')} €`;
     const sec = (t, c, n) => `<div class="bx-section" style="--c:${c}"><i></i><b>${t}</b><small>${n || ''}</small></div>`;
     const ligne = (ic, t, meta) => `<div class="bx-evt"><div class="bx-ic">${ic}</div><div class="bx-evt-corps"><div>${esc(t)}</div>${meta ? `<div class="bx-meta">${esc(meta)}</div>` : ''}</div></div>`;
     const p = r.plateforme || {}, s = r.sopam || {}, g = r.gazette || {}, a = r.argent || {}, b = r.bureau || {}, tr = r.trading || {};
     const fr = iso => String(iso || '').split('-').reverse().slice(0, 2).join('/');
-    showBoard(`<div class="bx-in">
-<div class="bx-tete"><div><div class="bx-sur">Atlas · du ${esc(fr(r.du))} au ${esc(fr(r.au))}</div><div class="bx-titre">La revue de la semaine</div><div class="bx-sous">Tout piloter en cinq minutes : La rue du financement, SOPAM, la Gazette, l'argent, ton bureau et ton trading en chiffres.</div></div>${bb('← Mon bureau', 'bureau', 'x', 'fantome')}</div>
+    return `<div class="bx-in">
+${tete ? `<div class="bx-tete"><div><div class="bx-sur">Atlas · du ${esc(fr(r.du))} au ${esc(fr(r.au))}</div><div class="bx-titre">La revue de la semaine</div><div class="bx-sous">Tout piloter en cinq minutes : La rue du financement, SOPAM, la Gazette, l'argent, ton bureau et ton trading en chiffres.</div></div>${bb('← Mon bureau', 'bureau', 'x', 'fantome')}</div>` : ''}
 <div class="bx-stats"><div class="bx-stat"><b style="color:#c4b5fd">${p.faits || 0}/${p.total || 0}</b><span>sujets plateforme faits</span></div><div class="bx-stat"><b style="color:#fdba74">${s.faits || 0}/${s.total || 0}</b><span>étapes SOPAM faites</span></div><div class="bx-stat"><b style="color:#4ade80">${g.total || 0}</b><span>lecteurs-testeurs${g.semaine ? ` (+${g.semaine})` : ''}</span></div><div class="bx-stat urgent"><b>${eur(a.total_impayes)}</b><span>impayés</span></div><div class="bx-stat"><b>${b.a_valider || 0}</b><span>à valider au bureau</span></div></div>
 ${sec('La rue du financement · la plateforme', '#c4b5fd', `${(p.nuits || []).length} nuit${(p.nuits || []).length > 1 ? 's' : ''} de travail`)}
 ${(p.nuits || []).map(n => ligne('💻', n.resume || 'rapport écrit', `nuit du ${fr(n.nuit)}`)).join('') || '<div class="bx-info" style="padding:0 4px">Pas encore de nuit de travail cette semaine.</div>'}
@@ -370,7 +369,13 @@ ${sec('Ton bureau', '#a5b4fc', `${b.valides_semaine || 0} validé${(b.valides_se
 ${(b.vieux || []).map(v => ligne('⚠', v, 'attend depuis plus de 5 jours')).join('') || '<div class="bx-info" style="padding:0 4px">Rien ne traîne.</div>'}
 ${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pas un conseil')}
 <div class="bx-stats"><div class="bx-stat"><b>${tr.trades || 0}</b><span>trades clôturés</span></div><div class="bx-stat"><b style="color:${(tr.pnl || 0) >= 0 ? '#86efac' : '#f87171'}">${(tr.pnl || 0) >= 0 ? '+' : ''}${eur(tr.pnl)}</b><span>résultat</span></div><div class="bx-stat"><b>${tr.gagnants || 0} / ${tr.perdants || 0}</b><span>gagnants / perdants</span></div><div class="bx-stat"><b>${eur(tr.gain_moyen)} / ${eur(tr.perte_moyenne)}</b><span>gain / perte moyens</span></div><div class="bx-stat ${tr.stops_elargis ? 'urgent' : 'ok'}"><b>${tr.stops_elargis || 0}</b><span>stop${(tr.stops_elargis || 0) > 1 ? 's' : ''} élargi${(tr.stops_elargis || 0) > 1 ? 's' : ''}</span></div></div>
-</div>`, 'bx');
+</div>`;
+  }
+  async function revue() {
+    let r; try { r = await (await fetch(`${root()}/maison/revue`, { cache: 'no-store' })).json(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
+    const p = r.plateforme || {}, s = r.sopam || {}, g = r.gazette || {}, a = r.argent || {}, b = r.bureau || {}, tr = r.trading || {};
+    const eur = x => `${Math.round(Number(x || 0)).toLocaleString('fr-FR')} €`;
+    if (typeof ESPACE !== 'undefined') ESPACE.ouvre('revue'); else showBoard(revueHtml(r), 'bx');
     return say(`La revue de la semaine. Plateforme : ${p.faits || 0} sujets faits sur ${p.total || 0}. SOPAM : ${(s.documents_semaine || []).length} documents à relire. Gazette : ${g.total || 0} lecteurs-testeurs. ${a.total_impayes ? `Impayés : ${eur(a.total_impayes)}. ` : ''}${b.a_valider ? `${b.a_valider} choses attendent ton oui au bureau. ` : ''}Trading : ${tr.trades || 0} trades, ${(tr.pnl || 0) >= 0 ? 'plus' : 'moins'} ${eur(Math.abs(tr.pnl || 0))}${tr.stops_elargis ? `, et ${tr.stops_elargis} stop élargi` : ''}. Le détail est à l'écran.`);
   }
   // le dimanche, vers 19 h : « ta revue de la semaine est prête » (une fois)
@@ -382,7 +387,7 @@ ${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pa
   async function journal() {
     let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); }
     const j = (r.journal || []).filter(x => Date.now() / 1000 - x.at < 86400);
-    await ecran(r);
+    if (typeof ESPACE !== 'undefined') await ESPACE.ouvre('journal', r); else await ecran(r);
     return say(j.length ? `Depuis hier : ${j.slice(0, 4).map(x => x.t).join(' ; ')}${j.length > 4 ? ', et le reste à l’écran' : ''}.` : "Je n'ai rien fait de nouveau depuis hier : ton bureau est à jour.");
   }
   // ce qu'il a fait lui-même : « c'est fait pour Frédéric Baille », « j'ai déjà envoyé la facture à C3J » → la carte sort de sa liste
@@ -399,7 +404,9 @@ ${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pa
     return say("D'accord, je la remets dans ton bureau.");
   }
   function route(t, n) {
-    if (/\b(mes decisions|decisions a prendre|qu est ce que je dois decider|les decisions)\b/.test(n)) return () => { S.bureauFiltre = 'tout'; save(); return bureau(); };
+    if (typeof ESPACE !== 'undefined' && ESPACE.ouvert() && /^(atlas )?(ferme|quitte|sors du|cache|range) (le |mon |l )?(bureau|espace bureau|espace de travail)\b/.test(n)) return () => { ESPACE.ferme(); return say("Je range le bureau."); };
+    if (/\b(mes decisions|decisions a prendre|qu est ce que je dois decider|les decisions)\b/.test(n)) return () => { S.bureauFiltre = 'tout'; save(); return bureau('decisions'); };
+    if (/\b(mes documents|les documents (a relire|de l atelier)|documents a relire)\b/.test(n)) return () => bureau('documents');
     const fb = n.match(/\bbureau (pro|perso|professionnel|personnel)\b|\b(?:le |mon )?(pro|perso) (?:du|de mon) bureau\b/);
     if (fb) return () => { S.bureauFiltre = /^pro/.test(fb[1] || fb[2]) ? 'pro' : 'perso'; save(); return bureau(); };
     if (derniersFaits && Date.now() - derniersFaits.at < 120000 && /^(atlas )?(annule|non (c est|pas) (pas )?(celle|celui) la|tu t es trompe|pas celle la|pas celui la)\b/.test(n)) return annuleFait;
@@ -417,5 +424,7 @@ ${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pa
     if (/\b(relis|regarde|verifie)\b.*\b(mes )?mails\b.*\b(maintenant|tout de suite)\b/.test(n)) return async () => { try { await api({ action: 'tour' }); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } return say("Je relis tes mails. Dis « mon bureau » dans quelques minutes."); };
     return null;
   }
-  return { route, bureau, valideVoix };
+  // pour l'espace bureau (espace.js) : les mêmes règles, les mêmes appels
+  const _ = { api, decApi, dossierCabinet, GROUPES, DEC_PROJET, projetDe, TYPE, avecTexte, estPro_, initiales, dateFr, mdLisible, lisible, GENRES_ACT, revueHtml, ouvrePdf, carteDecision };
+  return { route, bureau, valideVoix, _ };
 })();
