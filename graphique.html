@@ -53,7 +53,7 @@
   /* ---- les graphiques ---- */
   .graphes { display: grid; gap: 2px; background: var(--ligne); min-height: 0; grid-column: 2; grid-row: 2; }
   .graphes.un { grid-template-columns: 1fr; } .graphes.trois { grid-template-columns: 1fr 1fr 1fr; }
-  .graphes.trois.pp { grid-template-columns: 2.3fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.trois.q4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.trois.pp .pane:not(.grand) .titre .indl, .graphes.trois.pp .pane:not(.grand) .titre .cotl, .graphes.trois.pp .pane:not(.grand) .titre > span[style] { display: none !important; } .graphes.trois.pp .pane:not(.grand) .titre { padding: 4px 8px !important; font-size: 11px !important; } .graphes.trois.pp .pane { grid-column: 2; } .graphes.trois.pp .pane.grand { grid-column: 1; grid-row: 1 / 3; }
+  .graphes.trois.pp { grid-template-columns: 2.3fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.trois.q4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.solo { grid-template-columns: 1fr !important; grid-template-rows: 1fr !important; } .graphes.solo .pane:not(.seul) { display: none !important; } .graphes.solo .pane.seul { grid-column: 1 !important; grid-row: 1 !important; } .graphes.trois.pp .pane:not(.grand) .titre .indl, .graphes.trois.pp .pane:not(.grand) .titre .cotl, .graphes.trois.pp .pane:not(.grand) .titre > span[style] { display: none !important; } .graphes.trois.pp .pane:not(.grand) .titre { padding: 4px 8px !important; font-size: 11px !important; } .graphes.trois.pp .pane { grid-column: 2; } .graphes.trois.pp .pane.grand { grid-column: 1; grid-row: 1 / 3; }
   .pane { position: relative; background: #fff; min-width: 0; min-height: 0; overflow: hidden; }
   .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
   .pane .titre { position: absolute; left: 10px; top: 8px; font: 500 12.5px 'Inter'; color: #131722; pointer-events: none; z-index: 2; white-space: nowrap; }
@@ -977,7 +977,7 @@
       <button class="ico outil-d" id="b-pouls" data-tip="Ton pouls par la webcam (estimation, rien ne quitte ton PC)"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 3 10 2-5h7"/></svg></button>
       <button class="ico outil-d" id="b-son" data-tip="La voix d'Atlas"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
     <span class="ressort"></span>
-      <button class="ico outil-d" id="photo" data-tip="Capture du graphique en image (P)"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+      <button class="ico outil-d" id="photo" data-tip="Capture du graphique en image (P) · Maj + clic ou Maj + P : la copier pour la coller dans un message"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <button class="ico outil-d b-plein" id="plein" data-tip="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       <button class="ico outil-d" id="b-salle" data-tip="Installe ma salle : tes 4 écrans (graphiques, Terminal, vue d'ensemble, Radar), chacun à sa place, en plein écran · à la voix : « Atlas, installe ma salle »"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="4" width="8.5" height="6.5" rx="1.2"/><rect x="2.5" y="13.5" width="8.5" height="6.5" rx="1.2"/><rect x="13" y="13.5" width="8.5" height="6.5" rx="1.2"/></svg></button>
       <button class="ico outil-d" id="b-mur" data-tip="Le Radar en mode mur : pour un autre écran, lisible de loin"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h3M7 12h6M14 9h3"/></svg></button>
@@ -1094,7 +1094,7 @@
   <p><kbd>R</kbd>replay : clique le point de départ (puis Coach dans sa barre)</p>
   <p><kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p></section>
   <section><h4>Affichage</h4>
-  <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture du graphique</p>
+  <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture du graphique (<kbd>Maj</kbd><kbd>P</kbd> la copier) · <kbd>Alt</kbd><kbd>Entrée</kbd> ou double-clic sur sa carte : agrandir le graphique</p>
   <p>dans la barre / : <b>SEP</b> séparateurs de séance · <b>SESSN</b> hauts et bas de l’Asie et de Londres · <b>SCD1</b> tes sommets et creux D1 contre l’échelle (H4 et moins) · <b>PCT</b> l’échelle en % · <b>COUL</b> couleurs des bougies · <b>FIB</b> tes niveaux de Fibonacci · <b>NUIT 19 7</b> tes heures du mode nuit</p>
   <p><kbd>?</kbd>cette aide</p></section>
   <p class="aide-v" id="aide-v" hidden></p></div></div>
@@ -2166,8 +2166,14 @@ $('#bl-mod').addEventListener('click', ev => { const b = ev.target.closest('butt
     for (const k of MOD_CH) { if (k === 'rayon' && !['horizontale', 'rect'].includes(l.genre)) continue; if (sans && ['alerte', 'cloture', 'approche'].includes(k)) continue; if (m.r[k] == null) delete l[k]; else l[k] = m.r[k]; }
     sauve(); majBarreLigne(); toutDessine(); fermeMod(); toast(`Modèle « ${m.nom} » appliqué · Ctrl + Z pour annuler`); } });
 document.addEventListener('pointerdown', ev => { if (!$('#bl-mod').hidden && !ev.target.closest('#bl-mod') && !ev.target.closest('[data-l="modele"]')) fermeMod(); }, true);
+// agrandir le graphique actif (Alt + Entrée, ou double-clic sur sa carte) : il prend toute la place, les autres attendent ; le même geste les remet (une autre disposition aussi)
+function basculeSolo(force) { const g = $('#graphes'); if (!g || panes.length < 2) return; const on = force != null ? !!force : !g.classList.contains('solo'); g.classList.toggle('solo', on); panes.forEach((p, k) => p.el.classList.toggle('seul', on && k === actif)); requestAnimationFrame(() => { toutDessine(); majBarreLigne(); }); if (on) toast(`${LIB[(panes[actif] || {}).ut] || ''} agrandi · Alt + Entrée ou double-clic sur sa carte pour revenir`); }
+$('#graphes').addEventListener('dblclick', ev => { const k = panes.findIndex(p => { const ti = p.el.querySelector('.titre'), r = ti && ti.getBoundingClientRect(); return r && r.width && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom; }); if (k < 0) return;  // (la carte laisse passer les clics : on regarde où tombe le double-clic, avant le graphique)
+  ev.stopPropagation(); ev.preventDefault(); if (!$('#graphes').classList.contains('solo')) { actif = k; majActif(); } basculeSolo(); }, true);
+// copier l'image du graphique actif dans le presse-papier (Maj + P, ou Maj + clic sur l'appareil photo), pour la coller dans un message
+async function copieImage() { const p = panes[actif] || panes[0]; if (!p) return; try { const b = await new Promise(r => p.cv.toBlob(r)); await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); toast('Image du graphique copiée : colle-la (Ctrl + V) dans un message ou un document'); } catch (e) { toast('Copie impossible ici : P l’enregistre dans tes téléchargements'); } }
 /* la capture du graphique, le plein écran */
-$('#photo').onclick = () => { const p = panes[actif] || panes[0]; if (!p) return; p.cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${code}-${LIB[p.ut] || p.ut}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Capture enregistrée dans tes téléchargements'); }); };
+$('#photo').onclick = ev => { if (ev && ev.shiftKey) { copieImage(); return; } const p = panes[actif] || panes[0]; if (!p) return; p.cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${code}-${LIB[p.ut] || p.ut}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Capture enregistrée dans tes téléchargements'); }); };
 /* ================= Le plein écran, partout : ordinateur, tablette, téléphone (sur iPhone : l'icône sur l'écran d'accueil) ================= */
 const PE_OK = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled), PE_APP = (() => { try { return matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true; } catch (e) { return false; } })();
 const enPlein = () => !!(document.fullscreenElement || document.webkitFullscreenElement), PE_TACTILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
@@ -2192,9 +2198,10 @@ setTimeout(majPlein, 0);
 document.addEventListener('keydown', ev => {
   if (ev.target.tagName === 'INPUT') return; const k = ev.key.toLowerCase();
   if (k === '/' || (k === 'k' && (ev.ctrlKey || ev.metaKey))) { ev.preventDefault(); ouvreRecherche(); return; }
+  if (ev.altKey && k === 'enter' && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); basculeSolo(); return; }
   if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
   if (k === 'f') { $('#plein').click(); return; }
-  if (k === 'p') { $('#photo').click(); return; }
+  if (k === 'p') { if (ev.shiftKey) copieImage(); else $('#photo').click(); return; }
   if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; ESQ_SEL = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c' && !ev.shiftKey) choisieOutil('canal');
   else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression'); else if (k === 'u' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('fourche'); else if (k === 'w' && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && ROLE !== 'terminal') choisieOutil('avwap');  // (O : la position ; G : le canal de régression)
