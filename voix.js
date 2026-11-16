@@ -232,6 +232,13 @@ const voice = {
   },
   // une seule phrase à la fois : les autres attendent leur tour (jamais deux voix l'une sur l'autre)
   say(text) {
+    // (jamais « object Object » à voix haute : une donnée au lieu d'une phrase → on garde sa phrase si elle en a une, sinon on se tait ; et on signale d'où ça vient)
+    if (text != null && (typeof text !== 'string' || /\[object [A-Za-z]+\]/.test(text))) {
+      let brut = ''; try { brut = typeof text === 'string' ? text : JSON.stringify(text); } catch (e) { brut = String(text); }
+      try { window.__noteErreur && window.__noteErreur(`parole : une donnée au lieu d'une phrase (${typeof text}) : ${String(brut).slice(0, 160)}`, new Error('parole').stack); } catch (e) { /* rien */ }
+      text = typeof text === 'string' ? text.replace(/\s*\[object [A-Za-z]+\]\s*/g, ' ').trim() : (text && (text.texte || text.text || text.message)) || '';
+      if (typeof text !== 'string' || !text.trim()) return Promise.resolve();
+    }
     const t = this.clean(text);
     // rien à prononcer (un guillemet ou un tiret tout seul) : on ne dérange pas la voix
     if (!S.settings.sound || !t || !/[\p{L}\p{N}]/u.test(t) || this.endormi) return Promise.resolve();
