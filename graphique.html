@@ -64,6 +64,14 @@
   /* ---- la petite barre d'une ligne choisie ---- */
   .barre-ligne { position: fixed; z-index: 40; display: none; align-items: center; gap: 2px; padding: 4px; background: #fff; border: 1px solid #d9dde5; border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 19, 28, .25); }
   .barre-ligne.on { display: flex; }
+.bl-mod { position: fixed; z-index: 41; min-width: 230px; max-width: 320px; padding: 6px; background: #fff; border: 1px solid #d9dde5; border-radius: 12px; box-shadow: 0 16px 40px rgba(15, 19, 28, .28); font: 500 12px 'Inter', sans-serif; color: #1b2230; }
+.bl-mod[hidden] { display: none; }
+.bl-mod .bm-l { display: flex; align-items: center; gap: 4px; }
+.bl-mod button { border: 0; background: none; border-radius: 7px; padding: 6px 8px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.bl-mod button:hover { background: #eef1f6; }
+.bl-mod .bm-a { flex: 1; display: flex; flex-direction: column; } .bl-mod .bm-a small { color: #6f7787; font-size: 10.5px; }
+.bl-mod .bm-x { color: #9aa1ad; padding: 6px; } .bl-mod .bm-n { width: 100%; color: var(--bleu); font-weight: 600; border-top: 1px solid #eceef2; border-radius: 0 0 7px 7px; margin-top: 4px; }
+.bl-mod .bm-v { padding: 6px 8px; color: #6f7787; }
   .barre-ligne button { width: 30px; height: 30px; border: 0; border-radius: 7px; background: none; display: grid; place-items: center; color: #222; }
   .barre-ligne button[hidden] { display: none; } .barre-ligne .bl-cl { font: 800 8px 'Inter'; margin-left: -3px; align-self: end; } .barre-ligne button[data-l="cloture"], .barre-ligne button[data-l="vis"] { display: flex; align-items: center; justify-content: center; width: auto; min-width: 30px; padding: 0 4px; }  /* (la demi-droite, la pré-alerte, la cloche : seulement pour les dessins qui s'en servent) */
   .barre-ligne button:hover { background: #eef1f6; } .barre-ligne button.on { background: #e7eeff; color: var(--bleu); }
@@ -1006,12 +1014,14 @@
   <button data-l="cloture" title="Alerte à la clôture : au lieu du contact, Atlas te prévient quand une bougie H1, H4 ou D1 CLÔTURE de l’autre côté de la ligne (et, en H4 / D1, 10 / 15 min avant la clôture si la bougie est en ce moment de l’autre côté), avec le passé des clôtures sur cette ligne · clic : contact → H1 → H4 → D1 → contact"><svg viewBox="0 0 24 24"><path d="M9 4v16M7 7h4v9H7z"/><path d="M14 12h7" stroke-dasharray="2 2"/></svg><b class="bl-cl"></b></button>
   <button data-l="approche" title="Pré-alerte : être prévenu quand le prix arrive à quelques ticks de cette ligne, avant de la toucher"><svg viewBox="0 0 24 24"><path d="M3 12h7M21 12h-3"/><path d="M7 8l4 4-4 4"/><path d="M15 5v14"/></svg></button>
   <button data-l="vis" title="Visible dans : partout → seulement dans l’unité de ce graphique → cette unité et les plus petites → partout (ses alertes continuent dans tous les cas)"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg><b class="bl-cl"></b></button>
+  <button data-l="modele" title="Modèles : appliquer d’un clic des réglages enregistrés (couleur, style, alerte, à la clôture, pré-alerte, visible dans…), ou enregistrer ceux de ce dessin sous un nom"><svg viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></button>
   <button data-l="double" title="Dupliquer (ou Alt + glisser la ligne)"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
   <button data-l="verrou" title="Verrouiller : la ligne ne bouge plus quand tu cliques dessus"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
   <button data-l="efface" title="Effacer (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
   <span class="bl-niv" id="bl-niv" hidden></span>
 </div>
 <div class="voile" id="voile"><div class="recherche"><input id="q" placeholder="Ligne de commande : SIL D1 · MGC/SIL · RISK · NEWS · CAL · ALRT SIL 52 — ou un marché, ou une phrase" autocomplete="off"><div class="resultats" id="resultats"></div><div class="pied">↑ ↓ pour choisir un marché · Entrée : ouvrir le marché, ou faire ce que tu as écrit (une commande, sinon une question au copilote) · Échap pour fermer</div></div></div>
+<div class="bl-mod" id="bl-mod" hidden></div>
 <div class="toasts" id="toasts"></div>
 <div class="copi" id="copi"><div class="copi-t"><span class="onde"><i></i><i></i><i></i><i></i><i></i></span><b id="copi-titre">Copilote</b><button id="copi-x" aria-label="Fermer">×</button></div>
   <div id="copi-q-txt"></div><div id="copi-txt"></div>
@@ -1075,6 +1085,7 @@
   <section><h4>Alertes et ordres</h4>
   <p><kbd>Maj</kbd><kbd>L</kbd>tes alertes en français (« préviens-moi quand le RSI passe sous 30 »)</p>
   <p>clic droit sur l’échelle des prix : une alerte à ce prix · le bouton bougie d’une ligne : alerte à la clôture H1, H4 ou D1</p>
+   <p>l’étoile dans la barre d’un dessin : tes modèles (enregistrer ses réglages sous un nom, les appliquer d’un clic)</p>
   <p><kbd>T</kbd>trader : ton ticket (tu poses toi-même ton entrée, ton stop, ton objectif)</p>
   <p><kbd>Maj</kbd><kbd>S</kbd>simuler une position : clic l'entrée, tire ton stop puis ton objectif</p></section>
   <section><h4>Replay</h4>
@@ -2007,7 +2018,7 @@ function toastAct(t, [lib, f]) { const e = document.createElement('div'); e.clas
 /* la petite barre d'une ligne choisie : alerte, couleur, style, effacer */
 function majBarreLigne() {
   const bl = $('#barre-ligne'), p = panes[actif] || panes[0];
-  if (!choisie || !p || !p.T) { bl.classList.remove('on'); return; }
+  if (!choisie || !p || !p.T) { bl.classList.remove('on'); if (typeof fermeMod === 'function') fermeMod(); return; }
   const r = p.cv.getBoundingClientRect();
   let x, y; if (choisie.genre === 'horizontale') { x = r.left + p.pw - 270; y = r.top + p.Y(choisie.p1); } else { const t2 = choisie.t2 != null ? choisie.t2 : choisie.t1, p2 = choisie.p2 != null ? choisie.p2 : choisie.p1; x = r.left + Math.min(p.pw - 270, Math.max(10, p.T(t2))); y = r.top + p.Y(p2); }
   bl.classList.add('on'); majBlNiv(p); const lw = bl.offsetWidth || 270; if (choisie.genre === 'horizontale') x = r.left + p.pw - lw; else x = Math.min(x, r.left + p.pw - lw);
@@ -2115,9 +2126,28 @@ $('#barre-ligne').addEventListener('click', ev => {
   else if (b.dataset.l === 'vis') { const ut = (panes[actif] || panes[0] || {}).ut || 'H1', n = !choisie.vis ? ut : choisie.vis.startsWith('<=') ? undefined : (ut === 'M' || ut === '5m' ? undefined : '<=' + choisie.vis); choisie.vis = n; sauve(); majBarreLigne(); toast(!n ? 'Ce dessin apparaît de nouveau dans toutes les unités' : `Ce dessin n’apparaît plus que ${n.startsWith('<=') ? `en ${n.slice(2)} et dans les unités plus petites` : `en ${n}`} (ses alertes continuent)`); }
   else if (b.dataset.l === 'cloture') { const n = { undefined: 'H1', H1: 'H4', H4: 'D1', D1: undefined }[choisie.cloture]; choisie.cloture = n; sauve(); majBarreLigne(); toast(n ? `🔔 Alerte à la clôture ${n} : Atlas te prévient quand une bougie ${n} clôture de l’autre côté de cette ligne (plus au simple contact)${n === 'D1' ? ' — la clôture du jour, à 23 h à Paris (17 h à New York) ; un premier mot 15 min avant si la bougie est déjà de l’autre côté' : n === 'H4' ? ' ; un premier mot 10 min avant si la bougie est déjà de l’autre côté' : ''}${choisie.alerte === false ? ' — allume aussi la cloche' : ''}` : 'Alerte au contact ou à la cassure, comme avant'); }
   else if (b.dataset.l === 'verrou') { choisie.verrou = !choisie.verrou || undefined; sauve(); majBarreLigne(); toast(choisie.verrou ? 'Ligne verrouillée : elle ne bouge plus au clic' : 'Ligne déverrouillée'); }
+  else if (b.dataset.l === 'modele') { if ($('#bl-mod').hidden) ouvreMod(); else fermeMod(); }
   else if (b.dataset.l === 'efface') efface();
   toutDessine();
 });
+// les modèles de dessin (complet : les « modèles » des grandes plateformes) : des réglages enregistrés sous un nom, appliqués d'un clic ; gardés sur cet ordinateur
+const MOD_CH = ['couleur', 'style', 'alerte', 'rayon', 'cloture', 'approche', 'vis'], COUL_NOM = { '#000000': 'noir', '#2962ff': 'bleu', '#f23645': 'rouge', '#089981': 'vert' };
+function modeles() { try { const m = JSON.parse(lit('g-modeles', '[]')); return Array.isArray(m) ? m : []; } catch (e) { return []; } }
+function modTxt(m) { const r = m.r || {}; return [r.couleur ? COUL_NOM[r.couleur] || 'couleur' : 'noir', r.style === 'tirets' ? 'pointillés' : 'plein', r.alerte === false ? 'sans alerte' : r.cloture ? `alerte à la clôture ${r.cloture}` : 'alerte au contact', r.approche ? `pré-alerte ${r.approche} t` : '', r.vis ? `visible ${r.vis.startsWith('<=') ? `en ${r.vis.slice(2)} et moins` : `en ${r.vis}`}` : '', r.rayon ? 'demi-droite' : ''].filter(Boolean).join(' · '); }
+function fermeMod() { $('#bl-mod').hidden = true; }
+function ouvreMod() { const bm = $('#bl-mod'), M = modeles(), bl = $('#barre-ligne').getBoundingClientRect();
+  bm.innerHTML = (M.length ? M.map((m, i) => `<div class="bm-l"><button class="bm-a" data-mi="${i}" title="Appliquer ces réglages au dessin choisi"><b>${esc(m.nom)}</b><small>${esc(modTxt(m))}</small></button><button class="bm-x" data-mx="${i}" title="Supprimer ce modèle">✕</button></div>`).join('') : '<div class="bm-v">Aucun modèle pour l’instant.</div>')
+    + '<button class="bm-n" data-ms="1">＋ Enregistrer les réglages de ce dessin…</button>';
+  bm.hidden = false; const w = bm.offsetWidth, h = bm.offsetHeight; bm.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, bl.right - w))}px`; bm.style.top = `${bl.bottom + 6 + h > innerHeight ? Math.max(8, bl.top - h - 6) : bl.bottom + 6}px`; }
+$('#bl-mod').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; ev.stopPropagation(); const M = modeles();
+  if (b.dataset.ms) { if (!choisie) return fermeMod(); const nom = (prompt('Nom du modèle (par exemple « Niveau D1 ») :', '') || '').trim().slice(0, 40); if (!nom) return;
+    const r = {}; for (const k of MOD_CH) if (choisie[k] != null) r[k] = choisie[k]; const j = M.findIndex(m => m.nom.toLowerCase() === nom.toLowerCase()); if (j >= 0) M[j] = { nom, r }; else M.push({ nom, r }); ecrit('g-modeles', JSON.stringify(M.slice(-12)));
+    toast(`Modèle « ${nom} » enregistré : ${modTxt({ r })}`); ouvreMod(); return; }
+  if (b.dataset.mx != null) { const m = M[+b.dataset.mx]; if (!m || !confirm(`Supprimer le modèle « ${m.nom} » ? (tes dessins ne changent pas)`)) return; M.splice(+b.dataset.mx, 1); ecrit('g-modeles', JSON.stringify(M)); ouvreMod(); return; }
+  if (b.dataset.mi != null) { const m = M[+b.dataset.mi]; if (!m || !choisie) return fermeMod(); const l = choisie, sans = ['fibo', 'fleche', 'texte', 'regression', 'fourche', 'verticale', 'avwap'].includes(l.genre);
+    for (const k of MOD_CH) { if (k === 'rayon' && !['horizontale', 'rect'].includes(l.genre)) continue; if (sans && ['alerte', 'cloture', 'approche'].includes(k)) continue; if (m.r[k] == null) delete l[k]; else l[k] = m.r[k]; }
+    sauve(); majBarreLigne(); toutDessine(); fermeMod(); toast(`Modèle « ${m.nom} » appliqué · Ctrl + Z pour annuler`); } });
+document.addEventListener('pointerdown', ev => { if (!$('#bl-mod').hidden && !ev.target.closest('#bl-mod') && !ev.target.closest('[data-l="modele"]')) fermeMod(); }, true);
 /* la capture du graphique, le plein écran */
 $('#photo').onclick = () => { const p = panes[actif] || panes[0]; if (!p) return; p.cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${code}-${LIB[p.ut] || p.ut}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Capture enregistrée dans tes téléchargements'); }); };
 /* ================= Le plein écran, partout : ordinateur, tablette, téléphone (sur iPhone : l'icône sur l'écran d'accueil) ================= */
