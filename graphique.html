@@ -53,7 +53,7 @@
   /* ---- les graphiques ---- */
   .graphes { display: grid; gap: 2px; background: var(--ligne); min-height: 0; grid-column: 2; grid-row: 2; }
   .graphes.un { grid-template-columns: 1fr; } .graphes.trois { grid-template-columns: 1fr 1fr 1fr; }
-  .graphes.trois.pp { grid-template-columns: 2.3fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.trois.pp .pane:not(.grand) .titre .indl, .graphes.trois.pp .pane:not(.grand) .titre .cotl, .graphes.trois.pp .pane:not(.grand) .titre > span[style] { display: none !important; } .graphes.trois.pp .pane:not(.grand) .titre { padding: 4px 8px !important; font-size: 11px !important; } .graphes.trois.pp .pane { grid-column: 2; } .graphes.trois.pp .pane.grand { grid-column: 1; grid-row: 1 / 3; }
+  .graphes.trois.pp { grid-template-columns: 2.3fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.trois.q4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; } .graphes.trois.pp .pane:not(.grand) .titre .indl, .graphes.trois.pp .pane:not(.grand) .titre .cotl, .graphes.trois.pp .pane:not(.grand) .titre > span[style] { display: none !important; } .graphes.trois.pp .pane:not(.grand) .titre { padding: 4px 8px !important; font-size: 11px !important; } .graphes.trois.pp .pane { grid-column: 2; } .graphes.trois.pp .pane.grand { grid-column: 1; grid-row: 1 / 3; }
   .pane { position: relative; background: #fff; min-width: 0; min-height: 0; overflow: hidden; }
   .pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
   .pane .titre { position: absolute; left: 10px; top: 8px; font: 500 12.5px 'Inter'; color: #131722; pointer-events: none; z-index: 2; white-space: nowrap; }
@@ -912,6 +912,7 @@
       <button class="ico" id="vue-un" data-tip="Un graphique"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg></button>
       <button class="ico" id="vue-pp" data-tip="Un grand graphique et deux petits (touche un petit : il devient le grand)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="12" height="14" rx="2"/><rect x="16.5" y="5" width="4.5" height="6.2" rx="1"/><rect x="16.5" y="12.8" width="4.5" height="6.2" rx="1"/></svg></button>
       <button class="ico" id="vue-trois" data-tip="Trois graphiques (clique sur l'un, puis sur une unité)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg></button>
+      <button class="ico" id="vue-q4" data-tip="Quatre graphiques, deux sur deux (clique sur l'un, puis sur une unité ; le quatrième commence en 15m)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14M3 12h18"/></svg></button>
       <button class="ico" id="b-pages" data-tip="Tes mises en page : enregistrer et rappeler (vue, unités, marché, méthode, indicateurs, comparaison)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/></svg></button>
     </div>
     <div class="grp masque-mobile">
@@ -1174,7 +1175,7 @@ const ecrit = (k, v) => { try { localStorage.setItem(PK + k, v); } catch (e) { /
 // plusieurs fenêtres (une par écran) : chacune a son numéro (#f=2 dans l'adresse) et garde ses réglages ; les lignes, elles, sont communes
 const FEN = diese.get('f') || '1', K = k => FEN === '1' ? k : `${k}-${FEN}`;
 let code = diese.get('code') || lit(K('g-code'), 'SIL'), vue = lit(K('g-vue'), 'trois'), utSeul = lit(K('g-ut'), 'D1'), outil = 'curseur';
-let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && u.length === 3) utsTrois = u; } catch (e) { /* rien */ }
+let utsTrois = ['D1', 'H4', 'H1']; try { const u = JSON.parse(lit(K('g-uts'), 'null')); if (Array.isArray(u) && (u.length === 3 || u.length === 4)) utsTrois = u; } catch (e) { /* rien */ }
 // la salle sur 4 écrans : chaque fenêtre a un rôle (structure · lié · ensemble ; la veille, c'est le Radar en mode mur)
 const ROLE = diese.get('role') || '';
 const FRERE = { SIL: 'MGC', MGC: 'SIL', GC: 'SIL', MNQ: 'MYM', NQ: 'MYM', MES: 'MNQ', MYM: 'MNQ', M6E: 'DXY', DXY: 'M6E', MCL: 'DXY', CL: 'DXY', ZL: 'MCL', VIX: 'MNQ', MBT: 'MNQ' };
@@ -1186,7 +1187,7 @@ let COTD = {};
 const sg = (v, d = 0) => (v > 0 ? '+' : v < 0 ? '−' : '') + nb(Math.abs(v), d);
 let lignes = [], choisie = null, brouillon = null, actif = 0, INSTANT = null; const CACHE_D = {};
 const nb = (x, d) => x == null ? '—' : Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
-const UTS = () => vue === 'trois' ? utsTrois : [utSeul];
+const UTS = () => vue === 'trois' ? (DISPO === 'q4' ? [...utsTrois.slice(0, 3), utsTrois[3] || '15m'] : utsTrois.slice(0, 3)) : [utSeul];  // (en quatre graphiques : les trois habituels et un quatrième, 15m au départ)
 var DISPO = lit(K('g-dispo'), 'colonnes');  // (en trois graphiques : trois colonnes, ou un grand et deux petits)
 const DUREE = { '5m': 300, '15m': 900, '30m': 1800, H1: 3600, H4: 14400, D1: 86400, W: 604800, M: 2629800 };
 const LIB = { '5m': '5m', '15m': '15m', '30m': '30m', H1: 'H1', H4: 'H4', D1: 'D1', W: 'W1', M: 'MN' };
@@ -1767,11 +1768,11 @@ async function chargeLignes() {
 /* ---------- les panneaux, la liste, les touches ---------- */
 let panes = [];
 function construit() { if (ROLE === 'ensemble' || ROLE === 'terminal') return;
-  const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un') + (vue === 'trois' && DISPO === 'pp' ? ' pp' : '');
+  const g = $('#graphes'); g.className = 'graphes ' + (vue === 'trois' ? 'trois' : 'un') + (vue === 'trois' && DISPO === 'pp' ? ' pp' : '') + (vue === 'trois' && DISPO === 'q4' ? ' q4' : '');
   g.innerHTML = UTS().map(() => `<div class="pane"><div class="titre"></div><canvas></canvas><div class="charge">Chargement…</div></div>`).join('');
   panes = [...g.querySelectorAll('.pane')].map((el, k) => new Pane(el, UTS()[k])); actif = Math.min(actif, panes.length - 1); majActif();
   majBoutonsUT();
-  $('#vue-un').classList.toggle('on', vue === 'un'); $('#vue-trois').classList.toggle('on', vue === 'trois' && DISPO !== 'pp'); $('#vue-pp').classList.toggle('on', vue === 'trois' && DISPO === 'pp');
+  $('#vue-un').classList.toggle('on', vue === 'un'); $('#vue-trois').classList.toggle('on', vue === 'trois' && DISPO !== 'pp' && DISPO !== 'q4'); $('#vue-pp').classList.toggle('on', vue === 'trois' && DISPO === 'pp'); $('#vue-q4').classList.toggle('on', vue === 'trois' && DISPO === 'q4');
   majSym(); chargeTout();
 }
 function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', panes.length > 1 && k === actif));
@@ -1779,7 +1780,7 @@ function majActif() { panes.forEach((p, k) => p.el.classList.toggle('actif', pan
   majBoutonsUT(); }
 function majBoutonsUT() { const u = vue === 'trois' ? (utsTrois[actif] || '') : utSeul; document.querySelectorAll('[data-ut]').forEach(b => b.classList.toggle('on', b.dataset.ut === u)); }
 function choisirUT(ut) {
-  if (vue === 'trois') { utsTrois[actif] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = -6; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
+  if (vue === 'trois') { if (actif === 3 && utsTrois.length < 4) utsTrois[3] = '15m'; utsTrois[actif] = ut; ecrit(K('g-uts'), JSON.stringify(utsTrois)); const p = panes[actif]; if (p) { p.ut = ut; p.n = 120; p.fin = -6; p.y = null; p.d = null; p.charge(); } majBoutonsUT(); }
   else { utSeul = ut; ecrit(K('g-ut'), ut); construit(); }
 }
 function toutDessine() { panes.forEach(p => p.dessine()); requestAnimationFrame(() => requestAnimationFrame(majBarreLigne)); }
@@ -3572,7 +3573,7 @@ $('#pages-q').addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.k
 $('#pages-go').onclick = () => { const nom = $('#pages-q').value.trim().slice(0, 40); if (!nom) { $('#pages-q').focus(); return; } const etat = {};
   Object.assign(etat, { '§vue': vue, '§uts': JSON.stringify(utsTrois), '§ut': utSeul, '§code': code, '§cmp': JSON.stringify(CMP), 'g-methode': METHODE, 'g-zz': opt.zz ? '1' : '0', 'g-zones-d1': opt.zones ? '1' : '0', 'g-vol': opt.vol ? '1' : '0',
     'g-news': opt.news ? '1' : '0', 'g-cot': opt.cot ? '1' : '0', 'g-figures': optFig ? '1' : '0', 'g-log': opt.log ? '1' : '0', 'g-pct': optPct ? '1' : '0', 'g-type': TYPE, 'g-bougies': opt.bougies ? '1' : '0', 'g-indics': JSON.stringify(INDICS) });
-  const l = lisPages().filter(x => x.nom !== nom); l.push({ nom, etat, resume: `${vue === 'trois' ? 'trois graphiques ' + utsTrois.join(' / ') : 'un graphique ' + (panes[0] ? panes[0].ut : '')} · ${code} · ${METHODES[METHODE].nom}${INDICS.length ? ' · ' + INDICS.length + ' indicateur' + (INDICS.length > 1 ? 's' : '') : ''}${CMP ? ' · comparé à ' + CMP.code : ''}` });
+  const l = lisPages().filter(x => x.nom !== nom); l.push({ nom, etat, resume: `${vue === 'trois' ? (UTS().length === 4 ? 'quatre graphiques ' : 'trois graphiques ') + UTS().join(' / ') : 'un graphique ' + (panes[0] ? panes[0].ut : '')} · ${code} · ${METHODES[METHODE].nom}${INDICS.length ? ' · ' + INDICS.length + ' indicateur' + (INDICS.length > 1 ? 's' : '') : ''}${CMP ? ' · comparé à ' + CMP.code : ''}` });
   ecrit('g-pages', JSON.stringify(l.slice(-20))); $('#pages-q').value = ''; majPages(); toast(`Mise en page « ${nom} » enregistrée`); };
 $('#pages-l').addEventListener('click', ev => { const d = ev.target.closest('[data-k]'), b = ev.target.closest('button[data-op]'); if (!d || !b) return; const l = lisPages(), x = l[+d.dataset.k]; if (!x) return;
   if (b.dataset.op === 'efface') { l.splice(+d.dataset.k, 1); ecrit('g-pages', JSON.stringify(l)); majPages(); return; }
@@ -5963,7 +5964,7 @@ document.querySelector('.pc-nav').addEventListener('click', ev => { const b = ev
 { const bv = document.querySelector('.pc-nav [data-v="voix"]'); bv.addEventListener('pointerdown', () => demarreMicro('q')); bv.addEventListener('pointerup', () => { if (rec && rec.mode === 'q') arreteMicro(); }); }
 setTimeout(appliqueMode, 300);
 /* ================= portable et tablette ================= */
-$('#vue-pp').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), 'trois'); DISPO = 'pp'; ecrit(K('g-dispo'), 'pp'); construit(); };
+$('#vue-pp').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), 'trois'); DISPO = 'pp'; ecrit(K('g-dispo'), 'pp'); construit(); }; $('#vue-q4').onclick = () => { vue = 'trois'; ecrit(K('g-vue'), 'trois'); DISPO = 'q4'; ecrit(K('g-dispo'), 'q4'); construit(); };
 { const v3 = $('#vue-trois'), ancien = v3.onclick; v3.onclick = ev => { DISPO = 'colonnes'; ecrit(K('g-dispo'), 'colonnes'); if (ancien) ancien.call(v3, ev); else { vue = 'trois'; ecrit(K('g-vue'), 'trois'); construit(); } }; }
 // le mode « Portable » : un écran d'ordinateur portable — un grand graphique et deux petits, le moniteur rentré, tout pour le graphique
 MODES.splice(2, 0, ['portable', 'Portable', 'un écran d’ordinateur portable : un grand graphique et deux petits']);
@@ -5978,7 +5979,7 @@ appliqueMode = function () { const avant = MODE; _appliqueMode0(); const m = MOD
   if (m !== 'nomade') document.body.classList.remove('m-nomade-ok');
   if (m === 'nomade') { const o = innerWidth > innerHeight ? 'paysage' : 'portrait'; if (!document.body.classList.contains('m-nomade-ok') || o !== appliqueMode.orient) { document.body.classList.add('m-nomade-ok'); if (lit(K('g-moniteur'), null) == null) moniteur(false, false); appliqueMode.orient = o; document.body.classList.add('m-nomade'); if (o === 'paysage') { vue = 'trois'; DISPO = 'pp'; } else vue = 'un'; construit(); } } };
 setTimeout(() => appliqueMode(), 350);
-['vue-un', 'vue-trois', 'vue-pp'].forEach(id => $('#' + id).addEventListener('click', () => ecrit(K('g-dispo-choisie'), '1')));
+['vue-un', 'vue-trois', 'vue-pp', 'vue-q4'].forEach(id => $('#' + id).addEventListener('click', () => ecrit(K('g-dispo-choisie'), '1')));
 function majTabUt() { const b = document.querySelector('#tab-nav [data-k="ut"] span'); if (!b) return; const u = (typeof vue !== 'undefined' && vue === 'trois') ? utsTrois[actif] : utSeul; b.innerHTML = ['D1', 'H4', 'H1'].map(z => z === u ? `<b>${z}</b>` : z).join(' · '); }
 // la barre du bas de la tablette : tout au pouce
 const TAB_NAV = [['/', 'Marchés', () => ouvreRecherche()], ['ut', 'D1 · H4 · H1', () => { const o = ['D1', 'H4', 'H1'], u = vue === 'trois' ? utsTrois[actif] : utSeul; choisirUT(o[(o.indexOf(u) + 1) % 3]); }], ['i', 'Indicateurs', () => ouvreIndic()], ['a', 'Alertes', () => ouvreAlertes()], ['r', 'Risque', () => fnRisk()], ['n', 'Dépêches', () => fnNews(code)], ['s', 'Simuler', () => outilSimu(true)]];
