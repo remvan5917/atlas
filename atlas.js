@@ -1503,7 +1503,7 @@ window.addEventListener('load', () => {
   });
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
-    setTimeout(verifierMaj, 4000); setInterval(verifierMaj, 30 * 60000); // et toutes les 30 minutes (au calme)
+    setTimeout(verifierMaj, 4000); setInterval(verifierMaj, 30 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(verifierMaj, 1500); }); // (le téléphone qui revient au premier plan : une version plus récente se charge tout de suite) // et toutes les 30 minutes (au calme)
   }
   window.ATLAS_OK = true;
   vie();

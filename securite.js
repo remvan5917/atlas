@@ -187,7 +187,7 @@ const SECURITE = (() => {
   async function releveAlertes() {
     if (!root() || !dlg.started || voice.endormi) return;
     let j; try { j = await appel(`/maison/alertes?depuis=${vuJusqua}`, null, 10000); } catch (e) { return; }
-    absent = !!j.absent; retourAt = j.retour_at || 0; if (j.enfant_maison != null) enfantMaison = !!j.enfant_maison; sante = j.sante || sante; nuitDehors = !!j.nuit_dehors; dodo = !!j.dodo;
+    absent = !!j.absent; retourAt = j.retour_at || 0; if (j.enfant_maison != null) enfantMaison = !!j.enfant_maison; sante = j.sante || sante; nuitDehors = !!j.nuit_dehors; dodo = !!j.dodo; if (j.version && +j.version > +window.ATLAS_VERSION && typeof verifierMaj === 'function') verifierMaj(); // (une version plus récente : il se met à jour tout seul, au calme)
     let l = (j.alertes || []).filter(a => a.id > vuJusqua);
     if (!l.length) return;
     if (!vuJusqua) { vuJusqua = Math.max(...l.map(a => a.id)); try { localStorage.setItem('atlas-alertes-vues', String(vuJusqua)); } catch (e) { /* rien */ } return; } // un nouvel appareil : il ne raconte pas toute la semaine
