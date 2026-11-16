@@ -1002,6 +1002,7 @@ const ARRIVEE = (() => {
     if (!nom || /^invité/.test(nom) || nom === 'Atlas' || S.settings.arrivee === false) { if (nom) vu[nom] = Date.now(); return ''; }
     const avant = vu[nom] || 0; vu[nom] = Date.now();
     if (!dlg.started || Date.now() - (dlg.depuis || 0) < 60000) return ''; // ceux qui étaient déjà là au démarrage
+    if (typeof SECURITE !== 'undefined' && SECURITE.dodo && SECURITE.dodo()) return ''; // la nuit, après « je vais me coucher » : personne n'est accueilli (il monte se coucher)
     if (Date.now() - avant < ABSENT) return '';
     if (Date.now() - dernierAccueil < 15000) { vu[nom] = avant; return ''; } // quelqu'un vient d'être accueilli : son tour viendra à la phrase suivante
     dernierAccueil = Date.now();

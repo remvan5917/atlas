@@ -392,7 +392,7 @@ const SECURITE = (() => {
     return null;
   }
   const nomsCameras = () => cams.map(x => x.nom).concat(ezCams.map(x => x.nom));
-  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent, nuitDehors: () => nuitDehors, routeNuit, enfantAbsent: () => enfantMaison === false, sante: () => sante,
+  return { route, nomsCameras, _nommee: nommee, rapport, modeAbsent, releveAlertes, absent: () => absent, nuitDehors: () => nuitDehors, dodo: () => dodo, routeNuit, enfantAbsent: () => enfantMaison === false, sante: () => sante,
     // son téléphone est revenu sur le Wi-Fi il y a moins de 15 min : « je suis rentré » n'a pas besoin de sa voix (elle se trompe parfois)
     retourRecent: async () => { try { const j = await appel('/maison/alertes?depuis=99999999999999', null, 5000); absent = !!j.absent; retourAt = j.retour_at || 0; } catch (e) { /* le dernier relevé */ } return !!retourAt && Date.now() - retourAt < 15 * 60000; }, etatAlarme, activer, regarde, finDirect, _enDirect: false, visionMaison: () => visionMaison, _relit: () => { camsAt = 0; return listeCams(); } };
 })();

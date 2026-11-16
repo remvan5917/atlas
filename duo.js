@@ -232,7 +232,7 @@ const DUO = (() => {
   }
   // la maison s'éveille : le soir, les lumières d'en bas s'allument une à une (jamais les chambres)
   async function cascade(lum = 70, teinte = 30) {
-    if (!sombre()) return 0;
+    if (!sombre() || auLit()) return 0;
     let l = []; try { l = ((await appel('/maison/appareils', null, 10000)).appareils || []).filter(a => a.type === 'lampe' && a.allume === false && !/\bchambres?\b|\bsalle de bain\b|\blingerie\b/.test(N(a.nom))); } catch (e) { return 0; }
     for (const a of l.slice(0, 5)) { appel('/maison/commande', { ids: [a.id], allume: true, lum, teinte, source: 'routine' }, 15000).catch(() => {}); await wait(550); }
     return l.length;
@@ -255,8 +255,9 @@ const DUO = (() => {
     if (sh) L.push(['Shadow', sh.a_la_maison === false ? 'en mission à l\'extérieur' : 'en ligne']);
     return { L, w, urg };
   }
-  async function accueille(qui, resume) {
-    if (!qui.length || qui.every(x => deja(x))) return '';
+  const auLit = () => typeof SECURITE !== 'undefined' && SECURITE.dodo && (SECURITE.dodo() || SECURITE.nuitDehors()); // « je vais me coucher » (16/11 : la tablette l'a vu monter et a rallumé tout le bas)
+  async function accueille(qui, resume, { lumieres = true } = {}) {
+    if (!qui.length || qui.every(x => deja(x)) || auLit()) return '';
     qui.forEach(x => { vus[x] = Date.now(); });
     const p = enfant(), nom = S.nom || '', deux = qui.includes('papa') && qui.includes('enfant'), fils = qui.includes('enfant');
     sfx('demarrage');
@@ -266,7 +267,7 @@ const DUO = (() => {
       : fils ? { titre: p || 'Co-inventeur', sous: 'CO-INVENTEUR DE LA MAISON · ACCÈS TOTAL', couleur: '#f472b6', lignes: L.filter(x => x[0] !== 'Or') }
         : { titre: nom || 'Commandant', sous: 'INVENTEUR · ACCÈS TOTAL', lignes: L });
     if (fils) versShadow({ type: 'accueil', texte: deux ? 'duo' : 'enfant' }).catch(() => {});
-    const allumees = cascade();
+    const allumees = lumieres ? cascade() : Promise.resolve(0); // les lumières : seulement à un vrai retour (le téléphone revenu, ou le mode absent), pas quand il passe devant la tablette
     await wait(2600); sfx('scan');
     const n = await allumees;
     const lum = n ? ' La maison s\'éveille pour vous.' : '';
@@ -439,7 +440,8 @@ const DUO = (() => {
     // on attend 3 secondes : s'ils rentrent ensemble, un seul accueil pour les deux
     setTimeout(() => {
       const l = [...new Set(vusRecents.filter(x => Date.now() - x.at < 20000).map(x => x.qui))].filter(x => !deja(x));
-      if (l.length) PROACTIF.annonce(`accueil-${l.join('-')}-${Date.now()}`, () => accueille(l, ''), { urgent: true, expire: Date.now() + 60000 });
+      const rentre = typeof SECURITE !== 'undefined' && SECURITE.absent && SECURITE.absent(); // vu à la caméra : il rentre vraiment (mode absent) → la maison s'allume ; sinon il passe juste devant
+      if (l.length) PROACTIF.annonce(`accueil-${l.join('-')}-${Date.now()}`, () => accueille(l, '', { lumieres: rentre }), { urgent: true, expire: Date.now() + 60000 });
     }, 3000);
     return true;
   }
