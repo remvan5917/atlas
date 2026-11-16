@@ -1578,7 +1578,7 @@ class Pane {
       if (z === 'graphe' && outil === 'esquisse' && this.T) { esqDebut(this, x, y); glisse = { mode: 'esquisse' }; return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
       if (z === 'graphe') {
-        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (l.verrou) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l }, part: l.genre === 'position' ? (Math.abs(y - this.Y(l.p2)) < 6 ? 'stop' : Math.abs(y - this.Y(l.p1 + (l.ecart || 0))) < 6 ? 'cible' : null) : null }; return; } }
+        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (l.verrou) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l }, part: l.genre === 'position' ? (Math.abs(y - this.Y(l.p2)) < 6 ? 'stop' : Math.abs(y - this.Y(l.p1 + (l.ecart || 0))) < 6 ? 'cible' : null) : l.genre === 'mesure' ? (Math.hypot(x - this.T(l.t1), y - this.Y(l.p1)) < 9 ? 'm1' : Math.hypot(x - this.T(l.t2), y - this.Y(l.p2)) < 9 ? 'm2' : null) : null }; return; } }
         else if (choisie) { choisie = null; toutDessine(); }
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
@@ -1598,6 +1598,7 @@ class Pane {
       if (glisse && glisse.mode === 'regle') { this.regle.t2 = this.iT(x); this.regle.p2 = this.iY(y); this.dessine(); return; }
       if (glisse && glisse.mode === 'graphe' && !glisse.ligne) { const mt = performance.now(); if (glisse.lt) glisse.v = .6 * (glisse.v || 0) + .4 * (x - glisse.lx) / Math.max(1, mt - glisse.lt); glisse.lx = x; glisse.lt = mt; }
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
+        if (glisse.part === 'm1' || glisse.part === 'm2') { const k = glisse.part === 'm1' ? 1 : 2, [t, pr] = aimant(this, x, y); l['t' + k] = t; l['p' + k] = pr; toutDessine(); return; }  // (la mesure : un seul bout, aimanté comme au tracé)
         if (glisse.part) { const tk = (this.d && this.d.tick) || 0, arr = v => +(tk ? Math.round(v / tk) * tk : v).toFixed(8);  // (la position : seulement le stop, ou seulement l'objectif, au tick près, sans passer de l'autre côté de l'entrée)
           if (glisse.part === 'stop') { const v = arr(o.p2 + dp); if (Math.sign(o.p1 - v) === Math.sign(o.p1 - o.p2)) l.p2 = v; } else { const v = +(arr(o.p1 + o.ecart + dp) - o.p1).toFixed(8); if (Math.sign(v) === Math.sign(o.ecart)) l.ecart = v; } toutDessine(); return; }
         l.t1 = o.t1 + (l.genre === 'horizontale' && !l.rayon ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; if (o.t3 != null) { l.t3 = o.t3 + dt; l.p3 = o.p3 + dp; } toutDessine(); return; }
