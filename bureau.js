@@ -12,6 +12,22 @@ const BUREAU = (() => {
     return r.json();
   }
   const ENT = { lrf: 'La Rue', micro: 'Micro', perso: 'Perso' };
+  const GROUPES = { sopam: { n: 'SOPAM · Moramanga', e: '🌍', c: '#34d399', pro: true }, lrf: { n: 'La rue du financement', e: '🟣', c: '#a78bfa', pro: true },
+    micro: { n: 'Micro-entreprise', e: '🟠', c: '#fb923c', pro: true }, admin: { n: 'Administratif', e: '📁', c: '#94a3b8', pro: false },
+    famille: { n: 'Famille', e: '👨‍👦', c: '#f472b6', pro: false }, trading: { n: 'Trading · tes comptes', e: '📈', c: '#38bdf8', pro: false },
+    perso: { n: 'Perso', e: '🟢', c: '#4ade80', pro: false }, outils: { n: 'Outils · salle des marchés, Atlas', e: '🛠️', c: '#fcd34d', pro: false } };
+  const DEC_PROJET = { sopam: 'sopam', plateforme: 'lrf', linkedin: 'outils', graphique: 'outils', atlas: 'outils', shadow: 'outils' };
+  function projetDe(x) { // le projet d'une carte : d'après son entité et ce qu'elle dit
+    const t = N(`${x.de || ''} ${x.sujet || ''} ${x.a_faire || ''} ${x.resume || ''} ${x.livrable_titre || ''}`);
+    if (/\b(sopam|moramanga|madagascar|mohamed|tristan|roullier|jordaan|sciure|ravaka|sylvia)\b/.test(t)) return 'sopam';
+    if (x.entite === 'lrf') return 'lrf';
+    if (x.entite === 'micro') return 'micro';
+    if (/\b(topstep|ftmo|trading|payout|prop ?firm|tradingview|topstepx)\b/.test(t)) return 'trading';
+    const pf = N((typeof LIEN !== 'undefined' && LIEN.prenom()) || '');
+    if ((pf && new RegExp(`\\b${pf}\\b`).test(t)) || /\b(ecole|garde|nicole|cantine|centre aere|orthophon\w*|gym)\b/.test(t)) return 'famille';
+    if (/\b(urssaf|impots?|banque|assurance|caf|cpam|mutuelle|edf|engie|loyer|sinistre|matmut|expertise|notaire|valorime|amende|prefecture|mairie)\b/.test(t)) return 'admin';
+    return 'perso';
+  }
   const TYPE = { repondre: 'Répondre', envoyer_document: 'Envoyer un document', relancer: 'Relancer', payer: 'Payer', rendez_vous: 'Rendez-vous', tache: 'À faire' };
   const avecTexte = x => ['repondre', 'envoyer_document', 'relancer'].includes(x.type) && x.brouillon_texte;
   const b_ = (txt, act, id, fond = 'rgba(255,255,255,.08)') => `<button type="button" data-bur="${act}" data-id="${esc(id)}" style="padding:8px 12px;margin:4px 5px 0 0;border:0;border-radius:10px;background:${fond};color:#e2e8f0;font:600 13px system-ui;cursor:pointer">${txt}</button>`;
@@ -52,25 +68,42 @@ ${x.contexte ? `<details><summary>Le contexte</summary><div class="bx-texte">${e
     dernier = r;
     try { decs = (await decApi()).a_prendre || []; } catch (e) { decs = []; }
     const dos = await dossierCabinet(), l = r.a_valider || [], urg = l.filter(x => x.urgence === 'haute').length;
+    let planBandeau = '';
+    try { const pj = (await (await fetch(`${root()}/maison/plan`, { cache: 'no-store' })).json()).plan || {};
+      const dj = new Date(), iso = `${dj.getFullYear()}-${String(dj.getMonth() + 1).padStart(2, '0')}-${String(dj.getDate()).padStart(2, '0')}`;
+      if (pj.date === iso && (pj.actions || []).length) { const fa = pj.actions.filter(a_ => a_.etat !== 'a_faire').length, n_ = pj.actions.length;
+        planBandeau = `<div class="bx-bandeau" style="border-color:#fcd34d"><div><b>☀️ Ton plan du jour · ${fa}/${n_} fait${fa > 1 ? 's' : ''}</b><span>${fa === n_ ? 'Tout est fait pour aujourd’hui.' : `${n_ - fa} action${n_ - fa > 1 ? 's' : ''} prête${n_ - fa > 1 ? 's' : ''}, environ ${pj.actions.filter(a_ => a_.etat === 'a_faire').reduce((s_, a_) => s_ + (+a_.minutes || 0), 0)} min`}</span></div>${bb('Ouvrir mon plan', 'plan', 'x', 'prim')}</div>`; } } catch (e) { /* pas de plan */ }
     const f = S.bureauFiltre || 'tout', estPro = estPro_;
     const nPro = l.filter(estPro).length, nPerso = l.length - nPro;
     const ordre = a => a.slice().sort((x, y) => (y.urgence === 'haute') - (x.urgence === 'haute') || String(x.echeance || '9').localeCompare(String(y.echeance || '9')));
     const section = (t, c, n) => `<div class="bx-section" style="--c:${c}"><i></i><b>${t}</b><small>${n} à valider</small></div>`;
-    const lrf = ordre(l.filter(x => x.entite === 'lrf')), micro = ordre(l.filter(x => x.entite === 'micro')), perso = ordre(l.filter(x => !estPro(x)));
+    // rangé PAR PROJET (16/11) : en haut le plan du jour et ce qui est en retard ; ensuite une ligne par projet, à déplier
+    const aujIso = new Date().toISOString().slice(0, 10);
+    const presse = x => x.urgence === 'haute' || (x.echeance && x.echeance < aujIso);
+    const filtreOk = x => f === 'tout' || (f === 'pro' ? estPro(x) || projetDe(x) === 'sopam' : !(estPro(x) || projetDe(x) === 'sopam'));
+    const vis = l.filter(filtreOk), retard = ordre(vis.filter(presse)), reste = vis.filter(x => !presse(x));
     let k = 0; const cartes = a => a.map(x => carte(x, k++)).join('');
-    const espacePro = (f === 'perso' || !nPro) ? '' : section('Pro', '#60a5fa', nPro) + (lrf.length ? (micro.length ? '<div class="bx-sous-section">La rue du financement</div>' : '') + cartes(lrf) : '') + (micro.length ? '<div class="bx-sous-section">Micro-entreprise</div>' + cartes(micro) : '');
-    const espacePerso = (f === 'pro' || !nPerso) ? '' : section('Perso', '#4ade80', nPerso) + cartes(perso);
+    const decsDe = g => decs.filter(d => (DEC_PROJET[d.projet] || 'outils') === g && (f === 'tout' || (f === 'pro') === GROUPES[g].pro));
+    const ouverts = S.bureauOuverts || {};
+    const groupes = Object.keys(GROUPES).map(g => {
+      const c = ordre(reste.filter(x => projetDe(x) === g)), d = decsDe(g); if (!c.length && !d.length) return '';
+      const G = GROUPES[g];
+      return `<details class="bx-projet" data-grp="${g}"${ouverts[g] ? ' open' : ''} style="--c:${G.c};margin:10px 0;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:4px 12px;background:rgba(255,255,255,.02)">
+<summary style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 2px;font-size:16px;font-weight:600;list-style:none"><span style="font-size:20px">${G.e}</span><span style="flex:1">${G.n}</span>${d.length ? `<span class="bx-tag" style="background:rgba(252,211,77,.15);color:#fcd34d">${d.length} décision${d.length > 1 ? 's' : ''}</span>` : ''}<span class="bx-tag">${c.length} à valider</span></summary>
+${d.map(carteDecision).join('')}${cartes(c)}</details>`; }).join('');
+    const espace = (retard.length ? `<div class="bx-section" style="--c:#f87171"><i></i><b>⏰ En retard ou urgent</b><small>${retard.length} · à faire en premier</small></div>${cartes(retard)}` : '') + groupes;
     const seg = (k_, t, cls) => `<button type="button" class="${f === k_ ? 'on ' : ''}${cls}" data-bur="filtre" data-id="${k_}">${t}</button>`;
     const auj = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     showBoard(`<div class="bx-in">
 <div class="bx-tete"><div><div class="bx-sur">Atlas · ${esc(auj)}${r.en_cours ? ' · je lis tes mails…' : ''}</div><div class="bx-titre">Mon bureau</div><div class="bx-sous">J'ai lu tes mails et préparé le travail. Tu vérifies, tu valides : rien ne part sans toi.</div></div>${bb('📜 Tout ce que j’ai fait', 'activite', 'x', 'ambre')}</div>
 <div class="bx-stats"><div class="bx-stat"><b>${l.length}</b><span>à valider</span></div><div class="bx-stat urgent"><b>${urg}</b><span>urgent${urg > 1 ? 's' : ''}</span></div><div class="bx-stat"><b style="color:#60a5fa">${nPro}</b><span>pro</span></div><div class="bx-stat"><b style="color:#4ade80">${nPerso}</b><span>perso</span></div><div class="bx-stat ok"><b>${r.faits_semaine || 0}</b><span>validé${(r.faits_semaine || 0) > 1 ? 's' : ''} cette semaine</span></div></div>
 <div class="bx-barre"><div class="bx-seg">${seg('tout', `Tout · ${l.length}`, '')}${seg('pro', `Pro · ${nPro}`, 'pro')}${seg('perso', `Perso · ${nPerso}`, 'perso')}</div></div>
-${decs.length && f !== 'perso' ? `<div class="bx-section" style="--c:#fcd34d"><i></i><b>Décisions à prendre</b><small>${decs.length} · la suite attend ta réponse</small></div>${decs.map(carteDecision).join('')}` : ''}
+${planBandeau}
 ${dos && f !== 'perso' ? `<div class="bx-bandeau"><div><b>Le cabinet comptable attend ta réponse</b><span>« ${esc(dos.sujet)} » · ${dos.achats.filter(a => a.fichiers.length).length}/${dos.achats.length} factures retrouvées · réponses sur les ventes ${(dos.ventes || []).filter(v => v.reponse).length}/${(dos.ventes || []).length}</span></div>${bb('Ouvrir le dossier', 'dossier', dos.id, 'ambre')}</div>` : ''}
-${(espacePro + espacePerso) || `<div class="bx-vide">${l.length ? 'Rien de ce côté-là.' : '✓ Ton bureau est à jour : rien à valider.'}</div>`}
+${espace || `<div class="bx-vide">${l.length ? 'Rien de ce côté-là.' : '✓ Ton bureau est à jour : rien à valider.'}</div>`}
 </div>`, 'bx');
   }
+  document.addEventListener('toggle', ev => { const d = ev.target; if (!d || !d.dataset || !d.dataset.grp) return; S.bureauOuverts = Object.assign({}, S.bureauOuverts || {}, { [d.dataset.grp]: d.open }); save(); }, true);
   document.addEventListener('click', async ev => {
     const b = ev.target.closest && ev.target.closest('[data-bur]'); if (!b) return;
     const act = b.dataset.bur, id = b.dataset.id;
@@ -79,6 +112,7 @@ ${(espacePro + espacePerso) || `<div class="bx-vide">${l.length ? 'Rien de ce c�
     if (act === 'actg') { S.actGenre = id; save(); return ecranActivite(); }
     if (act === 'activite') return activite();
     if (act === 'bureau') return bureau();
+    if (act === 'plan') return typeof PLAN !== 'undefined' ? PLAN.montre(false) : null;
     if (act === 'decide' || act === 'decide-libre') {
       const x = decs.find(y => y.id === id); if (!x) return;
       let rep_ = act === 'decide' ? (x.options || [])[+b.dataset.opt] : await ask(`Ta réponse : ${x.question}`, { wait: 40000 });
