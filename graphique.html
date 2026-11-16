@@ -1996,6 +1996,8 @@ $('#b-son').classList.toggle('on', SON);
 $('#b-son').onclick = () => { SON = !SON; ecrit('g-son', SON ? '1' : '0'); $('#b-son').classList.toggle('on', SON); if (!SON) taisToi(); toast(SON ? "La voix d'Atlas est allumée" : "La voix d'Atlas est coupée"); };
 function taisToi() { try { voixEnCours && voixEnCours.stop(); } catch (e) { /* rien */ } voixEnCours = null; try { speechSynthesis.cancel(); } catch (e) { /* rien */ } $('#copi').classList.remove('parle'); }
 async function dire(texte) {
+  if (texte != null && typeof texte !== 'string') texte = (texte && (texte.texte || texte.text)) || '';  /* (jamais « object Object » à voix haute) */
+  if (typeof texte === 'string') texte = texte.replace(/\s*\[object [A-Za-z]+\]\s*/g, ' ').trim();
   if (!SON || !texte) return; taisToi(); $('#copi').classList.add('parle');
   actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') try { await actx.resume(); } catch (e) { /* rien */ }
   try {  // la vraie voix d'Atlas (ElevenLabs), avec sa touche numérique légère, comme dans Atlas
