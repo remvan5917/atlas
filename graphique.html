@@ -1279,7 +1279,7 @@ class Pane {
       for (let k = Math.max(1, i); k < j; k++) if (cle(B[k][0]) !== cle(B[k - 1][0])) { const x = Math.round(X(k) - bw / 2) + .5; c.moveTo(x, HAUT); c.lineTo(x, yb); }
       c.stroke(); c.restore(); }
     // le projecteur : la nouvelle survolée éclaire les bougies de sa réaction (le quart d'heure qui suit)
-    if (this.survol && (opt.news || this.survol.genre === 'config' || this.survol.genre === 'arrivee')) { const xa = T(this.survol.at), xb = Math.max(xa + Math.max(3, bw), T(this.survol.fin || this.survol.at + 900));
+    if (this.survol && (opt.news || this.survol.genre === 'config' || this.survol.genre === 'arrivee' || this.survol.genre === 'h4now')) { const xa = T(this.survol.at), xb = Math.max(xa + Math.max(3, bw), T(this.survol.fin || this.survol.at + 900));
       c.fillStyle = 'rgba(41,98,255,.10)'; c.fillRect(xa, 0, xb - xa, ph); c.strokeStyle = 'rgba(41,98,255,.6)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(Math.round(xa) + .5, 0); c.lineTo(Math.round(xa) + .5, ph); c.stroke(); c.setLineDash([]); }
     // le cas du passé choisi : une bande ambre discrète (le moment, et la durée mesurée ensuite)
     if (MARQUE_PASSE && MARQUE_PASSE.p != null) { const yp = Y(MARQUE_PASSE.p); if (yp > 0 && yp < BASP) { c.save(); c.strokeStyle = 'rgba(255,171,26,.85)'; c.lineWidth = 1.2; c.setLineDash([6, 4]); c.beginPath(); c.moveTo(Math.max(0, T(MARQUE_PASSE.t) - 40 * bw), yp); c.lineTo(pw, yp); c.stroke(); c.restore(); } }  // (le niveau du moment rejoué : l'entraînement)
@@ -1506,7 +1506,14 @@ class Pane {
     // et sur le H4 : la PREMIÈRE bougie H4 qui a touché le niveau à chaque arrivée (ton entrée sur une unité plus petite) — un losange creux, vert si elle a clôturé du côté d'où venait le prix, rouge si elle a clôturé au-delà
     if (ARR_ON && this.ut === 'H4' && !REPLAY) { const A = ARRD[code]; if (!A || Date.now() - A.at > 600000) chargeArrivees(code);
       for (const e of (A && A.E) || []) { if (!e.h4t) continue; const x = T(e.h4t) + bw / 2; if (x < 2 || x > pw - 2) continue; const n = e._n4 || (e._n4 = { genre: 'arrivee', h4: true, at: e.h4t, fin: e.h4t + 14400, e, dec, tk: this.d.tick || 1 }), sel = this.survol === n, w = sel ? 4.5 : 3.2;
-        c.strokeStyle = e.h4 === 'rej' ? '#19d38c' : '#ff3d5a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x, ph + 1.5); c.lineTo(x + w, ph + 1.5 + w); c.lineTo(x, ph + 1.5 + 2 * w); c.lineTo(x - w, ph + 1.5 + w); c.closePath(); c.stroke(); this.marques.push({ x, y: ph + 3, n }); } }
+        c.strokeStyle = e.h4 === 'rej' ? '#19d38c' : '#ff3d5a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x, ph + 1.5); c.lineTo(x + w, ph + 1.5 + w); c.lineTo(x, ph + 1.5 + 2 * w); c.lineTo(x - w, ph + 1.5 + w); c.closePath(); c.stroke(); this.marques.push({ x, y: ph + 3, n }); }
+      // l'arrivée EN COURS : si le prix est sur un sommet / creux D1 (à moins de 30 % d'une journée), la première bougie H4 qui touche le niveau — ambre pleine tant qu'elle n'a pas clôturé, puis verte / rouge
+      const dd = (CACHE_D[`${code}|D1`] || {}).d, BD = dd && dd.bougies, H4 = this.d && this.d.bougies; if (BD && BD.length > 22 && H4 && H4.length) { const amp = BD.slice(-21, -1).map(b => b[2] - b[3]).sort((a, b) => a - b)[10], px = H4[H4.length - 1][4], P = scPiv(dd);
+        const pv = P.length && amp > 0 ? P.reduce((m, q) => Math.abs(q[1] - px) < Math.abs(m[1] - px) ? q : m) : null;
+        if (pv && Math.abs(pv[1] - px) <= .3 * amp) { const now = scH4Now(BD, H4, pv[1], amp); let bt = now && now.t, et = now && now.etat;
+          if (now && now.etat === 'pas') { const b = H4[H4.length - 1], s0 = now.s; if (s0 > 0 ? b[3] <= pv[1] : b[2] >= pv[1]) { bt = b[0]; et = 'cours'; } }
+          if (bt) { const x = T(bt) + bw / 2, w = 4; if (x > 2 && x < pw - 2) { c.fillStyle = et === 'cours' ? '#ffab1a' : et === 'rej' ? '#19d38c' : '#ff3d5a'; c.beginPath(); c.moveTo(x, ph + 1); c.lineTo(x + w, ph + 1 + w); c.lineTo(x, ph + 1 + 2 * w); c.lineTo(x - w, ph + 1 + w); c.closePath(); c.fill();
+            const n = this._h4n && this._h4n.at === bt && this._h4n.et === et ? this._h4n : (this._h4n = { genre: 'h4now', at: bt, fin: bt + 14400, et, s: now.s, v: pv[1], ty: pv[2], dec }); this.marques.push({ x, y: ph + 3, n }); } } } } }
     if (opt.news && NOUV[code]) {
       const COUL = { critique: '#f0435a', importante: '#ffab1a', chiffre: '#3d7bff', mouvement: '#8b5cff', annonce: '#9aa1ad' }, RANG = { annonce: 0, chiffre: 1, mouvement: 2, importante: 3, critique: 4 };
       // des points fins sous l'axe (plus de trait rouge sur l'axe) ; ceux qui se touchent sont regroupés : la couleur du plus important, un anneau s'ils sont plusieurs
@@ -1572,6 +1579,7 @@ class Pane {
       if (z === 'graphe' && outil === 'curseur' && this.T) { const e = esqProche(this, x, y); if (e) { esqChoisie(e); return; } else if (ESQ_SEL) { ESQ_SEL = null; toutDessine(); } }  // (un clic sur une esquisse la choisit : Effacer, ou Suppr)
       if (this.figSurvol && outil === 'curseur' && !proche(this, x, y)) { ouvreFigure(this.figSurvol, ev.clientX, ev.clientY); return; }
       if (this.survol && outil === 'curseur' && this.survol.genre === 'config' && REPLAY) { return; }
+      if (this.survol && outil === 'curseur' && this.survol.genre === 'h4now') { this.survol = null; montreBulle(null); fnSc(); return; }
       if (this.survol && outil === 'curseur' && this.survol.genre === 'arrivee') { const n = this.survol, e = n.e; MARQUE_PASSE = { t: n.at, fin: n.fin, txt: `arrivée sur le ${e.ty === 'h' ? 'sommet' : 'creux'} D1 ${nb(e.v, n.dec)} · ${n.h4 ? `1re H4 au contact : ${e.h4 === 'rej' ? 'close de son côté' : 'close au-delà'} · ` : ''}${e.r === 'rep' ? 'reparti' : e.r === 'tr' ? 'traversé' : 'ni l’un ni l’autre'}` }; this.survol = null; montreBulle(null); toutDessine(); return; }
       if (this.survol && outil === 'curseur' && this.survol.genre === 'config') { const n = this.survol; MARQUE_PASSE = { t: n.at, fin: n.fin, txt: `${n.cf.nom} · ${quand(n.at)} · ${n.ca.fin > 0 ? '+' : ''}${n.ca.fin} t ensuite` }; this.survol = null; montreBulle(null); toutDessine(); return; }
       if (this.survol && outil === 'curseur') { const n = this.survol; copilote(`Explique-moi la nouvelle « ${n.titre} » de ${new Date(n.at * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} et comment le marché a réagi.`); return; }
@@ -2580,6 +2588,8 @@ const GENRES = { critique: ['CRITIQUE', '#f23645'], importante: ['IMPORTANTE', '
 function montreBulle(n, x, y) {
   const b = $('#bulle'); if (!n) { b.classList.remove('on'); toutDessine(); return; }
   if (n.genre === 'figure') { b.innerHTML = `<div class="q"><span class="g" style="background:#8b5cff22;color:#b39dff">FIGURE</span>${esc(n.f.ut)}</div><b>${esc(n.f.nom)}</b><p>${esc(n.f.texte)}</p><div class="astuce">clic : la garder, l’ignorer, ou l’explication du copilote</div>`; b.classList.add('on'); placeBulle(x, y); return; }
+  if (n.genre === 'h4now') { const coul = n.et === 'cours' ? '#ffab1a' : n.et === 'rej' ? '#19d38c' : '#ff3d5a';
+    b.innerHTML = `<div class="q"><span class="g" style="background:${coul}22;color:${coul}">EN CE MOMENT · 1re H4 AU CONTACT</span>${new Date(n.at * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div><b>${n.ty === 'h' ? 'Sommet' : 'Creux'} D1 ${nb(n.v, n.dec)}</b><p>${n.et === 'cours' ? 'La première bougie H4 qui touche le niveau depuis l’arrivée ; elle n’a pas encore clôturé.' : n.et === 'rej' ? `Elle a clôturé du côté d’où venait le prix (${n.s > 0 ? 'au-dessus' : 'en dessous'}).` : 'Elle a clôturé au-delà du niveau.'} Ce qu’ont fait les fois passées : SC, « La première bougie H4 au contact ».</p><div class="astuce">des faits, pas une prévision</div>`; b.classList.add('on'); placeBulle(x, y); return; }
   if (n.genre === 'arrivee') { const e = n.e, coul = e.r === 'rep' ? '#19d38c' : e.r === 'tr' ? '#ff3d5a' : '#8a91a0';
     b.innerHTML = `<div class="q"><span class="g" style="background:${coul}22;color:${coul}">ARRIVÉE SUR UN NIVEAU D1</span>${new Date(n.at * 1000).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: '2-digit' })}</div>
       <b>${e.ty === 'h' ? 'Sommet' : 'Creux'} D1 ${nb(e.v, n.dec)} · arrivé par ${e.s < 0 ? 'en dessous' : 'au-dessus'}, ${scVit(e.vi)}</b>
