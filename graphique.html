@@ -1081,7 +1081,7 @@
   <p><kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p></section>
   <section><h4>Affichage</h4>
   <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture du graphique</p>
-  <p>dans la barre / : <b>SEP</b> séparateurs de séance · <b>SESSN</b> hauts et bas de l’Asie et de Londres · <b>COUL</b> couleurs des bougies · <b>FIB</b> tes niveaux de Fibonacci · <b>NUIT 19 7</b> tes heures du mode nuit</p>
+  <p>dans la barre / : <b>SEP</b> séparateurs de séance · <b>SESSN</b> hauts et bas de l’Asie et de Londres · <b>SCD1</b> tes sommets et creux D1 contre l’échelle (H4 et moins) · <b>COUL</b> couleurs des bougies · <b>FIB</b> tes niveaux de Fibonacci · <b>NUIT 19 7</b> tes heures du mode nuit</p>
   <p><kbd>?</kbd>cette aide</p></section>
   <p class="aide-v" id="aide-v" hidden></p></div></div>
 <div class="ticket" id="ticket">
@@ -1462,6 +1462,7 @@ class Pane {
     if (typeof TRADE_VU !== 'undefined' && TRADE_VU) dessineTradeVu(this, { c, Y });
     if (typeof dessineNiveaux === 'function') dessineNiveaux(this, { c, Y, pw, ph, TH });
     if (typeof dessineSeances === 'function') dessineSeances(this, { c, Y, pw, ph, TH });
+    if (typeof dessineScD1 === 'function') dessineScD1(this, { c, Y, pw, ph, TH });
     // le ruban des séances, tout en bas de l'axe du temps (intraday) : Asie gris, Londres bleu, New York ambre
     if (['5m', '15m', '30m', 'H1'].includes(this.ut)) { const ag = agitation(code); for (let k = i; k < j; k++) { const se = seanceDe(B[k][0]); if (!se) continue; const a = ag ? ag[heureParis(B[k][0])] : null, hb = a == null ? 3 : 2 + Math.round(a * 4); c.globalAlpha = a == null ? 1 : .35 + .65 * a; c.fillStyle = se; c.fillRect(X(k) - bw / 2, H - hb, bw + .5, hb); } c.globalAlpha = 1; }  // (le ruban respire : plus haut et plus franc aux heures où ce marché bouge d'habitude)
     // le compte à rebours de la bougie en cours, dans l'axe du temps, sous elle
@@ -6108,6 +6109,18 @@ function dessineSeances(p, g) { if (!optSesN || ROLE === 'ensemble' || !['5m', '
   c.restore(); }
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['SESSN', 'les plus hauts et plus bas des séances Asie et Londres du jour, en repères contre l’échelle (5m à H4) · activer / couper', () => { optSesN = !optSesN; ecrit('g-sesn', optSesN ? '1' : '0'); SESN.at = 0; toutDessine(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'sesn', on: optSesN }); toast(optSesN ? 'Repères des séances : plus haut et plus bas de l’Asie et de Londres du jour, contre l’échelle (5m à H4)' : 'Repères des séances cachés'); }]);
 if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'sesn' && ROLE !== 'terminal') { optSesN = !!m.on; ecrit('g-sesn', optSesN ? '1' : '0'); toutDessine(); } });
+// SCD1 : tes sommets et creux D1 (ceux de SC, ta méthode) en repères contre l'échelle quand tu es en H4, H1 ou plus petit (éteints par défaut) ;
+// rien sur les bougies : un petit trait dans l'échelle, et l'étiquette seulement là où elle ne cache ni le prix, ni une de tes lignes (souvent déjà tracée sur ce niveau), ni un autre repère
+var optScD1 = lit('g-scd1', '0') === '1', SCD1 = { c: '', at: 0, P: [] };
+async function chargeScD1(c) { SCD1 = { c, at: Date.now(), P: SCD1.c === c ? SCD1.P : [] }; try { const d = await barresDe(c, 'D1'); SCD1 = { c, at: Date.now(), P: scPiv(d) }; toutDessine(); } catch (e) { /* hors liaison */ } }
+function dessineScD1(p, g) { if (!optScD1 || ROLE === 'ensemble' || !['5m', '15m', '30m', 'H1', 'H4'].includes(p.ut)) return; if (SCD1.c !== code || Date.now() - SCD1.at > 300000) { if (Date.now() - SCD1.at > 5000 || SCD1.c !== code) chargeScD1(code); if (SCD1.c !== code) return; }
+  const { c, Y, pw, ph, TH } = g, W = p.W || pw + 70, fond = TH && TH.nuit ? '#0b1426' : '#ffffff', encre = TH && TH.nuit ? '#d5dceb' : '#141a26', B = p.d && p.d.bougies, yDer = B && B.length ? Y(B[B.length - 1][4]) : -99;
+  const pris = [...((NIV_AUTO[code] || {}).l || []).map(n => Y(n.prix)), ...lignes.filter(z => z.genre === 'horizontale').map(z => Y(z.p1)), ...(optSesN && SESN.c === code ? SESN.l.map(n => Y(n.prix)) : [])]; c.save(); c.font = '700 9.5px Inter, sans-serif'; c.textAlign = 'right';
+  for (const q of [...SCD1.P].reverse()) { const y = Y(q[1]); if (!isFinite(y) || y < 8 || y > ph - 8) continue; c.fillStyle = encre; c.fillRect(pw + 1, Math.round(y) - 1, 9, 2.5);  // (un trait un peu plus épais que ceux des séances : c'est ta structure)
+    if (Math.abs(y - yDer) < 13 || pris.some(z => Math.abs(z - y) < 13)) continue; const t = q[2] === 'h' ? 'Sommet D1' : 'Creux D1', tw = c.measureText(t).width + 6; c.fillStyle = fond; c.fillRect(W - tw - 2, y - 6, tw, 12); c.fillStyle = encre; c.fillText(t, W - 5, y + 3.5); pris.push(y); }
+  c.restore(); }
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['SCD1', 'tes sommets et creux D1 (ceux de SC) en repères contre l’échelle quand tu es en H4, H1 ou plus petit · activer / couper', () => { optScD1 = !optScD1; ecrit('g-scd1', optScD1 ? '1' : '0'); SCD1.at = 0; toutDessine(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'scd1', on: optScD1 }); toast(optScD1 ? 'Tes sommets et creux D1 en repères contre l’échelle (H4 et plus petit)' : 'Repères des sommets et creux D1 cachés'); }]);
+if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'scd1' && ROLE !== 'terminal') { optScD1 = !!m.on; ecrit('g-scd1', optScD1 ? '1' : '0'); toutDessine(); } });
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['COUL', 'les couleurs des bougies et des barres : les tiennes (noir et gris), vert et rouge, bleu et orange · un clic change', () => { const k = Object.keys(COULS); COUL = k[(k.indexOf(COUL) + 1) % k.length]; ecrit('g-coul', COUL); toutDessine(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'coul', v: COUL }); toast(`Couleurs : ${COULS[COUL] ? COULS[COUL][0].toLowerCase() : 'les tiennes, noir et gris'} · COUL pour changer`); }]);
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['SEP', 'les séparateurs : un trait fin au début de chaque séance (H1, H4…), de chaque semaine en D1 · activer / couper', () => { optSep = !optSep; ecrit('g-sep', optSep ? '1' : '0'); toutDessine(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'sep', on: optSep }); toast(optSep ? 'Séparateurs : un trait fin au début de chaque séance (18 h à New York), de chaque semaine en D1' : 'Séparateurs cachés'); }]);
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['EPAIS', 'tes lignes portent leur passé : leur épaisseur suit leur solidité (mesure NIV) · activer / couper', () => { basculeEpais(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'epais' }); }]);
