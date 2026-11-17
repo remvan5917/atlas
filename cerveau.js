@@ -219,7 +219,7 @@ const AI = {
           try { j = JSON.parse(data); } catch (e) { continue; }
           const u = (j.x_groq && j.x_groq.usage) || j.usage;
           if (u && u.total_tokens) { countUsage(u.total_tokens); compteMois(c.mistral ? 'mistral' : c.local ? 'maison' : 'groq', c.model, u.prompt_tokens, u.completion_tokens); }
-          let piece = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+          let piece = texteDe(j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content);
           if (Array.isArray(piece)) piece = piece.filter(x => x && x.type === 'text').map(x => x.text || '').join('');
           // les modèles « qui réfléchissent » peuvent envoyer <think>…</think> : on ne le dit pas
           if (piece.indexOf('<think>') >= 0) { inThink = true; piece = piece.split('<think>')[0]; }
@@ -391,8 +391,15 @@ async function httpError(res) {
 }
 const isModelError = e => (e.status === 400 || e.status === 404) && /model|decommission|not found|does not exist|n'existe/i.test(e.message);
 
+// le texte d'une réponse : certains modèles (Mistral qui réfléchit) la rendent en morceaux [{type:'thinking'…},{type:'text', text}] — on garde le texte, jamais « [object Object] »
+function texteDe(c) {
+  if (c == null) return '';
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) return c.map(x => typeof x === 'string' ? x : x && x.type !== 'thinking' && typeof x.text === 'string' ? x.text : '').join('');
+  return typeof c.text === 'string' ? c.text : '';
+}
 function cleanReply(t) {
-  return String(t).replace(/<think>[\s\S]*?<\/think>/g, '').replace(/\*\*(.+?)\*\*/g, '$1')
+  return texteDe(t).replace(/<think>[\s\S]*?<\/think>/g, '').replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/[\u2600-\u27BF\u2B00-\u2BFF]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|\uFE0F|\u200D/g, '') // émojis (les petits cerveaux en mettent)
     .replace(/^#+\s*/gm, '').replace(/^\s*[-*]\s+/gm, '').replace(/[ \t]{2,}/g, ' ').trim();
 }
