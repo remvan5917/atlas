@@ -4702,11 +4702,13 @@ async function fnSc() { ouvreFn('SC', 'tes sommets et creux D1 · je calcule…'
     let NV = []; try { NV = scNouveaux(d, 5); } catch (e) { /* sans */ }
     R.push({ x, px, tk, dec: d.dec ?? x.dec ?? 2, amp, au, en, pr, NV, f: Math.abs(pr[1] - px) / amp, etat: z ? z.etat : '', E, ici: E.filter(e => e.p === pr[0]), B, P, vi: scViNow(B, px, pr[1], amp), h4: Math.abs(pr[1] - px) <= .3 * amp ? scH4Now(B, H4, pr[1], amp) : null, dp: Math.abs(pr[1] - px) <= .3 * amp ? scDepuis(B, pr[1], amp) : null }); } catch (e) { /* ce marché sans données */ } }
   if (!R.length) { ouvreFn('SC', 'tes sommets et creux D1', '<p>Pas de liaison avec la maison, ou pas assez d’historique D1.</p>'); return; }
-  R.sort((a, b) => a.f - b.f); const sur = R.filter(r => r.f <= .3), nomN = q => q[2] === 'h' ? 'sommet' : 'creux';
+  R.sort((a, b) => a.f - b.f); const GR0 = scGrands(R.map(r => r.x.code)), grandAussi = r => R.find(q => GR0.has(q.x.code) && MICRO_DE[q.x.code] === r.x.code && q.f <= .3);
+  const sur = R.filter(r => r.f <= .3 && !(GR0.has(r.x.code) && R.some(q => q.x.code === MICRO_DE[r.x.code] && q.f <= .3))), nomN = q => q[2] === 'h' ? 'sommet' : 'creux';
   // les marchés liés (leur corrélation du moment, d'au moins 0,3 dans un sens ou dans l'autre) : une arrivée est « accompagnée » quand un marché lié est arrivé
   // lui aussi sur un sommet / creux D1 à un jour et demi près, du côté qui va avec leur lien (même côté s'ils montent ensemble, côté opposé s'ils vont en sens contraire)
   const LK = (await scLiens(true)).filter(z => R.some(r => r.x.code === z.a) && R.some(r => r.x.code === z.b));
-  // le micro et le grand contrat du même marché (MGC et GC, MNQ et NQ…) font les mêmes arrivées : dans les comptes « tous marchés », le micro seul
+  // le micro et le grand contrat du même marché (MGC et GC, MNQ et NQ…) font les mêmes arrivées : dans les comptes « tous marchés », le micro seul ;
+  // et dans « sur un niveau en ce moment », le micro seul aussi (le grand contrat nommé à côté : « MCL · aussi CL »)
   const GRANDS = scGrands(R.map(r => r.x.code)), RU = R.filter(r => !GRANDS.has(r.x.code));
   const RM = new Map(R.map(r => [r.x.code, r])), lies = c => LK.filter(z => z.a === c || z.b === c).map(z => ({ c: z.a === c ? z.b : z.a, sg: z.sg })), cote = r => Math.sign(r.px - r.pr[1]);
   const ACC = [], SEU = [], AV = new Map(); for (const r of RU) { const pl = lies(r.x.code); if (!pl.length) continue;
@@ -4787,7 +4789,8 @@ async function fnSc() { ouvreFn('SC', 'tes sommets et creux D1 · je calcule…'
     if (h4Ok && r.h4) b.push(r.h4.etat === 'pas' ? 'aucune bougie H4 close au contact pour l’instant' : `la 1<sup>re</sup> bougie H4 au contact (${new Date(r.h4.t * 1000).toLocaleString('fr-FR', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}) <b>${r.h4.etat === 'rej' ? 'a clôturé de son côté' : 'a clôturé au-delà'}</b> (ces fois-là, reparti ${scPc(H4C[r.h4.etat].rep, H4C[r.h4.etat].n)}, traversé ${scPc(H4C[r.h4.etat].tr, H4C[r.h4.etat].n)})`);
  { const t = nxIci(r); if (t) b.push(t); }
     if (mxOk) b.push(`une journée habituelle = ${t(1).toLocaleString('fr-FR')} t, un rebond médian = ${t(qx(.5)).toLocaleString('fr-FR')} t${v$ != null ? ` (${Math.round(t(qx(.5)) * v$).toLocaleString('fr-FR')} $ par contrat)` : ''}`);
-    return `<span class="sc-m"><b>${esc(r.x.code)}</b> · ${nomN(r.pr)} ${nb(r.pr[1], r.dec)}, ${Math.round(Math.abs(r.pr[1] - r.px) / r.tk)} t${b.map(x => `<span class="sc-f">${x}</span>`).join('')}</span>`; });  // (des span : BRIEF reprend « À retenir » jusqu'au premier </div>)
+    const ga = grandAussi(r);
+    return `<span class="sc-m"${ga ? ` title="Tu suis aussi ${esc(ga.x.code)} : le même marché, ${nomN(ga.pr)} ${nb(ga.pr[1], ga.dec)} — compté une fois, le micro"` : ''}><b>${esc(r.x.code)}${ga ? ` (et ${esc(ga.x.code)})` : ''}</b> · ${nomN(r.pr)} ${nb(r.pr[1], r.dec)}, ${Math.round(Math.abs(r.pr[1] - r.px) / r.tk)} t${b.map(x => `<span class="sc-f">${x}</span>`).join('')}</span>`; });  // (des span : BRIEF reprend « À retenir » jusqu'au premier </div>)
   ouvreFn('SC', `tes sommets et creux D1 · ${R.length} marchés · ta méthode, des faits, pas un conseil`,
     retenir((sur.length ? `Sur un sommet ou un creux D1 en ce moment (à moins de 30 % d’une journée habituelle) :${parM.join('')}` : `Aucun de tes marchés n’est sur un sommet ou un creux D1 en ce moment ; le plus proche : <b>${esc(R[0].x.code)}</b>, à ${Math.round(R[0].f * 100)} % d’une journée de son ${nomN(R[0].pr)} ${nb(R[0].pr[1], R[0].dec)}.`) + ensTxt)
     + poTxt + nvTxt + (semTxt ? `<div class="sc-passe" id="sc-sem">${semTxt}</div>` : '')
