@@ -223,15 +223,29 @@ const TRADING = (() => {
     return say(`${total ? 'Noté. ' : `Noté : ${signe(v)} sur ce trade. `}${marge(e)}${sem}`);
   }
 
+  // « mon bilan de la semaine » : le même bilan que la plateforme — tes trades TopstepX fermés depuis lundi, au calendrier de Paris (choix de Rémy du 16/11) ;
+  // sans trade fermé dans le journal de la maison, les résultats dictés de la semaine (depuis lundi aussi)
   async function bilan() {
-    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
-    const j = Object.entries(e.jours || {}).filter(([k]) => k >= new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10));
-    if (!j.length) return say("Je n'ai aucun résultat noté cette semaine. Dis-moi « je suis à plus 300 » ou « je suis à moins 200 » en fin de session.");
-    const g = j.filter(([, x]) => x > 0).length, pe = j.filter(([, x]) => x < 0).length;
-    const pire = j.reduce((a, b) => (b[1] < a[1] ? b : a)), mieux = j.reduce((a, b) => (b[1] > a[1] ? b : a));
+    const jourP = t => new Date(t * 1000).toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' });
+    const lundiDe = j => { const d = new Date(`${j}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); };
+    const auj = jourP(Date.now() / 1000), lundi = lundiDe(auj);
     const jour = k => new Date(`${k}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long' });
-    try { SCIFI.hud('Résultats · 7 jours', j.map(([k, x]) => [jour(k), `${x > 0 ? '+' : ''}${x} $`, x < 0 ? 'alerte' : 'ok']).concat([['Total', `${e.semaine > 0 ? '+' : ''}${e.semaine} $`, e.semaine < 0 ? 'alerte' : 'ok']])); } catch (er) { /* pas d'écran */ }
-    return say(`Sur sept jours : ${signe(e.semaine)}, en ${j.length} séance${j.length > 1 ? 's' : ''} : ${g} positive${g > 1 ? 's' : ''}, ${pe} négative${pe > 1 ? 's' : ''}.${mieux[1] > 0 ? ` Meilleure : ${jour(mieux[0])}, ${signe(mieux[1])}.` : ''}${pire[1] < 0 ? ` Plus dure : ${jour(pire[0])}, ${signe(pire[1])}.` : ''}`);
+    let tr = [];
+    try { tr = ((await appel('/maison/graphique?perf=1')).trades || []).filter(x => x.pnl != null && (x.fin || x.at) && lundiDe(jourP(x.fin || x.at)) === lundi); } catch (er) { tr = []; }
+    if (tr.length) {
+      const net = tr.reduce((s, x) => s + x.pnl, 0), g = tr.filter(x => x.pnl > 0).length, m = {}, pj = {};
+      tr.forEach(x => { m[x.instr] = (m[x.instr] || 0) + x.pnl; const k = jourP(x.fin || x.at); pj[k] = (pj[k] || 0) + x.pnl; });
+      const ms = Object.entries(m).sort((a, b) => b[1] - a[1]), nom = { SIL: 'Micro argent', MGC: 'Micro or', MNQ: 'Micro Nasdaq', MYM: 'Micro Dow', MES: 'Micro S&P', MCL: 'Micro pétrole', M6E: 'Micro euro', MBT: 'Micro bitcoin' };
+      const nm = k => nom[k] || k;
+      try { SCIFI.hud('Bilan · cette semaine', Object.entries(pj).sort().map(([k, x]) => [jour(k), `${x > 0 ? '+' : ''}${Math.round(x)} $`, x < 0 ? 'alerte' : 'ok']).concat([['Total', `${net > 0 ? '+' : ''}${Math.round(net)} $`, net < 0 ? 'alerte' : 'ok']])); } catch (er) { /* pas d'écran */ }
+      return say(`Cette semaine, depuis lundi : ${signe(net)} sur ${tr.length} trade${tr.length > 1 ? 's' : ''}, ${g} gagnant${g > 1 ? 's' : ''}.${ms.length > 1 ? ` ${nm(ms[0][0])} ${signe(ms[0][1])}, ${nm(ms[ms.length - 1][0])} ${signe(ms[ms.length - 1][1])}.` : ''}`);
+    }
+    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const j = Object.entries(e.jours || {}).filter(([k]) => k >= lundi);
+    if (!j.length) return say("Aucun trade fermé cette semaine, depuis lundi.");
+    const tot = j.reduce((s, [, x]) => s + x, 0), g = j.filter(([, x]) => x > 0).length, pe = j.filter(([, x]) => x < 0).length;
+    try { SCIFI.hud('Résultats · cette semaine', j.map(([k, x]) => [jour(k), `${x > 0 ? '+' : ''}${x} $`, x < 0 ? 'alerte' : 'ok']).concat([['Total', `${tot > 0 ? '+' : ''}${tot} $`, tot < 0 ? 'alerte' : 'ok']])); } catch (er) { /* pas d'écran */ }
+    return say(`Cette semaine, depuis lundi : ${signe(tot)}, en ${j.length} séance${j.length > 1 ? 's' : ''} : ${g} positive${g > 1 ? 's' : ''}, ${pe} négative${pe > 1 ? 's' : ''}.`);
   }
 
   async function limites(t, n) {
