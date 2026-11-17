@@ -962,6 +962,7 @@
     <span class="sep2"></span>
     <span class="sep2"></span>
     <button class="outil" id="t-dessins" data-tip="Masquer / montrer tous tes dessins dans cette fenêtre (ils restent gardés, leurs alertes continuent) · X"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20 20 4"/></svg></button>
+    <button class="outil" id="t-verr" data-tip="Verrouiller tous tes dessins : rien ne bouge ni ne s’efface par erreur (tu peux toujours en tracer de nouveaux, les alertes continuent) · Maj + X"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
     <button class="outil" data-o="efface" data-tip="Effacer la ligne choisie (Suppr)"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
     <span class="sec-d">SALLE</span>
       <button class="ico outil-d" id="b-copilote" data-tip="Copilote : qu'est-ce qui se passe ? (E) · maintiens Q pour lui parler"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M9.5 21h5M9 11h.01M15 11h.01M10 14c1.2.8 2.8.8 4 0"/></svg></button>
@@ -997,7 +998,7 @@
       <b>Le graphique</b> : <kbd>Maj</kbd> + glisser = une ligne · <kbd>Alt</kbd> + clic = une horizontale · double-clic sur un pivot du zigzag = support / résistance · <kbd>Ctrl</kbd> + glisser = la règle (ticks, $, durée) · maintiens <kbd>1</kbd>–<kbd>8</kbd> = coup d'œil sur une autre unité<br>
       <b>Souris</b> : glisser = déplacer (avec élan) · glisser l'échelle des prix = étirer · glisser l'échelle du temps = zoomer · double-clic sur les prix = échelle auto<br>
       <b>La salle</b> : <kbd>/</kbd> écris ce que tu veux (un marché, une commande, une question) · <kbd>E</kbd> copilote · <kbd>Q</kbd> maintenu : lui parler · <kbd>V</kbd> maintenu : journal · <kbd>D</kbd> structure de Dow · <kbd>A</kbd> étude d'annonce · <kbd>R</kbd> replay · <kbd>M</kbd> mémoire · <kbd>Z</kbd> focus · survole un repère de nouvelle (clic = explication)<br>
-      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>X</kbd> masquer tes dessins · <kbd>Alt</kbd> + glisser une ligne = la copier · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>V</kbd> copier / coller un dessin (aussi vers un autre marché) · clic droit sur l’échelle des prix = une alerte à ce prix · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
+      <kbd>L</kbd> ligne · <kbd>H</kbd> horizontale · <kbd>C</kbd> canal · <kbd>Suppr</kbd> effacer · <kbd>X</kbd> masquer tes dessins · <kbd>Maj</kbd> + <kbd>X</kbd> verrouiller tous tes dessins · <kbd>Alt</kbd> + glisser une ligne = la copier · <kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler · <kbd>Ctrl</kbd> + <kbd>Y</kbd> rétablir · <kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>V</kbd> copier / coller un dessin (aussi vers un autre marché) · clic droit sur l’échelle des prix = une alerte à ce prix · <kbd>1</kbd>–<kbd>8</kbd> 5m → M · <kbd>F</kbd> plein écran · <kbd>Échap</kbd> curseur
     </div>
   </div>
   <div class="fil"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="piste2"></div></div><span class="pos-f" id="pos-f" hidden title="Ta position (lecture seule). Clic : montrer / cacher sa zone sur le graphique et ses repères sur l'échelle des prix"></span><span class="fil-e" id="fil-e"></span></div>
@@ -1072,7 +1073,7 @@
   <p><kbd>1</kbd>…<kbd>8</kbd>l'unité (5m … M) ; maintenu : un coup d'œil, puis retour</p>
   <p><kbd>Échap</kbd>fermer une fenêtre, revenir au curseur</p></section>
   <section><h4>Dessiner</h4>
-  <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie · <kbd>X</kbd>masquer / montrer tes dessins · <kbd>Alt</kbd> + glisser une ligne : la copier · <kbd>Ctrl + Z</kbd>annuler · <kbd>Ctrl + Y</kbd>rétablir · <kbd>Ctrl + C / V</kbd>copier / coller un dessin, ici ou sur un autre marché</p>
+  <p><kbd>L</kbd>ligne de tendance · <kbd>H</kbd>horizontale · <kbd>C</kbd>canal · <kbd>Suppr</kbd>effacer la ligne choisie · <kbd>X</kbd>masquer / montrer tes dessins · <kbd>Maj + X</kbd>verrouiller / déverrouiller tous tes dessins (rien ne bouge par erreur ; un seul dessin : le verrou de sa petite barre) · <kbd>Alt</kbd> + glisser une ligne : la copier · <kbd>Ctrl + Z</kbd>annuler · <kbd>Ctrl + Y</kbd>rétablir · <kbd>Ctrl + C / V</kbd>copier / coller un dessin, ici ou sur un autre marché</p>
   <p><kbd>Maj</kbd>+ glisser : une tendance · <kbd>Alt</kbd>+ clic : une horizontale · double-clic sur un pivot : support / résistance · <kbd>Ctrl</kbd>+ glisser : la règle</p>
   <p><kbd>O</kbd>position (entrée, stop, objectif) · <kbd>G</kbd>canal de régression · <kbd>U</kbd>fourche d’Andrews</p>
   <p>VWAP ancré (<kbd>W</kbd>), ligne verticale, Fibonacci, zone de prix (rectangle, avec alerte), flèche, esquisse, texte : dans la barre d'outils à gauche · <b>DESSINS</b> : la liste de tous tes dessins</p></section>
@@ -1577,7 +1578,7 @@ class Pane {
       this.inertie = null;
       // le dessin direct : Maj + glisser = une ligne de tendance (aimantée aux deux bouts) ; Alt + clic = une horizontale
       if (z === 'graphe' && this.T && ev.shiftKey) { const [t, pr] = aimant(this, x, y); brouillon = { id: idNeuf(), genre: 'droite', t1: t, p1: pr, t2: t, p2: pr, pane: this, etape: 1, alerte: true, direct: true }; return; }
-      if (z === 'graphe' && this.T && ev.altKey && optDessins && outil === 'curseur') { const l0 = proche(this, x, y); if (l0) { const n = dupliqueLigne(l0, 0); glisse = { ligne: n, x, y, orig: { ...n } }; toast('Copie de la ligne : lâche-la où tu veux'); return; } }
+      if (z === 'graphe' && this.T && ev.altKey && optDessins && outil === 'curseur' && !VERR_TOUS) { const l0 = proche(this, x, y); if (l0) { const n = dupliqueLigne(l0, 0); glisse = { ligne: n, x, y, orig: { ...n } }; toast('Copie de la ligne : lâche-la où tu veux'); return; } }
       if (z === 'graphe' && this.T && ev.altKey) { const [t, pr] = aimant(this, x, y), l = { id: idNeuf(), genre: 'horizontale', t1: t, p1: pr, alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`Horizontale à ${nb(pr, this.d.dec)} · alerte active`); return; }
       // la règle : Ctrl + glisser (ou le bouton du milieu) = ticks, dollars, barres, durée
       if (z === 'graphe' && this.T && (ev.ctrlKey || ev.metaKey || ev.button === 1)) { ev.preventDefault(); const t = this.iT(x), pr = this.iY(y); this.regle = { t1: t, p1: pr, t2: t, p2: pr }; glisse = { mode: 'regle' }; return; }
@@ -1594,7 +1595,7 @@ class Pane {
       if (z === 'graphe' && outil === 'esquisse' && this.T) { esqDebut(this, x, y); glisse = { mode: 'esquisse' }; return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
       if (z === 'graphe') {
-        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (l.verrou) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l }, part: l.genre === 'position' ? (Math.abs(y - this.Y(l.p2)) < 6 ? 'stop' : Math.abs(y - this.Y(l.p1 + (l.ecart || 0))) < 6 ? 'cible' : null) : l.genre === 'mesure' ? (Math.hypot(x - this.T(l.t1), y - this.Y(l.p1)) < 9 ? 'm1' : Math.hypot(x - this.T(l.t2), y - this.Y(l.p2)) < 9 ? 'm2' : null) : null }; return; } }
+        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (fige(l)) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l }, part: l.genre === 'position' ? (Math.abs(y - this.Y(l.p2)) < 6 ? 'stop' : Math.abs(y - this.Y(l.p1 + (l.ecart || 0))) < 6 ? 'cible' : null) : l.genre === 'mesure' ? (Math.hypot(x - this.T(l.t1), y - this.Y(l.p1)) < 9 ? 'm1' : Math.hypot(x - this.T(l.t2), y - this.Y(l.p2)) < 9 ? 'm2' : null) : null }; return; } }
         else if (choisie) { choisie = null; toutDessine(); }
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
@@ -1665,7 +1666,7 @@ class Pane {
     cv.addEventListener('contextmenu', ev => { const [x, y] = pos(ev); if (zone(x, y) !== 'graphe' || !this.d || REPLAY) return; ev.preventDefault();
       const { B, i, j } = this.vis(), k = Math.min(j - 1, Math.max(i, Math.floor(x / this.bw + i))); if (!B[k]) return; pourquoiBougie(this, B[k][0]); });
     cv.addEventListener('dblclick', ev => { const [x, y] = pos(ev);
-      { const lt = this.T && proche(this, x, y); if (lt && lt.genre === 'texte') { const tx = prompt('Ton texte :', lt.texte || ''); if (tx != null) { lt.texte = tx.trim().slice(0, 80); if (!lt.texte) { choisie = lt; efface(); } else sauve(); } return; } }
+      { const lt = this.T && proche(this, x, y); if (lt && lt.genre === 'texte') { if (fige(lt)) { toastFige(lt); return; } const tx = prompt('Ton texte :', lt.texte || ''); if (tx != null) { lt.texte = tx.trim().slice(0, 80); if (!lt.texte) { choisie = lt; efface(); } else sauve(); } return; } }
       if (zone(x, y) === 'graphe' && this.T) { const pv = pivotProche(this, x, y);
         if (pv) { const l = { id: idNeuf(), genre: 'horizontale', t1: pv[0], p1: pv[1], alerte: true }; lignes.push(l); choisie = l; sauve(); toutDessine(); toast(`${pv[2] === 'h' ? 'Résistance' : 'Support'} posé sur le ${pv[2] === 'h' ? 'sommet' : 'creux'} du zigzag : ${nb(pv[1], this.d.dec)} · alerte active`); return; } }
       if (zone(x, y) === 'prix') this.y = null; else { this.n = 120; this.fin = -6; this.y = null; } this.dessine(); });
@@ -1748,7 +1749,7 @@ function proche(p, x, y) { if (!optDessins) return null;
     if (d < dmin) { dmin = d; mieux = l; } });
   return mieux;
 }
-function efface() { if (!choisie) return; lignes = lignes.filter(l => l !== choisie); choisie = null; sauve(); toutDessine(); toast('Ligne effacée', ['Annuler', () => annule(false)]); }
+function efface() { if (!choisie) return; if (fige(choisie)) { toastFige(choisie); return; } lignes = lignes.filter(l => l !== choisie); choisie = null; sauve(); toutDessine(); toast('Ligne effacée', ['Annuler', () => annule(false)]); }
 /* annuler / rétablir tes dessins (Ctrl + Z, Ctrl + Y) : chaque enregistrement garde l'état d'avant, par marché, dans cette fenêtre (60 pas) ; un même geste (un glissé) ne compte qu'une fois */
 var HIST_L = {}, REDO_L = {}, ETAT_L = {}, HIST_T = 0, SANS_HIST = false;
 const snapL = () => JSON.stringify(lignes, (k, v) => k === 'pane' || k === 'etape' || (k && k[0] === '_') ? undefined : v);
@@ -2060,7 +2061,7 @@ function majBarreLigne() {
   bl.querySelector('[data-l="alerte"]').classList.toggle('on', choisie.alerte !== false); bl.querySelector('[data-l="alerte"]').hidden = ['fibo', 'fleche', 'texte', 'regression', 'fourche', 'verticale', 'avwap', 'mesure'].includes(choisie.genre);  // (la maison ne surveille pas ces dessins : pas de cloche qui ne sonnerait jamais)
   bl.querySelector('[data-l="style"]').classList.toggle('on', choisie.style === 'tirets');
   const br = bl.querySelector('[data-l="rayon"]'); br.hidden = !['horizontale', 'rect'].includes(choisie.genre); br.title = choisie.genre === 'rect' ? 'Prolonger la zone vers la droite, jusqu’au bord du graphique (et dans l’avenir)' : 'Demi-droite : la ligne part de son point d’ancrage (le pivot, le clic) au lieu de traverser tout le graphique'; br.classList.toggle('on', !!choisie.rayon);
-  bl.querySelector('[data-l="verrou"]').classList.toggle('on', !!choisie.verrou); bl.querySelector('[data-l="nom"]').classList.toggle('on', !!choisie.etiquette);
+  bl.querySelector('[data-l="verrou"]').classList.toggle('on', !!choisie.verrou || VERR_TOUS); bl.querySelector('[data-l="nom"]').classList.toggle('on', !!choisie.etiquette);
   const bv = bl.querySelector('[data-l="vis"]'); bv.classList.toggle('on', !!choisie.vis); bv.querySelector('.bl-cl').textContent = !choisie.vis ? '' : choisie.vis.startsWith('<=') ? choisie.vis.slice(2) + '↓' : choisie.vis;
   const bc = bl.querySelector('[data-l="cloture"]'); bc.hidden = !['horizontale', 'droite', 'canal'].includes(choisie.genre); bc.classList.toggle('on', !!choisie.cloture); bc.querySelector('.bl-cl').textContent = choisie.cloture || '';
   const ba = bl.querySelector('[data-l="approche"]'); ba.hidden = !['horizontale', 'droite'].includes(choisie.genre); ba.classList.toggle('on', choisie.approche > 0); ba.title = choisie.approche > 0 ? `Pré-alerte à ${choisie.approche} ticks de la ligne · clic pour changer` : 'Pré-alerte : être prévenu quand le prix arrive à quelques ticks de cette ligne, avant de la toucher';
@@ -2069,8 +2070,17 @@ function majBarreLigne() {
 function dupliqueLigne(l, dp) { const n = { ...l, id: idNeuf(), verrou: undefined }; if (dp) { n.p1 += dp; if (n.p2 != null) n.p2 += dp; if (n.p3 != null) n.p3 += dp; } lignes.push(n); choisie = n; sauve(); toutDessine(); return n; }
 // masquer / montrer tous ses dessins dans cette fenêtre (ils restent gardés, leurs alertes continuent) : bouton œil, touche X
 var optDessins = lit(K('g-dessins'), '1') === '1';
+// le verrou de tous tes dessins (le « verrouiller tous les dessins » des plateformes) : plus rien ne se déplace, ne se déforme ni ne s'efface par erreur ;
+// tracer reste possible, les alertes et la petite barre (alerte, couleur…) aussi ; gardé et partagé entre toutes les fenêtres de la salle ; le verrou d'un dessin reste pour un dessin seul
+var VERR_TOUS = lit('g-verr-tous', '0') === '1';
+const fige = l => !!l && (!!l.verrou || VERR_TOUS);
+function toastFige(l) { toast(VERR_TOUS ? '🔒 Tes dessins sont verrouillés · Maj + X (ou le bouton verrou de la barre de gauche) pour les déverrouiller' : '🔒 Ce dessin est verrouillé · le bouton verrou de sa petite barre pour le déverrouiller'); }
+function basculeVerrTous(on, doux) { VERR_TOUS = on == null ? !VERR_TOUS : !!on; ecrit('g-verr-tous', VERR_TOUS ? '1' : '0'); const b = $('#t-verr'); if (b) b.classList.toggle('on', VERR_TOUS); if (typeof majBarreLigne === 'function' && choisie) majBarreLigne(); toutDessine();
+  if (!doux) { if (SALLE_BC) SALLE_BC.postMessage({ t: 'verr', on: VERR_TOUS }); toast(VERR_TOUS ? '🔒 Tous tes dessins sont verrouillés : rien ne bouge par erreur · Maj + X pour déverrouiller' : '🔓 Tes dessins sont déverrouillés'); } }
 function basculeDessins() { optDessins = !optDessins; ecrit(K('g-dessins'), optDessins ? '1' : '0'); if (!optDessins) { choisie = null; brouillon = null; } const b = $('#t-dessins'); if (b) b.classList.toggle('on', !optDessins); toutDessine(); toast(optDessins ? 'Tes dessins sont de nouveau visibles' : 'Tes dessins sont masqués dans cette fenêtre · leurs alertes continuent · X pour les remontrer'); }
 $('#t-dessins').onclick = basculeDessins; $('#t-dessins').classList.toggle('on', !optDessins);
+$('#t-verr').onclick = () => basculeVerrTous(); $('#t-verr').classList.toggle('on', VERR_TOUS);
+if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'verr') basculeVerrTous(m.on, true); });
 // le passé de la ligne choisie, dans l'unité du graphique (la mesure de NIV) : une ligne de texte dans sa petite barre, rien sur les bougies
 let BL_NIV = { cle: '', txt: '' };
 // option « tes lignes portent leur passé » : l'épaisseur d'une ligne suit sa solidité mesurée dans l'unité du graphique (repartie souvent : plus épaisse ; traversée souvent : plus fine) ; éteinte par défaut
@@ -2159,7 +2169,7 @@ $('#barre-ligne').addEventListener('click', ev => {
       toast(l.approche ? `Pré-alerte : Atlas te prévient quand le prix arrive à ${l.approche} ticks de cette ligne (une fois, puis 30 min de calme)` : 'Pré-alerte coupée pour cette ligne'); })(); }
   else if (b.dataset.l === 'vis') { const ut = (panes[actif] || panes[0] || {}).ut || 'H1', n = !choisie.vis ? ut : choisie.vis.startsWith('<=') ? undefined : (ut === 'M' || ut === '5m' ? undefined : '<=' + choisie.vis); choisie.vis = n; sauve(); majBarreLigne(); toast(!n ? 'Ce dessin apparaît de nouveau dans toutes les unités' : `Ce dessin n’apparaît plus que ${n.startsWith('<=') ? `en ${n.slice(2)} et dans les unités plus petites` : `en ${n}`} (ses alertes continuent)`); }
   else if (b.dataset.l === 'cloture') { const n = { undefined: 'H1', H1: 'H4', H4: 'D1', D1: undefined }[choisie.cloture]; choisie.cloture = n; sauve(); majBarreLigne(); toast(n ? `🔔 Alerte à la clôture ${n} : Atlas te prévient quand une bougie ${n} clôture de l’autre côté de cette ligne (plus au simple contact)${n === 'D1' ? ' — la clôture du jour, à 23 h à Paris (17 h à New York) ; un premier mot 15 min avant si la bougie est déjà de l’autre côté' : n === 'H4' ? ' ; un premier mot 10 min avant si la bougie est déjà de l’autre côté' : ''}${choisie.alerte === false ? ' — allume aussi la cloche' : ''}` : 'Alerte au contact ou à la cassure, comme avant'); }
-  else if (b.dataset.l === 'verrou') { choisie.verrou = !choisie.verrou || undefined; sauve(); majBarreLigne(); toast(choisie.verrou ? 'Ligne verrouillée : elle ne bouge plus au clic' : 'Ligne déverrouillée'); }
+  else if (b.dataset.l === 'verrou') { choisie.verrou = !choisie.verrou || undefined; sauve(); majBarreLigne(); toast(choisie.verrou ? '🔒 Dessin verrouillé : il ne bouge plus et ne s’efface plus par erreur' : VERR_TOUS ? 'Verrou du dessin retiré, mais tous tes dessins restent verrouillés (Maj + X pour les libérer)' : '🔓 Dessin déverrouillé'); }
   else if (b.dataset.l === 'modele') { if ($('#bl-mod').hidden) ouvreMod(); else fermeMod(); }
   else if (b.dataset.l === 'efface') efface();
   toutDessine();
@@ -2222,6 +2232,7 @@ document.addEventListener('keydown', ev => {
   else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c' && !ev.shiftKey) choisieOutil('canal');
   else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression'); else if (k === 'u' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('fourche'); else if (k === 'w' && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && ROLE !== 'terminal') choisieOutil('avwap');  // (O : la position ; G : le canal de régression)
   else if (k === 'x' && !ev.shiftKey && !ev.repeat) basculeDessins();
+  else if (k === 'x' && ev.shiftKey && !ev.repeat) basculeVerrTous();
   else if ((k === 'delete' || k === 'backspace') && ESQ_SEL) esqEfface(ESQ_SEL);
   else if (k === 'delete' || k === 'backspace') efface();
   else if (/^[1-8]$/.test(k)) { if (ev.repeat) return; const p0 = panes[actif] || panes[0]; coupDoeil = { k: ev.key, t: performance.now(), avant: p0 ? p0.ut : utSeul }; choisirUT(ORDRE_UT[+k - 1]); }
