@@ -223,15 +223,29 @@ const TRADING = (() => {
     return say(`${total ? 'Noté. ' : `Noté : ${signe(v)} sur ce trade. `}${marge(e)}${sem}`);
   }
 
+  // « mon bilan de la semaine » : le même bilan que la plateforme — tes trades TopstepX fermés depuis lundi, au calendrier de Paris (choix de Rémy du 16/11) ;
+  // sans trade fermé dans le journal de la maison, les résultats dictés de la semaine (depuis lundi aussi)
   async function bilan() {
-    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
-    const j = Object.entries(e.jours || {}).filter(([k]) => k >= new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10));
-    if (!j.length) return say("Je n'ai aucun résultat noté cette semaine. Dis-moi « je suis à plus 300 » ou « je suis à moins 200 » en fin de session.");
-    const g = j.filter(([, x]) => x > 0).length, pe = j.filter(([, x]) => x < 0).length;
-    const pire = j.reduce((a, b) => (b[1] < a[1] ? b : a)), mieux = j.reduce((a, b) => (b[1] > a[1] ? b : a));
+    const jourP = t => new Date(t * 1000).toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' });
+    const lundiDe = j => { const d = new Date(`${j}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); };
+    const auj = jourP(Date.now() / 1000), lundi = lundiDe(auj);
     const jour = k => new Date(`${k}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long' });
-    try { SCIFI.hud('Résultats · 7 jours', j.map(([k, x]) => [jour(k), `${x > 0 ? '+' : ''}${x} $`, x < 0 ? 'alerte' : 'ok']).concat([['Total', `${e.semaine > 0 ? '+' : ''}${e.semaine} $`, e.semaine < 0 ? 'alerte' : 'ok']])); } catch (er) { /* pas d'écran */ }
-    return say(`Sur sept jours : ${signe(e.semaine)}, en ${j.length} séance${j.length > 1 ? 's' : ''} : ${g} positive${g > 1 ? 's' : ''}, ${pe} négative${pe > 1 ? 's' : ''}.${mieux[1] > 0 ? ` Meilleure : ${jour(mieux[0])}, ${signe(mieux[1])}.` : ''}${pire[1] < 0 ? ` Plus dure : ${jour(pire[0])}, ${signe(pire[1])}.` : ''}`);
+    let tr = [];
+    try { tr = ((await appel('/maison/graphique?perf=1')).trades || []).filter(x => x.pnl != null && (x.fin || x.at) && lundiDe(jourP(x.fin || x.at)) === lundi); } catch (er) { tr = []; }
+    if (tr.length) {
+      const net = tr.reduce((s, x) => s + x.pnl, 0), g = tr.filter(x => x.pnl > 0).length, m = {}, pj = {};
+      tr.forEach(x => { m[x.instr] = (m[x.instr] || 0) + x.pnl; const k = jourP(x.fin || x.at); pj[k] = (pj[k] || 0) + x.pnl; });
+      const ms = Object.entries(m).sort((a, b) => b[1] - a[1]), nom = { SIL: 'Micro argent', MGC: 'Micro or', MNQ: 'Micro Nasdaq', MYM: 'Micro Dow', MES: 'Micro S&P', MCL: 'Micro pétrole', M6E: 'Micro euro', MBT: 'Micro bitcoin' };
+      const nm = k => nom[k] || k;
+      try { SCIFI.hud('Bilan · cette semaine', Object.entries(pj).sort().map(([k, x]) => [jour(k), `${x > 0 ? '+' : ''}${Math.round(x)} $`, x < 0 ? 'alerte' : 'ok']).concat([['Total', `${net > 0 ? '+' : ''}${Math.round(net)} $`, net < 0 ? 'alerte' : 'ok']])); } catch (er) { /* pas d'écran */ }
+      return say(`Cette semaine, depuis lundi : ${signe(net)} sur ${tr.length} trade${tr.length > 1 ? 's' : ''}, ${g} gagnant${g > 1 ? 's' : ''}.${ms.length > 1 ? ` ${nm(ms[0][0])} ${signe(ms[0][1])}, ${nm(ms[ms.length - 1][0])} ${signe(ms[ms.length - 1][1])}.` : ''}`);
+    }
+    let e; try { e = await appel('/maison/trading'); } catch (er) { return say("L'ordinateur de la maison ne répond pas."); }
+    const j = Object.entries(e.jours || {}).filter(([k]) => k >= lundi);
+    if (!j.length) return say("Aucun trade fermé cette semaine, depuis lundi.");
+    const tot = j.reduce((s, [, x]) => s + x, 0), g = j.filter(([, x]) => x > 0).length, pe = j.filter(([, x]) => x < 0).length;
+    try { SCIFI.hud('Résultats · cette semaine', j.map(([k, x]) => [jour(k), `${x > 0 ? '+' : ''}${x} $`, x < 0 ? 'alerte' : 'ok']).concat([['Total', `${tot > 0 ? '+' : ''}${tot} $`, tot < 0 ? 'alerte' : 'ok']])); } catch (er) { /* pas d'écran */ }
+    return say(`Cette semaine, depuis lundi : ${signe(tot)}, en ${j.length} séance${j.length > 1 ? 's' : ''} : ${g} positive${g > 1 ? 's' : ''}, ${pe} négative${pe > 1 ? 's' : ''}.`);
   }
 
   async function limites(t, n) {
@@ -396,7 +410,10 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
     if ((/\b(l or|l argent|le petrole|le nasdaq|le dow|l euro dollar|l euro|le dollar|le vix|le bitcoin|le s ?(et|&) ?p|le soja)\b/.test(n) && /\ben (h ?1|h ?4|d ?1|daily|journalier|hebdo|hebdomadaire|mensuel|(une|1|4|quatre) heures?|(5|15|30|cinq|quinze|trente) minutes?)\b/.test(n))
       || /\b(trace|dessine|mets?|pose) (moi )?(une )?(ligne )?horizontale\b/.test(n) || /\b(trace|dessine|mets?|pose)(-| )?(moi )?(un canal|une zone|une (ligne de tendance|oblique|droite|tendance|ligne) sur les deux derniers)\b/.test(n) || /\b(mets|active|remets|coupe|enleve|retire) l alerte (sur|de) (ma|la|cette) ligne\b/.test(n)
       || /\b(installe|ouvre|lance|prepare|retiens|retient|memorise|garde|ferme) (ma|la) salle( de marche)?\b/.test(n)
-      || (/\b(montre|affiche|ouvre|donne|lis|fais|quel|quelle|quels|quelles|c est quoi|ou en est|ou en sont|mets)\b|\bpoint du moment\b|\bmes stats\b/.test(n) && /\b(point du moment|le point|brief|briefing|mes stats|statistiques|performances?|mon risque|mes regles|ce qui bouge|volatilite|mouvement attendu|correlations?|sensibilites|indices du monde|indices mondiaux|matieres premieres|contango|deport|echeances|devises|force des devises|courbe des taux|taux americains|reaction aux annonces|memoire des annonces|saisonnalite|historique des cours|etat des liaisons|profil horaire|heures agitees|a quelle heure (ca|il|elle) bouge|le filtre|mes filtres|moments? qui ressemblent?|les sosies|mes niveaux|mes lignes a l epreuve|mon plan|mes scenarios|plan du jour|qui est place|qui est positionne|positionnement|les petits porteurs|le retail|rapport cot|seances? (de )?(londres|new york|l asie|asie)|les seances (de bourse|des marches)|stop face au bruit|taille (de|du) stop|ma lecture|lecture (du|de mon|de ce) marche|reglages de risque|du haut vers le bas|top down|les trois unites|structure en chiffres|ma structure|la structure de dow|jambes? (du|de mon) zigzag|zigzag en chiffres|(la |ma )?jambe en cours|mes jambes|les gaps?|le gap|ecarts? d ouverture|la reouverture|gap du (dimanche|lundi|week end)|seances? (semblables|qui ressemblent?)|journees? (semblables|qui ressemblent?)|jours? semblables?|ma semaine (de trading|sur les marches)|(bilan|revue) de la semaine (de trading|des marches))\b/.test(n))
+      || (/\b(montre|affiche|ouvre|donne|lis|fais|quel|quelle|quels|quelles|c est quoi|ou en est|ou en sont|mets)\b|\bpoint du moment\b|\bmes stats\b/.test(n) && /\b(point du moment|le point|brief|briefing|mes stats|statistiques|performances?|mon risque|mes regles|ce qui bouge|volatilite|mouvement attendu|correlations?|sensibilites|indices du monde|indices mondiaux|matieres premieres|contango|deport|echeances|devises|force des devises|courbe des taux|taux americains|reaction aux annonces|memoire des annonces|saisonnalite|historique des cours|etat des liaisons|profil horaire|heures agitees|a quelle heure (ca|il|elle) bouge|le filtre|mes filtres|moments? qui ressemblent?|les sosies|mes niveaux|mes lignes a l epreuve|mon plan|mes idees|mes positions tracees|mes plans de trade|mes dessins|tous mes dessins|mes scenarios|plan du jour|qui est place|qui est positionne|positionnement|les petits porteurs|le retail|rapport cot|seances? (de )?(londres|new york|l asie|asie)|les seances (de bourse|des marches)|stop face au bruit|taille (de|du) stop|ma lecture|lecture (du|de mon|de ce) marche|reglages de risque|du haut vers le bas|top down|les trois unites|structure en chiffres|ma structure|la structure de dow|jambes? (du|de mon) zigzag|zigzag en chiffres|(la |ma )?jambe en cours|mes jambes|les gaps?|le gap|ecarts? d ouverture|la reouverture|gap du (dimanche|lundi|week end)|seances? (semblables|qui ressemblent?)|journees? (semblables|qui ressemblent?)|jours? semblables?|ma semaine (de trading|sur les marches)|(bilan|revue) de la semaine (de trading|des marches))\b/.test(n))
+      || /\b(entraine moi|entraine toi avec moi|m entrainer sur ma methode|mon entrainement)\b/.test(n)
+      || (/\bmes trades\b/.test(n) && /\b(graphiques?|axe du temps)\b/.test(n) && /\b(montre|affiche|mets|cache|enleve|retire|efface)\b/.test(n))  // « montre mes trades sur le graphique » (TRADES)
+      || (/\b(montre|affiche|ouvre|donne|lis|quels?|quelles?)\b/.test(n) && /\b(a portee( aujourd hui)?|ce qui a sonne|journal des alertes|mes alertes|nouveaux? (sommets?|creux))\b/.test(n))
       || /\b(teste|tester|essaie|essaye|essayer) (ma|une|cette) regle\b/.test(n) || (/\b(quels|quelles) (marches|contrats) (sont|viennent|ont|passent|cassent|croisent|restent|se trouvent)\b/.test(n) && !/\bbougent\b/.test(n)) || /\b(presente|presentes|raconte) ?(moi )?(le|les|mes) marches?\b|\bjournal des marches\b/.test(n) || /\b(efface|supprime) (ma|la|cette) (derniere )?ligne\b/.test(n) || /\b(trois|3) graphiques\b/.test(n)) return async () => {
       try { await appel('/maison/copilote', { action: 'commande', texte: t }); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas pu toucher au graphique."); }
       if (/\b(retiens|retient|memorise|garde) (ma|la) salle\b/.test(n)) return say("C'est noté : chaque fenêtre de ta salle gardera cet écran, en plein écran.");
