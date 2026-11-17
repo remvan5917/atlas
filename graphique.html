@@ -1003,6 +1003,7 @@
   </div>
   <div class="fil"><span class="fil-t"><i></i>DÉPÊCHES</span><div class="fil-v"><div class="piste2" id="piste2"></div></div><span class="pos-f" id="pos-f" hidden title="Ta position (lecture seule). Clic : montrer / cacher sa zone sur le graphique et ses repères sur l'échelle des prix"></span><span class="fil-e" id="fil-e"></span></div>
 </div>
+<style>body.dessin-glisse #barre-ligne { opacity: 0; pointer-events: none; transition: opacity .12s; }</style>
 <div class="barre-ligne" id="barre-ligne">
   <button data-l="alerte" title="Alerte (touche / cassure)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg></button>
   <span class="sep3"></span>
@@ -1352,7 +1353,8 @@ class Pane {
     }
     try { esqDessine(this, { c, T, Y, pw }); } catch (e) { /* rien */ }
     // ses lignes
-    const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : epaisseurLigne(l, this); c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
+    const bouts = (l, a) => { const n = BOUTS[l.genre]; if (!n) return; c.save(); c.globalAlpha = a; c.setLineDash([]); for (let k = 1; k <= n; k++) { const t = l['t' + k], v = l['p' + k]; if (t == null || v == null) continue; const x = T(t), y = Y(v); if (x < -6 || x > pw + 6) continue; c.fillStyle = TH.bg; c.strokeStyle = coul(l.couleur); c.lineWidth = 1.6; c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); c.stroke(); } c.restore(); };
+    const tracer = (l, sel) => { c.strokeStyle = coul(l.couleur); c.lineWidth = sel ? 2.2 : epaisseurLigne(l, this); if (tracerHalo) c.lineWidth += 3; c.setLineDash(l.style === 'tirets' ? [7, 5] : []);
       const seg = (t1, p1, t2, p2) => { const x1 = T(t1), y1 = Y(p1); let x2 = T(t2), y2 = Y(p2); if (l.genre !== 'segment' && x2 !== x1) { const k = (y2 - y1) / (x2 - x1); x2 = pw; y2 = y1 + k * (pw - x1); } c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
       const rgba = (hex, a) => { const h = String(hex).replace('#', ''); if (h.length !== 6) return `rgba(128,128,128,${a})`; return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`; };
       if (l.genre === 'horizontale') { const y = Y(l.p1), x0 = l.rayon && l.t1 != null ? Math.max(0, T(l.t1)) : 0; if (x0 < pw) { c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); if (l.rayon && x0 > 0) { c.fillStyle = coul(l.couleur); c.beginPath(); c.arc(x0, y, sel ? 3.2 : 2.4, 0, 7); c.fill(); } } }
@@ -1413,7 +1415,20 @@ class Pane {
       c.setLineDash([]);
       if (sel && l.genre !== 'horizontale' && l.genre !== 'texte') { [[l.t1, l.p1], [l.t2, l.p2]].forEach(([t, p]) => { c.fillStyle = TH.bg; c.strokeStyle = coul(l.couleur); c.lineWidth = 2; c.beginPath(); c.arc(T(t), Y(p), 5, 0, 7); c.fill(); c.stroke(); }); }
       if (l.alerte === false) { /* (sans alerte : rien de plus) */ } };
-    if (optDessins) lignes.forEach(l => { if (visibleEn(l, this.ut) || l === choisie) tracer(l, l === choisie); }); if (brouillon) tracer(brouillon, true);
+    // l'expérience du dessin : le fantôme de la position de départ pendant un glissement, un halo doux sous le dessin survolé ou qui vient d'être posé
+    let tracerHalo = false;
+    const G = this._gl && this._gl.ligne && this._gl.bouge && this._gl.ligne !== brouillon ? this._gl : null;
+    if (optDessins && G) { c.save(); c.globalAlpha = .28; c.setLineDash([4, 4]); const o = { ...G.orig, style: 'tirets' }; tracer(o, false); c.restore(); }
+    const halo = (l, a) => { c.save(); c.globalAlpha = a; c.lineCap = 'round'; c.lineJoin = 'round'; const w0 = c.lineWidth; tracerHalo = true; c.shadowColor = coul(l.couleur) === TH.fg ? '#4cc9f0' : coul(l.couleur); c.shadowBlur = 10; tracer(l, true); tracerHalo = false; c.restore(); };
+    const now = performance.now();
+    if (optDessins) lignes.forEach(l => { if (!(visibleEn(l, this.ut) || l === choisie)) return; const ne = l._ne ? 1 - (now - l._ne) / 700 : 0;
+      if (ne > 0) { halo(l, .55 * ne); requestAnimationFrame(() => this.dessine()); } else if (l === this.lSurvol && l !== choisie) halo(l, .35);
+      tracer(l, l === choisie); if (l === this.lSurvol && l !== choisie && !fige(l)) bouts(l, .55); }); if (brouillon) tracer(brouillon, true);
+    document.body.classList.toggle('dessin-glisse', panes.some(q => q._gl && q._gl.ligne && q._gl.bouge));
+    if (G && this.d && this.d.tick) { const l = G.ligne, tk = this.d.tick, dpk = G.part === 'b2' || G.part === 'b3' ? l['p' + G.part[1]] - G.orig['p' + G.part[1]] : l.p1 - G.orig.p1, n = Math.round(dpk / tk), v$ = VAL_TICK[code];
+      if (this.souris) { const txt = `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(n).toLocaleString('fr-FR')} t${v$ != null ? ` · ${n < 0 ? '−' : n > 0 ? '+' : ''}${Math.abs(Math.round(n * v$)).toLocaleString('fr-FR')} $` : ''}`;
+        c.save(); c.font = '700 11px "JetBrains Mono", monospace'; const tw = c.measureText(txt).width + 14, bx = Math.min(pw - tw - 4, this.souris[0] + 16), by = Math.min(ph - 24, this.souris[1] + 16); c.fillStyle = TH.nuit ? 'rgba(13,22,40,.92)' : 'rgba(255,255,255,.95)'; c.strokeStyle = '#4cc9f0'; c.lineWidth = 1;
+        c.beginPath(); c.roundRect(bx, by, tw, 20, 10); c.fill(); c.stroke(); c.fillStyle = TH.nuit ? '#e6eef8' : '#0b0e15'; c.fillText(txt, bx + 7, by + 14); c.restore(); } }
     const ydl = Y(B[B.length - 1][4]);
     (optDessins ? lignes : []).filter(l => l.genre === 'horizontale' && visibleEn(l, this.ut)).forEach(l => { let y = Y(l.p1); if (y < 0 || y > ph) return; if (Math.abs(y - ydl) < 21) y = y <= ydl ? ydl - 21 : ydl + 21; y = Math.max(11, Math.min(ph - 11, y)); c.fillStyle = coul(l.couleur); c.beginPath(); c.roundRect(pw + 1, y - 10, AX - 2, 20, 5); c.fill(); c.fillStyle = TH.nuit ? TH.bg : '#fff'; c.font = '700 10.5px "JetBrains Mono", monospace'; c.fillText(nb(l.p1, dec), pw + 6, y + 4); });
     // la dernière valeur de tes indicateurs sur l'échelle de prix, dans leur couleur, en cadre fin (pour ne pas les confondre avec tes lignes) ; jamais sur l'étiquette du dernier prix ni sur celles de tes lignes
@@ -1563,7 +1578,7 @@ class Pane {
   ecoute() {
     // comme TradingView : glisser dans le graphique = le déplacer (dans tous les sens) ; glisser sur l'échelle des prix = l'étirer
     // verticalement ; glisser sur l'échelle du temps = zoomer dans le temps ; double-clic sur l'échelle des prix = cadrage automatique
-    const cv = this.cv; let glisse = null;
+    const cv = this.cv; let glisse = null; Object.defineProperty(this, '_gl', { get: () => glisse, configurable: true });  // (le dessin voit le glissement en cours : fantôme, écart)
     const pos = ev => { const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; };
     const zone = (x, y) => (this.pw && x >= this.pw ? 'prix' : this.ph && y >= this.ph ? 'temps' : 'graphe');
     this.tp = new Map();  // (les doigts posés : deux doigts = pincer pour zoomer dans le temps)
@@ -1595,7 +1610,7 @@ class Pane {
       if (z === 'graphe' && outil === 'esquisse' && this.T) { esqDebut(this, x, y); glisse = { mode: 'esquisse' }; return; }
       if (z === 'graphe' && outil !== 'curseur' && outil !== 'efface' && this.T) { cliqueDessin(this, x, y); return; }
       if (z === 'graphe') {
-        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (fige(l)) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l }, part: l.genre === 'position' ? (Math.abs(y - this.Y(l.p2)) < 6 ? 'stop' : Math.abs(y - this.Y(l.p1 + (l.ecart || 0))) < 6 ? 'cible' : null) : l.genre === 'mesure' ? (Math.hypot(x - this.T(l.t1), y - this.Y(l.p1)) < 9 ? 'm1' : Math.hypot(x - this.T(l.t2), y - this.Y(l.p2)) < 9 ? 'm2' : null) : null }; return; } }
+        const l = proche(this, x, y); if (l || outil === 'efface') { choisie = l; if (outil === 'efface' && l) efface(); toutDessine(); if (l) { if (fige(l)) { majBarreLigne(); return; } glisse = { ligne: l, x, y, orig: { ...l }, part: l.genre === 'position' ? (Math.abs(y - this.Y(l.p2)) < 6 ? 'stop' : Math.abs(y - this.Y(l.p1 + (l.ecart || 0))) < 6 ? 'cible' : null) : l.genre === 'mesure' ? (Math.hypot(x - this.T(l.t1), y - this.Y(l.p1)) < 9 ? 'm1' : Math.hypot(x - this.T(l.t2), y - this.Y(l.p2)) < 9 ? 'm2' : null) : bouSous(this, l, x, y) }; return; } }
         else if (choisie) { choisie = null; toutDessine(); }
       }
       glisse = { mode: z, x, y, fin: this.fin, n: this.n, y0: [this.lo, this.hi] }; travail(true); });
@@ -1609,16 +1624,19 @@ class Pane {
       if (this.iT && panes.length > 1) { INSTANT = { t: this.iT(x), p: this }; panes.forEach(q => { if (q !== this) q.dessine(); }); }
       if (!glisse && optFig && !brouillon && outil === 'curseur') { const f = figureSous(this, x, y); if (f !== this.figSurvol) { this.figSurvol = f; if (f) montreBulle({ genre: 'figure', f }, ev.clientX, ev.clientY); else if (!this.survol) montreBulle(null); this.dessine(); } else if (f) placeBulle(ev.clientX, ev.clientY); if (f) { cv.style.cursor = 'pointer'; return; } }
       if (!glisse) { const m = (this.marques || []).find(k => Math.hypot(k.x - x, k.y - y) < 9), n = m ? m.n : null; if (n !== this.survol) { this.survol = n; montreBulle(n, ev.clientX, ev.clientY); } else if (n) placeBulle(ev.clientX, ev.clientY); }
+      if (!glisse && !brouillon && outil === 'curseur' && this.T && zone(x, y) === 'graphe') { const ls = proche(this, x, y); if (ls !== this.lSurvol) { this.lSurvol = ls; this.dessine(); }
+        if (ls) { cv.style.cursor = fige(ls) ? 'default' : bouSous(this, ls, x, y) ? 'crosshair' : 'grab'; return; } } else if (this.lSurvol && !glisse) { this.lSurvol = null; this.dessine(); }
       cv.style.cursor = glisse ? (glisse.mode === 'prix' ? 'ns-resize' : glisse.mode === 'temps' ? 'ew-resize' : 'grabbing') : zone(x, y) === 'prix' ? 'ns-resize' : zone(x, y) === 'temps' ? 'ew-resize' : outil === 'curseur' ? 'default' : 'crosshair';
       if (brouillon && brouillon.pane === this) majBrouillon(this, x, y);
       if (glisse && glisse.mode === 'esquisse') { esqAjoute(this, x, y); return; }
       if (glisse && glisse.mode === 'regle') { this.regle.t2 = this.iT(x); this.regle.p2 = this.iY(y); this.dessine(); return; }
       if (glisse && glisse.mode === 'graphe' && !glisse.ligne) { const mt = performance.now(); if (glisse.lt) glisse.v = .6 * (glisse.v || 0) + .4 * (x - glisse.lx) / Math.max(1, mt - glisse.lt); glisse.lx = x; glisse.lt = mt; }
       if (glisse && glisse.ligne && this.T) { const dt = this.iT(x) - this.iT(glisse.x), dp = this.iY(y) - this.iY(glisse.y), l = glisse.ligne, o = glisse.orig;
+        if (/^b[123]$/.test(glisse.part || '')) { const k = glisse.part[1], [t, pr] = aimant(this, x, y); l['t' + k] = t; l['p' + k] = pr; glisse.bouge = true; toutDessine(); return; }  // (un bout de la ligne : on l'ajuste, aimanté aux pivots)
         if (glisse.part === 'm1' || glisse.part === 'm2') { const k = glisse.part === 'm1' ? 1 : 2, [t, pr] = aimant(this, x, y); l['t' + k] = t; l['p' + k] = pr; toutDessine(); return; }  // (la mesure : un seul bout, aimanté comme au tracé)
         if (glisse.part) { const tk = (this.d && this.d.tick) || 0, arr = v => +(tk ? Math.round(v / tk) * tk : v).toFixed(8);  // (la position : seulement le stop, ou seulement l'objectif, au tick près, sans passer de l'autre côté de l'entrée)
           if (glisse.part === 'stop') { const v = arr(o.p2 + dp); if (Math.sign(o.p1 - v) === Math.sign(o.p1 - o.p2)) l.p2 = v; } else { const v = +(arr(o.p1 + o.ecart + dp) - o.p1).toFixed(8); if (Math.sign(v) === Math.sign(o.ecart)) l.ecart = v; } toutDessine(); return; }
-        l.t1 = o.t1 + (l.genre === 'horizontale' && !l.rayon ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; if (o.t3 != null) { l.t3 = o.t3 + dt; l.p3 = o.p3 + dp; } toutDessine(); return; }
+        glisse.bouge = true; l.t1 = o.t1 + (l.genre === 'horizontale' && !l.rayon ? 0 : dt); l.t2 = o.t2 != null ? o.t2 + dt : o.t2; l.p1 = o.p1 + dp; if (o.p2 != null) l.p2 = o.p2 + dp; if (o.t3 != null) { l.t3 = o.t3 + dt; l.p3 = o.p3 + dp; } toutDessine(); return; }
       if (glisse && !glisse.ligne && this.bw > 0) {
         const nbB = ((this.d && this.d.bougies) || []).length, [lo0, hi0] = glisse.y0, h = hi0 - lo0;
         if (glisse.mode === 'prix') { // étirer les prix : vers le haut = plus grand, vers le bas = plus petit (autour du milieu)
@@ -1728,6 +1746,9 @@ function majBrouillon(p, x, y) {
 const UT_ORDRE = ['5m', '15m', '30m', 'H1', 'H4', 'D1', 'W', 'M'];
 const visibleEn = (l, ut) => { const v = l && l.vis; if (!v || !ut || typeof v !== 'string') return true; if (v.startsWith('<=')) { const a = UT_ORDRE.indexOf(ut), b = UT_ORDRE.indexOf(v.slice(2)); return a < 0 || b < 0 || a <= b; } return v === ut; };
 const visTxt = v => !v ? '' : v.startsWith('<=') ? `${v.slice(2)} et moins` : `seulement ${v}`;
+// les bouts qu'on peut attraper pour ajuster un dessin (comme sur toutes les plateformes) : les deux points d'une ligne, d'une flèche, d'un canal, d'un Fibonacci, d'une zone, d'une régression ; les trois d'une fourche
+const BOUTS = { droite: 2, segment: 2, canal: 2, fleche: 2, fibo: 2, rect: 2, regression: 2, fourche: 3 };
+function bouSous(p, l, x, y) { const n = BOUTS[l.genre]; if (!n || !p.T) return null; for (let k = 1; k <= n; k++) { const t = l['t' + k], v = l['p' + k]; if (t == null || v == null) continue; if (Math.hypot(x - p.T(t), y - p.Y(v)) < 9) return 'b' + k; } return null; }
 function proche(p, x, y) { if (!optDessins) return null;
   if (!p.T) return null; let mieux = null, dmin = 7;
   const segD = (x1, y1, x2, y2) => { const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2)); return Math.hypot(x - (x1 + u * dx), y - (y1 + u * dy)); };
@@ -1774,7 +1795,7 @@ function colleDessin() { if (ROLE === 'terminal' || ROLE === 'ensemble') return;
   const p = panes[actif] || panes[0], B = (p && p.d && p.d.bougies) || [], px = B.length ? B[B.length - 1][4] : null, loin = px && n.p1 != null && Math.abs(n.p1 - px) / px > .3;
   toast(`✓ Collé sur ${code}${P.c !== code ? ` (copié depuis ${P.c})` : ' — au même endroit que l’original : glisse-le pour le déplacer'}${loin ? ` · attention : son prix (${nb(n.p1, (p.d && p.d.dec) ?? 2)}) est loin de celui de ${code}` : ''} · Ctrl + Z pour annuler`); }
 let tSauve = 0;
-function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) sonne('pose'); nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
+function sauve() { noteHist(); if (nbLignesAvant != null && lignes.length > nbLignesAvant) { sonne('pose'); const nv = choisie && lignes.includes(choisie) ? choisie : lignes[lignes.length - 1]; if (nv) nv._ne = performance.now(); } nbLignesAvant = lignes.length; toutDessine(); clearTimeout(tSauve); tSauve = setTimeout(async () => {
   // (le serveur surveille la droite principale ; pour un canal, la seconde ligne est envoyée comme une ligne de plus)
   const env = []; lignes.forEach(l => { const al = l.alerte !== false; env.push({ id: l.id, genre: l.genre === 'canal' ? 'droite' : l.genre, t1: l.t1, p1: l.p1, t2: l.t2, p2: l.p2, t3: l.t3 ?? undefined, p3: l.p3 ?? undefined, texte: l.texte, rayon: l.rayon || undefined, verrou: l.verrou || undefined, approche: l.approche || undefined, cloture: l.cloture || undefined, vis: l.vis || undefined, etiquette: l.etiquette || undefined, nom: l.etiquette ? `ta ligne « ${l.etiquette} »` : l.genre === 'horizontale' ? 'ta ligne horizontale' : l.genre === 'canal' ? 'le bas de ton canal' : l.genre === 'rect' ? 'ta zone' : l.genre === 'fibo' ? 'ton Fibonacci' : l.genre === 'texte' ? 'ton texte' : l.genre === 'fleche' ? 'ta flèche' : l.genre === 'position' ? 'ta position' : l.genre === 'regression' ? 'ton canal de régression' : l.genre === 'mesure' ? 'ta mesure' : l.genre === 'fourche' ? 'ta fourche d’Andrews' : l.genre === 'verticale' ? 'ta ligne verticale' : 'ta ligne de tendance', alerte: al, ecart: l.ecart, canal: l.genre === 'canal', couleur: l.couleur, style: l.style });
     if (l.genre === 'canal' && l.ecart != null) env.push({ id: l.id + 'b', genre: 'droite', t1: l.t1, p1: l.p1 + l.ecart, t2: l.t2, p2: l.p2 + l.ecart, nom: 'le haut de ton canal', alerte: al, double: l.id, cloture: l.cloture || undefined });
@@ -2226,6 +2247,12 @@ document.addEventListener('keydown', ev => {
   if (k === '/' || (k === 'k' && (ev.ctrlKey || ev.metaKey))) { ev.preventDefault(); ouvreRecherche(); return; }
   if (ev.altKey && k === 'enter' && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); basculeSolo(); return; }
   if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  // les flèches déplacent le dessin choisi : ↑ ↓ d'un tick (Maj : 10 ticks), ← → d'une bougie ; jamais un dessin verrouillé
+  if (choisie && !REPLAY && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) { ev.preventDefault(); if (fige(choisie)) { if (!ev.repeat) toastFige(choisie); return; }
+    const p0 = panes.find(q => q.ut) || panes[0], tk = (p0 && p0.d && p0.d.tick) || 0, du = DUREE[p0 && p0.ut] || 3600, l = choisie, n = ev.shiftKey ? 10 : 1;
+    if (k === 'arrowup' || k === 'arrowdown') { if (!tk) return; const dp = (k === 'arrowup' ? 1 : -1) * n * tk, ar = v => +(v + dp).toFixed(8); ['p1', 'p2', 'p3'].forEach(f => { if (l[f] != null) l[f] = ar(l[f]); }); }
+    else if (l.genre !== 'horizontale' || l.rayon) { const dt = (k === 'arrowright' ? 1 : -1) * n * du; ['t1', 't2', 't3'].forEach(f => { if (l[f] != null) l[f] += dt; }); }
+    toutDessine(); clearTimeout(window._tFl); window._tFl = setTimeout(sauve, 450); return; }
   if (k === 'f') { $('#plein').click(); return; }
   if (k === 'p') { if (ev.shiftKey) copieImage(); else $('#photo').click(); return; }
   if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; ESQ_SEL = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
