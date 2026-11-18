@@ -942,7 +942,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v103</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v104</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1102,7 +1102,7 @@
   <p><kbd>Espace</kbd>lecture / pause · <kbd>←</kbd><kbd>→</kbd>bougie par bougie</p></section>
   <section><h4>Affichage</h4>
   <p><kbd>Z</kbd>mode focus · <kbd>F</kbd>plein écran · <kbd>P</kbd>capture du graphique (<kbd>Maj</kbd><kbd>P</kbd> la copier) · <kbd>Alt</kbd><kbd>Entrée</kbd> ou double-clic sur sa carte : agrandir le graphique · <kbd>Alt</kbd><kbd>I</kbd> inverser l’échelle des prix (le haut en bas)</p>
-  <p>dans la barre / : <b>SEP</b> séparateurs de séance · <b>SESSN</b> hauts et bas de l’Asie et de Londres · <b>PREF</b> tes réglages dans un fichier · <b>VUE 3M</b> les plages de dates rapides (5J, 1M, 3M, 6M, 1A, AAJ, TOUT) · <b>INV</b> l’échelle inversée · <b>SCG</b> ta méthode dans la carte du graphique (sur un niveau D1) · <b>50</b> le 50 % de tes jambes (graphique, tous marchés, le passé) · <b>SCD1</b> tes sommets et creux D1 contre l’échelle (H4 et moins), ceux de la semaine en D1 · <b>PCT</b> l’échelle en % · <b>TRADES</b> tes trades dans l’axe du temps · <b>COUL</b> couleurs des bougies · <b>FIB</b> tes niveaux de Fibonacci · <b>NUIT 19 7</b> tes heures du mode nuit</p>
+  <p>dans la barre / : <b>SEP</b> séparateurs de séance · <b>SESSN</b> hauts et bas de l’Asie et de Londres · <b>CASSE</b> couper / rallumer l’alerte de cassure d’un sommet / creux D1 · <b>PREF</b> tes réglages dans un fichier · <b>VUE 3M</b> les plages de dates rapides (5J, 1M, 3M, 6M, 1A, AAJ, TOUT) · <b>INV</b> l’échelle inversée · <b>SCG</b> ta méthode dans la carte du graphique (sur un niveau D1) · <b>50</b> le 50 % de tes jambes (graphique, tous marchés, le passé) · <b>SCD1</b> tes sommets et creux D1 contre l’échelle (H4 et moins), ceux de la semaine en D1 · <b>PCT</b> l’échelle en % · <b>TRADES</b> tes trades dans l’axe du temps · <b>COUL</b> couleurs des bougies · <b>FIB</b> tes niveaux de Fibonacci · <b>NUIT 19 7</b> tes heures du mode nuit</p>
   <p><kbd>?</kbd>cette aide</p></section>
   <p class="aide-v" id="aide-v" hidden></p></div></div>
 <div class="ticket" id="ticket">
@@ -5056,6 +5056,20 @@ async function scGuet() { if (!QUI_SONNE || lit('g-sc-prev', '0') !== '1' || REP
   for (const v of nv) scNote(v.x.code, `${v.x.code} arrive sur son ${nomN(v.q)} D1 ${nb(v.q[1], v.dec)} (${v.t} t).${passe(v.c)}${v.vit}`);
   halo('ambre'); sonne('ligne'); const a = nv[0]; direAuto(`${a.x.nom || a.x.code} arrive sur son ${nomN(a.q)} D1, à ${a.t} ticks.${passe(a.c)}${a.vit}${aus(a)}${nv.length > 1 ? ` Et aussi : ${nv.slice(1).map(v => v.x.code).join(', ')}.` : ''}`); }
 setTimeout(() => { scGuet(); setInterval(scGuet, 60000); }, 25000);
+// CASSURE D1 (demande de Rémy, 18/11 : « il y a les alertes quand ils cassent les sommets et creux zigzag daily ? il faut ») : quand le prix passe au-delà d'un sommet / creux
+// confirmé de ton zigzag D1 (un des 10 derniers, ceux de SC), venant de l'autre côté : un message, le son, la voix (sur l'ordinateur), le journal ALERTES ; une fois par niveau en 12 h ;
+// le micro seul quand tu suis aussi le grand contrat ; allumé par défaut, « CASSE » dans la barre / pour couper / rallumer ; au premier passage, rien (on note seulement où est le prix)
+const SC_CAS = {}; let SC_CAS_AT = 0;
+async function scCasseGuet() { if (!QUI_SONNE || lit('g-sc-casse', '1') !== '1' || REPLAY || CAPT || !L.length || Date.now() - SC_CAS_AT < 50000) return; SC_CAS_AT = Date.now(); const dits = scDits(), GR = scGrands(L.map(z => z.code)), nv = [];
+  for (const x of L) { if (x.dernier == null || GR.has(x.code)) continue; try { const d = await barresDe(x.code, 'D1'), P = scPiv(d), px = x.dernier, av = SC_CAS[x.code], tk = d.tick || 0; SC_CAS[x.code] = px; if (av == null || !P.length) continue;
+      for (const q of P) { const s = q[2] === 'h' ? 1 : -1, k = `${x.code}|${q[0]}|casse`; if (dits[k]) continue;
+        if (s > 0 ? (av <= q[1] && px > q[1]) : (av >= q[1] && px < q[1])) { dits[k] = Date.now(); nv.push({ x, q, px, dec: d.dec ?? x.dec ?? 2, t: tk ? Math.round(Math.abs(px - q[1]) / tk) : null }); } } } catch (e) { /* ce marché plus tard */ } }
+  ecrit('g-sc-dits', JSON.stringify(Object.assign(scDits(), dits))); if (!nv.length) return;
+  for (const v of nv) { const nom = v.q[2] === 'h' ? 'sommet' : 'creux', sens = v.q[2] === 'h' ? 'vers le haut' : 'vers le bas', txt = `${v.x.code} casse son ${nom} D1 ${nb(v.q[1], v.dec)} ${sens} (cours ${nb(v.px, v.dec)}${v.t != null ? `, ${v.t} t au-delà` : ''}).`;
+    toastAct(`◆ ${txt}`, ['Voir', () => changeCode(v.x.code)]); scNote(v.x.code, txt); }
+  halo('ambre'); sonne('ligne'); const a = nv[0]; direAuto(`${a.x.nom || a.x.code} casse son ${a.q[2] === 'h' ? 'sommet' : 'creux'} D1, ${a.q[2] === 'h' ? 'vers le haut' : 'vers le bas'}.${nv.length > 1 ? ` Et aussi : ${nv.slice(1).map(v => v.x.code).join(', ')}.` : ''}`); }
+setTimeout(() => { scCasseGuet(); setInterval(scCasseGuet, 60000); }, 20000);
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['CASSE', 'l’alerte quand le prix casse un sommet / creux de ton zigzag D1 (tous tes marchés) · couper / rallumer', () => { const on = lit('g-sc-casse', '1') !== '1'; ecrit('g-sc-casse', on ? '1' : '0'); toast(on ? '◆ Alerte de cassure D1 allumée : Atlas te prévient quand le prix casse un sommet / creux de ton zigzag D1' : 'Alerte de cassure D1 coupée'); }]);
 // ALERTES : toutes tes alertes sur un écran — tes lignes avec alerte sur tous tes marchés, de la plus proche du prix à la plus loin (la prochaine qui sonnera),
 // leur pré-alerte, puis tes alertes en français, tes filtres et règles surveillés, l'annonce d'arrivée sur un niveau D1 ; en lecture : on les change sur le graphique
 function ligneVal(z, t) { const g = z.genre; if (g === 'droite' && z.t2 != null && z.p2 != null && z.t2 !== z.t1) { const v = z.p1 + (t - z.t1) * (z.p2 - z.p1) / (z.t2 - z.t1); return z.ecart ? [v, v + z.ecart] : [v]; }
