@@ -64,6 +64,7 @@
   /* ---- la petite barre d'une ligne choisie ---- */
   .barre-ligne { position: fixed; z-index: 40; display: none; align-items: center; gap: 2px; padding: 4px; background: #fff; border: 1px solid #d9dde5; border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 19, 28, .25); }
   .barre-ligne.on { display: flex; }
+  .bax { position: absolute; z-index: 6; display: flex; gap: 3px; } .bax[hidden], .bax button[hidden] { display: none; } .bax button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #2c3a57; background: #101a2e; color: #cfd6e4; font: 800 11px 'JetBrains Mono', monospace; cursor: pointer; padding: 0; } .bax button:hover { border-color: #3d7bff; color: #fff; }
 .bl-mod { position: fixed; z-index: 41; min-width: 230px; max-width: 320px; padding: 6px; background: #fff; border: 1px solid #d9dde5; border-radius: 12px; box-shadow: 0 16px 40px rgba(15, 19, 28, .28); font: 500 12px 'Inter', sans-serif; color: #1b2230; }
 .bl-mod[hidden] { display: none; }
 .bl-mod .bm-l { display: flex; align-items: center; gap: 4px; }
@@ -327,7 +328,7 @@
   /* les portables étroits (moins de 1366 px de large) : la barre du haut se resserre pour que rien ne sorte de l'écran */
   @media (max-width: 1365px) { .haut { gap: 4px !important; } .haut .sym { min-width: 0 !important; width: 190px !important; flex: none !important; } .haut .seg button, .haut .grp button { padding-left: 5px !important; padding-right: 5px !important; } }
   /* la barre du haut se resserre par étapes jusqu'à tenir dans la largeur (posées par ajusteHaut) : 1 serrée, 2 sans les horloges, 3 boutons d'affichage compacts, 4 sans présentation / simulateur / terminal, 5 sans les boutons d'affichage */
-  body.haut-1 .haut { gap: 4px !important; } body.haut-1 .haut .marque span { display: none !important; } body.haut-1 .haut .sym { min-width: 0 !important; width: 200px !important; flex: none !important; }
+  body.haut-1 .haut { gap: 4px !important; } body.haut-1 .haut .marque span { display: none !important; } body.haut-1 .haut .sym { min-width: 0 !important; width: 200px !important; flex: none !important; } body.haut-1 .haut .sym { gap: 7px !important; overflow: hidden; } body.haut-1 .haut .sym > svg { width: 42px !important; flex: none; } body.haut-1 .haut .sym .px { white-space: nowrap; }  /* (le prix et sa variation restent entiers, jamais sous le bouton /) */
   body.haut-1 .haut .seg button, body.haut-1 .haut .grp button { padding-left: 5px !important; padding-right: 5px !important; }
   body.haut-2 #horloges { display: none !important; }
   body.haut-3 .haut .grp button { min-width: 0 !important; width: 28px !important; padding: 0 !important; }
@@ -1226,6 +1227,15 @@ class Pane {
   // (en glissant vers la gauche, on voit l'espace à droite du dernier cours, comme sur TradingView : la mise en page garde la place,
   //  mais on ne dessine que les bougies qui existent — avant, chercher une bougie « du futur » arrêtait tout le dessin : écran blanc)
   vis() { const B = (this.d && this.d.bougies) || []; const jj = Math.max(0, B.length - Math.round(this.fin)); const i = Math.max(0, Math.min(B.length - 1, jj - Math.round(this.n))); return { B, i, j: Math.min(jj, B.length) }; }
+  // les deux boutons de l'échelle (complet : le « A » et le « aller au présent » des grandes plateformes) — en bas de l'échelle des prix, seulement quand il faut :
+  // « A » quand l'échelle est en manuel (tu l'as étirée ou déplacée : les bougies peuvent sortir de l'écran), « » » quand le graphique n'est plus sur la dernière bougie
+  majBoutonsAxe() { if (ROLE === 'ensemble' || !this.d) return; let z = this._bax; if (!z) { z = this._bax = document.createElement('div'); z.className = 'bax';
+      z.innerHTML = '<button data-x="pres" title="Revenir au présent (la dernière bougie à droite)">»</button><button data-x="auto" title="Échelle automatique : toutes les bougies visibles tiennent dans l’écran (double-clic sur l’échelle fait pareil)">A</button>';
+      z.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; ev.stopPropagation(); if (b.dataset.x === 'auto') this.y = null; else { this.fin = -6; this.y = null; } this.dessine(); };
+      z.onpointerdown = ev => ev.stopPropagation(); this.el.appendChild(z); }
+    const nb2 = ((this.d && this.d.bougies) || []).length, loin = this.fin > 2 || this.fin < -Math.max(12, this.n * .15);
+    z.querySelector('[data-x="auto"]').hidden = !this.y; z.querySelector('[data-x="pres"]').hidden = !loin || !nb2; z.hidden = !this.y && !(loin && nb2);
+    z.style.left = `${this.pw + 6}px`; z.style.top = `${Math.max(0, this.ph - 30)}px`; }
   dessine() { if (this._raf) return; this._raf = requestAnimationFrame(() => { this._raf = 0; this.dessineMaintenant(); }); }
   dessineMaintenant() {
     try { this._dessine(); } catch (e) {
@@ -1259,6 +1269,7 @@ class Pane {
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
     const iY = y => { const f = (y - HAUT) / (BASP - HAUT) * (lHi - lLo), w = INV ? lLo + f : lHi - f; return LOG ? Math.exp(w) : w; };
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
+    try { this.majBoutonsAxe(); } catch (e) { /* rien */ }
     const IC = [...(IND.length ? (() => { try { return calculeIndics(this, B, IND); } catch (e) { console.warn('indicateur', e); return []; } })() : []), ...(SPR ? [SPR] : [])], HA = TYPE === 'heikin' ? heikin(this, B) : null, MC = METHODE !== 'dow' ? calculeMethode(this, B) : null;
     const TH = theme(), coul = x => (!x || x === '#000' || x === '#000000' || x === '#0b0e15') ? TH.fg : x;
     c.clearRect(0, 0, W, H); c.fillStyle = TH.bg; c.fillRect(0, 0, W, H);
