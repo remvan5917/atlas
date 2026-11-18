@@ -942,7 +942,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v112</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v113</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1357,6 +1357,12 @@ class Pane {
     this.figHits = [];
     if ((optFig || opt50) && !REPLAY) { c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip();
       for (const f of figuresDe(this, B)) { const sel = this.figSurvol === f || FIG_SEL === f; c.strokeStyle = sel ? '#7c4dff' : 'rgba(139,92,255,.8)'; c.lineWidth = sel ? 2.2 : 1.4;
+        if (f.z50) {  // la zone 50 % proposée, en fantôme (même style que la zone gardée, sans couleur) : bande à peine teintée, bords en pointillés fins, le milieu ; au survol, l'or
+          const [s1, s2, s3] = f.segs, xa = T(s1[0]), y1f = Y(s1[1]), y3f = Y(s3[1]), ymf = Y(s2[1]), ink = TH.nuit ? '228,233,243' : '27,37,64', orf = TH.nuit ? '224,189,120' : '168,127,51';
+          c.fillStyle = `rgba(${sel ? orf : ink},${sel ? .12 : .05})`; c.fillRect(xa, Math.min(y1f, y3f), pw - xa, Math.abs(y3f - y1f)); c.lineWidth = 1;
+          c.strokeStyle = `rgba(${sel ? orf : ink},${sel ? .9 : .45})`; c.setLineDash([2, 4]); [y1f, y3f].forEach(y => { c.beginPath(); c.moveTo(xa, Math.round(y) + .5); c.lineTo(pw, Math.round(y) + .5); c.stroke(); });
+          c.setLineDash([6, 4]); c.beginPath(); c.moveTo(xa, Math.round(ymf) + .5); c.lineTo(pw, Math.round(ymf) + .5); c.stroke(); c.setLineDash([]);
+          for (const sg of f.segs) this.figHits.push({ f, x1: T(sg[0]), y1: Y(sg[1]), x2: T(sg[2]), y2: Y(sg[3]) }); continue; }
         for (const sg of f.segs) { const x1 = T(sg[0]), y1 = Y(sg[1]), x2 = T(sg[2]), y2 = Y(sg[3]); c.setLineDash(sg[4] ? [2, 4] : [6, 4]); c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); this.figHits.push({ f, x1, y1, x2, y2 }); } }
       c.setLineDash([]); c.restore(); }
     // les indicateurs : leurs lignes sur le prix, leurs marqueurs, et la sous-fenêtre des oscillateurs
@@ -1389,43 +1395,41 @@ class Pane {
       if (l.genre === 'horizontale') { if (!sel && !tracerHalo && c.lineWidth === 1.2) c.lineWidth = 1; const y = net(Y(l.p1), c.lineWidth), x0 = l.rayon && l.t1 != null ? Math.max(0, T(l.t1)) : 0; if (x0 < pw) { c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); if (l.rayon && x0 > 0) { c.fillStyle = coul(l.couleur); c.beginPath(); c.arc(x0, y, sel ? 3.2 : 2.4, 0, 7); c.fill(); } } }
       else if (l.genre === 'zone50' && (() => { const n = zone50Suit(l, this.d) || (this.ut !== 'D1' ? zone50Suit(l, (CACHE_D[`${code}|D1`] || {}).d) : null); if (n && QUI_SONNE && !REPLAY) { Object.assign(l, n); clearTimeout(l._suitT); l._suitT = setTimeout(() => sauve(), 1500); } return false; })()) { /* (la jambe s'est allongée : la zone vient d'être recalculée) */ }
       else if (l.genre === 'zone50') {  // la zone 50 % : la jambe (en pointillés, du départ à l'arrivée), sa zone du milieu (45 – 55 %) teintée et prolongée à droite, le 50 % en trait plein
-        const col = l.couleur ? coul(l.couleur) : TH.nuit ? '#dfe6f5' : '#1d2b4f', x0 = Math.min(T(l.t1), T(l.t2)), m = (l.p1 + l.p2) / 2, [za, zb] = zone50Px(l), ya = Y(za), yb = Y(zb), ym = net(Y(m), 1.6), cr = l.couleur && String(col).startsWith('#') ? col : TH.nuit ? '#8fa3cc' : '#5c6b8a', or = TH.nuit ? '#d9b46a' : '#b0873a';  // (encre, ardoise, or pâle)
-        const pxZ = B[B.length - 1][4], dedansZ = pxZ >= za && pxZ <= zb, yh = Math.min(ya, yb), yl = Math.max(ya, yb);
-        // la bande : un dégradé qui s'allume vers le 50 % et s'efface vers ses bords (plus vif quand le prix est dedans), des bords en filet très fin, le 50 % en trait plein avec un léger halo
-        { const g = c.createLinearGradient(0, yh, 0, yl), a = (dedansZ ? .26 : .14) * (TH.nuit ? 1.1 : .85); g.addColorStop(0, rgba(cr, a * .25)); g.addColorStop(.5, rgba(cr, a)); g.addColorStop(1, rgba(cr, a * .25)); c.fillStyle = g; c.fillRect(x0, yh, pw - x0, yl - yh); }
-        c.strokeStyle = rgba(cr, .28); c.lineWidth = 1; [ya, yb].forEach(y => { const yn = net(y, 1); c.beginPath(); c.moveTo(x0, yn); c.lineTo(pw, yn); c.stroke(); });
-        c.save(); c.strokeStyle = col; c.lineWidth = 1.3; c.shadowColor = dedansZ ? rgba(or, .8) : 'transparent'; c.shadowBlur = dedansZ ? 9 : 0; c.setLineDash(l.style === 'tirets' ? [5, 4] : []); c.beginPath(); c.moveTo(x0, ym); c.lineTo(pw, ym); c.stroke(); c.restore();
-        if (l.texte === 'prochain' || l.texte === 'rebond' || l.t2 - l.t1 === 86400) {  // la projection (Rémy : « ça fixe mon cerveau », « fais un truc magnifique ») : à droite de la dernière bougie, un rail du niveau cassé au prochain niveau ;
-          // le chemin fait se remplit en dégradé, un point lumineux suit le cours, trois jalons (départ, 50 %, cible), des étiquettes en pastilles — rien sur les bougies
-          const x0b = Math.max(T(l.t1), X(B.length - 1)) + Math.max(16, bw * 1.5), xb = Math.round(x0b) + .5, y1 = Y(l.p1), y2 = Y(l.p2), ym2 = Y(m), sgn = Math.sign(y2 - y1) || 1;
+        // le design (Rémy, 18/11 : « un design beaucoup plus élégant sur tout ça ») : de la retenue — filets fins à l'encre, une bande à peine teintée, une seule couleur d'accent (l'or pâle) pour ce qui bouge,
+        // des étiquettes en languettes au bout des lignes (comme les prix de l'échelle, en clair), une typographie hiérarchisée : le nom en petites capitales espacées, la valeur, puis ce qui reste en gris
+        const col = l.couleur ? coul(l.couleur) : TH.nuit ? '#e4e9f3' : '#1b2540', x0 = Math.min(T(l.t1), T(l.t2)), m = (l.p1 + l.p2) / 2, [za, zb] = zone50Px(l), ya = Y(za), yb = Y(zb), ym = net(Y(m), 1), cr = l.couleur && String(col).startsWith('#') ? col : TH.nuit ? '#9aaed6' : '#5f6f92', or = TH.nuit ? '#e0bd78' : '#a87f33';
+        const pxZ = B[B.length - 1][4], dedansZ = pxZ >= za && pxZ <= zb, yh = Math.min(ya, yb), yl = Math.max(ya, yb), encre = a => rgba(TH.nuit ? '#e4e9f3' : '#1b2540', a);
+        { const g = c.createLinearGradient(0, yh, 0, yl), a = dedansZ ? .16 : .085; g.addColorStop(0, rgba(cr, 0)); g.addColorStop(.5, rgba(cr, a)); g.addColorStop(1, rgba(cr, 0)); c.fillStyle = g; c.fillRect(x0, yh, pw - x0, yl - yh); }
+        c.save(); c.strokeStyle = rgba(cr, .45); c.lineWidth = 1; c.setLineDash([1, 3]); [ya, yb].forEach(y => { const yn = net(y, 1); c.beginPath(); c.moveTo(x0, yn); c.lineTo(pw, yn); c.stroke(); }); c.restore();
+        c.save(); c.strokeStyle = dedansZ ? or : encre(.85); c.lineWidth = 1; if (dedansZ) { c.shadowColor = rgba(or, .7); c.shadowBlur = 6; } c.setLineDash(l.style === 'tirets' ? [5, 4] : []); c.beginPath(); c.moveTo(x0, ym); c.lineTo(pw, ym); c.stroke(); c.restore();
+        // la languette : une étiquette au bout de sa ligne, juste avant l'échelle, pointe tournée vers la ligne ; à gauche des pastilles de tes ordres si elles sont à la même hauteur
+        const languettes = [], languette = (y, nom, val, plus, accent) => { if (!isFinite(y) || y < 9 || y > ph - 9 || languettes.some(z => Math.abs(z - y) < 17)) return; c.save(); c.textAlign = 'left'; c.textBaseline = 'middle';
+            c.font = '600 8px Inter, sans-serif'; c.letterSpacing = '1px'; const wn = nom ? c.measureText(nom).width + 7 : 0; c.letterSpacing = '0px'; c.font = '600 10.5px "JetBrains Mono", monospace'; const wv = c.measureText(val).width; c.font = '400 9.5px "JetBrains Mono", monospace'; const wp = plus ? c.measureText(plus).width + 9 : 0;
+            const ordY = [...((typeof TRADE !== 'undefined' && TRADE.ordres) || []).filter(o => o.prix != null).map(o => Y(o.prix)), ...(typeof TRADE !== 'undefined' && TRADE.brouillon ? [TRADE.brouillon.sl, TRADE.brouillon.tp].filter(v => v != null).map(v => Y(v)) : [])];
+            const w = wn + wv + wp + 18, h = 17, xl = (ordY.some(oy => Math.abs(oy - y) < 14) ? pw - 200 : pw - 4) - w; if (xl < (this._z50xb || 0) + 10) { c.restore(); return; } languettes.push(y);
+            if (!tracerHalo) { c.beginPath(); c.moveTo(xl - 5, y); c.lineTo(xl, y - h / 2); c.lineTo(xl + w, y - h / 2); c.lineTo(xl + w, y + h / 2); c.lineTo(xl, y + h / 2); c.closePath(); c.fillStyle = TH.nuit ? 'rgba(12,19,34,.94)' : 'rgba(255,255,255,.96)'; c.fill(); c.lineWidth = 1; c.strokeStyle = accent ? rgba(or, .9) : encre(.14); c.stroke(); }
+            let xx = xl + 8; if (accent) { c.beginPath(); c.arc(xx + 1, y, 2.2, 0, 7); c.fillStyle = or; c.fill(); xx += 7; }
+            if (nom) { c.font = '600 8px Inter, sans-serif'; c.letterSpacing = '1px'; c.fillStyle = rgba(cr, .95); c.fillText(nom, xx, y + .5); c.letterSpacing = '0px'; xx += wn; }
+            c.font = '600 10.5px "JetBrains Mono", monospace'; c.fillStyle = encre(.95); c.fillText(val, xx, y + .5); xx += wv + 9;
+            if (plus) { c.font = '400 9.5px "JetBrains Mono", monospace'; c.fillStyle = encre(.45); c.fillText(plus, xx, y + .5); } c.restore(); };
+        if (l.texte === 'prochain' || l.texte === 'rebond' || l.t2 - l.t1 === 86400) {  // la projection : un rail fin après la dernière bougie, du niveau cassé / tenu au prochain niveau
+          const xb = Math.round(Math.max(T(l.t1), X(B.length - 1)) + Math.max(16, bw * 1.5)) + .5, y1 = Y(l.p1), y2 = Y(l.p2), ym2 = Y(m); this._z50xb = xb;
           const px = pxZ, tk = (this.d && this.d.tick) || 0, v$ = VAL_TICK[code], fr = Math.max(0, Math.min(1.15, (l.p1 - px) / ((l.p1 - l.p2) || 1))), yp = Y(px), dedans = dedansZ;
           const reste = v => { if (!tk) return ''; const t = Math.round(Math.abs(v - px) / tk); return t ? `${t.toLocaleString('fr-FR')} t${v$ != null ? ` · ${Math.round(t * v$).toLocaleString('fr-FR')} $` : ''}` : 'atteint'; };
           if (xb > 0 && isFinite(y1) && isFinite(y2)) { c.save(); c.lineCap = 'round';
-            const yf = fr >= 1 ? y2 : y1 + (y2 - y1) * Math.max(0, fr), rail = (ya_, yb_, w) => { c.beginPath(); c.roundRect(xb - w / 2, Math.min(ya_, yb_), w, Math.max(w, Math.abs(yb_ - ya_)), w / 2); };
-            rail(y1, y2, 4); c.fillStyle = rgba(cr, TH.nuit ? .22 : .16); c.fill();  // (le rail)
-            if (Math.abs(yf - y1) > 1) { const g = c.createLinearGradient(0, y1, 0, yf); g.addColorStop(0, rgba(cr, .55)); g.addColorStop(1, rgba(or, 1)); rail(y1, yf, 4); c.fillStyle = g; c.fill(); }  // (le chemin fait)
-            const anneau = (y, r) => { c.beginPath(); c.arc(xb, y, r, 0, 7); c.fillStyle = TH.bg; c.fill(); c.lineWidth = 1.3; c.strokeStyle = col; c.stroke(); };
-            anneau(y1, 5);  // (le départ : le niveau cassé)
-            { const dz = dedans ? 7.5 : 6; c.beginPath(); c.moveTo(xb, ym2 - dz); c.lineTo(xb + dz, ym2); c.lineTo(xb, ym2 + dz); c.lineTo(xb - dz, ym2); c.closePath(); c.fillStyle = fr >= .45 ? or : TH.bg; c.fill(); c.lineWidth = 1.4; c.strokeStyle = fr >= .45 ? or : col; c.stroke(); }  // (le 50 %)
-            anneau(y2, 7); c.beginPath(); c.arc(xb, y2, 2.6, 0, 7); c.fillStyle = or; c.fill();  // (la cible : le prochain niveau)
-            if (fr > .01 && fr < 1.15 && isFinite(yp)) { c.save(); c.shadowColor = rgba(or, .9); c.shadowBlur = 12; c.beginPath(); c.arc(xb, yp, 5.5, 0, 7); c.fillStyle = or; c.fill(); c.restore(); c.beginPath(); c.arc(xb, yp, 2.2, 0, 7); c.fillStyle = '#fff'; c.fill(); }  // (le cours)
-            // les pastilles : le nom en petites capitales, la valeur en gras, ce qui reste en clair ; à droite du rail s'il y a la place, sinon à gauche
-            // (Rémy : « ça ne doit pas gêner le trading ») : les pastilles seulement à DROITE du rail, jamais sur les bougies ; s'il manque de place, la version courte (la valeur seule), sinon rien
-            const pastille = (y, nom0, val, plus0, fort) => { const mesure = (n_, p_) => { c.font = '700 8.5px Inter, sans-serif'; const wn = n_ ? c.measureText(n_).width + 6 : 0; c.font = `${fort ? 800 : 700} 10.5px "JetBrains Mono", monospace`; const wv = c.measureText(val).width; c.font = '500 9.5px "JetBrains Mono", monospace'; return [wn, wv, p_ ? c.measureText(p_).width + 7 : 0]; };
-              const dispo = pw - 4 - (xb + 12); let nom = nom0, plus = plus0, [wn, wv, wp] = mesure(nom, plus); if (wn + wv + wp + 16 > dispo) { plus = ''; [wn, wv, wp] = mesure(nom, ''); } if (wn + wv + 16 > dispo) { nom = ''; [wn, wv, wp] = mesure('', ''); } if (wv + 16 > dispo) return;
-              // (au bout de sa ligne, juste avant l'échelle des prix — Rémy, 18/11 : « c'est pas mieux tout à droite ? » ; à gauche des pastilles de tes ordres si elles sont à la même hauteur : ton trading passe avant)
-              const ordY = [...((typeof TRADE !== 'undefined' && TRADE.ordres) || []).filter(o => o.prix != null).map(o => Y(o.prix)), ...(typeof TRADE !== 'undefined' && TRADE.brouillon ? [TRADE.brouillon.sl, TRADE.brouillon.tp].filter(v => v != null).map(v => Y(v)) : [])];
-              const w = wn + wv + wp + 16, h = 18, gene = ordY.some(oy => Math.abs(oy - y) < 14), xl = gene ? pw - 6 - 196 - w : pw - 6 - w; if (xl < xb + 10) return;
-              if (!tracerHalo) { c.beginPath(); c.roundRect(xl, y - h / 2, w, h, 9); c.fillStyle = TH.nuit ? 'rgba(11,20,38,.92)' : 'rgba(255,255,255,.94)'; c.fill(); c.lineWidth = 1; c.strokeStyle = fort ? or : TH.nuit ? 'rgba(143,163,204,.35)' : 'rgba(29,43,79,.16)'; c.stroke(); }
-              let xx = xl + 8; c.textAlign = 'left'; if (nom) { c.font = '700 8.5px Inter, sans-serif'; c.fillStyle = TH.nuit ? '#8fa3cc' : '#7a8599'; c.fillText(nom, xx, y + 3); xx += wn; }
-              c.font = `${fort ? 800 : 700} 10.5px "JetBrains Mono", monospace`; c.fillStyle = TH.nuit ? '#f3f5f9' : '#141a26'; c.fillText(val, xx, y + 3.5); xx += wv + 7;
-              if (plus) { c.font = '500 9.5px "JetBrains Mono", monospace'; c.fillStyle = TH.nuit ? '#8f9bb3' : '#6b7385'; c.fillText(plus, xx, y + 3.5); } };
-            const oc = [], mets = (y, ...a) => { if (oc.some(z => Math.abs(z - y) < 20)) return; oc.push(y); pastille(y, ...a); };
-            mets(y2, 'PROCHAIN', nb(l.p2, dec), reste(l.p2)); mets(ym2, '50 %', nb(m, dec), fr < .45 ? reste(m) : 'atteint', dedans);
-            if (fr > .04 && fr < 1.15 && isFinite(yp)) mets(yp, dedans ? 'DANS LA ZONE' : 'CHEMIN', `${Math.round(Math.min(1, fr) * 100)} %`, '', true);
-            mets(y1, l.texte === 'rebond' ? 'TENU' : 'CASSÉ', nb(l.p1, dec), ''); c.restore(); } }
+            const yf = fr >= 1 ? y2 : y1 + (y2 - y1) * Math.max(0, fr);
+            c.strokeStyle = encre(.16); c.lineWidth = 2; c.beginPath(); c.moveTo(xb, y1); c.lineTo(xb, y2); c.stroke();  // (le rail)
+            if (Math.abs(yf - y1) > 1) { const g = c.createLinearGradient(0, y1, 0, yf); g.addColorStop(0, rgba(or, .25)); g.addColorStop(1, rgba(or, 1)); c.strokeStyle = g; c.lineWidth = 2; c.beginPath(); c.moveTo(xb, y1); c.lineTo(xb, yf); c.stroke(); }  // (le chemin fait)
+            c.lineCap = 'butt'; c.strokeStyle = encre(.85); c.lineWidth = 1; c.beginPath(); c.moveTo(xb - 5, Math.round(y1) + .5); c.lineTo(xb + 5, Math.round(y1) + .5); c.stroke();  // (le départ : un trait)
+            { const dz = dedans ? 5 : 4; c.beginPath(); c.moveTo(xb, ym2 - dz); c.lineTo(xb + dz, ym2); c.lineTo(xb, ym2 + dz); c.lineTo(xb - dz, ym2); c.closePath(); c.fillStyle = fr >= .45 ? or : TH.bg; c.fill(); c.lineWidth = 1; c.strokeStyle = fr >= .45 ? or : encre(.85); c.stroke(); }  // (le 50 %)
+            c.beginPath(); c.arc(xb, y2, 4, 0, 7); c.fillStyle = TH.bg; c.fill(); c.lineWidth = 1; c.strokeStyle = encre(.85); c.stroke(); c.beginPath(); c.arc(xb, y2, 1.6, 0, 7); c.fillStyle = or; c.fill();  // (la cible)
+            if (fr > .01 && fr < 1.15 && isFinite(yp)) { c.save(); c.shadowColor = rgba(or, .85); c.shadowBlur = 8; c.beginPath(); c.arc(xb, yp, 3.6, 0, 7); c.fillStyle = or; c.fill(); c.restore(); }  // (le cours)
+            c.restore();
+            languette(y2, 'PROCHAIN', nb(l.p2, dec), reste(l.p2)); languette(ym2, '50 %', nb(m, dec), fr < .45 ? reste(m) : 'atteint');
+            if (fr > .04 && fr < 1.15 && isFinite(yp)) languette(yp, dedans ? 'DANS LA ZONE' : 'CHEMIN', `${Math.round(Math.min(1, fr) * 100)} %`, '', true);
+            languette(y1, l.texte === 'rebond' ? 'TENU' : 'CASSÉ', nb(l.p1, dec), ''); } }
         else if (Math.abs(T(l.t2) - T(l.t1)) > 8) { c.globalAlpha = .6; c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(T(l.t1), Y(l.p1)); c.lineTo(T(l.t2), Y(l.p2)); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; }  // (une zone vers le prochain niveau : pas de jambe tracée)
-        if (!(l.texte === 'prochain' || l.texte === 'rebond' || l.t2 - l.t1 === 86400)) { c.font = '600 10px "JetBrains Mono", monospace'; const fl = `50 %  ${nb(m, dec)}`, fw = c.measureText(fl).width + 10; if (!tracerHalo) { c.fillStyle = TH.bg; c.globalAlpha = .6; c.beginPath(); c.roundRect(pw - fw - 4, ym - 15, fw, 13, 4); c.fill(); c.globalAlpha = 1; } c.fillStyle = col; c.textAlign = 'left'; c.fillText(fl, pw - fw + 1, ym - 5); } }
+        if (!(l.texte === 'prochain' || l.texte === 'rebond' || l.t2 - l.t1 === 86400)) { this._z50xb = x0; languette(ym, '50 %', nb(m, dec), ''); } }
       else if (l.genre === 'fibo') {  // du départ (100 %) à l'arrivée (0 %), prolongé à droite, la zone 38,2 – 61,8 % teintée
         const col = l.couleur ? coul(l.couleur) : '#ff8a00', x0 = Math.min(T(l.t1), T(l.t2)), N = fibN(), P = r => l.p2 + (l.p1 - l.p2) * r;
         if (N.includes(.382) && N.includes(.618)) c.fillStyle = rgba(col.startsWith('#') ? col : '#ff8a00', .07), c.fillRect(x0, Math.min(Y(P(.382)), Y(P(.618))), pw - x0, Math.abs(Y(P(.618)) - Y(P(.382))));
