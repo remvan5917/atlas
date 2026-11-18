@@ -942,7 +942,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v110</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v111</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1341,10 +1341,11 @@ class Pane {
         if (cours) { c.fillStyle = '#fff'; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); c.setLineDash([2, 2]); c.strokeRect(Math.round(x - cw / 2) + .5, Math.min(yo, yc) + .5, Math.max(1, Math.round(cw)) - 1, Math.max(1, Math.abs(yc - yo)) - 1); c.setLineDash([]); continue; }
         c.fillStyle = up ? TH.hausse : TH.baisse; c.fillRect(Math.round(x - cw / 2), Math.min(yo, yc), Math.max(1, Math.round(cw)), Math.max(1, Math.abs(yc - yo))); }
     } else {
-      c.lineWidth = Math.min(2, Math.max(1, bw * .12));
-      for (let k = i; k < j; k++) { const b = B[k], x = Math.round(X(k)) + .5, w = Math.max(1.5, bw * .35), cours = k === B.length - 1 && enCours;
+      // des barres fines et nettes (Rémy, 18/11 : « plus fines, là c'est grossier ») : un trait d'un pixel calé sur l'écran (1,5 au très fort zoom), des traits d'ouverture / clôture courts
+      const lw = bw >= 28 ? 1.5 : 1, dx = lw === 1 ? .5 : 0; c.lineWidth = lw; c.lineCap = 'butt';
+      for (let k = i; k < j; k++) { const b = B[k], x = Math.round(X(k)) + dx, w = Math.max(1.5, Math.min(bw * .3, 6)), cours = k === B.length - 1 && enCours, yo = Math.round(Y(b[1])) + dx, yc = Math.round(Y(b[4])) + dx;
         c.strokeStyle = cours ? '#8a91a0' : b[4] >= b[1] ? TH.barreH : TH.baisse; if (cours) c.setLineDash([2, 2]);
-        c.beginPath(); c.moveTo(x, Y(b[2])); c.lineTo(x, Y(b[3])); c.moveTo(x - w, Y(b[1])); c.lineTo(x, Y(b[1])); c.moveTo(x, Y(b[4])); c.lineTo(x + w, Y(b[4])); c.stroke(); if (cours) c.setLineDash([]); }
+        c.beginPath(); c.moveTo(x, Math.round(Y(b[2]))); c.lineTo(x, Math.round(Y(b[3])) + 1); c.moveTo(x - w, yo); c.lineTo(x, yo); c.moveTo(x, yc); c.lineTo(x + w, yc); c.stroke(); if (cours) c.setLineDash([]); }
     }
     // le zigzag (5, 10) : épais, la dernière jambe en tirets
     if (opt.zz) { const zz = this.d.zigzag || []; c.strokeStyle = TH.fg; c.lineWidth = 2.4; c.lineJoin = 'round';
