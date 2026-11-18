@@ -6462,7 +6462,8 @@ function vueVoix(n) { if (!/\b(montre|affiche|mets|zoome?|donne|fais voir|regard
 function fnVoix(n) {
   if (/\bmes trades\b/.test(n) && /\b(graphiques?|axe du temps|sur le graph)\b/.test(n) && /\b(montre|affiche|mets|cache|enleve|retire|efface)\b/.test(n)) return { k: 'TRADES', arg: /\b(cache|enleve|retire|efface)\b/.test(n) ? 'off' : 'on' };  // « Atlas, montre mes trades sur le graphique »
   if (/\b(inverse|inverser|retourne|retourner|remets?) (l )?echelle\b|\bechelle (inversee|normale|a l endroit)\b/.test(n)) return { k: 'INV', arg: /\b(normale|a l endroit|remets?)\b/.test(n) ? 'off' : 'on' };  // « Atlas, inverse l'échelle »
-  { const mv = vueVoix(n); if (mv) return { k: 'VUE', arg: mv }; }  // « montre les 3 derniers mois »
+  { const mv = vueVoix(n); if (mv) return { k: 'VUE', arg: mv }; }
+  if (/\bma methode\b/.test(n) && /\b(carte|(sur|du|de) (le |mon )?graphique)\b/.test(n) && /\b(montre|affiche|mets|cache|enleve|retire)\b/.test(n)) return { k: 'SCG', arg: /\b(cache|enleve|retire)\b/.test(n) ? 'off' : 'on' };  // « Atlas, montre ma méthode sur le graphique »  // « montre les 3 derniers mois »
   const mp = n.match(/\b(?:ajoute|mets|note|ecris|rajoute)\s+(?:a|dans|sur)\s+mon plan\b\s*(.*)$/); if (mp && mp[1].replace(/^[\s:,.-]+/, '').trim().length > 6) return { k: 'PLAN', arg: '+' + mp[1].replace(/^[\s:,.-]+/, '').trim() };  // « ajoute à mon plan : le prix repasse sous… » : un scénario dicté
   const mt = n.match(/\b(?:teste|tester|essaie|essaye|essayer)\s+(?:ma|une|cette)\s+regle\b\s*(.*)$/); if (mt) return { k: 'TEST', arg: mt[1].replace(/^[\s:,.-]+/, '').trim() };  // « teste ma règle : achète quand … » : la phrase entière part au testeur
   const ms = n.match(/\b(quels|quelles) (marches|contrats) (sont|viennent|ont|passent|cassent|croisent|restent|se trouvent)\b(.*)$/); if (ms && !/\bbougent\b/.test(n)) return { k: 'SCAN', arg: (ms[3] + ms[4]).trim() };  // « quels marchés sont au-dessus de … » : le filtre
@@ -6470,6 +6471,7 @@ function fnVoix(n) {
   let arg = ''; if (m[1] === 'CT') arg = (n.match(/\b(petrole|or|argent|gaz|cuivre)\b/) || [])[1] || ''; if (m[1] === 'ECO') arg = (n.match(/\b(emploi|fed|cpi|inflation|bce|pib|pce|ism|ventes|chomage)\b/) || [])[1] || '';
   if (m[1] === 'PERF') arg = /\b7 jours\b/.test(n) ? '7' : /\b30 jours\b/.test(n) ? '30' : /\b90 jours\b/.test(n) ? '90' : /\bsemaine\b/.test(n) ? 'sem' : /\bmois\b/.test(n) ? 'mois' : /\b(jour|journee|aujourd hui)\b/.test(n) ? 'jour' : /\b(tout|depuis le debut)\b/.test(n) ? 'tout' : ''; return { k: m[1], arg }; }
 async function lanceFnVoix(v) { const f = FONCTIONS.find(z => z[0] === v.k); if (!f) return null;
+  if (v.k === 'SCG') { const on = v.arg !== 'off'; if (ROLE === 'terminal') { if (SALLE_BC) SALLE_BC.postMessage({ t: 'scg', on }); } else if (optScg !== on) f[2](''); return on ? 'Ta méthode dans la carte du graphique' : 'Ta méthode retirée de la carte'; }
   if (v.k === 'INV' || v.k === 'VUE') { if (ROLE === 'terminal') return null; if (v.k === 'INV') { if ((v.arg === 'off') === !opt.inv) return opt.inv ? 'Échelle déjà inversée' : 'Échelle déjà normale'; basculeInv(); return opt.inv ? 'Échelle inversée' : 'Échelle normale'; } fnVue(v.arg); return `VUE ${v.arg} · ${(VUE_P[v.arg] || [])[1] || ''}`; }
   if (v.k === 'TRADES') { if (ROLE === 'terminal') { if (SALLE_BC) SALLE_BC.postMessage({ t: 'mestr', on: v.arg !== 'off' }); } else f[2](v.arg); return v.arg === 'off' ? 'Tes trades cachés' : 'Tes trades sur tes graphiques'; }
   if (ROLE === 'terminal') await termOuvre(v.k, false, v.arg); else await f[2](v.arg);
