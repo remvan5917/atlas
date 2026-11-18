@@ -923,6 +923,7 @@
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
       <button class="ico" id="t-nuit" data-tip="Mode nuit des graphiques : automatique le soir"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+      <button class="ico txt" id="t-50" data-tip="Le 50 % de tes jambes : le tableau de tous tes marchés, et les pointillés « 50 % » sur tes graphiques (clic droit : les cacher)">50%</button>
       <button class="ico txt" id="t-log" data-tip="Échelle logarithmique : les mêmes pourcentages font la même hauteur">log</button>
       <button class="ico" id="b-cmp" data-tip="Comparer avec un autre marché : superposé en %, ou leur rapport / écart dans une sous-fenêtre"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-7 5 5"/><path d="M3 12l5 2 4-4 4 3 5-4" stroke-dasharray="2.5 2"/></svg></button>
       <button class="ico" id="t-fig" data-tip="Figures repérées : triangles, canaux, doubles sommets, compressions — en pointillés, expliquées au survol"><svg viewBox="0 0 24 24"><path d="M3 18L12 5l9 13z" stroke-dasharray="3 2.4"/></svg></button>
@@ -6429,6 +6430,7 @@ async function fn50() { ouvreFn('50', 'le 50 % de tes jambes D1 · je calcule…
   document.querySelectorAll('#fn-c [data-c50]').forEach(e => e.onclick = () => { if (ROLE !== 'terminal' && e.dataset.c50 !== code) changeCode(e.dataset.c50); }); }
 function bascule50(on) { opt50 = on == null ? !opt50 : !!on; ecrit('g-50', opt50 ? '1' : '0'); C50D1.at = 0; toutDessine(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'cinquante', on: opt50 }); }
 if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'cinquante' && ROLE !== 'terminal') { opt50 = !!m.on; ecrit('g-50', opt50 ? '1' : '0'); toutDessine(); } });
+{ const b50 = $('#t-50'); if (b50) { const maj = () => b50.classList.toggle('on', opt50); maj(); b50.onclick = () => { if (!opt50) bascule50(true); maj(); fn50(); }; b50.oncontextmenu = ev => { ev.preventDefault(); bascule50(false); maj(); toast('Les 50 % retirés de tes graphiques'); }; setInterval(maj, 2000); } }
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['50', 'le 50 % de tes jambes D1 sur tous tes marchés : où il est, qui y est, ce qu’il a donné par le passé · tracer ta ligne au 50 % · le montrer sur tes graphiques', () => { if (!opt50 && ROLE !== 'terminal') bascule50(true); return fn50(); }]);
 // SCG : ta méthode dans la carte du graphique — quand le marché affiché est sur un sommet / creux D1 (à moins de 30 % d'une journée habituelle), une ligne de faits :
 // le niveau et sa distance, depuis combien de jours, le premier contact (H1), la première bougie H4 close au contact, le temps avant la clôture D1, « W » si c'est aussi un niveau de la semaine ;
