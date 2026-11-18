@@ -949,7 +949,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v119</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v120</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -5165,7 +5165,8 @@ function setupDe(c, d1, d4, px, niv = SETUP_NIV) { const B1 = d1.bougies || [], 
   const vols = H.slice(Math.max(0, k - 20), k).map(b => b[5]).filter(v => v > 0).sort((a, b) => a - b), vr = vols.length >= 5 && bc[5] > 0 ? bc[5] / vols[vols.length >> 1] : null;  // (le volume de la H4 du signal, face à l'habitude des 20 d'avant)
   niv[`${c}|${sig.q[0]}`] = fin; return { c, ...sig, e, sl, tp, tS, tT, r: tT / tS, v$, vr, bar: bc[0], dec: d1.dec ?? 2, tpq: tpL }; }
 async function setupGuet() { if (!QUI_SONNE || lit('g-setup', '1') !== '1' || REPLAY || CAPT || !L.length || Date.now() - SETUP_AT < 50000) return; SETUP_AT = Date.now(); const GR = scGrands(L.map(z => z.code)), nv = [];
-  for (const x of L) { if (GR.has(x.code) || x.dernier == null) continue; try { const st = setupDe(x.code, await barresDe(x.code, 'D1'), await barresDe(x.code, 'H4'), x.dernier); if (!st) continue; const k = `${x.code}|${st.bar}`; if (SETUP_VUS[k]) continue; SETUP_VUS[k] = 1;
+  for (const x of L) { if (GR.has(x.code) || x.dernier == null) continue; try { const d4s = await barresDe(x.code, 'H4'); if (d4s.source !== 'topstepx') continue;  // (seulement ce qui se trade chez Topstep : pas le DXY, le VIX, ni les CFD — comme la maison)
+      const st = setupDe(x.code, await barresDe(x.code, 'D1'), d4s, x.dernier); if (!st) continue; const k = `${x.code}|${st.bar}`; if (SETUP_VUS[k]) continue; SETUP_VUS[k] = 1;
       if (positionsDe(x.code).length) continue;  // (déjà en position sur ce marché : pas de deuxième idée)
       nv.push(st); } catch (e) { /* ce marché plus tard */ } }
   ecrit('g-setup-niv', JSON.stringify(SETUP_NIV)); if (!nv.length) return; SETUP_DER = [...nv, ...SETUP_DER].slice(0, 20);
