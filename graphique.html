@@ -949,7 +949,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v122</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v123</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -3664,6 +3664,9 @@ function detecteFigures(p, B) {
   // 0. la zone 50 % de la cassure (demande de Rémy, 18/11 : « par rapport au prochain ») : quand la jambe en cours vient de casser un sommet / creux de ton zigzag,
   // le 50 % entre le niveau cassé (le plus proche derrière le prix, que la jambe a traversé) et le PROCHAIN niveau du zigzag devant le prix, dans le sens de la cassure ;
   // Atlas la propose en pointillés — « Garder » la pose comme ta zone 50 % avec alerte ; quand le prochain casse à son tour, la proposition passe au suivant
+  // (TOUJOURS sur ton zigzag D1, quelle que soit l'unité affichée — Rémy, 18/11 : « ça doit être uniquement sur le daily la zone 50 » ; en H4 / H1, la même zone qu'en D1)
+  { const d1z = p.ut === 'D1' ? p.d : (CACHE_D[`${code}|D1`] || {}).d; if (d1z) { const B = (d1z.bougies || []).slice(), N = B.length, base = `${code}|D1|`, ut = 'D1', dt = 86400, I1 = new Map(B.map((b, i) => [b[0], i]));
+  const piv = (d1z.zigzag || []).filter(z => (z[2] === 'h' || z[2] === 'l') && I1.has(z[0])).map(z => ({ t: z[0], p: z[1], g: z[2] })); if (piv.length >= 3) {
   { const C = piv[piv.length - 2], X = piv[piv.length - 1], sg = Math.sign(X.p - C.p), lv = piv.slice(0, -1);
     const der2 = der, casse = sg ? lv.filter(z => sg > 0 ? z.p > C.p && z.p < der2 : z.p < C.p && z.p > der2).sort((a, b) => sg * (b.p - a.p))[0] : null, pro = sg ? lv.filter(z => sg > 0 ? z.p > der2 : z.p < der2).sort((a, b) => sg * (a.p - b.p))[0] : null;
     // le REBOND (demande de Rémy, 18/11 : « quand ça casse… et si ça rebondit le contraire ») : la jambe en cours est allée jusqu'à un niveau de ton zigzag (à 30 % d'une journée près)
@@ -3678,7 +3681,7 @@ function detecteFigures(p, B) {
       const nomN = z => z.g === 'h' ? 'sommet' : 'creux';
       out.push({ z50: true, cle: base + 'z50' + casse.t + '|' + pro.t, nom: 'Zone 50 % vers le prochain niveau', ut, segs: [[C.t, zb, fin, zb], [C.t, m, fin, m, 1], [C.t, za, fin, za]],
         texte: `Le prix a cassé ${sg > 0 ? 'vers le haut' : 'vers le bas'} le ${nomN(casse)} ${nb(casse.p, dec)} de ton zigzag (${jour(casse.t)}). Le prochain niveau dans ce sens : le ${nomN(pro)} ${nb(pro.p, dec)} (${jour(pro.t)}), à ${Math.abs(tks(pro.p - der)).toLocaleString('fr-FR')} ticks du prix. À mi-chemin entre les deux : ${nb(m, dec)} (zone ${nb(za, dec)} – ${nb(zb, dec)}), à ${Math.abs(tks(m - der)).toLocaleString('fr-FR')} ticks. Garder : ta zone 50 % avec alerte.`,
-        lignes: [{ genre: 'zone50', t1: tc, p1: casse.p, t2: tc + dt, p2: pro.p, texte: 'prochain' }] }); } }
+        lignes: [{ genre: 'zone50', t1: tc, p1: casse.p, t2: tc + dt, p2: pro.p, texte: 'prochain' }] }); } } } } }
   // 1. double sommet / double creux : les deux derniers sommets (creux) à moins de 0,35 ATR, avec un vrai creux (sommet) entre les deux
   for (const g of ['h', 'l']) { const S = g === 'h' ? H : L; if (S.length < 2) continue; const s1 = S[S.length - 2], s2 = S[S.length - 1];
     if (!dern.includes(s2) || Math.abs(s1.p - s2.p) > .35 * atr) continue;
