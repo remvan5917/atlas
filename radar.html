@@ -188,6 +188,7 @@
   .tuile-m .c { display: flex; justify-content: space-between; align-items: baseline; } .tuile-m .c b { font: 800 3.2vh var(--mono); color: var(--marque); letter-spacing: .04em; } .tuile-m .c small { font: 600 1.6vh var(--ui); color: var(--doux); }
   .tuile-m .px { font: 700 6.6vh var(--mono); color: #fff; letter-spacing: -.02em; margin-top: 1vh; line-height: 1.05; } .tuile-m .vr { font: 800 2.6vh var(--mono); margin-top: .4vh; }
   .tuile-m svg { margin-top: auto; width: 100%; height: 7vh; }
+  .tuile-m.niv { border-color: rgba(232, 163, 61, .55); } .tuile-m .c small.niv { color: #e8a33d; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
   /* les tuiles suivent leur propre hauteur (le mur partage l'écran avec les listes) : le texte rétrécit au lieu d'être rogné, la courbe prend la place qui reste */
   .tuile-m { container-type: size; padding: 1.4vh 1.4vw; } .tuile-m .c b { font-size: clamp(12px, 16cqh, 3.2vh); } .tuile-m .c small { font-size: clamp(10px, 10cqh, 1.6vh); }
   .tuile-m .px { font-size: clamp(16px, 34cqh, 6.6vh); margin-top: .6vh; } .tuile-m .vr { font-size: clamp(11px, 13cqh, 2.6vh); } .tuile-m svg { flex: 1 1 0; min-height: 0; height: auto; max-height: 7vh; } .tuile-m.crit { box-shadow: inset 0 0 0 2px rgba(255, 77, 79, .7); } .tuile-m { cursor: pointer; }
@@ -727,6 +728,15 @@ function ouverte(nom) {
   if (ny.j === 'sam.') return false; if (ny.j === 'dim.') return tn >= 1080; if (ny.j === 'ven.') return tn < 1020; return !(tn >= 1020 && tn < 1080);
 }
 const MUR_CODES = ['SIL', 'MGC', 'MNQ', 'MYM', 'MCL', 'M6E', 'DXY', 'VIX'], murAv = {};
+// ta méthode sur le mur : les sommets / creux de ton zigzag D1 (les mêmes que SC), relus toutes les 10 min, un marché à la fois ;
+// la tuile d'un marché à moins de 30 % d'une journée habituelle d'un de ces niveaux le dit à la place du nom (« ◉ creux D1 50 858 · 18 t »)
+let MUR_NIV = {}, MUR_NIV_AT = 0;
+async function murNivCharge() { if (!ROOT || Date.now() - MUR_NIV_AT < 600000) return; MUR_NIV_AT = Date.now();
+  for (const c of MUR_CODES) { try { const d = await (await fetch(`${ROOT}/maison/graphique?code=${c}&ut=D1`, { cache: 'no-store' })).json(), B = d.bougies || [], I = new Map(B.map((b, i) => [b[0], i]));
+      const P = (d.zigzag || []).filter(q => (q[2] === 'h' || q[2] === 'l') && !(I.has(q[0]) && I.get(q[0]) >= B.length - 2)).slice(-10), amp = B.length > 22 ? B.slice(-21, -1).map(b => b[2] - b[3]).sort((a, b) => a - b)[10] : 0;
+      MUR_NIV[c] = { P, amp, tk: d.tick || 0, dec: d.dec ?? 2 }; } catch (e) { /* ce marché plus tard */ } await new Promise(r => setTimeout(r, 1500)); } murDonnees(); }
+function murNiv(c, px) { const m = MUR_NIV[c]; if (!m || !(m.amp > 0) || px == null || !m.P.length) return ''; const q = [...m.P].sort((a, b) => Math.abs(a[1] - px) - Math.abs(b[1] - px))[0]; if (Math.abs(q[1] - px) / m.amp > .3) return '';
+  return `${q[2] === 'h' ? 'sommet' : 'creux'} D1 ${nb(q[1], m.dec)}${m.tk ? ` · ${Math.round(Math.abs(q[1] - px) / m.tk).toLocaleString('fr-FR')} t` : ''}`; }
 function odoM(av, ap, monte) { if (!av || av.length !== ap.length) return `<span class="odo">${esc(ap)}</span>`; return `<span class="odo">${[...ap].map((ch, i) => ch !== av[i] && /\d/.test(ch) ? `<span class="r ${monte ? 'u' : 'd'}">${ch}</span>` : `<span>${esc(ch)}</span>`).join('')}</span>`; }
 function courbeM(v, up) { if (!v || v.length < 2) return ''; const lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1; return `<svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="${v.map((y, i) => `${(i * 100 / (v.length - 1)).toFixed(1)},${(28 - (y - lo) / r * 26).toFixed(1)}`).join(' ')}" fill="none" stroke="${up ? '#22c55e' : '#ff4d4f'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; }
 
@@ -775,10 +785,10 @@ function murTic() {
   else $('#mur-c').innerHTML = `<div class="vide"><small>PROCHAIN CHIFFRE</small><br><b style="font-size:28px;opacity:.75">Aucun chiffre fort à venir pour l’instant</b></div>`;
 }
 function murDonnees() {
-  if (!D || !document.body.classList.contains('mode-mur')) return; setTimeout(murTuiles, 0);
+  if (!D || !document.body.classList.contains('mode-mur')) return; setTimeout(murTuiles, 0); murNivCharge();
   const T = D.tableau || {}, C = D.climat || {}, now = Date.now() / 1000, recent = new Set((D.items || []).filter(i => i.urgence === 'critique' && now - (i.publie || i.at) < 5400).flatMap(i => i.marches || []));
   $('#mur-g').innerHTML = MUR_CODES.map(c => { const t = T[c], k = C[c]; const der = t ? t.dernier : k ? k.dernier : null, pct = t ? t.var_pct : k ? k.var_pct : null; if (der == null) return '';
-    const dec = DEC[c] != null ? DEC[c] : 2, txt = nb(der, dec), html = `<div class="tuile-m${recent.has(c) ? ' crit' : ''}"><div class="c"><b>${c}</b><small>${esc(NOMS[c] || (k && k.nom) || c)}</small></div><div class="px">${odoM(murAv[c] || '', txt, der >= (murAv[c + 'v'] ?? der))}</div>`
+    const dec = DEC[c] != null ? DEC[c] : 2, txt = nb(der, dec), html = `<div class="tuile-m${recent.has(c) ? ' crit' : ''}${murNiv(c, der) ? ' niv' : ''}"><div class="c"><b>${c}</b>${murNiv(c, der) ? `<small class="niv" title="Ta méthode : sur un sommet / creux D1 (à moins de 30 % d’une journée habituelle)">◉ ${murNiv(c, der)}</small>` : `<small>${esc(NOMS[c] || (k && k.nom) || c)}</small>`}</div><div class="px">${odoM(murAv[c] || '', txt, der >= (murAv[c + 'v'] ?? der))}</div>`
       + `<div class="vr ${pct >= 0 ? 'h' : 'b'}">${pct >= 0 ? '▲' : '▼'} ${nb(Math.abs(pct || 0), 2)} %${t && t.var_ticks != null ? ` · ${sg(t.var_ticks)} t` : ''}</div>${courbeM(t ? t.heure : k.courbe, (pct || 0) >= 0)}</div>`;
     murAv[c] = txt; murAv[c + 'v'] = der; return html; }).join('') || `<div class="mur-vide"><b>${fermeTxt()}</b><small>Les cours reviennent ici dès la réouverture ; les dépêches continuent de défiler en bas.</small></div>`;
   const l = (D.items || []).filter(i => i.urgence === 'critique' || i.urgence === 'importante').sort((a, b) => (b.publie || b.at) - (a.publie || a.at)).slice(0, 14);
