@@ -942,7 +942,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v104</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v105</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1392,7 +1392,7 @@ class Pane {
         c.fillStyle = rgba(col.startsWith('#') ? col : '#e8a33d', TH.nuit ? .13 : .11); c.fillRect(x0, Math.min(ya, yb), pw - x0, Math.abs(yb - ya));
         c.strokeStyle = col; c.globalAlpha = .45; c.lineWidth = 1; [ya, yb].forEach(y => { const yn = net(y, 1); c.beginPath(); c.moveTo(x0, yn); c.lineTo(pw, yn); c.stroke(); }); c.globalAlpha = 1;
         c.lineWidth = 1.6; c.setLineDash(l.style === 'tirets' ? [5, 4] : []); c.beginPath(); c.moveTo(x0, ym); c.lineTo(pw, ym); c.stroke(); c.setLineDash([]);
-        c.globalAlpha = .6; c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(T(l.t1), Y(l.p1)); c.lineTo(T(l.t2), Y(l.p2)); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+        if (Math.abs(T(l.t2) - T(l.t1)) > 8) { c.globalAlpha = .6; c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(T(l.t1), Y(l.p1)); c.lineTo(T(l.t2), Y(l.p2)); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; }  // (une zone vers le prochain niveau : pas de jambe tracée)
         c.font = '600 10px "JetBrains Mono", monospace'; const fl = `50 %  ${nb(m, dec)}`, fw = c.measureText(fl).width + 10; if (!tracerHalo) { c.fillStyle = TH.bg; c.globalAlpha = .6; c.beginPath(); c.roundRect(pw - fw - 4, ym - 15, fw, 13, 4); c.fill(); c.globalAlpha = 1; } c.fillStyle = col; c.textAlign = 'left'; c.fillText(fl, pw - fw + 1, ym - 5); }
       else if (l.genre === 'fibo') {  // du départ (100 %) à l'arrivée (0 %), prolongé à droite, la zone 38,2 – 61,8 % teintée
         const col = l.couleur ? coul(l.couleur) : '#ff8a00', x0 = Math.min(T(l.t1), T(l.t2)), N = fibN(), P = r => l.p2 + (l.p1 - l.p2) * r;
@@ -3585,7 +3585,7 @@ const valLigne = (t1, p1, t2, p2, t) => t2 === t1 ? p1 : p1 + (p2 - p1) * (t - t
 function figuresDe(p, B) {
   if (!p.d || B.length < 60) return []; const N = B.length, zz0 = p.d.zigzag || [], cle = `${code}|${p.ut}|${N}|${B[N - 1][0]}|${B[N - 1][4]}|${zz0.length}|${FIG_IGN.size}|${optFig}|${opt50}|${lignes.filter(l => l.genre === 'zone50').length}`;
   if (p._fg && p._fg.cle === cle) return p._fg.v;
-  let v = []; try { v = detecteFigures(p, B).filter(f => !FIG_IGN.has(f.cle) && (optFig || f.z50) && !(f.z50 && lignes.some(l => l.genre === 'zone50' && l.t1 === f.lignes[0].t1))).slice(0, 3); } catch (e) { console.error(e); }
+  let v = []; try { v = detecteFigures(p, B).filter(f => !FIG_IGN.has(f.cle) && (optFig || f.z50) && !(f.z50 && lignes.some(l => l.genre === 'zone50' && l.p1 === f.lignes[0].p1 && l.p2 === f.lignes[0].p2))).slice(0, 3); } catch (e) { console.error(e); }
   p._fg = { cle, v }; return v;
 }
 function detecteFigures(p, B) {
@@ -3594,14 +3594,16 @@ function detecteFigures(p, B) {
   const piv = (p.d.zigzag || []).filter(z => z[2] === 'h' || z[2] === 'l').map(z => ({ t: z[0], p: z[1], g: z[2] })), out = [], base = `${code}|${p.ut}|`;
   if (piv.length < 4) return out;
   const H = piv.filter(z => z.g === 'h'), L = piv.filter(z => z.g === 'l'), dern = piv.slice(-4);
-  // 0. la zone 50 % d'une cassure (demande de Rémy, 18/11) : la jambe en cours (ses deux derniers points de zigzag) a cassé le sommet / creux d'avant du même côté ;
-  // Atlas propose sa zone 50 % (45 – 55 %) en pointillés — « Garder » la pose comme ta zone 50 %, avec alerte, et elle suit la jambe tant qu'elle s'allonge
-  { const A = piv[piv.length - 3], C = piv[piv.length - 2], X = piv[piv.length - 1], sg = Math.sign(X.p - C.p);
-    if (A && sg && sg * (X.p - A.p) > 0) { const m = (C.p + X.p) / 2, za = X.p - (X.p - C.p) * .45, zb = X.p - (X.p - C.p) * .55, fin = tN + 12 * dt, aj = B.slice(Math.max(0, N - 21), N - 1).map(b => b[2] - b[3]).sort((x, y) => x - y)[10] || atr, g = Math.abs(X.p - C.p) / aj;
-      let ps = ''; try { const E = passe50(p.d).filter(e => (e.g === (g >= 5))), n = E.length, rp = E.filter(e => e.r === 'rep').length, tr = E.filter(e => e.r === 'tr').length; if (n >= 5) ps = ` Sur ce marché en ${ut}, au 50 % d’une ${g >= 5 ? 'grande' : 'petite'} jambe : reparti ${Math.round(rp / n * 100)} %, traversé ${Math.round(tr / n * 100)} % (${n} fois).`; } catch (e) { /* sans */ }
-      out.push({ z50: true, cle: base + 'z50' + C.t, nom: 'Zone 50 % de la cassure', ut, segs: [[X.t, za, fin, za], [X.t, m, fin, m, 1], [X.t, zb, fin, zb], [C.t, C.p, X.t, X.p, 1]],
-        texte: `Le prix a cassé ${sg > 0 ? 'le sommet' : 'le creux'} d’avant (${nb(A.p, dec)}) : la jambe va de ${nb(C.p, dec)} (${jour(C.t)}) à ${nb(X.p, dec)}, ${Math.abs(tks(X.p - C.p)).toLocaleString('fr-FR')} ticks, ${nb(g, 1)} ${['D1', 'W', 'M'].includes(p.ut) ? 'journées habituelles' : 'fois l’amplitude habituelle'}. Son 50 % : ${nb(m, dec)} (zone ${nb(Math.min(za, zb), dec)} – ${nb(Math.max(za, zb), dec)}), à ${Math.abs(tks(der - m)).toLocaleString('fr-FR')} ticks du prix.${ps} Garder : ta zone 50 % avec alerte, qui suit la jambe si elle s’allonge.`,
-        lignes: [{ genre: 'zone50', t1: C.t, p1: C.p, t2: X.t, p2: X.p }] }); } }
+  // 0. la zone 50 % de la cassure (demande de Rémy, 18/11 : « par rapport au prochain ») : quand la jambe en cours vient de casser un sommet / creux de ton zigzag,
+  // le 50 % entre le niveau cassé (le plus proche derrière le prix, que la jambe a traversé) et le PROCHAIN niveau du zigzag devant le prix, dans le sens de la cassure ;
+  // Atlas la propose en pointillés — « Garder » la pose comme ta zone 50 % avec alerte ; quand le prochain casse à son tour, la proposition passe au suivant
+  { const C = piv[piv.length - 2], X = piv[piv.length - 1], sg = Math.sign(X.p - C.p), lv = piv.slice(0, -1);
+    const der2 = der, casse = sg ? lv.filter(z => sg > 0 ? z.p > C.p && z.p < der2 : z.p < C.p && z.p > der2).sort((a, b) => sg * (b.p - a.p))[0] : null, pro = sg ? lv.filter(z => sg > 0 ? z.p > der2 : z.p < der2).sort((a, b) => sg * (a.p - b.p))[0] : null;
+    if (casse && pro) { const m = (casse.p + pro.p) / 2, h = Math.abs(pro.p - casse.p) * .05, za = m - h, zb = m + h, kc = B.findIndex(b => sg > 0 ? b[2] > casse.p && b[0] > C.t : b[3] < casse.p && b[0] > C.t), tc = kc >= 0 ? B[kc][0] : X.t, fin = tN + 12 * dt;
+      const nomN = z => z.g === 'h' ? 'sommet' : 'creux';
+      out.push({ z50: true, cle: base + 'z50' + casse.t + '|' + pro.t, nom: 'Zone 50 % vers le prochain niveau', ut, segs: [[C.t, zb, fin, zb], [C.t, m, fin, m, 1], [C.t, za, fin, za]],
+        texte: `Le prix a cassé ${sg > 0 ? 'vers le haut' : 'vers le bas'} le ${nomN(casse)} ${nb(casse.p, dec)} de ton zigzag (${jour(casse.t)}). Le prochain niveau dans ce sens : le ${nomN(pro)} ${nb(pro.p, dec)} (${jour(pro.t)}), à ${Math.abs(tks(pro.p - der)).toLocaleString('fr-FR')} ticks du prix. À mi-chemin entre les deux : ${nb(m, dec)} (zone ${nb(za, dec)} – ${nb(zb, dec)}), à ${Math.abs(tks(m - der)).toLocaleString('fr-FR')} ticks. Garder : ta zone 50 % avec alerte.`,
+        lignes: [{ genre: 'zone50', t1: tc, p1: casse.p, t2: tc + dt, p2: pro.p }] }); } }
   // 1. double sommet / double creux : les deux derniers sommets (creux) à moins de 0,35 ATR, avec un vrai creux (sommet) entre les deux
   for (const g of ['h', 'l']) { const S = g === 'h' ? H : L; if (S.length < 2) continue; const s1 = S[S.length - 2], s2 = S[S.length - 1];
     if (!dern.includes(s2) || Math.abs(s1.p - s2.p) > .35 * atr) continue;
@@ -6442,7 +6444,7 @@ function jambes50(d) { const B = d.bougies || [], P = (d.zigzag || []).filter(q 
 function dessine50(p, g) { if (!opt50 || ROLE === 'ensemble' || !p.d) return; const { c, Y, T, pw, ph, TH } = g, J = jambes50(p.d); c.save(); c.font = '700 9.5px Inter, sans-serif';
   const amb = TH && TH.nuit ? '#e8a33d' : '#b8730f', fond = TH && TH.nuit ? '#0b1426' : '#ffffff';
   const etiq = (y, txt, a) => { if (!isFinite(y) || y < 8 || y > ph - 8) return; c.globalAlpha = a; c.fillStyle = amb; c.fillRect(pw + 1, Math.round(y) - 1, 9, 2); const tw = c.measureText(txt).width + 6; c.fillStyle = fond; c.fillRect(pw + 12, y - 6, tw, 12); c.fillStyle = amb; c.textAlign = 'left'; c.fillText(txt, pw + 15, y + 3.5); c.globalAlpha = 1; };
-  if (J) { for (const [v, t0, a, txt] of [[J.m, J.X[0], .9, J.s * (J.X[1] - J.A[1]) > 0 ? '50 % cassure' : '50 %'], [J.mAv, J.C[0], .45, '50 % avant']]) { const y = Math.round(Y(v)) + .5, x0 = Math.max(0, T(t0)); if (!isFinite(y) || y < 0 || y > ph || x0 >= pw) continue;
+  if (J) { for (const [v, t0, a, txt] of [[J.m, J.X[0], .9, '50 % retour'], [J.mAv, J.C[0], .45, '50 % avant']]) { const y = Math.round(Y(v)) + .5, x0 = Math.max(0, T(t0)); if (!isFinite(y) || y < 0 || y > ph || x0 >= pw) continue;
       c.strokeStyle = amb; c.globalAlpha = a; c.lineWidth = 1; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); c.setLineDash([]); etiq(y, txt, a); } }
   if (['5m', '15m', '30m', 'H1', 'H4'].includes(p.ut)) { if (C50D1.c !== code || Date.now() - C50D1.at > 120000) { C50D1 = { c: code, at: Date.now(), j: C50D1.c === code ? C50D1.j : null }; barresDe(code, 'D1').then(d => { C50D1.j = jambes50(d); toutDessine(); }).catch(() => {}); }
     if (C50D1.j) etiq(Y(C50D1.j.m), '50 % D1', .9); }
