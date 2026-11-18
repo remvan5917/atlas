@@ -1354,7 +1354,7 @@ class Pane {
     if (MC) dessineMethode(MC, { c, X, Y, T, i, j, pw, ph, HAUT, BASP, TH, bw, B }, 'lignes');
     // les figures repérées : de fins pointillés violets, comme des lignes tracées à la main (rien sur les bougies) ; survol = l'explication
     this.figHits = [];
-    if (optFig && !REPLAY) { c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip();
+    if ((optFig || opt50) && !REPLAY) { c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip();
       for (const f of figuresDe(this, B)) { const sel = this.figSurvol === f || FIG_SEL === f; c.strokeStyle = sel ? '#7c4dff' : 'rgba(139,92,255,.8)'; c.lineWidth = sel ? 2.2 : 1.4;
         for (const sg of f.segs) { const x1 = T(sg[0]), y1 = Y(sg[1]), x2 = T(sg[2]), y2 = Y(sg[3]); c.setLineDash(sg[4] ? [2, 4] : [6, 4]); c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); this.figHits.push({ f, x1, y1, x2, y2 }); } }
       c.setLineDash([]); c.restore(); }
@@ -1386,6 +1386,7 @@ class Pane {
         if (ancres && !tracerHalo && !sel) { c.save(); c.setLineDash([]); c.fillStyle = c.strokeStyle; [[x1, y1], [x2, y2]].forEach(([x, y]) => { if (x > -3 && x < pw + 3) { c.beginPath(); c.arc(x, y, 2.1, 0, 7); c.fill(); } }); c.restore(); } };
       const rgba = (hex, a) => { const h = String(hex).replace('#', ''); if (h.length !== 6) return `rgba(128,128,128,${a})`; return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`; };
       if (l.genre === 'horizontale') { if (!sel && !tracerHalo && c.lineWidth === 1.2) c.lineWidth = 1; const y = net(Y(l.p1), c.lineWidth), x0 = l.rayon && l.t1 != null ? Math.max(0, T(l.t1)) : 0; if (x0 < pw) { c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); if (l.rayon && x0 > 0) { c.fillStyle = coul(l.couleur); c.beginPath(); c.arc(x0, y, sel ? 3.2 : 2.4, 0, 7); c.fill(); } } }
+      else if (l.genre === 'zone50' && (() => { const n = zone50Suit(l, this.d) || (this.ut !== 'D1' ? zone50Suit(l, (CACHE_D[`${code}|D1`] || {}).d) : null); if (n && QUI_SONNE && !REPLAY) { Object.assign(l, n); clearTimeout(l._suitT); l._suitT = setTimeout(() => sauve(), 1500); } return false; })()) { /* (la jambe s'est allongée : la zone vient d'être recalculée) */ }
       else if (l.genre === 'zone50') {  // la zone 50 % : la jambe (en pointillés, du départ à l'arrivée), sa zone du milieu (45 – 55 %) teintée et prolongée à droite, le 50 % en trait plein
         const col = l.couleur ? coul(l.couleur) : '#e8a33d', x0 = Math.min(T(l.t1), T(l.t2)), m = (l.p1 + l.p2) / 2, [za, zb] = zone50Px(l), ya = Y(za), yb = Y(zb), ym = net(Y(m), 1.6);
         c.fillStyle = rgba(col.startsWith('#') ? col : '#e8a33d', TH.nuit ? .13 : .11); c.fillRect(x0, Math.min(ya, yb), pw - x0, Math.abs(yb - ya));
@@ -1666,7 +1667,7 @@ class Pane {
       if (simuMove(this, x, y)) return;
       if (tradeMove(this, x, y)) return;
       if (this.iT && panes.length > 1) { INSTANT = { t: this.iT(x), p: this }; panes.forEach(q => { if (q !== this) q.dessine(); }); }
-      if (!glisse && optFig && !brouillon && outil === 'curseur') { const f = figureSous(this, x, y); if (f !== this.figSurvol) { this.figSurvol = f; if (f) montreBulle({ genre: 'figure', f }, ev.clientX, ev.clientY); else if (!this.survol) montreBulle(null); this.dessine(); } else if (f) placeBulle(ev.clientX, ev.clientY); if (f) { cv.style.cursor = 'pointer'; return; } }
+      if (!glisse && (optFig || opt50) && !brouillon && outil === 'curseur') { const f = figureSous(this, x, y); if (f !== this.figSurvol) { this.figSurvol = f; if (f) montreBulle({ genre: 'figure', f }, ev.clientX, ev.clientY); else if (!this.survol) montreBulle(null); this.dessine(); } else if (f) placeBulle(ev.clientX, ev.clientY); if (f) { cv.style.cursor = 'pointer'; return; } }
       if (!glisse) { const m = (this.marques || []).find(k => Math.hypot(k.x - x, k.y - y) < 9), n = m ? m.n : null; if (n !== this.survol) { this.survol = n; montreBulle(n, ev.clientX, ev.clientY); } else if (n) placeBulle(ev.clientX, ev.clientY); }
       if (!glisse && !brouillon && outil === 'curseur' && this.T && zone(x, y) === 'graphe') { const ls = proche(this, x, y); if (ls !== this.lSurvol) { this.lSurvol = ls; this.dessine(); }
         if (ls) { cv.style.cursor = fige(ls) ? 'default' : bouSous(this, ls, x, y) ? 'crosshair' : 'grab'; return; } } else if (this.lSurvol && !glisse) { this.lSurvol = null; this.dessine(); }
@@ -1792,6 +1793,10 @@ const visibleEn = (l, ut) => { const v = l && l.vis; if (!v || !ut || typeof v !
 const visTxt = v => !v ? '' : v.startsWith('<=') ? `${v.slice(2)} et moins` : `seulement ${v}`;
 // les bouts qu'on peut attraper pour ajuster un dessin (comme sur toutes les plateformes) : les deux points d'une ligne, d'une flèche, d'un canal, d'un Fibonacci, d'une zone, d'une régression ; les trois d'une fourche
 // la zone 50 % : 50 % de la jambe ± zl % (5 par défaut : de 45 à 55 %), du prix le plus bas au plus haut
+// la zone 50 % suit sa jambe (demande de Rémy, 18/11 : « par rapport au prochain ») : tant que son départ est le dernier sommet / creux confirmé de ton zigzag
+// (pas de retournement depuis), quand le prix casse son arrivée, l'arrivée passe au nouveau plus loin (le prochain point du zigzag) et la zone se recalcule ; une zone dont la jambe s'est retournée reste où elle est
+function zone50Suit(l, d) { if (l.suit === false || !d || !d.zigzag) return null; const P = d.zigzag.filter(q => q[2] === 'h' || q[2] === 'l'), k = P.findIndex(q => q[0] === l.t1 && Math.abs(q[1] - l.p1) <= Math.abs(l.p1) * 1e-6);
+  if (k < 0 || k !== P.length - 2) return null; const X = P[k + 1], s = Math.sign(l.p2 - l.p1); if (!s || Math.sign(X[1] - l.p1) !== s || s * (X[1] - l.p2) <= 0) return null; return { t2: X[0], p2: X[1] }; }
 const zone50Px = l => { const h = Math.max(1, Math.min(20, l.zl || 5)) / 100, a = l.p2 + (l.p1 - l.p2) * (.5 - h), b = l.p2 + (l.p1 - l.p2) * (.5 + h); return [Math.min(a, b), Math.max(a, b)]; };
 const BOUTS = { droite: 2, segment: 2, canal: 2, fleche: 2, fibo: 2, zone50: 2, rect: 2, regression: 2, fourche: 3 };
 function bouSous(p, l, x, y) { const n = BOUTS[l.genre]; if (!n || !p.T) return null; for (let k = 1; k <= n; k++) { const t = l['t' + k], v = l['p' + k]; if (t == null || v == null) continue; if (Math.hypot(x - p.T(t), y - p.Y(v)) < 9) return 'b' + k; } return null; }
@@ -3578,9 +3583,9 @@ var optFig = lit('g-figures', '0') === '1', FIG_IGN = new Set((() => { try { ret
 { const b = $('#t-fig'); b.classList.toggle('on', optFig); b.onclick = () => { optFig = !optFig; ecrit('g-figures', optFig ? '1' : '0'); b.classList.toggle('on', optFig); if (!optFig) fermeFigure(); toast(optFig ? 'Figures repérées : affichées' : 'Figures repérées : masquées'); toutDessine(); }; }
 const valLigne = (t1, p1, t2, p2, t) => t2 === t1 ? p1 : p1 + (p2 - p1) * (t - t1) / (t2 - t1);
 function figuresDe(p, B) {
-  if (!p.d || B.length < 60) return []; const N = B.length, zz0 = p.d.zigzag || [], cle = `${code}|${p.ut}|${N}|${B[N - 1][0]}|${B[N - 1][4]}|${zz0.length}|${FIG_IGN.size}`;
+  if (!p.d || B.length < 60) return []; const N = B.length, zz0 = p.d.zigzag || [], cle = `${code}|${p.ut}|${N}|${B[N - 1][0]}|${B[N - 1][4]}|${zz0.length}|${FIG_IGN.size}|${optFig}|${opt50}|${lignes.filter(l => l.genre === 'zone50').length}`;
   if (p._fg && p._fg.cle === cle) return p._fg.v;
-  let v = []; try { v = detecteFigures(p, B).filter(f => !FIG_IGN.has(f.cle)).slice(0, 3); } catch (e) { console.error(e); }
+  let v = []; try { v = detecteFigures(p, B).filter(f => !FIG_IGN.has(f.cle) && (optFig || f.z50) && !(f.z50 && lignes.some(l => l.genre === 'zone50' && l.t1 === f.lignes[0].t1))).slice(0, 3); } catch (e) { console.error(e); }
   p._fg = { cle, v }; return v;
 }
 function detecteFigures(p, B) {
@@ -3589,6 +3594,14 @@ function detecteFigures(p, B) {
   const piv = (p.d.zigzag || []).filter(z => z[2] === 'h' || z[2] === 'l').map(z => ({ t: z[0], p: z[1], g: z[2] })), out = [], base = `${code}|${p.ut}|`;
   if (piv.length < 4) return out;
   const H = piv.filter(z => z.g === 'h'), L = piv.filter(z => z.g === 'l'), dern = piv.slice(-4);
+  // 0. la zone 50 % d'une cassure (demande de Rémy, 18/11) : la jambe en cours (ses deux derniers points de zigzag) a cassé le sommet / creux d'avant du même côté ;
+  // Atlas propose sa zone 50 % (45 – 55 %) en pointillés — « Garder » la pose comme ta zone 50 %, avec alerte, et elle suit la jambe tant qu'elle s'allonge
+  { const A = piv[piv.length - 3], C = piv[piv.length - 2], X = piv[piv.length - 1], sg = Math.sign(X.p - C.p);
+    if (A && sg && sg * (X.p - A.p) > 0) { const m = (C.p + X.p) / 2, za = X.p - (X.p - C.p) * .45, zb = X.p - (X.p - C.p) * .55, fin = tN + 12 * dt, aj = B.slice(Math.max(0, N - 21), N - 1).map(b => b[2] - b[3]).sort((x, y) => x - y)[10] || atr, g = Math.abs(X.p - C.p) / aj;
+      let ps = ''; try { const E = passe50(p.d).filter(e => (e.g === (g >= 5))), n = E.length, rp = E.filter(e => e.r === 'rep').length, tr = E.filter(e => e.r === 'tr').length; if (n >= 5) ps = ` Sur ce marché en ${ut}, au 50 % d’une ${g >= 5 ? 'grande' : 'petite'} jambe : reparti ${Math.round(rp / n * 100)} %, traversé ${Math.round(tr / n * 100)} % (${n} fois).`; } catch (e) { /* sans */ }
+      out.push({ z50: true, cle: base + 'z50' + C.t, nom: 'Zone 50 % de la cassure', ut, segs: [[X.t, za, fin, za], [X.t, m, fin, m, 1], [X.t, zb, fin, zb], [C.t, C.p, X.t, X.p, 1]],
+        texte: `Le prix a cassé ${sg > 0 ? 'le sommet' : 'le creux'} d’avant (${nb(A.p, dec)}) : la jambe va de ${nb(C.p, dec)} (${jour(C.t)}) à ${nb(X.p, dec)}, ${Math.abs(tks(X.p - C.p)).toLocaleString('fr-FR')} ticks, ${nb(g, 1)} ${['D1', 'W', 'M'].includes(p.ut) ? 'journées habituelles' : 'fois l’amplitude habituelle'}. Son 50 % : ${nb(m, dec)} (zone ${nb(Math.min(za, zb), dec)} – ${nb(Math.max(za, zb), dec)}), à ${Math.abs(tks(der - m)).toLocaleString('fr-FR')} ticks du prix.${ps} Garder : ta zone 50 % avec alerte, qui suit la jambe si elle s’allonge.`,
+        lignes: [{ genre: 'zone50', t1: C.t, p1: C.p, t2: X.t, p2: X.p }] }); } }
   // 1. double sommet / double creux : les deux derniers sommets (creux) à moins de 0,35 ATR, avec un vrai creux (sommet) entre les deux
   for (const g of ['h', 'l']) { const S = g === 'h' ? H : L; if (S.length < 2) continue; const s1 = S[S.length - 2], s2 = S[S.length - 1];
     if (!dern.includes(s2) || Math.abs(s1.p - s2.p) > .35 * atr) continue;
@@ -6415,7 +6428,7 @@ function jambes50(d) { const B = d.bougies || [], P = (d.zigzag || []).filter(q 
 function dessine50(p, g) { if (!opt50 || ROLE === 'ensemble' || !p.d) return; const { c, Y, T, pw, ph, TH } = g, J = jambes50(p.d); c.save(); c.font = '700 9.5px Inter, sans-serif';
   const amb = TH && TH.nuit ? '#e8a33d' : '#b8730f', fond = TH && TH.nuit ? '#0b1426' : '#ffffff';
   const etiq = (y, txt, a) => { if (!isFinite(y) || y < 8 || y > ph - 8) return; c.globalAlpha = a; c.fillStyle = amb; c.fillRect(pw + 1, Math.round(y) - 1, 9, 2); const tw = c.measureText(txt).width + 6; c.fillStyle = fond; c.fillRect(pw + 12, y - 6, tw, 12); c.fillStyle = amb; c.textAlign = 'left'; c.fillText(txt, pw + 15, y + 3.5); c.globalAlpha = 1; };
-  if (J) { for (const [v, t0, a, txt] of [[J.m, J.X[0], .9, '50 %'], [J.mAv, J.C[0], .45, '50 % avant']]) { const y = Math.round(Y(v)) + .5, x0 = Math.max(0, T(t0)); if (!isFinite(y) || y < 0 || y > ph || x0 >= pw) continue;
+  if (J) { for (const [v, t0, a, txt] of [[J.m, J.X[0], .9, J.s * (J.X[1] - J.A[1]) > 0 ? '50 % cassure' : '50 %'], [J.mAv, J.C[0], .45, '50 % avant']]) { const y = Math.round(Y(v)) + .5, x0 = Math.max(0, T(t0)); if (!isFinite(y) || y < 0 || y > ph || x0 >= pw) continue;
       c.strokeStyle = amb; c.globalAlpha = a; c.lineWidth = 1; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); c.setLineDash([]); etiq(y, txt, a); } }
   if (['5m', '15m', '30m', 'H1', 'H4'].includes(p.ut)) { if (C50D1.c !== code || Date.now() - C50D1.at > 120000) { C50D1 = { c: code, at: Date.now(), j: C50D1.c === code ? C50D1.j : null }; barresDe(code, 'D1').then(d => { C50D1.j = jambes50(d); toutDessine(); }).catch(() => {}); }
     if (C50D1.j) etiq(Y(C50D1.j.m), '50 % D1', .9); }
