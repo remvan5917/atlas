@@ -216,7 +216,9 @@ const SECURITE = (() => {
     // le vendredi 22 h 30 : le bilan de la boîte noire du trader
     l.filter(a => a.genre === 'boite-noire').forEach(a => { if (typeof TRADING !== 'undefined') PROACTIF.annonce(`alerte-${a.id}`, async () => { await TRADING.bilanNoire(); return ''; }, { urgent: true, expire: Date.now() + 2 * 3600000 }); });
     // le radar des marchés : le son d'une salle de marché (le micro qui s'ouvre, puis le carillon de dépêche), et la nouvelle
-    l.filter(a => a.genre === 'radar').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { squawk(a.gravite === 'attention' || a.gravite === 'urgent'); await wait(a.gravite === 'attention' ? 1500 : 1100); return a.texte; },
+    // le marché (tes lignes, tes niveaux, les dépêches) : seulement sur l'ordinateur, jamais en double sur la tablette ou le téléphone (demande de Rémy, 18/11)
+    const ordi = typeof CONSTELLATION === 'undefined' || CONSTELLATION.role === 'ordinateur';
+    l.filter(a => a.genre === 'radar' && ordi).forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { squawk(a.gravite === 'attention' || a.gravite === 'urgent'); await wait(a.gravite === 'attention' ? 1500 : 1100); return a.texte; },
       { urgent: true, expire: Math.min(Date.now() + 20 * 60000, quandA(a) + 20 * 60000), lumiere: 'marche' }));
     l.filter(a => a.gravite === 'annonce' && a.genre !== 'accueil' && a.genre !== 'boite-noire' && a.genre !== 'radar').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { fx.tone([[659, 0.35], [523, 0.6]]); await photoAlerte(a); return a.texte; }, { urgent: true, expire: Date.now() + 3 * 60000 }));
     l.filter(a => a.genre === 'lien' && a.gravite === 'attention').forEach(a => PROACTIF.annonce(`alerte-${a.id}`, async () => { lueurLien(); fx.tone([[659, 0.15], [880, 0.15], [1319, 0.35]]); await wait(700); return a.texte; }, { urgent: true, expire: Date.now() + 6 * 3600000 }));
