@@ -3089,12 +3089,14 @@ const QUI_SONNE = FEN === '1' || ROLE === 'structure';  // (une seule fenêtre s
 const APPAREIL = (() => { try { let a = localStorage.getItem('atlas-appareil'); if (!a) { a = Math.random().toString(36).slice(2, 10); localStorage.setItem('atlas-appareil', a); } return a; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 8); } })();
 var PARLEUR = true;  // (var : lu par les sons, définis plus haut)
 const nomAppareil = () => /iPad|Tablet|Android(?!.*Mobile)/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)) ? 'tablette' : /Mobile|iPhone/i.test(navigator.userAgent) ? 'téléphone' : 'ordinateur';
-async function signeParole(op) { if (!ROOT || !QUI_SONNE) return; try { const r = await api('/maison/graphique', { action: 'parole', op, appareil: APPAREIL, nom: nomAppareil() }); PARLEUR = r && typeof r.parleur === 'boolean' ? r.parleur : true; } catch (e) { PARLEUR = true; } }
+const PC_SEUL = () => nomAppareil() !== 'ordinateur';  // (demande de Rémy, 18/11 : les annonces automatiques seulement sur l'ordinateur, jamais en double sur la tablette ou le téléphone)
+async function signeParole(op) { if (PC_SEUL()) { PARLEUR = false; return; } if (!ROOT || !QUI_SONNE) return; try { const r = await api('/maison/graphique', { action: 'parole', op, appareil: APPAREIL, nom: nomAppareil() }); PARLEUR = r && typeof r.parleur === 'boolean' ? r.parleur : true; } catch (e) { PARLEUR = true; } }
 let gesteAt = 0; ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => { if (Date.now() - gesteAt > 15000) { gesteAt = Date.now(); signeParole('actif'); } }, true));
 setInterval(() => { if (!document.hidden) signeParole('vivant'); }, 30000); setTimeout(() => signeParole('vivant'), 1500);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) signeParole('vivant'); });
 const cleTexte = t => { let h = 0; for (const c of String(t)) h = (h * 31 + c.charCodeAt(0)) | 0; return `p${h}:${String(t).length}`; };
 async function direAuto(texte) {  // une annonce que personne n'a demandée : seulement sur l'appareil élu, et une seule fois en 2 minutes
+  if (PC_SEUL()) { PARLEUR = false; return; }  // (la tablette et le téléphone se taisent : l'ordinateur parle)
   if (ROOT) try { const r = await api('/maison/graphique', { action: 'parole', op: 'puis-je', appareil: APPAREIL, cle: cleTexte(texte) }); if (r && typeof r.parle === 'boolean') { PARLEUR = !!r.parleur; if (!r.parle) return; } } catch (e) { /* sans maison : on parle */ }
   return dire(texte); }
 function cloche() {  // une cloche de Bourse, discrète (des partiels inharmoniques qui s'éteignent lentement)
