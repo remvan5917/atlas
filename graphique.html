@@ -942,7 +942,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v114</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v115</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1355,8 +1355,13 @@ class Pane {
     if (MC) dessineMethode(MC, { c, X, Y, T, i, j, pw, ph, HAUT, BASP, TH, bw, B }, 'lignes');
     // les figures repérées : de fins pointillés violets, comme des lignes tracées à la main (rien sur les bougies) ; survol = l'explication
     this.figHits = [];
-    if ((optFig || opt50) && !REPLAY) { c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip();
+    if ((optFig || opt50 || optProp) && !REPLAY) { c.save(); c.beginPath(); c.rect(0, 0, pw, BASP + 4); c.clip();
       for (const f of figuresDe(this, B)) { const sel = this.figSurvol === f || FIG_SEL === f; c.strokeStyle = sel ? '#7c4dff' : 'rgba(139,92,255,.8)'; c.lineWidth = sel ? 2.2 : 1.4;
+        if (f.prop) { const sg = f.segs[0], y = Math.round(Y(sg[1])) + .5, xa = Math.max(0, T(sg[0])), ink = TH.nuit ? '228,233,243' : '27,37,64', orf = TH.nuit ? '224,189,120' : '168,127,51';
+          if (y > 0 && y < BASP) { c.strokeStyle = `rgba(${sel ? orf : ink},${sel ? .95 : .4})`; c.lineWidth = sel ? 1.4 : 1; c.setLineDash([5, 5]); c.beginPath(); c.moveTo(xa, y); c.lineTo(pw, y); c.stroke(); c.setLineDash([]);
+            c.save(); c.font = '600 8px Inter, sans-serif'; c.letterSpacing = '1px'; const t = `PROPOSÉE · ${nb(sg[1], this.d.dec ?? 2)}`, w = c.measureText(t).width + 12; c.letterSpacing = '1px'; c.fillStyle = TH.nuit ? 'rgba(12,19,34,.9)' : 'rgba(255,255,255,.92)'; c.beginPath(); c.roundRect(pw - 6 - w, y - 8, w, 15, 3); c.fill();
+            c.lineWidth = 1; c.strokeStyle = `rgba(${sel ? orf : ink},${sel ? .9 : .25})`; c.stroke(); c.fillStyle = `rgba(${sel ? orf : ink},${sel ? 1 : .6})`; c.textBaseline = 'middle'; c.fillText(t, pw - 6 - w + 6, y + .5); c.restore();
+            this.figHits.push({ f, x1: xa, y1: y, x2: pw, y2: y }); } continue; }
         if (f.z50) {  // la zone 50 % proposée, en fantôme (même style que la zone gardée, sans couleur) : bande à peine teintée, bords en pointillés fins, le milieu ; au survol, l'or
           const [s1, s2, s3] = f.segs, xa = T(s1[0]), y1f = Y(s1[1]), y3f = Y(s3[1]), ymf = Y(s2[1]), ink = TH.nuit ? '228,233,243' : '27,37,64', orf = TH.nuit ? '224,189,120' : '168,127,51';
           c.fillStyle = `rgba(${sel ? orf : ink},${sel ? .12 : .05})`; c.fillRect(xa, Math.min(y1f, y3f), pw - xa, Math.abs(y3f - y1f)); c.lineWidth = 1;
@@ -1704,7 +1709,7 @@ class Pane {
       if (simuMove(this, x, y)) return;
       if (tradeMove(this, x, y)) return;
       if (this.iT && panes.length > 1) { INSTANT = { t: this.iT(x), p: this }; panes.forEach(q => { if (q !== this) q.dessine(); }); }
-      if (!glisse && (optFig || opt50) && !brouillon && outil === 'curseur') { const f = figureSous(this, x, y); if (f !== this.figSurvol) { this.figSurvol = f; if (f) montreBulle({ genre: 'figure', f }, ev.clientX, ev.clientY); else if (!this.survol) montreBulle(null); this.dessine(); } else if (f) placeBulle(ev.clientX, ev.clientY); if (f) { cv.style.cursor = 'pointer'; return; } }
+      if (!glisse && (optFig || opt50 || optProp) && !brouillon && outil === 'curseur') { const f = figureSous(this, x, y); if (f !== this.figSurvol) { this.figSurvol = f; if (f) montreBulle({ genre: 'figure', f }, ev.clientX, ev.clientY); else if (!this.survol) montreBulle(null); this.dessine(); } else if (f) placeBulle(ev.clientX, ev.clientY); if (f) { cv.style.cursor = 'pointer'; return; } }
       if (!glisse) { const m = (this.marques || []).find(k => Math.hypot(k.x - x, k.y - y) < 9), n = m ? m.n : null; if (n !== this.survol) { this.survol = n; montreBulle(n, ev.clientX, ev.clientY); } else if (n) placeBulle(ev.clientX, ev.clientY); }
       if (!glisse && !brouillon && outil === 'curseur' && this.T && zone(x, y) === 'graphe') { const ls = proche(this, x, y); if (ls !== this.lSurvol) { this.lSurvol = ls; this.dessine(); }
         if (ls) { cv.style.cursor = fige(ls) ? 'default' : bouSous(this, ls, x, y) ? 'crosshair' : 'grab'; return; } } else if (this.lSurvol && !glisse) { this.lSurvol = null; this.dessine(); }
@@ -3617,19 +3622,32 @@ function ecranTexte(p, enReplay) {  // ce que montre son écran, pour le copilot
 /* ================= les figures repérées et expliquées ================= */
 // à partir des sommets et creux CONFIRMÉS du zigzag (5, 10) : doubles sommets / creux, triangles, canaux, range, compression ;
 // des faits mesurés (prix, écarts en ticks), jamais « ça va casser » ; désactivées par défaut (son graphique reste épuré)
-var optFig = lit('g-figures', '0') === '1', FIG_IGN = new Set((() => { try { return JSON.parse(lit('g-fig-ign', '[]')); } catch (e) { return []; } })()), FIG_SEL = null;
+var optProp = lit('g-prop-lignes', '1') === '1', optFig = lit('g-figures', '0') === '1', FIG_IGN = new Set((() => { try { return JSON.parse(lit('g-fig-ign', '[]')); } catch (e) { return []; } })()), FIG_SEL = null;
 { const b = $('#t-fig'); b.classList.toggle('on', optFig); b.onclick = () => { optFig = !optFig; ecrit('g-figures', optFig ? '1' : '0'); b.classList.toggle('on', optFig); if (!optFig) fermeFigure(); toast(optFig ? 'Figures repérées : affichées' : 'Figures repérées : masquées'); toutDessine(); }; }
 const valLigne = (t1, p1, t2, p2, t) => t2 === t1 ? p1 : p1 + (p2 - p1) * (t - t1) / (t2 - t1);
 function figuresDe(p, B) {
-  if (!p.d || B.length < 60) return []; const N = B.length, zz0 = p.d.zigzag || [], cle = `${code}|${p.ut}|${N}|${B[N - 1][0]}|${B[N - 1][4]}|${zz0.length}|${FIG_IGN.size}|${optFig}|${opt50}|${lignes.filter(l => l.genre === 'zone50').length}`;
+  if (!p.d || B.length < 60) return []; const N = B.length, zz0 = p.d.zigzag || [], cle = `${code}|${p.ut}|${N}|${B[N - 1][0]}|${B[N - 1][4]}|${zz0.length}|${FIG_IGN.size}|${optFig}|${opt50}|${optProp}|${lignes.filter(l => l.genre === 'zone50' || l.genre === 'horizontale').map(l => l.p1).join(',')}|${(CACHE_D[`${code}|D1`] || {}).at || 0}`;
   if (p._fg && p._fg.cle === cle) return p._fg.v;
-  let v = []; try { v = detecteFigures(p, B).filter(f => !FIG_IGN.has(f.cle) && (optFig || f.z50) && !(f.z50 && lignes.some(l => l.genre === 'zone50' && l.p1 === f.lignes[0].p1 && l.p2 === f.lignes[0].p2))).slice(0, 3); } catch (e) { console.error(e); }
+  let v = []; try { v = detecteFigures(p, B).filter(f => !FIG_IGN.has(f.cle) && (f.prop ? optProp : f.z50 ? (optFig || opt50) : optFig) && !(f.z50 && lignes.some(l => l.genre === 'zone50' && l.p1 === f.lignes[0].p1 && l.p2 === f.lignes[0].p2))).slice(0, 6); } catch (e) { console.error(e); }
   p._fg = { cle, v }; return v;
 }
 function detecteFigures(p, B) {
   const N = B.length, a = atrSerie(B, 14), atr = a[N - 1] || 1, tk = p.d.tick || 1, dec = p.d.dec, dt = DUREE[p.ut] || 3600, ut = LIB[p.ut] || p.ut, der = B[N - 1][4], tN = B[N - 1][0];
   const ti = t => Math.round((t - tN) / tk), tks = x => Math.round(x / tk), jour = t => new Date(t * 1000).toLocaleString('fr-FR', ['D1', 'W', 'M'].includes(p.ut) ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const piv = (p.d.zigzag || []).filter(z => z[2] === 'h' || z[2] === 'l').map(z => ({ t: z[0], p: z[1], g: z[2] })), out = [], base = `${code}|${p.ut}|`;
+  // LIGNES PROPOSÉES (Rémy, 18/11 : « qu'il place les lignes seul aussi, mais pas toutes ») : ta méthode, au plus trois — le sommet / creux D1 confirmé le plus proche au-dessus du prix,
+  // le plus proche en dessous, et un sommet / creux D1 confirmé ces 5 dernières séances ; seulement là où tu n'as pas déjà ta ligne ; « Garder » la pose avec alerte, « Ignorer » l'oublie
+  try { const d1 = p.ut === 'D1' ? p.d : (CACHE_D[`${code}|D1`] || {}).d; if (!d1) { if (!detecteFigures._d1 || detecteFigures._d1 !== code) { detecteFigures._d1 = code; barresDe(code, 'D1').then(() => { panes.forEach(q => q._fg = null); toutDessine(); }).catch(() => {}); } }
+    else { const B1 = d1.bougies || [], P1 = scPiv(d1), am = B1.length > 22 ? B1.slice(-21, -1).map(b => b[2] - b[3]).sort((x, y) => x - y)[10] : 0, tk1 = d1.tick || tk;
+      const aLigne = v => lignes.some(l => l.genre === 'horizontale' && Math.abs(l.p1 - v) <= Math.max(2 * tk1, .1 * am)), C = [];
+      const au = P1.filter(q => q[1] > der).sort((a, b) => a[1] - b[1])[0], en = P1.filter(q => q[1] < der).sort((a, b) => b[1] - a[1])[0];
+      let nvx = []; try { nvx = scNouveaux(d1, 5).map(q => P1.find(z => z[0] === q.t) || [q.t, q.v, q.ty]); } catch (e) { /* sans */ }
+      for (const [q, pq] of [[au, 'le plus proche au-dessus du prix'], [en, 'le plus proche en dessous du prix'], ...nvx.map(q => [q, 'confirmé ces 5 dernières séances'])]) if (q && !aLigne(q[1]) && !C.some(z => z[0][0] === q[0])) C.push([q, pq]);
+      let E = []; try { E = scPasse(d1); } catch (e) { /* sans */ }
+      for (const [q, pq] of C.slice(0, 3)) { const nomQ = q[2] === 'h' ? 'sommet' : 'creux', ici = E.filter(e => e.p === q[0]), rp = ici.filter(e => e.r === 'rep').length, tr = ici.filter(e => e.r === 'tr').length;
+        out.push({ prop: true, cle: base + 'prop' + q[0] + '|' + q[1], nom: `Ligne proposée · ${nomQ} D1 ${nb(q[1], dec)}`, ut, segs: [[q[0], q[1], tN + 12 * dt, q[1]]],
+          texte: `Ton ${nomQ} D1 ${nb(q[1], dec)} (${new Date(q[0] * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' })}), ${pq}, à ${Math.abs(tks(q[1] - der)).toLocaleString('fr-FR')} ticks${am ? ` (${nb(Math.abs(q[1] - der) / am, 1)} journée${Math.abs(q[1] - der) / am >= 2 ? 's habituelles' : ' habituelle'})` : ''}.${ici.length ? ` Le prix y est déjà arrivé ${ici.length} fois : reparti ${rp}, traversé ${tr}.` : ' Le prix n’y est pas encore revenu depuis.'} Garder : ta ligne horizontale avec alerte.`,
+          lignes: [{ genre: 'horizontale', t1: q[0], p1: q[1] }] }); } } } catch (e) { /* sans les lignes proposées */ }
   if (piv.length < 4) return out;
   const H = piv.filter(z => z.g === 'h'), L = piv.filter(z => z.g === 'l'), dern = piv.slice(-4);
   // 0. la zone 50 % de la cassure (demande de Rémy, 18/11 : « par rapport au prochain ») : quand la jambe en cours vient de casser un sommet / creux de ton zigzag,
@@ -5117,6 +5135,7 @@ async function scCasseGuet() { if (!QUI_SONNE || lit('g-sc-casse', '1') !== '1' 
     toastAct(`◆ ${txt}`, ['Voir', () => changeCode(v.x.code)]); scNote(v.x.code, txt); }
   halo('ambre'); sonne('ligne'); const a = nv[0]; direAuto(`${a.x.nom || a.x.code} casse son ${a.q[2] === 'h' ? 'sommet' : 'creux'} D1, ${a.q[2] === 'h' ? 'vers le haut' : 'vers le bas'}.${nv.length > 1 ? ` Et aussi : ${nv.slice(1).map(v => v.x.code).join(', ')}.` : ''}`); }
 setTimeout(() => { scCasseGuet(); setInterval(scCasseGuet, 60000); }, 20000);
+FONCTIONS.splice(FONCTIONS.length - 1, 0, ['LIGNES', 'les lignes proposées par Atlas (au plus trois : tes sommets / creux D1 les plus proches et un nouveau) · couper / rallumer', () => { optProp = !optProp; ecrit('g-prop-lignes', optProp ? '1' : '0'); panes.forEach(q => q._fg = null); toutDessine(); toast(optProp ? 'Lignes proposées affichées : clic sur une ligne en pointillés pour la garder ou l’ignorer' : 'Lignes proposées masquées'); }]);
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['CASSE', 'l’alerte quand le prix casse un sommet / creux de ton zigzag D1 (tous tes marchés) · couper / rallumer', () => { const on = lit('g-sc-casse', '1') !== '1'; ecrit('g-sc-casse', on ? '1' : '0'); toast(on ? '◆ Alerte de cassure D1 allumée : Atlas te prévient quand le prix casse un sommet / creux de ton zigzag D1' : 'Alerte de cassure D1 coupée'); }]);
 // ALERTES : toutes tes alertes sur un écran — tes lignes avec alerte sur tous tes marchés, de la plus proche du prix à la plus loin (la prochaine qui sonnera),
 // leur pré-alerte, puis tes alertes en français, tes filtres et règles surveillés, l'annonce d'arrivée sur un niveau D1 ; en lecture : on les change sur le graphique
