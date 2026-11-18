@@ -942,7 +942,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v108</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v109</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1388,31 +1388,39 @@ class Pane {
       if (l.genre === 'horizontale') { if (!sel && !tracerHalo && c.lineWidth === 1.2) c.lineWidth = 1; const y = net(Y(l.p1), c.lineWidth), x0 = l.rayon && l.t1 != null ? Math.max(0, T(l.t1)) : 0; if (x0 < pw) { c.beginPath(); c.moveTo(x0, y); c.lineTo(pw, y); c.stroke(); if (l.rayon && x0 > 0) { c.fillStyle = coul(l.couleur); c.beginPath(); c.arc(x0, y, sel ? 3.2 : 2.4, 0, 7); c.fill(); } } }
       else if (l.genre === 'zone50' && (() => { const n = zone50Suit(l, this.d) || (this.ut !== 'D1' ? zone50Suit(l, (CACHE_D[`${code}|D1`] || {}).d) : null); if (n && QUI_SONNE && !REPLAY) { Object.assign(l, n); clearTimeout(l._suitT); l._suitT = setTimeout(() => sauve(), 1500); } return false; })()) { /* (la jambe s'est allongée : la zone vient d'être recalculée) */ }
       else if (l.genre === 'zone50') {  // la zone 50 % : la jambe (en pointillés, du départ à l'arrivée), sa zone du milieu (45 – 55 %) teintée et prolongée à droite, le 50 % en trait plein
-        const col = l.couleur ? coul(l.couleur) : '#e8a33d', x0 = Math.min(T(l.t1), T(l.t2)), m = (l.p1 + l.p2) / 2, [za, zb] = zone50Px(l), ya = Y(za), yb = Y(zb), ym = net(Y(m), 1.6);
-        c.fillStyle = rgba(col.startsWith('#') ? col : '#e8a33d', TH.nuit ? .13 : .11); c.fillRect(x0, Math.min(ya, yb), pw - x0, Math.abs(yb - ya));
-        c.strokeStyle = col; c.globalAlpha = .45; c.lineWidth = 1; [ya, yb].forEach(y => { const yn = net(y, 1); c.beginPath(); c.moveTo(x0, yn); c.lineTo(pw, yn); c.stroke(); }); c.globalAlpha = 1;
-        c.lineWidth = 1.6; c.setLineDash(l.style === 'tirets' ? [5, 4] : []); c.beginPath(); c.moveTo(x0, ym); c.lineTo(pw, ym); c.stroke(); c.setLineDash([]);
-        if (l.texte === 'prochain' || l.t2 - l.t1 === 86400) {  // la projection (Rémy : « ça fixe mon cerveau ») : à droite de la dernière bougie, une flèche du niveau cassé vers le prochain niveau,
-          // le départ marqué d'un trait, le milieu d'un losange (la zone), l'arrivée d'une pointe, avec leurs prix — en dehors des bougies
-          const x0b = Math.max(T(l.t1), X(B.length - 1)) + Math.max(14, bw * 1.5), xb = Math.max(x0b, Math.min(x0b + bw * 2, pw - 230)), y1 = Y(l.p1), y2 = Y(l.p2), ym2 = Y((l.p1 + l.p2) / 2), sgn = Math.sign(y2 - y1) || 1;
-          // le chemin parcouru se remplit (trait plein du niveau cassé jusqu'au cours), le reste en pointillés ; un point au cours avec la part du chemin faite ;
-          // les étiquettes donnent les ticks et les dollars restants (un contrat) ; quand le prix est dans la zone, elle s'allume et le losange grossit
-          const px = B[B.length - 1][4], tk = (this.d && this.d.tick) || 0, v$ = VAL_TICK[code], fr = Math.max(0, Math.min(1.15, (l.p1 - px) / ((l.p1 - l.p2) || 1))), yp = Y(px), [za, zb] = zone50Px(l), dedans = px >= za && px <= zb;
-          const reste = v => { if (!tk) return ''; const t = Math.round(Math.abs(v - px) / tk); return t ? ` · ${t.toLocaleString('fr-FR')} t${v$ != null ? ` · ${Math.round(t * v$).toLocaleString('fr-FR')} $` : ''}` : ' · atteint'; };
-          if (xb > 0 && isFinite(y1) && isFinite(y2)) { c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1.4; c.lineCap = 'round';
-            if (dedans) { c.fillStyle = rgba(col.startsWith('#') ? col : '#e8a33d', .16); c.fillRect(Math.min(T(l.t1), xb), Math.min(Y(za), Y(zb)), pw - Math.min(T(l.t1), xb), Math.abs(Y(zb) - Y(za))); c.fillStyle = col; }
-            const yf = fr >= 1 ? y2 : y1 + (y2 - y1) * fr;
-            c.globalAlpha = .55; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(xb, yf); c.lineTo(xb, y2 - sgn * 7); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
-            c.lineWidth = 2.2; c.beginPath(); c.moveTo(xb, y1); c.lineTo(xb, yf); c.stroke(); c.lineWidth = 1.4;
-            c.beginPath(); c.moveTo(xb - 7, y1); c.lineTo(xb + 7, y1); c.stroke();
-            c.beginPath(); c.moveTo(xb, y2); c.lineTo(xb - 5, y2 - sgn * 9); c.lineTo(xb + 5, y2 - sgn * 9); c.closePath(); c.fill();
-            const dz = dedans ? 7 : 5; c.beginPath(); c.moveTo(xb, ym2 - dz); c.lineTo(xb + dz, ym2); c.lineTo(xb, ym2 + dz); c.lineTo(xb - dz, ym2); c.closePath(); if (fr >= .45) c.fill(); else { c.fillStyle = TH.bg; c.fill(); c.stroke(); c.fillStyle = col; }
-            if (fr > 0 && fr < 1.15 && isFinite(yp)) { c.beginPath(); c.arc(xb, yp, 4.5, 0, 7); c.fillStyle = TH.bg; c.fill(); c.lineWidth = 2; c.stroke(); c.lineWidth = 1.4; c.fillStyle = col; }
-            c.font = '600 10px "JetBrains Mono", monospace'; c.textAlign = 'left'; const lab = (y, t, fort) => { if (fort) c.font = '700 10px "JetBrains Mono", monospace'; const w = c.measureText(t).width + 8, xl = xb + 9 + w <= pw - 2 ? xb + 9 : xb - 9 - w;  // (à droite de la flèche s'il y a la place, sinon à gauche : jamais sous l'échelle)
-              if (!tracerHalo) { c.globalAlpha = .85; c.fillStyle = TH.bg; c.beginPath(); c.roundRect(xl, y - 7, w, 14, 3); c.fill(); c.globalAlpha = 1; } c.fillStyle = col; c.fillText(t, xl + 4, y + 3.5); c.font = '600 10px "JetBrains Mono", monospace'; };
-            const oc = []; const mets = (y, t, fort) => { if (oc.some(z => Math.abs(z - y) < 14)) return; oc.push(y); lab(y, t, fort); };
-            mets(y2, `prochain ${nb(l.p2, dec)}${reste(l.p2)}`); mets(ym2, `50 % ${nb((l.p1 + l.p2) / 2, dec)}${fr < .45 ? reste((l.p1 + l.p2) / 2) : ''}`);
-            if (fr > .04 && fr < 1.15 && isFinite(yp)) mets(yp, dedans ? '◆ dans la zone 50 %' : `${Math.round(Math.min(1, fr) * 100)} % du chemin`, true); mets(y1, `cassé ${nb(l.p1, dec)}${fr <= .04 ? ' · tu es au départ' : ''}`); c.restore(); } }
+        const col = l.couleur ? coul(l.couleur) : '#e8a33d', x0 = Math.min(T(l.t1), T(l.t2)), m = (l.p1 + l.p2) / 2, [za, zb] = zone50Px(l), ya = Y(za), yb = Y(zb), ym = net(Y(m), 1.6), cr = col.startsWith('#') ? col : '#e8a33d';
+        const pxZ = B[B.length - 1][4], dedansZ = pxZ >= za && pxZ <= zb, yh = Math.min(ya, yb), yl = Math.max(ya, yb);
+        // la bande : un dégradé qui s'allume vers le 50 % et s'efface vers ses bords (plus vif quand le prix est dedans), des bords en filet très fin, le 50 % en trait plein avec un léger halo
+        { const g = c.createLinearGradient(0, yh, 0, yl), a = (dedansZ ? .30 : .18) * (TH.nuit ? 1 : .8); g.addColorStop(0, rgba(cr, a * .25)); g.addColorStop(.5, rgba(cr, a)); g.addColorStop(1, rgba(cr, a * .25)); c.fillStyle = g; c.fillRect(x0, yh, pw - x0, yl - yh); }
+        c.strokeStyle = rgba(cr, .35); c.lineWidth = 1; [ya, yb].forEach(y => { const yn = net(y, 1); c.beginPath(); c.moveTo(x0, yn); c.lineTo(pw, yn); c.stroke(); });
+        c.save(); c.strokeStyle = col; c.lineWidth = 1.6; c.shadowColor = rgba(cr, .55); c.shadowBlur = dedansZ ? 10 : 5; c.setLineDash(l.style === 'tirets' ? [5, 4] : []); c.beginPath(); c.moveTo(x0, ym); c.lineTo(pw, ym); c.stroke(); c.restore();
+        if (l.texte === 'prochain' || l.t2 - l.t1 === 86400) {  // la projection (Rémy : « ça fixe mon cerveau », « fais un truc magnifique ») : à droite de la dernière bougie, un rail du niveau cassé au prochain niveau ;
+          // le chemin fait se remplit en dégradé, un point lumineux suit le cours, trois jalons (départ, 50 %, cible), des étiquettes en pastilles — rien sur les bougies
+          const x0b = Math.max(T(l.t1), X(B.length - 1)) + Math.max(16, bw * 1.5), xb = Math.round(x0b) + .5, y1 = Y(l.p1), y2 = Y(l.p2), ym2 = Y(m), sgn = Math.sign(y2 - y1) || 1;
+          const px = pxZ, tk = (this.d && this.d.tick) || 0, v$ = VAL_TICK[code], fr = Math.max(0, Math.min(1.15, (l.p1 - px) / ((l.p1 - l.p2) || 1))), yp = Y(px), dedans = dedansZ;
+          const reste = v => { if (!tk) return ''; const t = Math.round(Math.abs(v - px) / tk); return t ? `${t.toLocaleString('fr-FR')} t${v$ != null ? ` · ${Math.round(t * v$).toLocaleString('fr-FR')} $` : ''}` : 'atteint'; };
+          if (xb > 0 && isFinite(y1) && isFinite(y2)) { c.save(); c.lineCap = 'round';
+            const yf = fr >= 1 ? y2 : y1 + (y2 - y1) * Math.max(0, fr), rail = (ya_, yb_, w) => { c.beginPath(); c.roundRect(xb - w / 2, Math.min(ya_, yb_), w, Math.max(w, Math.abs(yb_ - ya_)), w / 2); };
+            rail(y1, y2, 6); c.fillStyle = rgba(cr, TH.nuit ? .14 : .12); c.fill();  // (le rail)
+            if (Math.abs(yf - y1) > 1) { const g = c.createLinearGradient(0, y1, 0, yf); g.addColorStop(0, rgba(cr, .35)); g.addColorStop(1, rgba(cr, 1)); rail(y1, yf, 6); c.fillStyle = g; c.fill(); }  // (le chemin fait)
+            const anneau = (y, r) => { c.beginPath(); c.arc(xb, y, r, 0, 7); c.fillStyle = TH.bg; c.fill(); c.lineWidth = 1.6; c.strokeStyle = col; c.stroke(); };
+            anneau(y1, 5);  // (le départ : le niveau cassé)
+            { const dz = dedans ? 7.5 : 6; c.beginPath(); c.moveTo(xb, ym2 - dz); c.lineTo(xb + dz, ym2); c.lineTo(xb, ym2 + dz); c.lineTo(xb - dz, ym2); c.closePath(); c.fillStyle = fr >= .45 ? col : TH.bg; c.fill(); c.lineWidth = 1.6; c.strokeStyle = col; c.stroke(); }  // (le 50 %)
+            anneau(y2, 7); c.beginPath(); c.arc(xb, y2, 2.6, 0, 7); c.fillStyle = col; c.fill();  // (la cible : le prochain niveau)
+            if (fr > .01 && fr < 1.15 && isFinite(yp)) { c.save(); c.shadowColor = rgba(cr, .9); c.shadowBlur = 12; c.beginPath(); c.arc(xb, yp, 5.5, 0, 7); c.fillStyle = col; c.fill(); c.restore(); c.beginPath(); c.arc(xb, yp, 2.2, 0, 7); c.fillStyle = '#fff'; c.fill(); }  // (le cours)
+            // les pastilles : le nom en petites capitales, la valeur en gras, ce qui reste en clair ; à droite du rail s'il y a la place, sinon à gauche
+            // (Rémy : « ça ne doit pas gêner le trading ») : les pastilles seulement à DROITE du rail, jamais sur les bougies ; s'il manque de place, la version courte (la valeur seule), sinon rien
+            const pastille = (y, nom0, val, plus0, fort) => { const mesure = (n_, p_) => { c.font = '700 8.5px Inter, sans-serif'; const wn = n_ ? c.measureText(n_).width + 6 : 0; c.font = `${fort ? 800 : 700} 10.5px "JetBrains Mono", monospace`; const wv = c.measureText(val).width; c.font = '500 9.5px "JetBrains Mono", monospace'; return [wn, wv, p_ ? c.measureText(p_).width + 7 : 0]; };
+              const dispo = pw - 4 - (xb + 12); let nom = nom0, plus = plus0, [wn, wv, wp] = mesure(nom, plus); if (wn + wv + wp + 16 > dispo) { plus = ''; [wn, wv, wp] = mesure(nom, ''); } if (wn + wv + 16 > dispo) { nom = ''; [wn, wv, wp] = mesure('', ''); } if (wv + 16 > dispo) return;
+              const w = wn + wv + wp + 16, xl = xb + 12, h = 18;
+              if (!tracerHalo) { c.beginPath(); c.roundRect(xl, y - h / 2, w, h, 9); c.fillStyle = TH.nuit ? 'rgba(11,20,38,.92)' : 'rgba(255,255,255,.94)'; c.fill(); c.lineWidth = 1; c.strokeStyle = rgba(cr, fort ? .9 : .4); c.stroke(); }
+              let xx = xl + 8; c.textAlign = 'left'; if (nom) { c.font = '700 8.5px Inter, sans-serif'; c.fillStyle = rgba(cr, .85); c.fillText(nom, xx, y + 3); xx += wn; }
+              c.font = `${fort ? 800 : 700} 10.5px "JetBrains Mono", monospace`; c.fillStyle = TH.nuit ? '#f3f5f9' : '#141a26'; c.fillText(val, xx, y + 3.5); xx += wv + 7;
+              if (plus) { c.font = '500 9.5px "JetBrains Mono", monospace'; c.fillStyle = TH.nuit ? '#8f9bb3' : '#6b7385'; c.fillText(plus, xx, y + 3.5); } };
+            const oc = [], mets = (y, ...a) => { if (oc.some(z => Math.abs(z - y) < 20)) return; oc.push(y); pastille(y, ...a); };
+            mets(y2, 'PROCHAIN', nb(l.p2, dec), reste(l.p2)); mets(ym2, '50 %', nb(m, dec), fr < .45 ? reste(m) : 'atteint', dedans);
+            if (fr > .04 && fr < 1.15 && isFinite(yp)) mets(yp, dedans ? 'DANS LA ZONE' : 'CHEMIN', `${Math.round(Math.min(1, fr) * 100)} %`, '', true);
+            mets(y1, 'CASSÉ', nb(l.p1, dec), ''); c.restore(); } }
         else if (Math.abs(T(l.t2) - T(l.t1)) > 8) { c.globalAlpha = .6; c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(T(l.t1), Y(l.p1)); c.lineTo(T(l.t2), Y(l.p2)); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; }  // (une zone vers le prochain niveau : pas de jambe tracée)
         if (!(l.texte === 'prochain' || l.t2 - l.t1 === 86400)) { c.font = '600 10px "JetBrains Mono", monospace'; const fl = `50 %  ${nb(m, dec)}`, fw = c.measureText(fl).width + 10; if (!tracerHalo) { c.fillStyle = TH.bg; c.globalAlpha = .6; c.beginPath(); c.roundRect(pw - fw - 4, ym - 15, fw, 13, 4); c.fill(); c.globalAlpha = 1; } c.fillStyle = col; c.textAlign = 'left'; c.fillText(fl, pw - fw + 1, ym - 5); } }
       else if (l.genre === 'fibo') {  // du départ (100 %) à l'arrivée (0 %), prolongé à droite, la zone 38,2 – 61,8 % teintée
