@@ -64,6 +64,7 @@
   /* ---- la petite barre d'une ligne choisie ---- */
   .barre-ligne { position: fixed; z-index: 40; display: none; align-items: center; gap: 2px; padding: 4px; background: #fff; border: 1px solid #d9dde5; border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 19, 28, .25); }
   .barre-ligne.on { display: flex; }
+  .bax { position: absolute; z-index: 6; display: flex; gap: 3px; } .bax[hidden], .bax button[hidden] { display: none; } .bax button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #2c3a57; background: #101a2e; color: #cfd6e4; font: 800 11px 'JetBrains Mono', monospace; cursor: pointer; padding: 0; } .bax button:hover { border-color: #3d7bff; color: #fff; }
 .bl-mod { position: fixed; z-index: 41; min-width: 230px; max-width: 320px; padding: 6px; background: #fff; border: 1px solid #d9dde5; border-radius: 12px; box-shadow: 0 16px 40px rgba(15, 19, 28, .28); font: 500 12px 'Inter', sans-serif; color: #1b2230; }
 .bl-mod[hidden] { display: none; }
 .bl-mod .bm-l { display: flex; align-items: center; gap: 4px; }
@@ -327,7 +328,7 @@
   /* les portables étroits (moins de 1366 px de large) : la barre du haut se resserre pour que rien ne sorte de l'écran */
   @media (max-width: 1365px) { .haut { gap: 4px !important; } .haut .sym { min-width: 0 !important; width: 190px !important; flex: none !important; } .haut .seg button, .haut .grp button { padding-left: 5px !important; padding-right: 5px !important; } }
   /* la barre du haut se resserre par étapes jusqu'à tenir dans la largeur (posées par ajusteHaut) : 1 serrée, 2 sans les horloges, 3 boutons d'affichage compacts, 4 sans présentation / simulateur / terminal, 5 sans les boutons d'affichage */
-  body.haut-1 .haut { gap: 4px !important; } body.haut-1 .haut .marque span { display: none !important; } body.haut-1 .haut .sym { min-width: 0 !important; width: 200px !important; flex: none !important; }
+  body.haut-1 .haut { gap: 4px !important; } body.haut-1 .haut .marque span { display: none !important; } body.haut-1 .haut .sym { min-width: 0 !important; width: 200px !important; flex: none !important; } body.haut-1 .haut .sym { gap: 7px !important; overflow: hidden; } body.haut-1 .haut .sym > svg { width: 42px !important; flex: none; } body.haut-1 .haut .sym .px { white-space: nowrap; }  /* (le prix et sa variation restent entiers, jamais sous le bouton /) */
   body.haut-1 .haut .seg button, body.haut-1 .haut .grp button { padding-left: 5px !important; padding-right: 5px !important; }
   body.haut-2 #horloges { display: none !important; }
   body.haut-3 .haut .grp button { min-width: 0 !important; width: 28px !important; padding: 0 !important; }
@@ -923,6 +924,7 @@
       <button class="ico" id="t-zones" data-tip="Zones S/R du daily"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></button>
       <button class="ico" id="t-vol" data-tip="Volume"><svg viewBox="0 0 24 24"><path d="M5 20v-6M9 20V9M13 20v-8M17 20V5"/></svg></button>
       <button class="ico" id="t-nuit" data-tip="Mode nuit des graphiques : automatique le soir"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+      <button class="ico txt" id="t-50" data-tip="Le 50 % de tes jambes : le tableau de tous tes marchés, et les pointillés « 50 % » sur tes graphiques (clic droit : les cacher)">50%</button>
       <button class="ico txt" id="t-log" data-tip="Échelle logarithmique : les mêmes pourcentages font la même hauteur">log</button>
       <button class="ico" id="b-cmp" data-tip="Comparer avec un autre marché : superposé en %, ou leur rapport / écart dans une sous-fenêtre"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-7 5 5"/><path d="M3 12l5 2 4-4 4 3 5-4" stroke-dasharray="2.5 2"/></svg></button>
       <button class="ico" id="t-fig" data-tip="Figures repérées : triangles, canaux, doubles sommets, compressions — en pointillés, expliquées au survol"><svg viewBox="0 0 24 24"><path d="M3 18L12 5l9 13z" stroke-dasharray="3 2.4"/></svg></button>
@@ -940,7 +942,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v101</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v102</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -1225,6 +1227,15 @@ class Pane {
   // (en glissant vers la gauche, on voit l'espace à droite du dernier cours, comme sur TradingView : la mise en page garde la place,
   //  mais on ne dessine que les bougies qui existent — avant, chercher une bougie « du futur » arrêtait tout le dessin : écran blanc)
   vis() { const B = (this.d && this.d.bougies) || []; const jj = Math.max(0, B.length - Math.round(this.fin)); const i = Math.max(0, Math.min(B.length - 1, jj - Math.round(this.n))); return { B, i, j: Math.min(jj, B.length) }; }
+  // les deux boutons de l'échelle (complet : le « A » et le « aller au présent » des grandes plateformes) — en bas de l'échelle des prix, seulement quand il faut :
+  // « A » quand l'échelle est en manuel (tu l'as étirée ou déplacée : les bougies peuvent sortir de l'écran), « » » quand le graphique n'est plus sur la dernière bougie
+  majBoutonsAxe() { if (ROLE === 'ensemble' || !this.d) return; let z = this._bax; if (!z) { z = this._bax = document.createElement('div'); z.className = 'bax';
+      z.innerHTML = '<button data-x="pres" title="Revenir au présent (la dernière bougie à droite)">»</button><button data-x="auto" title="Échelle automatique : toutes les bougies visibles tiennent dans l’écran (double-clic sur l’échelle fait pareil)">A</button>';
+      z.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; ev.stopPropagation(); if (b.dataset.x === 'auto') this.y = null; else { this.fin = -6; this.y = null; } this.dessine(); };
+      z.onpointerdown = ev => ev.stopPropagation(); this.el.appendChild(z); }
+    const nb2 = ((this.d && this.d.bougies) || []).length, loin = this.fin > 2 || this.fin < -Math.max(12, this.n * .15);
+    z.querySelector('[data-x="auto"]').hidden = !this.y; z.querySelector('[data-x="pres"]').hidden = !loin || !nb2; z.hidden = !this.y && !(loin && nb2);
+    z.style.left = `${this.pw + 6}px`; z.style.top = `${Math.max(0, this.ph - 30)}px`; }
   dessine() { if (this._raf) return; this._raf = requestAnimationFrame(() => { this._raf = 0; this.dessineMaintenant(); }); }
   dessineMaintenant() {
     try { this._dessine(); } catch (e) {
@@ -1258,6 +1269,7 @@ class Pane {
     const iT = x => { const k = x / bw + i - .5, last = B.length - 1, dt = DUREE[this.ut]; if (k >= last) return B[last][0] + (k - last) * dt; if (k <= 0) return B[0][0] + k * dt; const a = Math.floor(k); return B[a][0] + (k - a) * (B[a + 1][0] - B[a][0]); };
     const iY = y => { const f = (y - HAUT) / (BASP - HAUT) * (lHi - lLo), w = INV ? lLo + f : lHi - f; return LOG ? Math.exp(w) : w; };
     Object.assign(this, { X, Y, T, iT, iY, bw, pw, ph, lo, hi });
+    try { this.majBoutonsAxe(); } catch (e) { /* rien */ }
     const IC = [...(IND.length ? (() => { try { return calculeIndics(this, B, IND); } catch (e) { console.warn('indicateur', e); return []; } })() : []), ...(SPR ? [SPR] : [])], HA = TYPE === 'heikin' ? heikin(this, B) : null, MC = METHODE !== 'dow' ? calculeMethode(this, B) : null;
     const TH = theme(), coul = x => (!x || x === '#000' || x === '#000000' || x === '#0b0e15') ? TH.fg : x;
     c.clearRect(0, 0, W, H); c.fillStyle = TH.bg; c.fillRect(0, 0, W, H);
@@ -3077,12 +3089,14 @@ const QUI_SONNE = FEN === '1' || ROLE === 'structure';  // (une seule fenêtre s
 const APPAREIL = (() => { try { let a = localStorage.getItem('atlas-appareil'); if (!a) { a = Math.random().toString(36).slice(2, 10); localStorage.setItem('atlas-appareil', a); } return a; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 8); } })();
 var PARLEUR = true;  // (var : lu par les sons, définis plus haut)
 const nomAppareil = () => /iPad|Tablet|Android(?!.*Mobile)/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)) ? 'tablette' : /Mobile|iPhone/i.test(navigator.userAgent) ? 'téléphone' : 'ordinateur';
-async function signeParole(op) { if (!ROOT || !QUI_SONNE) return; try { const r = await api('/maison/graphique', { action: 'parole', op, appareil: APPAREIL, nom: nomAppareil() }); PARLEUR = r && typeof r.parleur === 'boolean' ? r.parleur : true; } catch (e) { PARLEUR = true; } }
+const PC_SEUL = () => nomAppareil() !== 'ordinateur';  // (demande de Rémy, 18/11 : les annonces automatiques seulement sur l'ordinateur, jamais en double sur la tablette ou le téléphone)
+async function signeParole(op) { if (PC_SEUL()) { PARLEUR = false; return; } if (!ROOT || !QUI_SONNE) return; try { const r = await api('/maison/graphique', { action: 'parole', op, appareil: APPAREIL, nom: nomAppareil() }); PARLEUR = r && typeof r.parleur === 'boolean' ? r.parleur : true; } catch (e) { PARLEUR = true; } }
 let gesteAt = 0; ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => { if (Date.now() - gesteAt > 15000) { gesteAt = Date.now(); signeParole('actif'); } }, true));
 setInterval(() => { if (!document.hidden) signeParole('vivant'); }, 30000); setTimeout(() => signeParole('vivant'), 1500);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) signeParole('vivant'); });
 const cleTexte = t => { let h = 0; for (const c of String(t)) h = (h * 31 + c.charCodeAt(0)) | 0; return `p${h}:${String(t).length}`; };
 async function direAuto(texte) {  // une annonce que personne n'a demandée : seulement sur l'appareil élu, et une seule fois en 2 minutes
+  if (PC_SEUL()) { PARLEUR = false; return; }  // (la tablette et le téléphone se taisent : l'ordinateur parle)
   if (ROOT) try { const r = await api('/maison/graphique', { action: 'parole', op: 'puis-je', appareil: APPAREIL, cle: cleTexte(texte) }); if (r && typeof r.parle === 'boolean') { PARLEUR = !!r.parleur; if (!r.parle) return; } } catch (e) { /* sans maison : on parle */ }
   return dire(texte); }
 function cloche() {  // une cloche de Bourse, discrète (des partiels inharmoniques qui s'éteignent lentement)
@@ -6429,6 +6443,7 @@ async function fn50() { ouvreFn('50', 'le 50 % de tes jambes D1 · je calcule…
   document.querySelectorAll('#fn-c [data-c50]').forEach(e => e.onclick = () => { if (ROLE !== 'terminal' && e.dataset.c50 !== code) changeCode(e.dataset.c50); }); }
 function bascule50(on) { opt50 = on == null ? !opt50 : !!on; ecrit('g-50', opt50 ? '1' : '0'); C50D1.at = 0; toutDessine(); if (SALLE_BC) SALLE_BC.postMessage({ t: 'cinquante', on: opt50 }); }
 if (SALLE_BC) SALLE_BC.addEventListener('message', ev => { const m = ev.data || {}; if (m.t === 'cinquante' && ROLE !== 'terminal') { opt50 = !!m.on; ecrit('g-50', opt50 ? '1' : '0'); toutDessine(); } });
+{ const b50 = $('#t-50'); if (b50) { const maj = () => b50.classList.toggle('on', opt50); maj(); b50.onclick = () => { if (!opt50) bascule50(true); maj(); fn50(); }; b50.oncontextmenu = ev => { ev.preventDefault(); bascule50(false); maj(); toast('Les 50 % retirés de tes graphiques'); }; setInterval(maj, 2000); } }
 FONCTIONS.splice(FONCTIONS.length - 1, 0, ['50', 'le 50 % de tes jambes D1 sur tous tes marchés : où il est, qui y est, ce qu’il a donné par le passé · tracer ta ligne au 50 % · le montrer sur tes graphiques', () => { if (!opt50 && ROLE !== 'terminal') bascule50(true); return fn50(); }]);
 // SCG : ta méthode dans la carte du graphique — quand le marché affiché est sur un sommet / creux D1 (à moins de 30 % d'une journée habituelle), une ligne de faits :
 // le niveau et sa distance, depuis combien de jours, le premier contact (H1), la première bougie H4 close au contact, le temps avant la clôture D1, « W » si c'est aussi un niveau de la semaine ;
