@@ -405,6 +405,15 @@ ${st.meilleur ? `<div class="bx-info" style="margin-top:12px">Meilleur trade : $
       let r; try { r = await appel(`/maison/radar?rattrapage=${m}`, null, 20000); } catch (e) { return say("L'ordinateur de la maison ne répond pas : je n'ai pas le radar."); }
       return say(r.texte || "Rien à signaler sur tes marchés.");
     };
+    // « salle de marché » sur le portable, la tablette ou le téléphone (19/11 : sur le portable, le bouton ne faisait rien — il installait la salle sur les écrans du PC de la maison) :
+    // un seul écran ici → la salle s'ouvre ICI (le graphique choisit seul son mode : Portable, Nomade, Poche)
+    if (/\b(installe|ouvre|lance|prepare) (ma|la) salle( de marche)?\b/.test(n) && (typeof CONSTELLATION === 'undefined' || CONSTELLATION.role !== 'ordinateur' || window.screen.isExtended === false)) return () => {
+      const u = `graphique.html${S.settings && S.settings.localUrl ? '#maison=' + encodeURIComponent(S.settings.localUrl.replace(/\/+$/, '').replace(/\/v1$/, '')) : ''}`;
+      let w = null; try { w = window.open(u, 'graphique'); } catch (e) { w = null; }
+      if (w) return say("J'ouvre ta salle de marché ici.");
+      showBoard(`<div style="text-align:center;font-family:system-ui;min-width:min(86vw,420px);padding:12px 4px"><div style="font-size:40px">📈</div><b style="font-size:21px;color:#fde68a">Ta salle de marché</b><div style="color:#cbd5e1;font-size:15px;margin:8px 0 16px">Le navigateur a bloqué l'ouverture automatique : touche le bouton.</div><a href="${esc(u)}" target="graphique" onclick="setTimeout(hideBoard,300)" style="display:block;padding:16px;border-radius:14px;background:#2563eb;color:#fff;font:800 19px system-ui;text-decoration:none">Ouvrir la salle</a></div>`);
+      return say("Touche « Ouvrir la salle » à l'écran.");
+    };
     // le graphique à la voix : « l'or en H4 », « trace une horizontale sur le dernier creux », « mets l'alerte sur ma ligne », « installe ma salle de marché »
     // (Atlas transmet à la maison ; le graphique ouvert, celui qu'il a touché en dernier, l'exécute)
     if ((/\b(l or|l argent|le petrole|le nasdaq|le dow|l euro dollar|l euro|le dollar|le vix|le bitcoin|le s ?(et|&) ?p|le soja)\b/.test(n) && /\ben (h ?1|h ?4|d ?1|daily|journalier|hebdo|hebdomadaire|mensuel|(une|1|4|quatre) heures?|(5|15|30|cinq|quinze|trente) minutes?)\b/.test(n))
