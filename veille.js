@@ -16,7 +16,10 @@
 const VEILLE = (() => {
   const root = () => VOIXMAISON.root();
   const nomAppareil = () => (S.settings.nomAppareil || '').trim() || (/Android/.test(navigator.userAgent) ? (/Mobile/.test(navigator.userAgent) ? 'téléphone' : 'tablette') : 'ordinateur');
-  const actif = () => S.settings.veilleInterieure !== false && !(typeof voice !== 'undefined' && voice.endormi);
+  // un appareil qui voyage (le téléphone, l'ordinateur portable à un seul écran) ne surveille pas « la maison » : hors de chez lui, il le voyait LUI et criait à l'intrus (19/11)
+  // (le PC du bureau a plusieurs écrans, la tablette reste au salon ; « active la veille intérieure » le force quand même)
+  const nomade = () => (typeof CONSTELLATION !== 'undefined' && CONSTELLATION.role === 'telephone') || /iPhone|Android.*Mobile/.test(navigator.userAgent) || (!/Android|iPad/.test(navigator.userAgent) && window.screen.isExtended === false);
+  const actif = () => (S.settings.veilleIci === true || (S.settings.veilleInterieure !== false && !nomade())) && !(typeof voice !== 'undefined' && voice.endormi);
   let etat = { arme: false, rayon: false }, aStream = null, aCtx = null, proc = null, vStream = null, vid = null, petit = null, pctx = null;
   let anneau = [], enAttente = null, dbMax = -120, fond = null, fort = 0, dbNow = null, prec = null, plum = null, bouge = 0, camDepuis = 0, dernier = {}, dernierBattement = 0, derniereImage = 0, mouv = 0;
 
@@ -272,8 +275,8 @@ const VEILLE = (() => {
   function route(t, n) {
     if (/\b(ferme|arrete|quitte|stop|coupe)\b.*\b(rayon|rayons|radiographie)\b/.test(n)) return () => { fermeRayon(); return say("J'arrête le rayon X."); };
     if (/\b(rayon x|rayons x|rayonx|radiographie|radiographier|radio de la maison|vois a travers|voir a travers|scanne l interieur|scan de l interieur)\b/.test(n)) return rayonX;
-    if (/\b(arrete|coupe|desactive)\b.*\b(veille interieure|ecoute de la maison|micros de la maison)\b/.test(n)) return () => { S.settings.veilleInterieure = false; save(); fermeMicro(); fermeCamera(); oeil(false); return say("D'accord : cet appareil n'écoute plus et ne regarde plus la maison quand la sentinelle est armée."); };
-    if (/\b(active|remets|rallume|reprends)\b.*\b(veille interieure|ecoute de la maison|micros de la maison)\b/.test(n)) return () => { S.settings.veilleInterieure = true; save(); return say("C'est reparti : quand la sentinelle est armée, cet appareil écoute le niveau sonore et regarde la pièce. Le petit œil rouge te le montre."); };
+    if (/\b(arrete|coupe|desactive)\b.*\b(veille interieure|ecoute de la maison|micros de la maison)\b/.test(n)) return () => { S.settings.veilleInterieure = false; S.settings.veilleIci = false; save(); fermeMicro(); fermeCamera(); oeil(false); return say("D'accord : cet appareil n'écoute plus et ne regarde plus la maison quand la sentinelle est armée."); };
+    if (/\b(active|remets|rallume|reprends)\b.*\b(veille interieure|ecoute de la maison|micros de la maison)\b/.test(n)) return () => { S.settings.veilleInterieure = true; S.settings.veilleIci = true; save(); return say("C'est reparti : quand la sentinelle est armée, cet appareil écoute le niveau sonore et regarde la pièce. Le petit œil rouge te le montre."); };
     return null;
   }
 
