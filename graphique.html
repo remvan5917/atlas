@@ -3316,6 +3316,13 @@ const CLASSIQUES = [
     { id: 'zscore', nom: 'Z-score', aide: 'l’écart à la moyenne, en écarts-types : −2 et +2', n: 20, r: n => { const { m, s } = bol(n); return X(`Z-score ${n}`, [Lb(`Z ${n}`, oX('/', oX('-', C('close'), m), s), '#5c6bc0')], [-2, 0, 2]); } },
     { id: 'pctb', nom: '%B de Bollinger', aide: 'où est le prix dans les bandes : 0 en bas, 1 en haut', n: 20, r: n => { const { m, s } = bol(n); return X(`%B ${n}`, [Lb(`%B ${n}`, oX('/', oX('-', C('close'), oX('-', m, oX('*', kX(2), s))), oX('*', kX(4), s)), '#0ea5a4')], [0, .5, 1]); } },
     { id: 'bbw', nom: 'Largeur de Bollinger', aide: 'la compression, en % : des bandes serrées, un marché qui se prépare', n: 20, r: n => { const { m, s } = bol(n); return X(`Largeur ${n}`, [Lb(`Largeur ${n}`, oX('*', kX(100), oX('/', oX('*', kX(4), s), m)), '#ffab1a')]); } },
+    { id: 'linreg', nom: 'Régression linéaire', aide: 'la droite des moindres carrés des n dernières clôtures, ± 2 écarts-types', n: 50, r: n => { const l = F('linreg', { src: C('close'), n }), s = oX('*', kX(2), F('stdev', { src: C('close'), n })); return X(`Régression ${n}`, [Lp('Haut', oX('+', l, s), '#90a4ae', 'tirets'), Lp(`Régression ${n}`, l, '#546e7a'), Lp('Bas', oX('-', l, s), '#90a4ae', 'tirets')]); } },
+    { id: 'kama', nom: 'Moyenne adaptative (KAMA)', aide: 'Kaufman : rapide quand ça va droit, lente quand ça hésite', n: 10, r: n => X(`KAMA ${n}`, [Lp(`KAMA ${n}`, F('kama', { src: C('close'), n }), '#ef6c00')]) },
+    { id: 'zlema', nom: 'Moyenne sans retard (ZLEMA)', aide: 'MME corrigée de son retard', n: 20, r: n => X(`ZLEMA ${n}`, [Lp(`ZLEMA ${n}`, F('ema', { src: oX('-', oX('*', kX(2), C('close')), F('precedent', { src: C('close'), n: Math.max(1, Math.floor((n - 1) / 2)) })), n }), '#ad1457')]) },
+    { id: 'uo', nom: 'Ultimate Oscillator', aide: '7, 14, 28 : la pression d’achat sur trois durées, 30 et 70', r: () => { const pc = F('precedent', { src: C('close'), n: 1 }), lo = oX('min', C('low'), pc), bp = oX('-', C('close'), lo), tr = oX('-', oX('max', C('high'), pc), lo), a = n => oX('/', F('sma', { src: bp, n }), F('sma', { src: tr, n }));
+      return X('Ultimate', [Lb('UO', oX('*', kX(100 / 7), oX('+', oX('+', oX('*', kX(4), a(7)), oX('*', kX(2), a(14))), a(28))), '#3d7bff')], [30, 70]); } },
+    { id: 'vortex', nom: 'Vortex', aide: 'VI+ et VI− : qui mène le mouvement', n: 14, r: n => { const pc = F('precedent', { src: C('close'), n: 1 }), tr = F('sma', { src: oX('-', oX('max', C('high'), pc), oX('min', C('low'), pc)), n }), vp = F('sma', { src: F('abs', { src: oX('-', C('high'), F('precedent', { src: C('low'), n: 1 })) }), n }), vm = F('sma', { src: F('abs', { src: oX('-', C('low'), F('precedent', { src: C('high'), n: 1 })) }), n });
+      return X(`Vortex ${n}`, [Lb('VI+', oX('/', vp, tr), '#14b887'), Lb('VI−', oX('/', vm, tr), '#f0435a')], [1]); } },
     { id: 'chandelier', nom: 'Chandelier', aide: 'stop suiveur : plus haut 22 − 3 ATR, plus bas 22 + 3 ATR', n: 22, r: n => X(`Chandelier ${n}`, [Lp('Stop des achats', oX('-', F('plus_haut', { src: C('high'), n }), oX('*', kX(3), F('atr', { n }))), '#14b887', 'tirets'), Lp('Stop des ventes', oX('+', F('plus_bas', { src: C('low'), n }), oX('*', kX(3), F('atr', { n }))), '#f0435a', 'tirets')]) },
   ); }
 let INDICS = []; try { INDICS = JSON.parse(lit('g-indics', '[]')); } catch (e) { INDICS = []; } let indicsVersion = 1;
@@ -3348,12 +3355,16 @@ function calculeIndics(p, B, IND) {
   function ev(e) {
     if (e.src && Object.keys(e).length === 1) { const i = { open: 1, high: 2, low: 3, close: 4, volume: 5 }[e.src]; if (i) return Float64Array.from(B, b => b[i] ?? NaN); return Float64Array.from(B, b => e.src === 'hl2' ? (b[2] + b[3]) / 2 : (b[2] + b[3] + b[4]) / 3); }
     if ('const' in e) return new Float64Array(N).fill(+e.const);
-    if (e.op) { const a = ser(e.a), b = ser(e.b), o = new Float64Array(N); for (let k = 0; k < N; k++) o[k] = e.op === '+' ? a[k] + b[k] : e.op === '-' ? a[k] - b[k] : e.op === '*' ? a[k] * b[k] : b[k] ? a[k] / b[k] : NaN; return o; }
+    if (e.op) { const a = ser(e.a), b = ser(e.b), o = new Float64Array(N); for (let k = 0; k < N; k++) o[k] = e.op === '+' ? a[k] + b[k] : e.op === '-' ? a[k] - b[k] : e.op === '*' ? a[k] * b[k] : e.op === 'max' ? Math.max(a[k], b[k]) : e.op === 'min' ? Math.min(a[k], b[k]) : b[k] ? a[k] / b[k] : NaN; return o; }
     const n = Math.max(1, Math.min(500, +e.n || 14)), S = e.src ? ser(e.src) : null;
     switch (e.f) {
       case 'sma': return glisse(S, n, false);
       case 'ema': return ema(S, n);
       case 'wma': return roul(S, n, w => w.reduce((x, y, q) => x + y * (q + 1), 0) / (n * (n + 1) / 2));
+      // la régression linéaire des n dernières valeurs : sa valeur à la dernière barre (« linreg ») ou sa pente par barre (« pente »)
+      case 'linreg': case 'pente': { const sx = n * (n - 1) / 2, sxx = (n - 1) * n * (2 * n - 1) / 6, den = n * sxx - sx * sx; return roul(S, n, w => { let sy = 0, sxy = 0; for (let q = 0; q < n; q++) { sy += w[q]; sxy += q * w[q]; } const a = den ? (n * sxy - sx * sy) / den : 0; return e.f === 'pente' ? a : (sy - a * sx) / n + a * (n - 1); }); }
+      // la moyenne adaptative de Kaufman (KAMA n, 2, 30) : rapide quand le marché va droit, lente quand il hésite
+      case 'kama': { const o = new Float64Array(N).fill(NaN), fa = 2 / 3, le = 2 / 31; let pr = NaN; for (let k = n; k < N; k++) { if (!isFinite(S[k]) || !isFinite(S[k - n])) continue; let vo = 0; for (let q = k - n + 1; q <= k; q++) vo += Math.abs(S[q] - S[q - 1]); const er = vo ? Math.abs(S[k] - S[k - n]) / vo : 0, sc = (er * (fa - le) + le) ** 2; pr = isFinite(pr) ? pr + sc * (S[k] - pr) : S[k]; o[k] = pr; } return o; }
       case 'stdev': return glisse(S, n, true);
       case 'plus_haut': return roul(S, n, w => Math.max(...w));
       case 'plus_bas': return roul(S, n, w => Math.min(...w));
@@ -3433,7 +3444,7 @@ $('#indic-a').addEventListener('click', ev => { const b = ev.target.closest('but
 $('#indic-a').addEventListener('input', ev => { const e = ev.target.closest('input[type=color]'); if (!e) return; const x = INDICS[+e.dataset.k]; if (!x) return; x.couleurs = { ...(x.couleurs || {}), [e.dataset.c]: e.value }; e.parentNode.style.background = e.value; indicsVersion++; toutDessine(); });
 $('#indic-a').addEventListener('change', ev => { if (ev.target.matches('input[type=color]')) gardeIndics(); });
 function periodes(r) { const o = []; JSON.stringify(r, (cle, val) => { if (cle === 'n' && typeof val === 'number') o.push(val); return val; }); return o; }
-function verifieRecette(r) { const ok = e => { if (!e || typeof e !== 'object') return false; if ('src' in e && Object.keys(e).length === 1) return typeof e.src === 'string'; if ('const' in e) return isFinite(+e.const); if (e.op) return ['+', '-', '*', '/', '>', '<', '>=', '<=', 'croise_haut', 'croise_bas', 'et', 'ou'].includes(e.op) && ok(e.a) && ok(e.b); return typeof e.f === 'string' && (['sma', 'ema', 'wma', 'stdev', 'plus_haut', 'plus_bas', 'change', 'abs', 'rsi', 'precedent'].includes(e.f) ? ok(e.src) : (!e.src || ok(e.src))); };
+function verifieRecette(r) { const ok = e => { if (!e || typeof e !== 'object') return false; if ('src' in e && Object.keys(e).length === 1) return typeof e.src === 'string'; if ('const' in e) return isFinite(+e.const); if (e.op) return ['+', '-', '*', '/', 'max', 'min', '>', '<', '>=', '<=', 'croise_haut', 'croise_bas', 'et', 'ou'].includes(e.op) && ok(e.a) && ok(e.b); return typeof e.f === 'string' && (['sma', 'ema', 'wma', 'stdev', 'plus_haut', 'plus_bas', 'change', 'abs', 'rsi', 'precedent', 'linreg', 'pente', 'kama'].includes(e.f) ? ok(e.src) : (!e.src || ok(e.src))); };
   const coul = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#3d7bff';
   if (!r || typeof r !== 'object') throw new Error('recette illisible');
   const o = { nom: String(r.nom || 'Indicateur importé').slice(0, 40), explication: String(r.explication || '').slice(0, 240), niveaux: (r.niveaux || []).slice(0, 4).map(Number).filter(isFinite),
