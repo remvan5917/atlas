@@ -5220,7 +5220,7 @@ async function setupGuet() { if (!QUI_SONNE || lit('g-setup', '1') !== '1' || RE
     const ctx = [ag ? `prochaine annonce forte : ${ag.titre || 'annonce'} (${hm(ag.at)})` : 'aucune annonce forte dans les 24 h', dp ? `dépêche critique ${hm(dp.publie || dp.at)} : ${String(dp.titre || '').slice(0, 90)}` : ''].filter(Boolean).join(' · ');
     const txt = `${st.c} · ${st.genre === 'cassure' ? 'CASSURE' : 'REBOND'} du ${nomQ} D1 ${nb(st.q[1], st.dec)} à la clôture H4 → ${st.sens === 'achat' ? 'ACHAT' : 'VENTE'} · stop ${nb(st.sl, st.dec)} (${st.tS} t${$$(st.tS)}) · objectif ${nb(st.tp, st.dec)} (${st.tT} t${$$(st.tT)})${st.r ? ` · ${nb(st.r, 1)} R` : ''}. Contexte : ${ctx}. À toi de décider.`;
     st.ctx = ctx; scNote(st.c, txt); }
-  try { await regleCharge(); nv.forEach(st => { st.passe = reglePhrase(st); }); } catch (e) { /* sans le passé */ }
+  try { await Promise.race([regleCharge(), new Promise(r => setTimeout(r, 3000))]); nv.forEach(st => { st.passe = reglePhrase(st); }); } catch (e) { /* sans le passé */ }  // (la carte n'attend jamais plus de 3 s le passé)
   sigCarte(nv);
   halo('ambre'); sonne('setup'); const a = nv[0]; direAuto(`Signal de ta méthode. ${a.c} : ${a.genre === 'cassure' ? 'cassure' : 'rebond'} de ton ${a.q[2] === 'h' ? 'sommet' : 'creux'} D1 à la clôture H4. Le ticket est prêt, à toi de décider.`); }
 // LE PRÉ-SIGNAL (sujet 247) : 15 minutes avant une clôture H4, si la bougie en cours clôturait au prix actuel, y aurait-il un signal de ta méthode ? Atlas te le dit, pour que tu sois
