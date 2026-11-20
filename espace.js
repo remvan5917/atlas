@@ -5,8 +5,8 @@
 const ESPACE = (() => {
   const B = () => BUREAU._;
   const root = () => VOIXMAISON.root();
-  let el = null, data = { a_valider: [] }, decs = [], plan = null, act = [], dos = null, revueR = null;
-  let vue = 'traiter', sel = null, cherche = '', actGenre = 'tous', pdfs = {}, majT = 0, charge = false, retouches = {}; // retouches : ses corrections du mail, gardées tant qu'il n'a pas validé
+  let el = null, data = { a_valider: [] }, decs = [], plan = null, act = [], dos = null, revueR = null, pil = { projets: [] }, extra = {};
+  let vue = 'jour', sel = null, cherche = '', actGenre = 'tous', pdfs = {}, majT = 0, charge = false, retouches = {}; // retouches : ses corrections du mail, gardées tant qu'il n'a pas validé
   const ouvert = () => !!el && !el.hidden;
   const filtre = () => S.bureauFiltre || 'tout';
   const isoJ = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -16,7 +16,7 @@ const ESPACE = (() => {
   const okDec = d => filtre() === 'tout' || (filtre() === 'pro') === B().GROUPES[decG(d)].pro;
   const presse = x => x.urgence === 'haute' || (x.echeance && x.echeance < isoJ());
   const ordre = a => a.slice().sort((x, y) => presse(y) - presse(x) || (y.urgence === 'haute') - (x.urgence === 'haute') || String(x.echeance || '9').localeCompare(String(y.echeance || '9')));
-  const cartes = () => (data.a_valider || []).filter(okFiltre);
+  const cartes = () => { const v = tousDocs().vieux; return (data.a_valider || []).filter(x => okFiltre(x) && !v.has(x.id)); }; // (l'ancienne version d'un document : remplacée par la nouvelle)
   const lesDecs = () => decs.filter(okDec);
   const quand = at => { if (!at) return ''; const s = Date.now() / 1000 - at; return s < 3600 ? `il y a ${Math.max(1, Math.round(s / 60))} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : new Date(at * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); };
   const btn = (txt, act_, id = '', cls = '', extra = '') => `<button type="button" class="eb-btn ${cls}" data-eb="${act_}" data-id="${esc(id)}" ${extra}>${txt}</button>`;
@@ -25,24 +25,37 @@ const ESPACE = (() => {
   async function json(u, corps) { const r = await fetch(`${root()}${u}`, corps ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) } : { cache: 'no-store' }); return r.json(); }
   async function charger(r) {
     charge = true;
-    const [b, d, p, a, o] = await Promise.allSettled([r ? Promise.resolve(r) : B().api(), B().decApi(), json('/maison/plan'), B().api({ action: 'activite' }), B().dossierCabinet()]);
+    const [b, d, p, a, o, pg] = await Promise.allSettled([r ? Promise.resolve(r) : B().api(), B().decApi(), json('/maison/plan'), B().api({ action: 'activite' }), B().dossierCabinet(), B().api({ action: 'pilotage' })]);
+    if (pg.status === 'fulfilled' && pg.value && pg.value.projets) pil = pg.value;
     if (b.status === 'fulfilled' && b.value) data = b.value;
     decs = d.status === 'fulfilled' ? (d.value.a_prendre || []) : decs;
     plan = p.status === 'fulfilled' ? (p.value.plan || null) : plan;
-    act = a.status === 'fulfilled' ? (a.value.activite || []) : act;
+    act = a.status === 'fulfilled' ? (a.value.activite || []).slice().sort((x, y) => y.at - x.at) : act;
     dos = o.status === 'fulfilled' ? o.value : dos;
     charge = false;
   }
 
   // ---------- les vues ----------
-  const VUES_HAUT = [['jour', '☀️', "Aujourd'hui"], ['traiter', '📥', 'À traiter'], ['urgent', '⏰', 'Urgent et en retard'], ['decisions', '🗳️', 'Décisions'], ['documents', '📄', 'Documents']];
+  const VUES_HAUT = [['jour', '☀️', "Aujourd'hui"], ['traiter', '📥', 'Tout ce qui t’attend'], ['decisions', '🗳️', 'Décisions'], ['documents', '📄', 'Documents à jour']];
   function planDuJour() { return plan && plan.date === isoJ() ? plan : null; }
-  function documents() { // les documents de l'atelier (14 jours) : ceux à relire d'abord
-    const vus = new Set(), l = [];
-    (data.a_valider || []).filter(x => x.livrable && okFiltre(x)).forEach(x => { vus.add(x.id); l.push({ k: 'carte', id: x.id, x, doc: true }); });
-    act.filter(e => e.genre === 'atelier' && e.carte && !vus.has(e.carte) && (filtre() === 'tout' || (filtre() === 'pro') === !!e.pro)).forEach(e => { vus.add(e.carte); l.push({ k: 'act', id: `a${e.at}${e.carte}`, x: e, doc: true }); });
-    return l;
+  // (20/11 : « je n'arrive pas à m'y retrouver ») — tout est rangé par PROJET : où il en est (le pilotage général), ce qu'il attend de toi, ses documents à jour, ce qu'Atlas a fait
+  const PIL_G = { 1: 'lrf', 2: 'sopam', 3: 'lrf', 4: 'outils', 5: 'admin', 6: 'trading', 7: 'famille', 8: 'outils' }; // les blocs de maison/pilotage-general.md → les projets du bureau
+  const blocsDe = g => (pil.projets || []).filter(b => PIL_G[b.n] === g);
+  const propre = t => String(t || '').replace(/\s*\((?:[^()]*\b[0-9a-f]{8}\b[^()]*)\)/g, '').replace(/\b[0-9a-f]{8}\b,?\s*/g, '').replace(/\s{2,}/g, ' ').trim(); // sans les numéros internes des décisions
+  const actProjet = e => e.genre === 'plateforme' ? 'lrf' : B().projetDe({ resume: e.t, entite: e.pro ? 'lrf' : 'perso' });
+  const titreDoc = it => it.k === 'carte' ? (it.x.livrable_titre || it.x.resume || '') : ((String(it.x.t).match(/«\s*(.+?)\s*»/) || [])[1] || B().lisible(it.x.t, '').texte);
+  const cleDoc = t => N(t).replace(/\bv ?\d+\b/g, '').replace(/\s+/g, ' ').trim();
+  const projDoc = it => it.k === 'carte' ? B().projetDe(it.x) : actProjet(it.x);
+  function tousDocs() { // la dernière version de chaque document de l'atelier (14 jours) ; une version plus ancienne disparaît
+    const cand = [], av = new Map((data.a_valider || []).map(x => [x.id, x]));
+    (data.a_valider || []).filter(x => x.livrable && okFiltre(x)).forEach(x => cand.push({ k: 'carte', id: x.id, x, doc: true, at: x.cree_at || 0, sec: 'doc' }));
+    act.filter(e => e.genre === 'atelier' && e.carte && (filtre() === 'tout' || (filtre() === 'pro') === !!e.pro)).forEach(e => { const c = av.get(e.carte); cand.push(c ? { k: 'carte', id: c.id, x: c, doc: true, at: e.at, sec: 'doc' } : { k: 'act', id: `a${e.at}${e.carte}`, x: e, doc: true, at: e.at, sec: 'doc' }); });
+    cand.sort((a, b) => b.at - a.at);
+    const vus = new Set(), l = [], vieux = new Set();
+    for (const it of cand) { const k = cleDoc(titreDoc(it)); if (vus.has('id:' + it.id)) continue; if (k && vus.has(k)) { if (it.k === 'carte') vieux.add(it.id); continue; } vus.add(k); vus.add('id:' + it.id); l.push(it); }
+    return { l, vieux };
   }
+  function documents(g) { const l = tousDocs().l; return g ? l.filter(it => projDoc(it) === g) : l; }
   function journal() { return act.filter(e => (filtre() === 'tout' || (filtre() === 'pro') === !!e.pro) && (actGenre === 'tous' || e.genre === actGenre)).map(e => ({ k: 'act', id: `a${e.at}${e.carte || ''}${N(e.t).slice(0, 20)}`, x: e })); }
   function items(v = vue) {
     const C = cartes(), D = lesDecs();
@@ -50,11 +63,10 @@ const ESPACE = (() => {
     let l = [];
     if (v === 'jour') l = planDuJour() ? (planDuJour().actions || []).map(a => ({ k: 'plan', id: `p${a.id}`, x: a })) : [];
     else if (v === 'traiter') { const o = ordre(C); l = [...asC(o.filter(presse)), ...asD(D), ...asC(o.filter(x => !presse(x)))]; }
-    else if (v === 'urgent') l = asC(ordre(C.filter(presse)));
     else if (v === 'decisions') l = asD(D);
     else if (v === 'documents') l = documents();
     else if (v === 'journal') l = journal();
-    else if (v.startsWith('p:')) { const g = v.slice(2); l = [...asD(D.filter(d => decG(d) === g)), ...asC(ordre(C.filter(x => B().projetDe(x) === g)))]; }
+    else if (v.startsWith('p:')) { const g = v.slice(2), C_ = ordre(C.filter(x => B().projetDe(x) === g && !x.livrable)); l = [...asC(C_.filter(presse)), ...asD(D.filter(d => decG(d) === g)), ...asC(C_.filter(x => !presse(x))), ...documents(g)]; }
     if (cherche) { const q = N(cherche); l = l.filter(it => N(JSON.stringify(it.x)).includes(q)); }
     return l;
   }
@@ -62,6 +74,7 @@ const ESPACE = (() => {
     if (v === 'jour') { const p = planDuJour(); return p ? (p.actions || []).filter(a => a.etat === 'a_faire').length : 0; }
     if (v === 'journal') return act.filter(e => new Date(e.at * 1000).toDateString() === new Date().toDateString()).length;
     if (v === 'documents') return documents().filter(it => it.k === 'carte').length;
+    if (v.startsWith('p:')) return items(v).filter(it => it.sec !== 'doc' || it.k === 'carte').length;
     const l = items(v); return l.length;
   }
 
@@ -69,7 +82,7 @@ const ESPACE = (() => {
   function nav() {
     const lien = (v, ic, t, n, c = '') => `<button type="button" class="eb-nav-l${vue === v ? ' on' : ''}" data-eb="vue" data-id="${v}" ${c ? `style="--c:${c}"` : ''}><span class="eb-nav-ic">${ic}</span><span class="eb-nav-t">${t}</span>${n ? `<span class="eb-nb${v === 'urgent' ? ' rouge' : v === 'decisions' ? ' ambre' : ''}">${n}</span>` : ''}</button>`;
     const G = B().GROUPES;
-    const projets = Object.keys(G).filter(g => filtre() === 'tout' || (filtre() === 'pro') === G[g].pro).map(g => [g, items(`p:${g}`).length]).filter(([, n]) => n);
+    const projets = Object.keys(G).filter(g => filtre() === 'tout' || (filtre() === 'pro') === G[g].pro).map(g => [g, compte(`p:${g}`)]).filter(([g, n]) => n || blocsDe(g).length || items(`p:${g}`).length);
     return `<nav class="eb-nav">
 <div class="eb-nav-bloc">${VUES_HAUT.map(([v, ic, t]) => lien(v, ic, t, compte(v))).join('')}</div>
 ${projets.length ? `<div class="eb-nav-titre">Projets</div><div class="eb-nav-bloc">${projets.map(([g, n]) => lien(`p:${g}`, `<i class="eb-pt" style="background:${G[g].c}"></i>`, G[g].n, n, G[g].c)).join('')}</div>` : ''}
@@ -108,7 +121,7 @@ ${projets.length ? `<div class="eb-nav-titre">Projets</div><div class="eb-nav-bl
   function liste() {
     const l = items(), [ic, t] = titreVue();
     let corps = '', jour = '', sec = '';
-    const SEC = { retard: '⏰ En retard ou urgent', dec: '🗳️ Décisions à prendre', carte: '📥 À valider' };
+    const SEC = { retard: '⏰ En retard ou urgent', dec: '🗳️ Décisions à prendre', carte: '📥 À valider', doc: '📄 Documents à jour' };
     const avecSec = vue === 'traiter' || vue.startsWith('p:');
     l.forEach(it => {
       if (avecSec && it.sec && it.sec !== sec) { sec = it.sec; corps += `<div class="eb-jour${sec === 'retard' ? ' rouge' : ''}">${SEC[sec]} · ${l.filter(y => y.sec === sec).length}</div>`; }
@@ -119,13 +132,40 @@ ${projets.length ? `<div class="eb-nav-titre">Projets</div><div class="eb-nav-bl
     const vide = vue === 'jour' ? (plan && plan.date !== isoJ() ? "Le plan d'aujourd'hui n'est pas encore prêt : il arrive vers 7 h 30." : "Pas de plan du jour pour l'instant.") : cherche ? 'Rien ne correspond à ta recherche.' : vue === 'traiter' ? '✓ Ton bureau est à jour : rien à traiter.' : 'Rien ici pour le moment.';
     return `<section class="eb-liste"><div class="eb-liste-t"><span>${ic}</span><b>${esc(t)}</b><small>${l.length}</small></div>${vue === 'jour' && planDuJour() && planDuJour().mot ? `<div class="eb-mot">${esc(planDuJour().mot)}</div>` : ''}${puces}<div class="eb-liste-c">${corps || `<div class="eb-vide">${vide}</div>`}</div></section>`;
   }
-  function accueil() { // rien d'ouvert : le résumé de la journée
-    const C = cartes(), p = planDuJour(), docs = documents().filter(it => it.k === 'carte').length;
-    const reste = p ? (p.actions || []).filter(a => a.etat === 'a_faire') : [];
-    const tuile = (n, t, v, c) => `<button type="button" class="eb-tuile" data-eb="vue" data-id="${v}" style="--c:${c}"><b>${n}</b><span>${t}</span></button>`;
-    return `<div class="eb-accueil"><div class="eb-sur">${esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }))}</div><h2>${reste.length ? `${reste.length} action${reste.length > 1 ? 's' : ''} dans ton plan du jour, environ ${reste.reduce((s, a) => s + (+a.minutes || 0), 0)} min.` : C.length ? 'Tout est préparé : tu vérifies, tu valides.' : 'Ton bureau est à jour. Va trader tranquille.'}</h2>
-<div class="eb-tuiles">${tuile(reste.length, 'au plan du jour', 'jour', '#fcd34d')}${tuile(C.length, 'à traiter', 'traiter', '#60a5fa')}${tuile(C.filter(presse).length, 'urgent ou en retard', 'urgent', '#f87171')}${tuile(lesDecs().length, 'décisions', 'decisions', '#fcd34d')}${tuile(docs, 'documents à relire', 'documents', '#ffb547')}</div>
-<p class="eb-aide">Touche une ligne pour l'ouvrir ici. Flèches ↑ ↓ pour passer d'une ligne à l'autre, Échap pour fermer. Tu peux aussi parler : « on valide le bureau », « ferme le bureau ».</p></div>`;
+  // l'accueil : la journée, puis UNE carte par projet (où il en est, ce qui t'attend, ce qu'Atlas a fait cette semaine)
+  const semaine = g => act.filter(e => Date.now() / 1000 - e.at < 7 * 86400 && e.genre !== 'toi' && actProjet(e) === g); // (ce que TU as fait n'est pas « ce qu'Atlas a fait »)
+  const court = (t, n = 150) => { t = propre(t); const i = t.search(/[.;](\s|$)/); t = i > 30 && i < n ? t.slice(0, i) : t; return t.length > n ? t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : t; };
+  const champ = (bl, ...cles) => bl.map(b => Object.entries(b.champs || {}).find(([c]) => cles.some(k => N(c).startsWith(N(k))))).filter(Boolean).map(([, v]) => v);
+  function accueil() {
+    const p = planDuJour(), reste = p ? (p.actions || []).filter(a => a.etat === 'a_faire') : [], G = B().GROUPES;
+    const gs = Object.keys(G).filter(g => filtre() === 'tout' || (filtre() === 'pro') === G[g].pro).filter(g => blocsDe(g).length || items(`p:${g}`).length || semaine(g).length);
+    const carteP = g => {
+      const bl = blocsDe(g), n = compte(`p:${g}`), f = semaine(g).length, etat = champ(bl, 'État')[0] || champ(bl, 'Prochaine étape')[0] || '';
+      return `<button type="button" class="eb-pcarte" data-eb="vue" data-id="p:${g}" style="--c:${G[g].c}"><div class="eb-pcarte-t"><span>${G[g].e}</span><b>${esc(G[g].n)}</b>${n ? `<em>${n} pour toi</em>` : '<em class="ok">rien pour toi</em>'}</div>${etat ? `<p>${esc(court(etat))}</p>` : ''}${f ? `<small>Atlas : ${f} chose${f > 1 ? 's' : ''} faite${f > 1 ? 's' : ''} cette semaine</small>` : ''}</button>`;
+    };
+    const prio = pil.priorites && !/^\(/.test(pil.priorites) ? `<div class="eb-bloc afaire"><h4>Les priorités de la semaine</h4><p class="pre">${esc(propre(pil.priorites))}</p></div>` : '';
+    return `<div class="eb-accueil large"><div class="eb-sur">${esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
+<h2>${reste.length ? `Ton plan du jour : ${reste.length} action${reste.length > 1 ? 's' : ''}, environ ${reste.reduce((s_, a) => s_ + (+a.minutes || 0), 0)} min.` : cartes().length || lesDecs().length ? 'Tout est préparé : choisis un projet, ou commence par « Tout ce qui t’attend ».' : 'Ton bureau est à jour. Va trader tranquille.'}</h2>
+${reste.length && vue !== 'jour' ? `<div class="eb-actions" style="position:static;margin:0 0 18px;padding:0;background:none">${btn('☀️ Ouvrir mon plan du jour', 'vue', 'jour', 'vert')}</div>` : ''}${prio}
+<div class="eb-sous-t">Tes projets</div><div class="eb-pcartes">${gs.map(carteP).join('')}</div>
+<p class="eb-aide">Touche un projet : tu vois où il en est, ce qu'il attend de toi, ses documents à jour et ce qu'Atlas a fait. Flèches ↑ ↓ pour passer d'une ligne à l'autre, Échap pour fermer.</p></div>`;
+  }
+  // la fiche d'un projet (rien d'ouvert dans la liste)
+  function tableauProjet(g) {
+    const G = B().GROUPES[g], bl = blocsDe(g), l = items(`p:${g}`); extra = {};
+    const lignesBloc = (titre, vals, cls = '') => vals.length ? `<div class="eb-bloc ${cls}"><h4>${titre}</h4>${vals.map(v => { const t = propre(v); return t.length > 260 ? `<p>${esc(court(t, 260))}</p><details class="eb-suite"><summary>Lire la suite</summary><p>${esc(t)}</p></details>` : `<p>${esc(t)}</p>`; }).join('')}</div>` : ''; // (long : deux phrases, la suite à déplier)
+    const nb = k => l.filter(i => i.sec === k || (k === 'carte' && i.sec === 'retard')).length;
+    const premier = k => (l.find(i => i.sec === k || (k === 'carte' && i.sec === 'retard')) || {}).id || '';
+    const tuile = (n, t, k, c) => n ? `<button type="button" class="eb-tuile" data-eb="sel" data-id="${esc(premier(k))}" style="--c:${c}"><b>${n}</b><span>${t}</span></button>` : '';
+    const fait = semaine(g).slice(0, 12).map((e, k) => { const id = `f${e.at}${k}`; extra[id] = { k: 'act', id, x: e }; return { id, e }; });
+    const docs = l.filter(i => i.sec === 'doc').slice(0, 8);
+    return `<div class="eb-lec"><div class="eb-sur">Le projet</div><h2 class="eb-lec-titre" style="margin-top:6px">${G.e} ${esc(G.n)}</h2>
+${bl.length > 1 ? bl.map(b => `<div class="eb-sous-t">${esc(b.titre)}</div>${lignesBloc('Où on en est', champ([b], 'État'))}${lignesBloc('Prochaine étape', champ([b], 'Prochaine étape'), 'afaire')}`).join('') : lignesBloc('Où on en est', champ(bl, 'État')) + lignesBloc('Prochaine étape', champ(bl, 'Prochaine étape'), 'afaire')}
+${lignesBloc('Ce qui bloque', champ(bl, 'Blocages'), 'alerte')}${lignesBloc('Ce qui attend de toi', champ(bl, 'Attend de Rémy'), 'toi')}${lignesBloc('Ce qu’on attend des autres', bl.map(b_ => Object.entries(b_.champs || {}).filter(([c]) => /^attend de/.test(N(c)) && !/^attend de remy/.test(N(c))).map(([, v]) => v)).flat())}
+${nb('dec') + nb('carte') + nb('doc') ? `<div class="eb-sous-t">Pour toi maintenant</div><div class="eb-tuiles">${tuile(nb('dec'), 'décisions', 'dec', '#fcd34d')}${tuile(nb('carte'), 'à valider', 'carte', '#60a5fa')}${tuile(l.filter(i => i.sec === 'doc' && i.k === 'carte').length, 'documents à relire', 'doc', '#ffb547')}</div>` : `<div class="eb-bloc"><p>✓ Rien n'attend ta main sur ce projet.</p></div>`}
+${l.filter(i => i.sec !== 'doc').length ? `<div class="eb-mobile-liste"><div class="eb-sous-t">Tout pour toi dans ce projet</div>${l.filter(i => i.sec !== 'doc').map(ligne).join('')}</div>` : ''}
+${docs.length ? `<div class="eb-sous-t">Documents à jour</div>${docs.map(d => `<button type="button" class="eb-fic" data-eb="sel" data-id="${esc(d.id)}">📄 ${esc(titreDoc(d))}${d.k === 'carte' ? ' <em class="eb-chip ambre">à relire</em>' : ''} <span>›</span></button>`).join('')}` : ''}
+${fait.length ? `<div class="eb-sous-t">Ce qu'Atlas a fait cette semaine</div>${fait.map(({ id, e }) => { const ouv = e.carte || e.rapport || e.fichiers || e.dossier; return `<button type="button" class="eb-fic${ouv ? '' : ' off'}" ${ouv ? `data-eb="sel" data-id="${esc(id)}"` : ''}><span class="eb-quand">${esc(new Date(e.at * 1000).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }))}</span> ${esc(B().lisible(e.t, '').texte)}${ouv ? ' <span>›</span>' : ''}</button>`; }).join('')}` : ''}</div>`;
   }
   // un document de l'atelier : lu ICI (le PDF demandé par Atlas à l'ordinateur de la maison, puis affiché dans la page)
   function cadreDoc(idCarte, titre) {
@@ -236,9 +276,9 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
       try { revueR = await (await fetch(`${root()}/maison/revue`, { cache: 'no-store' })).json(); z.innerHTML = `<div class="eb-revue">${B().revueHtml(revueR, false)}</div>`; } catch (e) { z.innerHTML = '<div class="eb-vide">L\'ordinateur de la maison ne répond pas.</div>'; }
       return;
     }
-    const it = items().find(i => i.id === sel);
-    if (!it) { z.innerHTML = accueil(); return; }
-    const retour = `<button type="button" class="eb-retour" data-eb="retour">← ${esc(titreVue()[1])}</button>`;
+    const it = items().find(i => i.id === sel) || extra[sel];
+    if (!it) { z.innerHTML = vue.startsWith('p:') ? tableauProjet(vue.slice(2)) : accueil(); z.scrollTop = 0; return; }
+    const retour = `<button type="button" class="eb-retour" data-eb="retour">← ${esc(titreVue()[1])}</button>` + (vue.startsWith('p:') ? `<button type="button" class="eb-fil" data-eb="retour">← ${esc(titreVue()[0])} ${esc(titreVue()[1])} : la fiche du projet</button>` : '');
     let h = '';
     if (it.k === 'carte') h = lectureCarte(it.x);
     else if (it.k === 'dec') h = lectureDec(it.x);
@@ -253,7 +293,7 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
     const seg = (k, t) => `<button type="button" class="${f === k ? 'on ' + k : ''}" data-eb="filtre" data-id="${k}">${t}</button>`;
     const garde = document.activeElement && el.contains(document.activeElement) && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName) ? document.activeElement.id : '';
     const valeurs = {}; el.querySelectorAll('textarea[id],input[id]').forEach(i => { valeurs[i.id] = i.value; });
-    el.className = `eb${vue === 'revue' ? ' large' : ''}${sel ? ' lit' : ''}`;
+    el.className = `eb${vue === 'revue' ? ' large' : ''}${sel ? ' lit' : ''}${vue.startsWith('p:') && !sel ? ' fiche' : ''}`; // (fiche : sur le téléphone, un projet s'ouvre sur sa fiche)
     el.innerHTML = `<header class="eb-haut"><div class="eb-marque"><span>ATLAS</span><b>Mon bureau</b></div>
 <div class="eb-seg">${seg('tout', `Tout · ${C.length}`)}${seg('pro', `Pro · ${nPro}`)}${seg('perso', `Perso · ${C.length - nPro}`)}</div>
 <label class="eb-cherche"><span>⌕</span><input type="search" id="eb-q" placeholder="Chercher un nom, un sujet…" value="${esc(cherche)}"></label>
@@ -268,13 +308,14 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
   // ---------- ouvrir, fermer ----------
   async function ouvre(v, r) {
     if (!el) { el = document.createElement('div'); el.id = 'espace-bureau'; document.body.appendChild(el); el.addEventListener('click', clic); el.addEventListener('input', saisie); }
-    if (v) { vue = v; sel = null; } else if (!ouvert()) { vue = S.espaceVue || 'traiter'; sel = null; }
+    if (v) { vue = v; sel = null; } else if (!ouvert()) { vue = S.espaceVue || 'jour'; sel = null; }
+    if (vue === 'urgent') vue = 'traiter'; // (l'ancienne vue « urgent » : c'est maintenant la première partie de « Tout ce qui t'attend »)
     S.espaceVue = vue; save();
     el.hidden = false; document.body.classList.add('eb-ouvert');
     if (typeof hideBoard === 'function' && !$('#board').hidden) hideBoard();
     if (!el.innerHTML) el.innerHTML = '<div class="eb-vide" style="padding-top:40vh">J\'ouvre ton bureau…</div>';
     await charger(r);
-    if (!sel && window.innerWidth >= 900) { const l = items(); if (l.length && vue !== 'journal' && vue !== 'revue') sel = l[0].id; }
+    if (!sel && window.innerWidth >= 900 && ['traiter', 'decisions', 'documents'].includes(vue)) { const l = items(); if (l.length) sel = l[0].id; }
     dessine();
     clearInterval(majT); majT = setInterval(rafraichit, 90000);
   }
@@ -298,7 +339,7 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
     const b = ev.target.closest('[data-eb]'); if (!b) return;
     const a = b.dataset.eb, id = b.dataset.id || '';
     if (a === 'ferme') return ferme();
-    if (a === 'vue') { vue = id; sel = null; S.espaceVue = vue; save(); if (window.innerWidth >= 900 && vue !== 'journal') { const l = items(); if (l.length) sel = l[0].id; } return dessine(); }
+    if (a === 'vue') { vue = id; sel = null; S.espaceVue = vue; save(); if (window.innerWidth >= 900 && ['traiter', 'decisions', 'documents'].includes(vue)) { const l = items(); if (l.length) sel = l[0].id; } return dessine(); }
     if (a === 'sel') { sel = id; el.querySelectorAll('.eb-row.on').forEach(r => r.classList.remove('on')); b.classList.add('on'); el.classList.add('lit'); return lecture(); }
     if (a === 'retour') { sel = null; el.classList.remove('lit'); return dessine(); }
     if (a === 'filtre') { S.bureauFiltre = id; save(); sel = null; return dessine(); }

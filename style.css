@@ -325,8 +325,27 @@ body.eb-ouvert #btn-reglages, body.eb-ouvert #btn-radar { display: none; }
   .eb-haut { flex-wrap: wrap; gap: 8px; padding: 10px 12px; } .eb-marque { order: 0; } .eb-haut-d { order: 1; } .eb-haut-d .eb-btn { display: none; }
   .eb-seg { order: 2; } .eb-cherche { order: 3; flex-basis: 100%; max-width: none; }
   .eb-corps { grid-template-columns: minmax(0, 1fr); }
-  #espace-bureau.lit .eb-liste { display: none; } #espace-bureau:not(.lit):not(.large) .eb-lecture { display: none; }
+  #espace-bureau.lit .eb-liste { display: none; } #espace-bureau:not(.lit):not(.large):not(.fiche) .eb-lecture { display: none; }
   .eb-retour { display: block; margin: 12px 12px 0; padding: 8px 12px; border: 0; border-radius: 9px; background: rgba(255, 255, 255, .07); color: var(--texte); font: 600 14px system-ui; }
   .eb-lec { padding: 14px 16px 0; } .eb-actions { margin: 16px -16px 0; padding: 12px 16px 16px; } .eb-lec-chips { margin-left: 0; }
   .eb-doc-zone iframe { height: 62vh; }
 }
+/* l'espace bureau rangé par projet (20/11) : la vue d'ensemble, la fiche du projet */
+.eb-accueil.large { max-width: 980px; padding-top: 5vh; }
+.eb-sous-t { margin: 22px 0 8px; font-size: 11.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--ambre); }
+.eb-pcartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.eb-pcarte { text-align: left; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .07); border-left: 4px solid var(--c); background: rgba(255, 255, 255, .035); color: var(--texte); cursor: pointer; font: 14px system-ui; }
+.eb-pcarte:hover { background: rgba(255, 255, 255, .06); }
+.eb-pcarte-t { display: flex; align-items: center; gap: 8px; } .eb-pcarte-t span { font-size: 18px; } .eb-pcarte-t b { flex: 1; font-size: 15.5px; }
+.eb-pcarte-t em { font-style: normal; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: rgba(252, 211, 77, .18); color: #fde68a; white-space: nowrap; }
+.eb-pcarte-t em.ok { background: rgba(74, 222, 128, .12); color: #bbf7d0; font-weight: 500; }
+.eb-pcarte p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.45; color: rgba(244, 236, 224, .72); }
+.eb-pcarte small { display: block; margin-top: 8px; font-size: 12px; color: rgba(244, 236, 224, .45); }
+.eb-fil { display: block; margin: 16px auto 0; max-width: 860px; width: calc(100% - 64px); text-align: left; padding: 6px 0; border: 0; background: none; color: var(--ambre2); font: 600 13.5px system-ui; cursor: pointer; }
+.eb-fil:hover { text-decoration: underline; }
+.eb-fic em { font-style: normal; margin-left: 6px; } .eb-fic span { margin-left: auto; padding-left: 8px; } .eb-fic { gap: 4px; align-items: baseline; }
+.eb-quand { flex: 0 0 64px; margin: 0 !important; padding: 0 !important; color: rgba(244, 236, 224, .45); font-size: 12.5px; text-transform: capitalize; }
+@media (max-width: 760px) { .eb-fil { display: none; } .eb-pcartes { grid-template-columns: 1fr; } }
+.eb-mobile-liste { display: none; }
+@media (max-width: 760px) { #espace-bureau.fiche .eb-liste { display: none; } #espace-bureau.fiche .eb-lecture { display: block; } .eb-mobile-liste { display: block; } }
+.eb-suite { margin-top: 6px; } .eb-suite summary { cursor: pointer; color: var(--ambre2); font-size: 13px; } .eb-suite[open] summary { margin-bottom: 6px; }
