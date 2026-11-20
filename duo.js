@@ -233,7 +233,7 @@ const DUO = (() => {
   // la maison s'éveille : le soir, les lumières d'en bas s'allument une à une (jamais les chambres)
   async function cascade(lum = 70, teinte = 30) {
     if (!sombre() || auLit()) return 0;
-    let l = []; try { l = ((await appel('/maison/appareils', null, 10000)).appareils || []).filter(a => a.type === 'lampe' && a.allume === false && !/\bchambres?\b|\bsalle de bain\b|\blingerie\b/.test(N(a.nom))); } catch (e) { return 0; }
+    let l = []; try { l = ((await appel('/maison/appareils', null, 10000)).appareils || []).filter(a => (a.type === 'lampe' || /\bsapin\b/.test(N(a.nom))) && a.allume === false && !/\bchambres?\b|\bsalle de bain\b|\blingerie\b/.test(N(a.nom))); } catch (e) { return 0; }
     for (const a of l.slice(0, 5)) { appel('/maison/commande', { ids: [a.id], allume: true, lum, teinte, source: 'routine' }, 15000).catch(() => {}); await wait(550); }
     return l.length;
   }

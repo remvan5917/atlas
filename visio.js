@@ -211,7 +211,7 @@ const VISIO = (() => {
     let l = []; try { l = (await appel('/maison/appareils', null, 15000)).appareils || []; } catch (e) { return say("L'ordinateur de la maison ne répond pas. Bonne nuit quand même."); }
     const enfant = N((typeof LIEN !== 'undefined' && LIEN.prenom()) || '');
     // en bas, tout s'éteint ; jamais les chambres (ni celle du petit, ni la tienne : tu y vas) ; la télé aussi
-    const eteindre = l.filter(a => a.allume && ((a.type === 'lampe' && !/\bchambres?\b/.test(N(a.nom))) || /\b(tele|television|tv)\b/.test(N(a.nom))));
+    const eteindre = l.filter(a => a.allume && ((a.type === 'lampe' && !/\bchambres?\b/.test(N(a.nom))) || /\b(tele|television|tv|sapin)\b/.test(N(a.nom)))); // (le sapin de Noël aussi, 20/11)
     // les escaliers (tous les étages) et la salle de bain restent éclairés 5 minutes — le temps de se brosser les dents — puis s'éteignent tout seuls
     const escaliers = l.filter(a => a.type === 'lampe' && /\bescaliers?\b/.test(N(a.nom)));
     const bain = l.filter(a => a.type === 'lampe' && /\b(salle de bains?|sdb|salle d eau)\b/.test(N(a.nom)));
