@@ -72,6 +72,7 @@
   .sig-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0 8px; } .sig-g div { background: #0f1a2e; border: 1px solid #1d2a45; border-radius: 8px; padding: 6px 8px; } .sig-g small { display: block; font: 700 8.5px Inter, sans-serif; letter-spacing: .12em; color: #7f8ba3; } .sig-g span { font: 700 12.5px "JetBrains Mono", monospace; } .sig-g p { margin: 1px 0 0; font: 500 10px "JetBrains Mono", monospace; color: #8f9bb3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sig-e { margin-top: 6px; border: 1px solid #2b3a5c; background: transparent; color: #c9d3e6; border-radius: 7px; padding: 2px 7px; font: 700 10.5px Inter, sans-serif; cursor: pointer; } .sig-e:hover { border-color: #e0bd78; color: #e0bd78; }
   .sig-x { color: #aab4c8; font-size: 11.5px; line-height: 1.45; margin-bottom: 9px; } .sig-b { display: flex; gap: 6px; } .sig-b button { flex: 1; border-radius: 8px; padding: 7px; font: 700 12px Inter, sans-serif; cursor: pointer; border: 1px solid #2b3a5c; background: #14213a; color: #e6e9ef; } .sig-b button.p { background: linear-gradient(180deg, #e0bd78, #c49a4a); color: #1a1205; border-color: #c49a4a; }
+  .fige { position: fixed; z-index: 65; left: 50%; transform: translateX(-50%); top: 96px; display: none; align-items: center; gap: 14px; max-width: min(1100px, 92vw); padding: 10px 14px; border-radius: 10px; background: #2a1d05; border: 1px solid #e8a33d; box-shadow: 0 10px 30px rgba(0,0,0,.4); color: #f6dfb0; font: 500 12.5px Inter, sans-serif; } .fige.on { display: flex; } .fige b { color: #ffcf73; white-space: nowrap; } .fige button { margin-left: auto; background: #e8a33d; color: #1a1205; border: 0; border-radius: 7px; padding: 6px 12px; font: 700 12px Inter, sans-serif; cursor: pointer; }
   .bax { position: absolute; z-index: 6; display: flex; gap: 3px; } .bax[hidden], .bax button[hidden] { display: none; } .bax button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #2c3a57; background: #101a2e; color: #cfd6e4; font: 800 11px 'JetBrains Mono', monospace; cursor: pointer; padding: 0; } .bax button:hover { border-color: #3d7bff; color: #fff; }
 .bl-mod { position: fixed; z-index: 41; min-width: 230px; max-width: 320px; padding: 6px; background: #fff; border: 1px solid #d9dde5; border-radius: 12px; box-shadow: 0 16px 40px rgba(15, 19, 28, .28); font: 500 12px 'Inter', sans-serif; color: #1b2230; }
 .bl-mod[hidden] { display: none; }
@@ -950,7 +951,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v126</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v127</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -6813,11 +6814,22 @@ versionPage(); setInterval(versionPage, 3 * 60000); setInterval(chargeListe, 300
    la bougie en cours de chaque graphique suit le marché, sans recharger les graphiques (TopstepX limite le nombre de demandes) */
 const DUREE_UT = { '5m': 300, '15m': 900, '30m': 1800, 'H1': 3600, 'H4': 14400, 'D1': 86400 };
 let vifOcc = false, VIF_AT = 0; var VIF_PX = null;
+// COURS FIGÉS (Rémy, 20/11 : TopstepX n'a plus envoyé de cours à partir de 9 h, sans erreur) : quand la dernière bougie d'une minute reçue a plus de 10 minutes alors que
+// le marché est ouvert, un bandeau ambre le dit — les prix, le résultat affiché de ta position, les alertes de tes lignes et les signaux ne sont pas à jour ; il part tout seul quand les cours reviennent
+let FIGE = { t: 0, vu: 0 };
+async function coursFige(r) { if (marcheFermeDe(code)) { majFige(0); return; } let t = 0; const M = (r && r.barres) || []; if (M.length) t = M[M.length - 1][0] + 60;
+  else { try { const d = await barresDe(code, '5m'), B = d.bougies || []; if (B.length) t = B[B.length - 1][0] + 300; } catch (e) { return; } }
+  majFige(t && Date.now() / 1000 - t > 600 ? t : 0); }
+function majFige(t) { FIGE.t = t; let el = $('#fige'); if (!t) { if (el) el.classList.remove('on'); return; } if (FIGE.vu === t) return;
+  if (!el) { el = document.createElement('div'); el.id = 'fige'; el.className = 'fige'; document.body.appendChild(el); }
+  const h = new Date(t * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+  el.innerHTML = `<b>⚠ COURS FIGÉS DEPUIS ${h}</b><span>TopstepX n'envoie plus de nouveaux cours. Les prix, le résultat affiché de ta position, les alertes de tes lignes et les signaux ne sont <b>pas à jour</b> : regarde ta plateforme TopstepX. Le bandeau part tout seul quand les cours reviennent.</span><button>Compris</button>`;
+  el.querySelector('button').onclick = () => { FIGE.vu = t; el.classList.remove('on'); }; el.classList.add('on'); }
 async function vif() {
   if (vifOcc || document.hidden || REPLAY || !panes.length || (typeof marcheFermeDe === 'function' && marcheFermeDe(code))) return;
   vifOcc = true;
   try {
-    const r = await api(`/maison/graphique?vif=1&code=${code}`); if (!r || !r.ok || r.code !== code || !(r.barres || []).length) return;
+    const r = await api(`/maison/graphique?vif=1&code=${code}`); try { await coursFige(r); } catch (e) { /* rien */ } if (!r || !r.ok || r.code !== code || !(r.barres || []).length) return;
     const M = r.barres, px = M[M.length - 1][4]; VIF_AT = Date.now(); VIF_PX = { c: code, px, at: VIF_AT };
     for (const p of panes) {
       const d = p.dReel, dur = DUREE_UT[p.ut]; if (!d || d.code !== code || !dur || !(d.bougies || []).length) continue; const B = d.bougies;
