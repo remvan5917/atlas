@@ -953,7 +953,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v130</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v131</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -5315,10 +5315,16 @@ function dessineSigVue(p, g) { const v = SIG_VUE; if (!v || v.c !== code || !p.d
   c.fillStyle = 'rgba(242,54,69,.10)'; c.fillRect(x0, Math.min(ye, ys), x1 - x0, Math.abs(ys - ye)); c.fillStyle = 'rgba(8,153,129,.10)'; c.fillRect(x0, Math.min(ye, yt), x1 - x0, Math.abs(yt - ye));
   for (const [y, col, dash] of [[ye, TH.nuit ? '#e4e9f3' : '#1b2540', []], [ys, '#f23645', [4, 4]], [yt, '#089981', [4, 4]]]) { c.strokeStyle = col; c.lineWidth = 1.2; c.setLineDash(dash); c.beginPath(); c.moveTo(x0, Math.round(y) + .5); c.lineTo(x1, Math.round(y) + .5); c.stroke(); }
   c.setLineDash([]); c.font = '700 10px Inter, sans-serif'; c.textBaseline = 'middle'; const t = x => tk ? Math.round(Math.abs(x - e) / tk) : null, $$ = n => n != null && v$ != null ? ` · ${Math.round(n * v$).toLocaleString('fr-FR')} $` : '';
-  for (const [y, col, txt] of [[ye, TH.nuit ? '#e4e9f3' : '#1b2540', `${v.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${nb(e, dec)} · ${v.res ? (v.res === 'objectif' ? 'objectif touché' : v.res === 'stop' ? 'stop touché' : v.res) : 'proposé'}`], [ys, '#f23645', `STOP ${nb(v.sl, dec)} · ${t(v.sl)} t${$$(t(v.sl))}`], [yt, '#089981', `OBJECTIF ${nb(v.tp, dec)} · ${t(v.tp)} t${$$(t(v.tp))}`]]) {
+  // les étiquettes tout à droite, contre l'échelle (Rémy, 20/11 : « les rectangles mangent les bougies et sont trop collés ») ; écartées d'au moins 24 px entre elles
+  const ET = [[ye, TH.nuit ? '#e4e9f3' : '#1b2540', `${v.sens === 'achat' ? 'ACHAT' : 'VENTE'} ${nb(e, dec)} · ${v.res ? (v.res === 'objectif' ? 'objectif touché' : v.res === 'stop' ? 'stop touché' : v.res) : 'proposé'}`], [ys, '#f23645', `STOP ${nb(v.sl, dec)} · ${t(v.sl)} t${$$(t(v.sl))}`], [yt, '#089981', `OBJECTIF ${nb(v.tp, dec)} · ${t(v.tp)} t${$$(t(v.tp))}`]].map(([y, col, txt]) => {
     // (hors de l'écran : l'étiquette reste collée au bord, avec une flèche vers où est le prix)
-    const hb = ph ? (y < 12 ? -1 : y > ph - 12 ? 1 : 0) : 0, yy = hb < 0 ? 12 : hb > 0 ? ph - 12 : y, tx = hb ? `${hb < 0 ? '↑' : '↓'} ${txt}` : txt;
-    const w = c.measureText(tx).width + 14; c.fillStyle = col; c.beginPath(); c.roundRect(x0 + 6, yy - 9, w, 18, 5); c.fill(); c.fillStyle = col === '#f23645' || col === '#089981' ? '#fff' : TH.bg; c.fillText(tx, x0 + 13, yy + .5); }
+    const hb = ph ? (y < 12 ? -1 : y > ph - 12 ? 1 : 0) : 0; return { yy: hb < 0 ? 84 : hb > 0 ? ph - 12 : y, col, tx: hb ? `${hb < 0 ? '↑' : '↓'} ${txt}` : txt }; }).sort((a, z) => a.yy - z.yy);
+  for (let i = 1; i < ET.length; i++) if (ET[i].yy - ET[i - 1].yy < 24) ET[i].yy = ET[i - 1].yy + 24;
+  if (ph && ET.length && ET[ET.length - 1].yy > ph - 12) { const dy = ET[ET.length - 1].yy - (ph - 12); for (const q of ET) q.yy -= dy; }
+  // de la place vide à droite des bougies pour les étiquettes, une fois par graphique quand le trade s'ouvre (après, tu déplaces le graphique comme tu veux)
+  const wMax = Math.max(...ET.map(q => c.measureText(q.tx).width + 14)) + 24; v.cale = v.cale || new Set();
+  if (!v.cale.has(p) && p.bw > 0 && B.length && T(B[B.length - 1][0]) > pw - wMax) { v.cale.add(p); p.fin = Math.min(p.fin, -Math.ceil(wMax / p.bw) - 2); requestAnimationFrame(toutDessine); }
+  for (const { yy, col, tx } of ET) { const w = c.measureText(tx).width + 14, xl = pw - w - 8; c.fillStyle = col; c.beginPath(); c.roundRect(xl, yy - 9, w, 18, 5); c.fill(); c.fillStyle = col === '#f23645' || col === '#089981' ? '#fff' : TH.bg; c.fillText(tx, xl + 7, yy + .5); }
   c.restore(); }
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && SIG_VUE) { SIG_VUE = null; toutDessine(); } });
 { const vq = (diese.get('voir') || '').split(','); if (vq.length >= 4 && /^[A-Z0-9]{1,8}$/.test(vq[0]) && ['achat', 'vente'].includes(vq[1]) && isFinite(+vq[2]) && isFinite(+vq[3]) && ROLE !== 'terminal' && ROLE !== 'ensemble')
