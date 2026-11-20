@@ -951,7 +951,7 @@
     <a class="lien" id="b-alertes-h" data-tip="Tes alertes en français : « préviens-moi quand le RSI passe sous 30 » (Maj + L)"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></svg>Alertes<b class="nb-al" id="nb-al"></b></a>
     <a class="lien b-plein" id="plein-h" title="Plein écran (F)"></a>
     <a class="lien masque-mobile lien-term" id="lien-term" href="graphique.html#role=terminal&f=t" target="atlas-terminal" data-tip="Le Terminal : toutes les fonctions (BRIEF, PERF, MOV, OMON…) dans un écran à part, sans rien taper"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>Terminal</a><a class="lien masque-mobile" id="lien-radar" href="radar.html" target="radar" data-tip="Le Radar : la veille d’actualité (dépêches, agenda, ce qui bouge), dans un écran à part"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 12l5-4"/></svg>Radar</a>
-    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v127</span></span>
+    <span class="etat" id="etat-b" style="cursor:pointer"><span class="pt" id="pt"></span><span id="etat">connexion…</span><span style="opacity:.5">· v128</span></span>
   </div>
   <div class="ticker"><span class="ticker-t">MARCHÉS</span><div class="ticker-v"><div class="piste" id="piste"></div></div><div class="pos-h" id="pos-h" hidden data-tip="Ton trade en cours : gain ou perte latente, en ticks et en dollars, au prix en direct (toutes les 3 s)"></div><div class="cpt" id="cpt" hidden data-tip="Ton compte TopstepX, lu toutes les 20 secondes : solde, résultat du jour (positions ouvertes comprises), ce qui reste avant ta limite de perte du jour"></div></div>
   <div class="outils">
@@ -6817,14 +6817,15 @@ let vifOcc = false, VIF_AT = 0; var VIF_PX = null;
 // COURS FIGÉS (Rémy, 20/11 : TopstepX n'a plus envoyé de cours à partir de 9 h, sans erreur) : quand la dernière bougie d'une minute reçue a plus de 10 minutes alors que
 // le marché est ouvert, un bandeau ambre le dit — les prix, le résultat affiché de ta position, les alertes de tes lignes et les signaux ne sont pas à jour ; il part tout seul quand les cours reviennent
 let FIGE = { t: 0, vu: 0 };
-async function coursFige(r) { if (marcheFermeDe(code)) { majFige(0); return; } let t = 0; const M = (r && r.barres) || []; if (M.length) t = M[M.length - 1][0] + 60;
+async function coursFige(r) { if (marcheFermeDe(code)) { majFige(0); return; } if (r && r.source === 'secours') { majFige(r.secours_depuis || 1, r.secours_cfd || 'CFD'); return; } let t = 0; const M = (r && r.barres) || []; if (M.length) t = M[M.length - 1][0] + 60;
   else { try { const d = await barresDe(code, '5m'), B = d.bougies || []; if (B.length) t = B[B.length - 1][0] + 300; } catch (e) { return; } }
   majFige(t && Date.now() / 1000 - t > 600 ? t : 0); }
-function majFige(t) { FIGE.t = t; let el = $('#fige'); if (!t) { if (el) el.classList.remove('on'); return; } if (FIGE.vu === t) return;
+function majFige(t, cfd) { FIGE.t = t; FIGE.cfd = cfd || ''; let el = $('#fige'); if (!t) { if (el) el.classList.remove('on'); return; } if (FIGE.vu === `${t}|${cfd || ''}`) return;
   if (!el) { el = document.createElement('div'); el.id = 'fige'; el.className = 'fige'; document.body.appendChild(el); }
   const h = new Date(t * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
-  el.innerHTML = `<b>⚠ COURS FIGÉS DEPUIS ${h}</b><span>TopstepX n'envoie plus de nouveaux cours. Les prix, le résultat affiché de ta position, les alertes de tes lignes et les signaux ne sont <b>pas à jour</b> : regarde ta plateforme TopstepX. Le bandeau part tout seul quand les cours reviennent.</span><button>Compris</button>`;
-  el.querySelector('button').onclick = () => { FIGE.vu = t; el.classList.remove('on'); }; el.classList.add('on'); }
+  el.innerHTML = cfd ? `<b>⚠ COURS DE SECOURS · ${esc(cfd)} (cTrader)</b><span>TopstepX n'envoie plus de cours : le prix affiché est celui du CFD de ton compte de démo, recalé sur le future avec leur écart habituel — <b>une estimation à quelques ticks</b>, pour lire le marché et garder tes alertes, pas pour un ordre. Le vrai chiffre de ta position : ta plateforme TopstepX. Le bandeau part tout seul quand TopstepX revient.</span><button>Compris</button>`
+    : `<b>⚠ COURS FIGÉS DEPUIS ${h}</b><span>TopstepX n'envoie plus de nouveaux cours. Les prix, le résultat affiché de ta position, les alertes de tes lignes et les signaux ne sont <b>pas à jour</b> : regarde ta plateforme TopstepX. Le bandeau part tout seul quand les cours reviennent.</span><button>Compris</button>`;
+  el.querySelector('button').onclick = () => { FIGE.vu = `${t}|${cfd || ''}`; el.classList.remove('on'); }; el.classList.add('on'); }
 async function vif() {
   if (vifOcc || document.hidden || REPLAY || !panes.length || (typeof marcheFermeDe === 'function' && marcheFermeDe(code))) return;
   vifOcc = true;
