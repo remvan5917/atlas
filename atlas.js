@@ -1499,7 +1499,7 @@ window.addEventListener('load', () => {
   // toucher le noyau pendant qu'il parle : il se tait ; en veille : il écoute
   $('#papa-hud').addEventListener('click', e => {
     if (e.target.closest('button')) return;
-    if (voice.occupe()) { dlg.interrupt = true; voice.stop(); return; }
+    if (voice.occupe()) { window.__coupeParDoigt = Date.now(); dlg.interrupt = true; voice.stop(); return; } // (un doigt : une vraie coupure, pas un bruit)
     if (dlg.state === 'standby') { dlg.state = 'talk'; dlg.silence = 0; fx.tone([[1175, 0.06]]); OREILLES.cancel(); }
   });
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

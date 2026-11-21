@@ -252,17 +252,35 @@ Utilise UNIQUEMENT les faits fournis : reformule les titres sans inventer de dé
   }
   async function diffuse(seg) {
     const musique = S.settings.emissionMusique || 'FIP';
+    // (21/11 : « il arrête seul la radio ») un bruit pris pour une coupure arrêtait l'émission pour de bon : maintenant il écoute 4 secondes —
+    // « stop » (ou un doigt sur l'écran) l'arrête, un vrai ordre est fait, et si personne n'a rien dit, l'émission reprend à la phrase coupée
+    let stop = false, ordre = '';
+    const apresCoupure = async () => {
+      if (Date.now() - (window.__coupeParDoigt || 0) < 4000) return 'stop';
+      let r = ''; try { r = typeof hear1 === 'function' ? await hear1({ maxWait: 4500, cheap: true }) : ''; } catch (e) { r = ''; }
+      const n = N(r || '');
+      if (!n || n.split(' ').length < 2 && !/\b(stop|arrete|coupe|chut|pause)\b/.test(n)) return 'reprend';
+      return /\b(stop|arrete|arreter|coupe|tais toi|silence|pause|ca suffit|chut)\b/.test(n) ? 'stop' : r;
+    };
     for (const [i, x] of seg.entries()) {
-      if (dlg.interrupt) break;
+      if (stop) break;
       antenne(seg, i, ''); jingle(); await wait(650);
       const phrases = x.texte.split(/(?<=[.!?…])\s+/).filter(Boolean);
       for (const ph of phrases) {
-        if (dlg.interrupt) break;
+        if (stop) break;
         const el = document.getElementById('emission-texte'); if (el) el.textContent = `${el.textContent} ${ph}`.trim();
-        await say(ph);
+        for (let essai = 0; ; essai++) {
+          dlg.interrupt = false; await say(ph);
+          if (!dlg.interrupt) break;
+          const r = await apresCoupure();
+          if (r === 'reprend' && essai < 4) continue; // juste un bruit : il reprend la phrase
+          stop = true; if (r !== 'stop' && r !== 'reprend') ordre = r; break;
+        }
       }
       await wait(250);
     }
+    dlg.interrupt = stop;
+    if (ordre && typeof handle === 'function') { hideBoard(); return handle(ordre); } // il a demandé autre chose pendant l'émission : on le fait
     jingle(true); await wait(900);
     setTimeout(() => { if (document.getElementById('emission-texte')) hideBoard(); }, 60000);
     if (!dlg.interrupt && musique && !/^aucune?$/i.test(musique) && typeof handle === 'function') { window.__ordreDuCerveau = true; try { await handle(`mets ${musique}`); } finally { window.__ordreDuCerveau = false; } }
