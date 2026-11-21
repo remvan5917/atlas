@@ -2413,7 +2413,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'f') { $('#plein').click(); return; }
   if (k === 'p') { if (ev.shiftKey) copieImage(); else $('#photo').click(); return; }
   if (k === 'escape') { const pan = ['#aide-k', '#trade-p', '#config-p', '#passe-p', '#indic-p', '#alerte-p', '#pages-p', '#cmp-p', '#mode-p'].map(q => $(q)).find(e => e && e.classList.contains('on'));  // (Échap ferme le panneau ouvert, même quand le curseur n'est plus dans son champ ; un à la fois)
-    if (pan) { pan.classList.remove('on'); return; } if (ROLE !== 'ensemble' && $('#dow').classList.contains('on')) { ouvreDow(); return; } }
+    if (pan) { pan.classList.remove('on'); return; } if (ROLE !== 'ensemble' && $('#dow').classList.contains('on')) { ouvreDow(); return; } if ($('#mem') && $('#mem').classList.contains('on')) { MEM = null; memSel = -1; $('#mem').classList.remove('on'); $('#b-memoire').classList.remove('on'); toutDessine(); return; } }
   if (k === 'escape') { travail(false); brouillon = null; ESQ_EN = null; ESQ_SEL = null; choisie = null; choisieOutil('curseur'); toutDessine(); }
   else if (k === 'l' && !ev.shiftKey) choisieOutil('ligne'); else if (k === 'h' && !ev.shiftKey) choisieOutil('horizontale'); else if (k === 'c' && !ev.shiftKey) choisieOutil('canal');
   else if (k === 'o' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('position'); else if (k === 'g' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('regression'); else if (k === 'u' && !ev.shiftKey && ROLE !== 'terminal') choisieOutil('fourche'); else if (k === 'w' && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && ROLE !== 'terminal') choisieOutil('avwap');  // (O : la position ; G : le canal de régression)
@@ -2865,7 +2865,7 @@ function decoupe(d, ut, t) {
 }
 function appliqueReplay() { panes.forEach(p => { if (p.dReel) p.d = REPLAY ? decoupe(p.dReel, p.ut, REPLAY.t) : p.dReel; if (p.cmpReel) p.cmpD = REPLAY ? decoupe(p.cmpReel, p.ut, REPLAY.t) : p.cmpReel; p.fin = 0; }); toutDessine(); $('#rp-quand').textContent = REPLAY ? new Date(REPLAY.t * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
 function pasReplay() { return Math.min(...panes.map(p => DUREE[p.ut] || 3600)); }
-function choisirReplay() { if (REPLAY && !REPLAY.choix) { quitteReplay(); return; } REPLAY = { choix: true, t: Date.now() / 1000, v: 1, jeu: null }; $('#b-replay').classList.add('on'); toast('Replay : clique sur le graphique à l’endroit où tu veux recommencer la séance'); }
+function choisirReplay() { if (REPLAY) { const arme = REPLAY.choix; quitteReplay(); if (arme) toast('Replay annulé'); return; } REPLAY = { choix: true, t: Date.now() / 1000, v: 1, jeu: null }; $('#b-replay').classList.add('on'); toast('Replay : clique sur le graphique à l’endroit où tu veux recommencer la séance'); }
 function demarreReplay(t) { REPLAY = { t: Math.floor(t / pasReplay()) * pasReplay(), v: 1, jeu: null, coach: false }; $('#rp-coach').classList.remove('on'); $('#replay').classList.add('on'); document.querySelectorAll('#replay [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === '1')); appliqueReplay(); toast('Espace : lecture / pause · ← → : bougie par bougie'); }
 function avance(sens = 1) { if (!REPLAY || REPLAY.choix) return; const t0 = REPLAY.t; REPLAY.t += sens * pasReplay(); if (REPLAY.t >= Date.now() / 1000) { REPLAY.t = Date.now() / 1000; joue(false); } appliqueReplay(); if (sens > 0 && REPLAY.coach) evenementsReplay(t0); else if (REPLAY) REPLAY.nz = null; }
 function evenementsReplay(t0) {  // ce qui vient d'arriver dans le replay : une dépêche, un sommet / creux du zigzag qui se confirme
@@ -6845,6 +6845,7 @@ document.addEventListener('keydown', ev => {
   if (k === 'b' && !ev.repeat) { presente(); return; }
   if (k === 'escape' && $('#dow').classList.contains('on')) { ouvreDow(); return; }
   if (k === 'escape' && $('#etude').classList.contains('on')) { ouvreEtude(); return; }
+  if (REPLAY && REPLAY.choix && k === 'escape') { quitteReplay(); toast('Replay annulé'); return; }  // (armé mais pas encore commencé : Échap l'annule aussi)
   if (REPLAY && !REPLAY.choix) { if (k === ' ') { ev.preventDefault(); joue(!REPLAY.jeu); return; } if (k === 'arrowright') { avance(1); return; } if (k === 'arrowleft') { avance(-1); return; } if (k === 'escape') { quitteReplay(); return; } }
   if (k === 'z' && !ev.repeat) { focus(); return; }
   if (k === 'i' && !ev.repeat) { ouvreIndic(); return; }
