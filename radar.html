@@ -335,6 +335,7 @@
    et le bilan du radar. Des faits et des mécanismes, jamais un conseil. Tout vient de l'ordinateur de la maison (cours TopstepX). */
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const vFr = v => esc(String(v)).replace(/(\d)\.(\d)/g, '$1,$2').replace(/(^|\s)-(?=\d)/g, '$1−').replace(/(\d)%/g, '$1\u202f%');  // les chiffres de l'agenda à la française (« 51,7 », pas « 51.7 »)
 let S = {}; try { S = JSON.parse(localStorage.getItem('atlas-etat') || '{}'); } catch (e) { S = {}; }
 let ROOT = ''; try { ROOT = localStorage.getItem('cockpit-adresse') || ''; } catch (e) { /* rien */ }
 if (!ROOT) ROOT = ((S.settings || {}).localUrl || '').replace(/\/+$/, '').replace(/\/v1$/, '');
@@ -450,7 +451,7 @@ function moment() {
     el.innerHTML = `<div class="eti">PROCHAINE ANNONCE · ${hm(prochaine.at)} · ${esc(prochaine.pays)}</div>
       <div class="flex"><div class="compte mono ${dt < 15 * 60 ? 'proche' : ''}" id="compte">${h ? `${h}:` : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}</div>
       <div><div class="gros" style="margin:0">${esc(titreAg(prochaine))}</div>
-      <div class="sous mono">${prochaine.prevision ? `consensus ${esc(prochaine.prevision)}` : 'pas de consensus'}${prochaine.precedent ? ` · précédent ${esc(prochaine.precedent)}` : ''}</div></div></div>
+      <div class="sous mono">${prochaine.prevision ? `consensus ${vFr(prochaine.prevision)}` : 'pas de consensus'}${prochaine.precedent ? ` · précédent ${vFr(prochaine.precedent)}` : ''}</div></div></div>
       ${fi && Object.keys(fi.marches).length ? `<div class="fiche">${Object.entries(fi.marches).map(([mk, x]) => `<div class="f"><span class="code">${esc(mk)}</span><div class="val">${x.p5_med != null ? `±${x.p5_med}` : x.amp60_med} t</div><small>${x.p5_med != null ? `en 5 min · ${x.n5} fois` : `dans l'heure · max ${x.amp60_max}`}</small></div>`).join('')}<div class="f" style="background:none;border-style:dashed"><small>D’habitude, sur les ${fi.n} dernières fois :<br>la taille du mouvement, pas son sens.</small></div></div>` : ''}`;
     return;
   }
@@ -565,7 +566,7 @@ function rail() {
     const dt = a.at - now, fi = (D.fiches || {})[`${a.at}-${a.titre}`];
     const fl = fi ? Object.entries(fi.marches).slice(0, 3).map(([m, x]) => `${m} ${x.p5_med != null ? `±${x.p5_med}` : x.amp60_med} t`).join(' · ') : '';
     return tete + `<div class="ev ${a.fort ? 'fort' : ''} ${dt < -600 ? 'passe' : ''}"><div class="q ${dt > 0 && dt < 15 * 60 ? 'proche' : ''}">${dt > 0 && dt < 3600 ? `${Math.ceil(dt / 60)} min` : hm(a.at)}</div>
-      <div class="x">${a.resultats ? `<span class="chip res">RÉSULTATS</span> ${esc(a.titre.replace('Résultats ', ''))}` : `${esc(paysFR(a.pays))} · ${esc(titreAg(a))}`}<small>${a.moment ? `${esc(a.moment)} · ` : ''}${a.prevision ? `attendu ${esc(a.prevision)}` : ''}${a.precedent ? `${a.prevision ? ' · ' : ''}précédent ${esc(a.precedent)}` : ''}${fl ? `<br><span style="color:var(--ambre)">d’habitude : ${esc(fl)}</span>` : ''}</small></div></div>`;
+      <div class="x">${a.resultats ? `<span class="chip res">RÉSULTATS</span> ${esc(a.titre.replace('Résultats ', ''))}` : `${esc(paysFR(a.pays))} · ${esc(titreAg(a))}`}<small>${a.moment ? `${esc(a.moment)} · ` : ''}${a.prevision ? `attendu ${vFr(a.prevision)}` : ''}${a.precedent ? `${a.prevision ? ' · ' : ''}précédent ${vFr(a.precedent)}` : ''}${fl ? `<br><span style="color:var(--ambre)">d’habitude : ${esc(fl)}</span>` : ''}</small></div></div>`;
   }).join('') : '<div class="vide" style="padding:12px 0">Pas d’annonce importante au programme.</div>';
   const bl = D.bilan || {}, mk = MK.filter(m => (bl.critique || {})[m] || (bl.importante || {})[m]);
   $('#bilan').innerHTML = (mk.length ? mk.map(m => { const c = (bl.critique || {})[m], x = c || (bl.importante || {})[m];
@@ -781,7 +782,7 @@ function murTic() {
   if (murPublie()) return;
   const now = Date.now() / 1000, a = ((D && D.agenda) || []).filter(x => x.fort && x.at > now - 60).sort((x, y) => x.at - y.at)[0];
   if (a) { const d = Math.max(0, a.at - now), h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60), sc = Math.floor(d % 60);
-    $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc(paysFR(a.pays) + ' · ' + titreAg(a))}${a.prevision ? ` · consensus ${esc(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
+    $('#mur-c').innerHTML = `<div><small>PROCHAIN CHIFFRE</small><br><b>${d < 1 ? 'MAINTENANT' : (h ? h + ' h ' : '') + String(m).padStart(2, '0') + ':' + String(sc).padStart(2, '0')}</b></div><span>${esc(paysFR(a.pays) + ' · ' + titreAg(a))}${a.prevision ? ` · consensus ${vFr(a.prevision)}` : ''}</span>`; $('#mur-c').classList.toggle('proche', d < 600); }
   else $('#mur-c').innerHTML = `<div class="vide"><small>PROCHAIN CHIFFRE</small><br><b style="font-size:28px;opacity:.75">Aucun chiffre fort à venir pour l’instant</b></div>`;
 }
 function murDonnees() {
