@@ -1218,12 +1218,17 @@ const LIB = { '5m': '5m', '15m': '15m', '30m': '30m', H1: 'H1', H4: 'H4', D1: 'D
 const MOIS = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
 
 const SANTE = { maison: null, lat: null };
+// LIAISON COUPÉE : quand la maison ne répond plus depuis 30 s, un petit bandeau ambre en haut le dit (les prix affichés sont alors figés) ; il part tout seul au retour
+function majCoupure() { let ch = $('#coup-chip'); const on = !!SANTE.ko && Date.now() - SANTE.ko > 30000; if (on) SANTE.lat = null;
+  if (!ch) { if (!on) return; ch = document.createElement('div'); ch.id = 'coup-chip'; ch.className = 'sec-chip'; ch.title = 'Atlas n’a plus de nouvelles de la maison (l’ordinateur, ou le programme qui le relie à TopstepX). Tes ordres et ta position : ta plateforme TopstepX fait foi.'; document.body.appendChild(ch); }
+  ch.textContent = `⚠ LIAISON COUPÉE AVEC LA MAISON DEPUIS ${new Date(SANTE.ko || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · LES PRIX AFFICHÉS SONT FIGÉS`; ch.classList.toggle('on', on); }
+setInterval(() => { if (SANTE.ko) majCoupure(); }, 10000);
 async function api(chemin, corps) {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000), t0 = performance.now();
   try { const r = await fetch(`${ROOT}${chemin}`, { method: corps ? 'POST' : 'GET', headers: corps ? { 'Content-Type': 'application/json' } : {}, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store', signal: ctl.signal });
     if (!r.ok) throw new Error(r.status); const j = await r.json(); try { if (j && Array.isArray(j.agenda)) j.agenda.forEach(x => { if (x && x.titre && !x.resultats) x.titre_fr = titreAg(x); }); } catch (er) { /* rien */ }
-    try { valsDe(j); } catch (er) { /* rien */ } if (!corps && /liste=1/.test(chemin)) { const pe = performance.getEntriesByName(r.url).pop(); if (performance.getEntriesByType('resource').length > 200) performance.clearResourceTimings(); SANTE.lat = Math.round(pe && pe.requestStart > 0 && pe.responseEnd >= pe.requestStart ? pe.responseEnd - pe.requestStart : performance.now() - t0); /* (le temps de la maison seule, pas l'attente du navigateur quand la page charge tout d'un coup) */ } SANTE.maison = true; if (typeof boot === 'function') boot('maison', true); return j; }
-  catch (e) { SANTE.maison = false; throw e; } finally { clearTimeout(tm); }
+    try { valsDe(j); } catch (er) { /* rien */ } if (!corps && /liste=1/.test(chemin)) { const pe = performance.getEntriesByName(r.url).pop(); if (performance.getEntriesByType('resource').length > 200) performance.clearResourceTimings(); SANTE.lat = Math.round(pe && pe.requestStart > 0 && pe.responseEnd >= pe.requestStart ? pe.responseEnd - pe.requestStart : performance.now() - t0); /* (le temps de la maison seule, pas l'attente du navigateur quand la page charge tout d'un coup) */ } SANTE.maison = true; if (SANTE.ko) { SANTE.ko = 0; majCoupure(); } if (typeof boot === 'function') boot('maison', true); return j; }
+  catch (e) { SANTE.maison = false; if (!SANTE.ko) SANTE.ko = Date.now(); majCoupure(); throw e; } finally { clearTimeout(tm); }
 }
 
 /* ---------- un graphique (un « pane ») ---------- */
