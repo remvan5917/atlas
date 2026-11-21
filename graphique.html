@@ -1222,7 +1222,7 @@ const SANTE = { maison: null, lat: null };
 // LIAISON COUPÉE : quand la maison ne répond plus depuis 30 s, un petit bandeau ambre en haut le dit (les prix affichés sont alors figés) ; il part tout seul au retour
 function majCoupure() { let ch = $('#coup-chip'); const on = !!SANTE.ko && Date.now() - SANTE.ko > 30000; if (on) SANTE.lat = null;
   if (!ch) { if (!on) return; ch = document.createElement('div'); ch.id = 'coup-chip'; ch.className = 'sec-chip'; ch.title = 'Atlas n’a plus de nouvelles de la maison (l’ordinateur, ou le programme qui le relie à TopstepX). Tes ordres et ta position : ta plateforme TopstepX fait foi.'; document.body.appendChild(ch); }
-  ch.textContent = `⚠ LIAISON COUPÉE AVEC LA MAISON DEPUIS ${new Date(SANTE.ko || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · LES PRIX AFFICHÉS SONT FIGÉS`; ch.classList.toggle('on', on); }
+  ch.textContent = `⚠ LIAISON COUPÉE AVEC LA MAISON DEPUIS ${new Date(SANTE.ko || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · LES PRIX AFFICHÉS SONT FIGÉS`; ch.classList.toggle('on', on); const sc = $('#sec-chip'); if (sc) sc.style.visibility = on ? 'hidden' : ''; }
 setInterval(() => { if (SANTE.ko) majCoupure(); }, 10000);
 async function api(chemin, corps) {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 20000), t0 = performance.now();
