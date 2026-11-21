@@ -634,7 +634,7 @@ async function rattrape(minutes) {
   try {
     const r = await (await fetch(`${ROOT}/maison/radar?rattrapage=${Math.round(minutes)}`, { cache: 'no-store' })).json();
     if (!r.texte) return;
-    $('#ratt-txt').textContent = String(r.texte || '').replace(/anormalaux/g, 'anormaux'); $('#rattrapage').classList.add('on');
+    $('#ratt-txt').textContent = String(r.texte || '').replace(/anormalaux/g, 'anormaux').replace(/\b(\d+) h 00\b/g, '$1 h').replace(/(^|[\s(])-(?=\d)/g, '$1−'); /* (« ces 24 h », pas « 24 h 00 » ; un seul signe moins) */ $('#rattrapage').classList.add('on');
   } catch (e) { /* hors liaison */ }
 }
 $('#ratt-ok').addEventListener('click', () => $('#rattrapage').classList.remove('on'));
