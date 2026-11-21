@@ -3840,7 +3840,7 @@ async function verifieVisite(quoi) {
   try { const r = await api(`/maison/graphique?visite=${t0}&code=${c}`); if (!r.ok || c !== code) return; montreVisite(r); } catch (e) { /* hors liaison */ }
 }
 function montreVisite(r) {
-  const e = $('#visite'); $('#visite-d').textContent = `${r.code} · il y a ${r.duree}`; $('#visite-l').innerHTML = r.lignes.map(x => `<li>${esc(x)}</li>`).join('');
+  const e = $('#visite'); $('#visite-d').textContent = `${r.code} · il y a ${r.duree}`; $('#visite-l').innerHTML = r.lignes.map(x => `<li>${esc(String(x).replace(/(\d)\.(\d)/g, '$1,$2').replace(/(^|[\s(])-(\d)/g, '$1−$2'))}</li>`).join('');  // (les nombres à la française, même quand le copilote écrit « 4.2 » ou « -13 »)
   $('#visite-f').innerHTML = (r.faits || []).map(x => esc(x)).join('<br>'); $('#visite-f').classList.remove('on'); $('#visite-plus').hidden = !(r.faits || []).length; e.classList.add('on'); e._r = r;
   clearTimeout(visiteMinuteur); visiteMinuteur = setTimeout(() => { if (!e.matches(':hover')) e.classList.remove('on'); }, 60000);
   if (QUI_SONNE && lit('g-visite-voix', '0') === '1') direAuto(r.lignes.join(' '));
