@@ -1155,7 +1155,7 @@ async function vie() {
     if (!appele && typeof PC !== 'undefined' && PC.radioIci && PC.radioIci()) {
       const lui = !!dlg.qui && !/^invité/.test(dlg.qui); // sa voix à lui (la radio, elle, n'est pas reconnue)
       // « stop », « arrête », « coupe la radio »… : de sa voix, même noyé dans la radio ; d'une voix inconnue, seulement l'ordre court et net
-      if (lui && (/\b(stop|stoppe|stopper|arrete|arretez|arreter|coupe|couper|eteins|eteindre|tais toi|chut|silence|ca suffit|assez)\b/.test(n) || /^(shadow ?)+$/.test(n))
+      if (lui && n.split(' ').length <= 6 && (/\b(stop|stoppe|stopper|arrete|arretez|arreter|coupe|couper|eteins|eteindre|tais toi|chut|silence|ca suffit|assez)\b/.test(n) || /^(shadow ?)+$/.test(n)) // (22/11 : un « arrête » dans une chanson, pris pour sa voix, coupait la radio : un ordre court seulement)
         || /^(stop|arrete|coupe|eteins|chut|silence)( (la radio|tout|ca|le son))?$/.test(n) || /\b(arrete|coupe|eteins|stop) (la radio|france ?info|france inter|fip)\b/.test(n)) { journal(r, dlg.qui, 'la radio : il l\'arrête'); await PC.radioCoupe(); continue; }
       if (!/^(pause|reprends|baisse le son|monte le son|moins fort|plus fort|change de radio)$/.test(n)) {
         if (lui) { PC.radioBaisse(12000); fx.tone([[988, 0.05]]); } // il t'a reconnu : la radio baisse, tu peux parler
