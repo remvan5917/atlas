@@ -50,13 +50,23 @@ const PC = (() => {
   // quand Atlas parle, ou que tu lui parles, la radio baisse (puis remonte doucement)
   setInterval(() => { majBouton(); if (!lecteur) return; const cible = voice.occupe() || Date.now() < baisseJusqua ? lecteurVol * 0.15 : lecteurVol; lecteur.volume = Math.max(0, Math.min(1, lecteur.volume + (cible - lecteur.volume) * 0.5)); }, 200);
   async function radioIci(cle, nom) { return radioJoue(`https://icecast.radiofrance.fr/${cle}-midfi.mp3`, nom); }
-  async function radioJoue(src, nom) {
-    if (lecteur) { lecteur.pause(); lecteur = null; }
-    const a = new Audio(src); a.preload = 'none'; a.volume = 0.15;
-    lecteur = a; lecteurNom = nom;
-    await say(`${nom}.`);
-    try { await a.play(); } catch (e) { if (lecteur === a) lecteur = null; return say(`${nom} ne passe pas.`); }
-    a.onerror = () => { if (lecteur === a) lecteur = null; };
+  // (22/11 : « il éteint tout le temps la radio quand je la lance ») — la tablette mettait le flux en pause quand le micro se rouvrait,
+  // ou le flux se coupait sur un raté de réseau, et rien ne le relançait. Tant qu'il n'a pas demandé l'arrêt, la radio reprend toute seule.
+  let radioVoulue = null, relances = 0;
+  async function radioJoue(src, nom, reprise = false) {
+    if (lecteur) { const l = lecteur; lecteur = null; l.pause(); }
+    const a = new Audio(src + (reprise ? (src.includes('?') ? '&' : '?') + 'r=' + Date.now() : '')); a.preload = 'none'; a.volume = reprise ? lecteurVol * 0.5 : 0.15;
+    lecteur = a; lecteurNom = nom; radioVoulue = { src, nom };
+    if (!reprise) { relances = 0; await say(`${nom}.`); }
+    try { await a.play(); } catch (e) { if (lecteur === a) { lecteur = null; if (!reprise) { radioVoulue = null; return say(`${nom} ne passe pas.`); } relance(a, 'lecture refusée'); } return; }
+    const coupe = quoi => () => { if (lecteur === a) relance(a, quoi); };
+    a.onerror = coupe('erreur du flux'); a.onended = coupe('fin du flux'); a.onstalled = () => setTimeout(() => { if (lecteur === a && a.readyState < 3) relance(a, 'flux bloqué'); }, 8000); // (un « stalled » passager au démarrage : on attend de voir)
+    a.onpause = () => { if (lecteur !== a || !radioVoulue) return; setTimeout(() => { if (lecteur === a && a.paused && radioVoulue) { a.play().catch(() => relance(a, 'pause imposée')); } }, 1500); }; // une pause qu'il n'a pas demandée : on relance
+  }
+  function relance(a, quoi) {
+    if (!radioVoulue || (lecteur && lecteur !== a)) return;
+    if (relances++ >= 8) { try { window.__noteErreur && window.__noteErreur(`radio : ${radioVoulue.nom} coupée 8 fois (${quoi}), abandon`, ''); } catch (e) { /* rien */ } radioVoulue = null; lecteur = null; majBouton(); return; }
+    const v = radioVoulue; setTimeout(() => { if (radioVoulue === v) radioJoue(v.src, v.nom, true); }, Math.min(15000, 1500 * relances));
   }
   function lecteurSon(o) {
     if (o.muet === true) lecteurVol = 0; else if (o.muet === false) lecteurVol = lecteurVol || 0.6;
@@ -79,8 +89,8 @@ const PC = (() => {
   async function musique(quoi) {
     if (radioPC && (quoi === 'pause' || quoi === 'stop')) radioPC = false;
     if (lecteur) { // la radio d'ici
-      if (quoi === 'pause' || quoi === 'stop' || (quoi === 'bascule' && !lecteur.paused)) { lecteur.pause(); fx.ok(); return quoi === 'stop' ? (lecteur = null, say(`${lecteurNom} : arrêtée.`)) : say('Pause.'); }
-      if (quoi === 'lecture' || quoi === 'bascule') { try { await lecteur.play(); } catch (e) { /* rien */ } fx.ok(); return say(`${lecteurNom}.`); }
+      if (quoi === 'pause' || quoi === 'stop' || (quoi === 'bascule' && !lecteur.paused)) { radioVoulue = null; lecteur.pause(); fx.ok(); return quoi === 'stop' ? (lecteur = null, say(`${lecteurNom} : arrêtée.`)) : say('Pause.'); }
+      if (quoi === 'lecture' || quoi === 'bascule') { radioVoulue = radioVoulue || { src: lecteur.src.replace(/[?&]r=\d+$/, ''), nom: lecteurNom }; try { await lecteur.play(); } catch (e) { /* rien */ } fx.ok(); return say(`${lecteurNom}.`); }
       if (quoi === 'quoi') return say(`${lecteurNom}, ici.`);
     }
     let r; try { r = await pc({ action: 'musique', quoi }); } catch (e) { return injoignable(); }
@@ -255,7 +265,7 @@ const PC = (() => {
     const r = await chercheRadio(q);
     if (!r) return say(`Je ne trouve pas la radio « ${q} ». Dis-moi son nom exact, par exemple « mets Skyrock ».`);
     if (surPC || !ici()) { // sur l'ordinateur (ou demandée depuis le téléphone « sur le PC ») : ses haut-parleurs la jouent, même page fermée
-      if (lecteur && surPC) { lecteur.pause(); lecteur = null; majBouton(); }
+      if (lecteur && surPC) { radioVoulue = null; lecteur.pause(); lecteur = null; majBouton(); }
       let x; try { x = await pc({ action: 'radio', id: r.id, nom: r.nom }); } catch (e) { return injoignable(); }
       if (!x.ok) return say(`${r.nom} ne passe pas.`);
       radioPC = true; fx.ok(); return say(`${r.nom}, sur l'ordi.`);
@@ -269,14 +279,14 @@ const PC = (() => {
     .replace(/\b(s il te plait|stp|sur (la )?tablette|sur (le )?telephone|sur (le )?pc|sur l ordi(nateur)?|dans le bureau|ici|maintenant|s il vous plait)\b/g, '').replace(/\b(la|une|de la|sur la)? ?(station de )?radio\b/g, '').replace(/\s+/g, ' ').trim();
   async function radio(cle, nom, surPC) {
     if (ici() && !surPC) return radioIci(cle, nom); // ici : la tablette (et sa sono), le téléphone — sauf « sur le PC »
-    if (lecteur && surPC) { lecteur.pause(); lecteur = null; majBouton(); }
+    if (lecteur && surPC) { radioVoulue = null; lecteur.pause(); lecteur = null; majBouton(); }
     let r; try { r = await pc({ action: 'radio', cle }); } catch (e) { return injoignable(); }
     if (!r.ok) return say(`${nom} ne passe pas.`);
     radioPC = true; // la radio de l'ordi : il ne prend pas ses voix pour des ordres
     fx.ok(); return say(`${nom}, sur l'ordi.`);
   }
   async function radioStop(surPC) {
-    if (lecteur && !surPC) { lecteur.pause(); lecteur = null; majBouton(); fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
+    if (lecteur && !surPC) { radioVoulue = null; const l = lecteur; lecteur = null; l.pause(); majBouton(); fx.ok(); return say(`${lecteurNom} : arrêtée.`); }
     radioPC = false;
     let r; try { r = await pc({ action: 'radio_stop' }); } catch (e) { return injoignable(); }
     return say(r.nom ? `${r.nom} : arrêtée.` : "Il n'y avait pas de radio.");
