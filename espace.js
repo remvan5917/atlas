@@ -364,8 +364,8 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
     if (a === 'maj') { try { await B().api({ action: 'tour' }); } catch (e) { return toast("L'ordinateur de la maison ne répond pas"); } toast('Je relis tes mails : les nouveautés arrivent dans quelques minutes'); return; }
     if (a === 'voix') { await BUREAU.valideVoix(); if (ouvert()) { await charger(); dessine(); } return; }
     if (a === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
-    if (a === 'piece') { const w = window.open('', '_blank'); return B().ouvrePdf(`${root()}/maison/bureau/piece?nom=${encodeURIComponent(id)}`, id, w); }
-    if (a === 'grand') { const p = pdfs[id]; if (p) { const w = window.open(p.url, '_blank'); if (!w) { const l = document.createElement('a'); l.href = p.url; l.download = 'document'; document.body.appendChild(l); l.click(); l.remove(); } } return; }
+    if (a === 'piece') { const w = window.open('', '_blank'); return B().ouvreDoc({ nom: id }, w); }
+    if (a === 'grand') { const w = window.open('', '_blank'); return B().ouvreDoc({ id }, w); } // (26/11) sous son vrai nom, plus un code
     const pos = items().findIndex(i => i.id === sel);
     if (a === 'decide' || a === 'decide-libre') {
       const d = decs.find(y => y.id === id); if (!d) return;

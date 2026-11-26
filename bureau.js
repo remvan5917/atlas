@@ -123,18 +123,11 @@ ${espace || `<div class="bx-vide">${l.length ? 'Rien de ce côté-là.' : '✓ T
     }
     if (act === 'actd') { const x = affichee[+id]; return x ? detailActivite(x) : null; }
     if (act === 'actretour') return ecranActivite();
-    if (act === 'piece') { const w = window.open('', '_blank'); return ouvrePdf(`${root()}/maison/bureau/piece?nom=${encodeURIComponent(id)}`, id, w); }
+    if (act === 'piece') { const w = window.open('', '_blank'); return ouvreDoc({ nom: id }, w); }
     if (act === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
-    if (act === 'lire') { // le document de l'atelier : demandé PAR Atlas (l'ordinateur de la maison ne répond qu'à lui), puis ouvert
+    if (act === 'lire') { // le document de l'atelier, sous son vrai nom
       const w = window.open('', '_blank'); const xl = (dernier.a_valider || []).find(y => y.id === id) || {};
-      try {
-        const r = await fetch(`${root()}/maison/bureau/livrable?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
-        if (!r.ok || !/pdf|word/.test(r.headers.get('Content-Type') || '')) throw new Error('livrable');
-        const u = URL.createObjectURL(await r.blob());
-        if (w) w.location.href = u; else { const a = document.createElement('a'); a.href = u; a.download = `${xl.livrable_titre || 'document'}.pdf`; document.body.appendChild(a); a.click(); a.remove(); }
-        setTimeout(() => URL.revokeObjectURL(u), 10 * 60000);
-      } catch (e) { if (w) w.close(); say("Je n'arrive pas à ouvrir ce document : l'ordinateur de la maison ne répond pas."); }
-      return;
+      return ouvreDoc({ id, titre: xl.livrable_titre }, w);
     }
     let corps = { action: act, id };
     const x0 = (dernier.a_valider || []).find(y => y.id === id);
@@ -252,6 +245,14 @@ ${l.slice().reverse().map(e => `<div style="margin:7px 0;padding:8px 11px;border
   // ---------- tout ce que fait Atlas, au même endroit : les mails, l'atelier, la compta et Tiime, l'agenda, ce que tu as fait, la plateforme ----------
   const GENRES_ACT = { mails: ['✉', 'Mails'], atelier: ['📄', 'Atelier'], compta: ['🧾', 'Compta et Tiime'], agenda: ['📅', 'Agenda'], toi: ['✓', 'Fait par toi'], plateforme: ['💻', 'Plateforme'], bureau: ['•', 'Bureau'] };
   let derniereAct = [], affichee = [];
+  async function ouvreDoc(q, w) { // (26/11 : « des vrais titres, pas des codes ») le document s'ouvre à une adresse qui porte son vrai nom : le lecteur et le téléchargement le gardent
+    try {
+      const r = await (await fetch(`${root()}/maison/doc-jeton?${q.id ? `id=${encodeURIComponent(q.id)}` : `nom=${encodeURIComponent(q.nom)}`}`, { cache: 'no-store' })).json();
+      if (!r.ok || !r.url) throw new Error('jeton');
+      const u = root() + r.url;
+      if (w) w.location.href = u; else if (!window.open(u, '_blank')) location.assign(u);
+    } catch (e) { return q.id ? ouvrePdf(`${root()}/maison/bureau/livrable?id=${encodeURIComponent(q.id)}`, q.titre ? `${q.titre}.pdf` : 'document.pdf', w) : ouvrePdf(`${root()}/maison/bureau/piece?nom=${encodeURIComponent(q.nom)}`, q.nom, w); }
+  }
   async function ouvrePdf(url, nom, w) { // un PDF de l'ordinateur de la maison : demandé par Atlas (il ne répond qu'à lui), puis ouvert
     try {
       const r = await fetch(url, { cache: 'no-store' });
@@ -427,6 +428,6 @@ ${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pa
     return null;
   }
   // pour l'espace bureau (espace.js) : les mêmes règles, les mêmes appels
-  const _ = { api, decApi, dossierCabinet, GROUPES, DEC_PROJET, projetDe, TYPE, avecTexte, estPro_, initiales, dateFr, mdLisible, lisible, GENRES_ACT, revueHtml, ouvrePdf, carteDecision };
+  const _ = { api, decApi, dossierCabinet, GROUPES, DEC_PROJET, projetDe, TYPE, avecTexte, estPro_, initiales, dateFr, mdLisible, lisible, GENRES_ACT, revueHtml, ouvrePdf, ouvreDoc, carteDecision };
   return { route, bureau, valideVoix, _ };
 })();
