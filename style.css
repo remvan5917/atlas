@@ -349,3 +349,39 @@ body.eb-ouvert #btn-reglages, body.eb-ouvert #btn-radar { display: none; }
 .eb-mobile-liste { display: none; }
 @media (max-width: 760px) { #espace-bureau.fiche .eb-liste { display: none; } #espace-bureau.fiche .eb-lecture { display: block; } .eb-mobile-liste { display: block; } }
 .eb-suite { margin-top: 6px; } .eb-suite summary { cursor: pointer; color: var(--ambre2); font-size: 13px; } .eb-suite[open] summary { margin-bottom: 6px; }
+/* (26/11) la feuille de route d'un projet : la route jusqu'à l'argent, ce qu'il reste à faire, les chantiers */
+.eb-fr { margin-top: 16px; padding: 16px 18px 8px; border-radius: 16px; background: linear-gradient(180deg, rgba(255, 181, 71, .07), rgba(255, 255, 255, .02)); border: 1px solid rgba(255, 181, 71, .18); }
+.eb-fr-t { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.eb-fr-t b { font-size: 16px; } .eb-fr-t small { color: rgba(244, 236, 224, .55); font-size: 12.5px; }
+.eb-route { list-style: none; margin: 0; padding: 0; }
+.eb-pas { position: relative; display: flex; gap: 12px; padding: 0 0 14px; }
+.eb-pas::before { content: ''; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: rgba(255, 255, 255, .1); }
+.eb-route > .eb-pas:last-child::before, .eb-suite-route .eb-pas:last-child::before { display: none; }
+.eb-pas > i { flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12.5px; font-weight: 700; background: rgba(255, 255, 255, .06); color: rgba(244, 236, 224, .7); border: 1px solid rgba(255, 255, 255, .14); }
+.eb-pas > div { min-width: 0; } .eb-pas b { display: block; font-size: 14.5px; line-height: 1.35; } .eb-pas span { display: block; font-size: 12.5px; color: rgba(244, 236, 224, .55); margin-top: 2px; }
+.eb-pas.fait > i { background: rgba(74, 222, 128, .18); color: #bbf7d0; border-color: rgba(74, 222, 128, .4); } .eb-pas.fait b { color: rgba(244, 236, 224, .7); }
+.eb-pas.encours > i { background: var(--ambre); color: #1a1206; border: 0; box-shadow: 0 0 0 5px rgba(255, 181, 71, .18); }
+.eb-pas.encours > div { padding: 10px 14px; margin-top: -4px; border-radius: 12px; background: rgba(255, 181, 71, .1); border: 1px solid rgba(255, 181, 71, .3); flex: 1; }
+.eb-pas.encours em { display: block; font-style: normal; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--ambre); margin-bottom: 3px; }
+.eb-pas.encours b { font-size: 16.5px; } .eb-pas.encours span { color: var(--ambre2); } .eb-pas.encours p { margin: 6px 0 0; font-size: 13px; color: rgba(244, 236, 224, .75); }
+.eb-suite-route { margin: -4px 0 10px 40px; } .eb-suite-route summary { cursor: pointer; font-size: 13px; color: var(--ambre2); padding: 2px 0 10px; } .eb-suite-route .eb-route { margin-left: -40px; }
+.eb-fr-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; }
+.eb-fr-st { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.eb-fr-qui { display: inline-flex; gap: 4px; letter-spacing: 0; text-transform: none; }
+.eb-fr-qui button { font: inherit; font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: transparent; color: rgba(244, 236, 224, .7); cursor: pointer; }
+.eb-fr-qui button.on { background: var(--ambre); color: #1a1206; border-color: var(--ambre); font-weight: 700; }
+.eb-fr-g { margin-top: 10px; } .eb-fr-g h5 { margin: 12px 0 6px; font-size: 13px; color: rgba(244, 236, 224, .8); }
+.eb-tache { display: flex; gap: 12px; padding: 9px 12px; border-radius: 10px; background: rgba(255, 255, 255, .025); border: 1px solid rgba(255, 255, 255, .05); margin-bottom: 5px; }
+.eb-tache.retard { border-color: rgba(248, 113, 113, .35); background: rgba(248, 113, 113, .06); }
+.eb-t-q { flex: 0 0 58px; font-size: 12.5px; font-weight: 700; color: var(--ambre2); font-variant-numeric: tabular-nums; padding-top: 1px; } .eb-tache.retard .eb-t-q { color: #fca5a5; }
+.eb-t-c { min-width: 0; } .eb-t-c b { display: block; font-size: 14px; font-weight: 600; line-height: 1.35; } .eb-t-c span { display: block; font-size: 12.5px; color: rgba(244, 236, 224, .55); margin-top: 2px; } .eb-t-c small { display: block; font-size: 12px; color: rgba(244, 236, 224, .45); margin-top: 3px; }
+.eb-chantier { padding: 11px 14px; border-radius: 12px; background: rgba(255, 255, 255, .025); border: 1px solid rgba(255, 255, 255, .05); margin-bottom: 7px; }
+.eb-ch-1 { display: flex; justify-content: space-between; gap: 10px; align-items: center; } .eb-ch-1 b { font-size: 14.5px; }
+.eb-ch-barre { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .07); margin: 8px 0 6px; overflow: hidden; } .eb-ch-barre i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--ambre), #4ade80); min-width: 3px; }
+.eb-ch-2 { font-size: 12.5px; color: rgba(244, 236, 224, .55); } .eb-ch-2 em { color: #fca5a5; font-style: normal; }
+.eb-chantier p { margin: 6px 0 0; font-size: 13px; color: rgba(244, 236, 224, .75); }
+.eb-fr-file { margin: 4px 0 0; padding-left: 20px; } .eb-fr-file li { margin: 4px 0; font-size: 13.5px; }
+.eb-fr-ris summary { cursor: pointer; list-style: none; } .eb-fr-ris summary h4 { display: inline; } .eb-fr-ris p { font-size: 13.5px; }
+.eb-fr-src { margin-top: 12px; font-size: 12px; color: rgba(244, 236, 224, .4); }
+@media (max-width: 760px) { .eb-t-q { flex-basis: 48px; } .eb-fr { padding: 14px 12px 6px; } }
+.eb-pc-etape b { color: var(--ambre2); } .eb-pc-etape em { color: #fca5a5; font-style: normal; }

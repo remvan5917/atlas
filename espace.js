@@ -5,7 +5,7 @@
 const ESPACE = (() => {
   const B = () => BUREAU._;
   const root = () => VOIXMAISON.root();
-  let el = null, data = { a_valider: [] }, decs = [], plan = null, act = [], dos = null, revueR = null, pil = { projets: [] }, extra = {};
+  let el = null, data = { a_valider: [] }, decs = [], plan = null, act = [], dos = null, revueR = null, pil = { projets: [] }, extra = {}, feuilles = {}, frQui = 'tous'; // feuilles : la feuille de route d'un projet (son outil de pilotage)
   let vue = 'jour', sel = null, cherche = '', actGenre = 'tous', pdfs = {}, majT = 0, charge = false, retouches = {}; // retouches : ses corrections du mail, gardées tant qu'il n'a pas validé
   const ouvert = () => !!el && !el.hidden;
   const filtre = () => S.bureauFiltre || 'tout';
@@ -25,8 +25,9 @@ const ESPACE = (() => {
   async function json(u, corps) { const r = await fetch(`${root()}${u}`, corps ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) } : { cache: 'no-store' }); return r.json(); }
   async function charger(r) {
     charge = true;
-    const [b, d, p, a, o, pg] = await Promise.allSettled([r ? Promise.resolve(r) : B().api(), B().decApi(), json('/maison/plan'), B().api({ action: 'activite' }), B().dossierCabinet(), B().api({ action: 'pilotage' })]);
+    const [b, d, p, a, o, pg, fr] = await Promise.allSettled([r ? Promise.resolve(r) : B().api(), B().decApi(), json('/maison/plan'), B().api({ action: 'activite' }), B().dossierCabinet(), B().api({ action: 'pilotage' }), B().api({ action: 'feuille', projet: 'sopam' })]);
     if (pg.status === 'fulfilled' && pg.value && pg.value.projets) pil = pg.value;
+    if (fr.status === 'fulfilled' && fr.value && fr.value.ok) feuilles.sopam = fr.value;
     if (b.status === 'fulfilled' && b.value) data = b.value;
     decs = d.status === 'fulfilled' ? (d.value.a_prendre || []) : decs;
     plan = p.status === 'fulfilled' ? (p.value.plan || null) : plan;
@@ -145,7 +146,7 @@ ${projets.length ? `<div class="eb-nav-titre">Projets</div><div class="eb-nav-bl
     const gs = Object.keys(G).filter(g => filtre() === 'tout' || (filtre() === 'pro') === G[g].pro).filter(g => blocsDe(g).length || items(`p:${g}`).length || semaine(g).length);
     const carteP = g => {
       const bl = blocsDe(g), n = compte(`p:${g}`), f = semaine(g).length, etat = champ(bl, 'État')[0] || champ(bl, 'Prochaine étape')[0] || '';
-      return `<button type="button" class="eb-pcarte" data-eb="vue" data-id="p:${g}" style="--c:${G[g].c}"><div class="eb-pcarte-t"><span>${G[g].e}</span><b>${esc(G[g].n)}</b>${n ? `<em>${n} pour toi</em>` : '<em class="ok">rien pour toi</em>'}</div>${etat ? `<p>${esc(court(etat))}</p>` : ''}${f ? `<small>Atlas : ${f} chose${f > 1 ? 's' : ''} faite${f > 1 ? 's' : ''} cette semaine</small>` : ''}</button>`;
+      return `<button type="button" class="eb-pcarte" data-eb="vue" data-id="p:${g}" style="--c:${G[g].c}"><div class="eb-pcarte-t"><span>${G[g].e}</span><b>${esc(G[g].n)}</b>${n ? `<em>${n} pour toi</em>` : '<em class="ok">rien pour toi</em>'}</div>${feuilles[g] && feuilles[g].etapes[feuilles[g].en_cours] ? `<p class="eb-pc-etape"><b>Étape ${feuilles[g].en_cours + 1}/${feuilles[g].etapes.length}</b> · ${esc(feuilles[g].etapes[feuilles[g].en_cours].titre)}${feuilles[g].compteurs.retard ? ` · <em>${feuilles[g].compteurs.retard} tâches en retard</em>` : ''}</p>` : etat ? `<p>${esc(court(etat))}</p>` : ''}${f ? `<small>Atlas : ${f} chose${f > 1 ? 's' : ''} faite${f > 1 ? 's' : ''} cette semaine</small>` : ''}</button>`;
     };
     const prio = pil.priorites && !/^\(/.test(pil.priorites) ? `<div class="eb-bloc afaire"><h4>Les priorités de la semaine</h4><p class="pre">${esc(propre(pil.priorites))}</p></div>` : '';
     return `<div class="eb-accueil large"><div class="eb-sur">${esc(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
@@ -155,6 +156,32 @@ ${reste.length && vue !== 'jour' ? `<div class="eb-actions" style="position:stat
 <p class="eb-aide">Touche un projet : tu vois où il en est, ce qu'il attend de toi, ses documents à jour et ce qu'Atlas a fait. Flèches ↑ ↓ pour passer d'une ligne à l'autre, Échap pour fermer.</p></div>`;
   }
   // la fiche d'un projet (rien d'ouvert dans la liste)
+  // (26/11 : « dans SOPAM il n'y a pas du tout de structuration : l'étape où on est, ce qu'il reste à faire ») — la feuille de route, lue dans l'outil de pilotage
+  const moi = q => /r[ée]my|la rue du financement|toute l.?[ée]quipe/i.test(q || '');
+  const jj = d => d ? new Date(`${d}T12:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+  function feuilleHtml(f) {
+    const E = f.etapes || [], k = f.en_cours, cur = E[k], faites = E.slice(0, k), apres = E.slice(k + 1);
+    const pas = (e, c) => `<li class="eb-pas ${c}"><i>${c === 'fait' ? '✓' : esc(e.n.replace('E', ''))}</i><div><b>${esc(e.titre)}</b><span>${esc(e.quand)}</span></div></li>`;
+    const route = `<div class="eb-fr"><div class="eb-fr-t"><b>🧭 La route jusqu'à l'argent</b><small>${E.length - k} étape${E.length - k > 1 ? 's' : ''} sur ${E.length} restent</small></div>
+<ol class="eb-route">${faites.length ? `<li class="eb-pas fait resume"><i>✓</i><div><b>${faites.length} étape${faites.length > 1 ? 's' : ''} faite${faites.length > 1 ? 's' : ''}</b><span>${faites.map(e => esc(e.titre.replace(/\s*:.*$/, ''))).join(' · ')}</span></div></li>` : ''}
+${cur ? `<li class="eb-pas encours"><i>${esc(cur.n.replace('E', ''))}</i><div><em>On en est là</em><b>${esc(cur.titre)}</b><span>Pour le ${esc(cur.quand)}</span>${cur.avant ? `<p>Il faut avant : ${esc(cur.avant)}</p>` : ''}</div></li>` : ''}
+${apres.slice(0, 3).map(e => pas(e, 'avenir')).join('')}${apres.length > 3 ? `<details class="eb-suite-route"><summary>Voir la suite de la route (${apres.length - 3} étapes)</summary><ol class="eb-route">${apres.slice(3).map(e => pas(e, 'avenir')).join('')}</ol></details>` : ''}</ol></div>`;
+    const c = f.compteurs || {};
+    const puce = (n, t, cl) => n ? `<span class="eb-chip ${cl}">${n} ${t}</span>` : '';
+    const compte = `<div class="eb-fr-chips">${puce(c.retard, 'en retard', 'rouge')}${puce(c.semaine, 'cette semaine', 'jaune')}${puce(c.bloquees, 'bloquée' + (c.bloquees > 1 ? 's' : ''), 'rouge')}<span class="eb-chip vert">✓ ${c.faites}/${c.total} tâches faites</span>${puce(c.decisions, 'décision' + (c.decisions > 1 ? 's' : '') + ' à prendre', 'ambre')}</div>`;
+    // ce qu'il reste à faire : en retard, cette semaine, bloqué, ensuite
+    const T = (f.taches || []).filter(t => frQui === 'tous' || moi(t.qui)), auj = isoJ(), d7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+    const grp = [['🔴 En retard', T.filter(t => t.retard)], ['🟡 Cette semaine', T.filter(t => !t.retard && t.statut !== 'Bloqué' && t.pour && t.pour <= d7)], ['⛔ Bloqué', T.filter(t => !t.retard && t.statut === 'Bloqué')], ['Ensuite', T.filter(t => !t.retard && t.statut !== 'Bloqué' && !(t.pour && t.pour <= d7))]];
+    const tache = t => `<div class="eb-tache${t.retard ? ' retard' : ''}"><span class="eb-t-q">${esc(t.pour ? jj(t.pour) : (t.pour_txt || '—').slice(0, 14))}</span><div class="eb-t-c"><b>${esc(t.quoi)}</b><span>${esc(t.qui)}${t.statut === 'En cours' ? ' · en cours' : ''}${t.apres ? ` · attend ${esc(t.apres)}` : ''}</span>${t.note ? `<small>${esc(court(t.note, 160))}</small>` : ''}</div></div>`;
+    const reste = `<div class="eb-sous-t eb-fr-st">📌 Ce qu'il reste à faire <span class="eb-fr-qui"><button type="button" class="${frQui === 'tous' ? 'on' : ''}" data-eb="frqui" data-id="tous">Toute l'équipe · ${(f.taches || []).length}</button><button type="button" class="${frQui === 'moi' ? 'on' : ''}" data-eb="frqui" data-id="moi">Pour moi · ${(f.taches || []).filter(t => moi(t.qui)).length}</button></span></div>
+${grp.filter(([, l]) => l.length).map(([t, l]) => `<div class="eb-fr-g"><h5>${t} · ${l.length}</h5>${l.slice(0, 6).map(tache).join('')}${l.length > 6 ? `<details class="eb-suite"><summary>Voir les ${l.length - 6} autres</summary>${l.slice(6).map(tache).join('')}</details>` : ''}</div>`).join('') || `<div class="eb-bloc"><p>✓ Rien ne reste à faire${frQui === 'moi' ? ' pour toi' : ''}.</p></div>`}`;
+    const ETAT = { 'En bonne voie': 'vert', 'À surveiller': 'jaune', 'Bloqué': 'rouge' };
+    const chantiers = (f.chantiers || []).length ? `<div class="eb-sous-t">🏗️ Les chantiers</div>${f.chantiers.map(h => `<div class="eb-chantier"><div class="eb-ch-1"><b>${esc(h.nom)}</b><span class="eb-chip ${ETAT[h.etat] || ''}">${esc(h.etat || '—')}</span></div><div class="eb-ch-barre"><i style="width:${h.pct}%"></i></div><div class="eb-ch-2"><span>${esc(h.resp)} · ${h.faites}/${h.total} faites${h.retard ? ` · <em>${h.retard} en retard</em>` : ''}</span></div>${h.prochaine ? `<p>➜ ${esc(court(h.prochaine, 170))}</p>` : ''}</div>`).join('')}` : '';
+    const chemin = (f.file || []).length ? `<div class="eb-bloc afaire"><h4>Ce qui décide de la date de l'argent</h4><ol class="eb-fr-file">${f.file.map(x => `<li>${esc(x.replace(/^\d+\.\s*/, ''))}</li>`).join('')}</ol></div>` : '';
+    const dec = (f.decisions || []).length ? `<div class="eb-bloc"><h4>Décisions de l'équipe sans réponse</h4>${f.decisions.map(d => `<p><b>${esc(d.question)}</b><br><small>${esc(d.qui)}${d.pour ? ` · pour le ${esc(d.pour)}` : ''}${d.recommande ? ` · recommandé : ${esc(court(d.recommande, 120))}` : ''}</small></p>`).join('')}</div>` : '';
+    const ris = (f.risques || []).length ? `<details class="eb-bloc alerte eb-fr-ris"><summary><h4>⚠️ ${f.risques.length} risques très graves suivis</h4></summary>${f.risques.map(x => `<p><b>${esc(x.risque)}</b><br><small>${esc(x.action)} · ${esc(x.qui)}</small></p>`).join('')}</details>` : '';
+    return `${route}${compte}${chemin}${reste}${chantiers}${dec}${ris}<div class="eb-fr-src">D'après l'outil de pilotage, mis à jour le ${esc(new Date(f.maj * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }))}.</div><div class="eb-sous-t">Le point d'Atlas</div>`;
+  }
   function tableauProjet(g) {
     const G = B().GROUPES[g], bl = blocsDe(g), l = items(`p:${g}`); extra = {};
     const lignesBloc = (titre, vals, cls = '') => vals.length ? `<div class="eb-bloc ${cls}"><h4>${titre}</h4>${vals.map(v => { const t = propre(v); return t.length > 260 ? `<p>${esc(court(t, 260))}</p><details class="eb-suite"><summary>Lire la suite</summary><p>${esc(t)}</p></details>` : `<p>${esc(t)}</p>`; }).join('')}</div>` : ''; // (long : deux phrases, la suite à déplier)
@@ -164,6 +191,7 @@ ${reste.length && vue !== 'jour' ? `<div class="eb-actions" style="position:stat
     const fait = semaine(g).slice(0, 12).map((e, k) => { const id = `f${e.at}${k}`; extra[id] = { k: 'act', id, x: e }; return { id, e }; });
     const docs = l.filter(i => i.sec === 'doc').slice(0, 8);
     return `<div class="eb-lec"><div class="eb-sur">Le projet</div><h2 class="eb-lec-titre" style="margin-top:6px">${G.e} ${esc(G.n)}</h2>
+${feuilles[g] ? feuilleHtml(feuilles[g]) : ''}
 ${bl.length > 1 ? bl.map(b => `<div class="eb-sous-t">${esc(b.titre)}</div>${lignesBloc('Où on en est', champ([b], 'État'))}${lignesBloc('Prochaine étape', champ([b], 'Prochaine étape'), 'afaire')}`).join('') : lignesBloc('Où on en est', champ(bl, 'État')) + lignesBloc('Prochaine étape', champ(bl, 'Prochaine étape'), 'afaire')}
 ${lignesBloc('Ce qui bloque', champ(bl, 'Blocages'), 'alerte')}${lignesBloc('Ce qui attend de toi', champ(bl, 'Attend de Rémy'), 'toi')}${lignesBloc('Ce qu’on attend des autres', bl.map(b_ => Object.entries(b_.champs || {}).filter(([c]) => /^attend de/.test(N(c)) && !/^attend de remy/.test(N(c))).map(([, v]) => v)).flat())}
 ${nb('dec') + nb('carte') + nb('doc') ? `<div class="eb-sous-t">Pour toi maintenant</div><div class="eb-tuiles">${tuile(nb('dec'), 'décisions', 'dec', '#fcd34d')}${tuile(nb('carte'), 'à valider', 'carte', '#60a5fa')}${tuile(l.filter(i => i.sec === 'doc' && i.k === 'carte').length, 'documents à relire', 'doc', '#ffb547')}</div>` : `<div class="eb-bloc"><p>✓ Rien n'attend ta main sur ce projet.</p></div>`}
@@ -361,6 +389,7 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
     if (a === 'retour') { sel = null; el.classList.remove('lit'); return dessine(); }
     if (a === 'filtre') { S.bureauFiltre = id; save(); sel = null; return dessine(); }
     if (a === 'genre') { actGenre = id; sel = null; return dessine(); }
+    if (a === 'frqui') { frQui = id; const z = el.querySelector('.eb-lecture'), y = z ? z.scrollTop : 0; dessine(); const z2 = el.querySelector('.eb-lecture'); if (z2) z2.scrollTop = y; return; }
     if (a === 'maj') { try { await B().api({ action: 'tour' }); } catch (e) { return toast("L'ordinateur de la maison ne répond pas"); } toast('Je relis tes mails : les nouveautés arrivent dans quelques minutes'); return; }
     if (a === 'voix') { await BUREAU.valideVoix(); if (ouvert()) { await charger(); dessine(); } return; }
     if (a === 'dossier') return typeof COMPTA !== 'undefined' && COMPTA.dossier ? COMPTA.dossier() : null;
