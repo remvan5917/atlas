@@ -42,7 +42,7 @@ const ESPACE = (() => {
   const PIL_G = { 1: 'lrf', 2: 'sopam', 3: 'lrf', 4: 'outils', 5: 'admin', 6: 'trading', 7: 'famille', 8: 'outils' }; // les blocs de maison/pilotage-general.md → les projets du bureau
   const blocsDe = g => (pil.projets || []).filter(b => PIL_G[b.n] === g);
   const propre = t => String(t || '').replace(/\s*\((?:[^()]*\b[0-9a-f]{8}\b[^()]*)\)/g, '').replace(/\b[0-9a-f]{8}\b,?\s*/g, '').replace(/\s{2,}/g, ' ').trim(); // sans les numéros internes des décisions
-  const actProjet = e => e.genre === 'plateforme' ? 'lrf' : B().projetDe({ resume: e.t, entite: e.pro ? 'lrf' : 'perso' });
+  const actProjet = e => e.genre === 'plateforme' ? 'lrf' : B().projetDe(e.de ? { de: e.de, sujet: e.sujet, resume: e.t, entite: e.entite } : { resume: e.t, entite: e.pro ? 'lrf' : 'perso' });
   const titreDoc = it => it.k === 'carte' ? (it.x.livrable_titre || it.x.resume || '') : ((String(it.x.t).match(/«\s*(.+?)\s*»/) || [])[1] || B().lisible(it.x.t, '').texte);
   const cleDoc = t => N(t).replace(/\bv ?\d+\b/g, '').replace(/\s+/g, ' ').trim();
   const projDoc = it => it.k === 'carte' ? B().projetDe(it.x) : actProjet(it.x);
@@ -61,7 +61,7 @@ const ESPACE = (() => {
     const C = cartes(), D = lesDecs();
     const asC = a => a.map(x => ({ k: 'carte', id: x.id, x, sec: presse(x) ? 'retard' : 'carte' })), asD = a => a.map(x => ({ k: 'dec', id: `d${x.id}`, x, sec: 'dec' }));
     let l = [];
-    if (v === 'jour') l = planDuJour() ? (planDuJour().actions || []).map(a => ({ k: 'plan', id: `p${a.id}`, x: a })) : [];
+    if (v === 'jour') l = [...(planDuJour() ? (planDuJour().actions || []).map(a => ({ k: 'plan', id: `p${a.id}`, x: a })) : []), ...documents().slice(0, 5)]; // (26/11 : un document validé restait introuvable — les 5 derniers restent sous le plan)
     else if (v === 'traiter') { const o = ordre(C); l = [...asC(o.filter(presse)), ...asD(D), ...asC(o.filter(x => !presse(x)))]; }
     else if (v === 'decisions') l = asD(D);
     else if (v === 'documents') l = documents();
@@ -73,7 +73,7 @@ const ESPACE = (() => {
   function compte(v) {
     if (v === 'jour') { const p = planDuJour(); return p ? (p.actions || []).filter(a => a.etat === 'a_faire').length : 0; }
     if (v === 'journal') return act.filter(e => new Date(e.at * 1000).toDateString() === new Date().toDateString()).length;
-    if (v === 'documents') return documents().filter(it => it.k === 'carte').length;
+    if (v === 'documents') return documents().length;
     if (v.startsWith('p:')) return items(v).filter(it => it.sec !== 'doc' || it.k === 'carte').length;
     const l = items(v); return l.length;
   }
@@ -94,8 +94,8 @@ ${projets.length ? `<div class="eb-nav-titre">Projets</div><div class="eb-nav-bl
     if (it.k === 'carte') {
       const x = it.x, g = B().GROUPES[B().projetDe(x)], urg = presse(x);
       return `<div class="eb-row${on}${urg ? ' urg' : ''}" data-eb="sel" data-id="${esc(it.id)}" style="--c:${g.c}"><div class="eb-av" style="--c:${g.c}">${esc(B().initiales(x.de))}</div><div class="eb-row-c">
-<div class="eb-row-1"><b>${esc(String(x.de || '').replace(/\s*<.*$/, ''))}</b><span>${esc(quand(x.cree_at))}</span></div>
-<div class="eb-row-2">${esc(x.resume || x.sujet || '')}</div>
+<div class="eb-row-1"><b>${esc(it.doc && x.livrable_titre ? x.livrable_titre : String(x.de || '').replace(/\s*<.*$/, ''))}</b><span>${esc(quand(x.cree_at))}</span></div>
+<div class="eb-row-2">${esc(it.doc && x.livrable_titre ? `À relire · ${x.resume || ''}` : x.resume || x.sujet || '')}</div>
 <div class="eb-row-3"><span class="eb-chip">${esc(B().TYPE[x.type] || x.type || '')}</span>${x.urgence === 'haute' ? '<span class="eb-chip rouge">urgent</span>' : ''}${x.echeance ? `<span class="eb-chip ${x.echeance < isoJ() ? 'rouge' : 'jaune'}">${x.echeance < isoJ() ? 'en retard · ' : ''}avant le ${esc(B().dateFr(x.echeance))}</span>` : ''}${x.livrable ? '<span class="eb-chip ambre">📄 document</span>' : ''}${B().avecTexte(x) ? '<span class="eb-chip bleu">✉ réponse prête</span>' : ''}</div></div></div>`;
     }
     if (it.k === 'dec') {
@@ -105,6 +105,10 @@ ${projets.length ? `<div class="eb-nav-titre">Projets</div><div class="eb-nav-bl
     if (it.k === 'plan') {
       const a = it.x, EM = { envoyer: '✉️', valider: '✅', decider: '🗳️', toi: '👤', lire: '📄' }, fini = a.etat !== 'a_faire';
       return `<div class="eb-row${on}${fini ? ' fini' : ''}" data-eb="sel" data-id="${esc(it.id)}" style="--c:#fcd34d"><div class="eb-av eb-av-ic">${EM[a.type] || '•'}</div><div class="eb-row-c"><div class="eb-row-1"><b>${esc(a.titre || '')}</b><span>${fini ? ({ fait: '✓ fait', plus_tard: '→ demain', non: '✕ non' })[a.etat] || '' : a.minutes ? `${a.minutes} min` : ''}</span></div>${a.pourquoi ? `<div class="eb-row-2">${esc(a.pourquoi)}</div>` : ''}</div></div>`;
+    }
+    if (it.doc && it.k === 'act') {
+      const g = B().GROUPES[projDoc(it)] || { c: '#fcd34d', n: '' };
+      return `<div class="eb-row${on}" data-eb="sel" data-id="${esc(it.id)}" style="--c:${g.c}"><div class="eb-av eb-av-ic" style="--c:${g.c}">📄</div><div class="eb-row-c"><div class="eb-row-1"><b>${esc(titreDoc(it))}</b><span>${esc(quand(it.at))}</span></div><div class="eb-row-3">${g.n ? `<span class="eb-chip" style="background:${g.c}22;color:${g.c}">${esc(g.n)}</span>` : ''}<span class="eb-chip vert">✓ relu</span></div></div></div>`;
     }
     const e = it.x, [ic, nomG] = B().GENRES_ACT[e.genre] || ['•', ''], { texte } = B().lisible(e.t, nomG);
     const COUL = { mails: '#a5b4fc', atelier: '#fcd34d', compta: '#fdba74', agenda: '#67e8f9', toi: '#86efac', plateforme: '#c4b5fd', bureau: '#94a3b8' };
@@ -121,10 +125,10 @@ ${projets.length ? `<div class="eb-nav-titre">Projets</div><div class="eb-nav-bl
   function liste() {
     const l = items(), [ic, t] = titreVue();
     let corps = '', jour = '', sec = '';
-    const SEC = { retard: '⏰ En retard ou urgent', dec: '🗳️ Décisions à prendre', carte: '📥 À valider', doc: '📄 Documents à jour' };
-    const avecSec = vue === 'traiter' || vue.startsWith('p:');
+    const SEC = { retard: '⏰ En retard ou urgent', dec: '🗳️ Décisions à prendre', carte: '📥 À valider', doc: vue === 'jour' ? '📄 Tes derniers documents' : '📄 Documents à jour' };
+    const avecSec = vue === 'traiter' || vue === 'jour' || vue.startsWith('p:');
     l.forEach(it => {
-      if (avecSec && it.sec && it.sec !== sec) { sec = it.sec; corps += `<div class="eb-jour${sec === 'retard' ? ' rouge' : ''}">${SEC[sec]} · ${l.filter(y => y.sec === sec).length}</div>`; }
+      if (avecSec && it.sec && it.sec !== sec) { sec = it.sec; corps += `<div class="eb-jour${sec === 'retard' ? ' rouge' : ''}">${SEC[sec]}${vue === 'jour' ? '' : ` · ${l.filter(y => y.sec === sec).length}`}</div>`; }
       if (it.k === 'act' && vue === 'journal') { const d = new Date(it.x.at * 1000), j = d.toDateString() === new Date().toDateString() ? "Aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); if (j !== jour) { corps += `<div class="eb-jour">${esc(j)}</div>`; jour = j; } }
       corps += ligne(it);
     });
@@ -306,7 +310,19 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
   }
 
   // ---------- ouvrir, fermer ----------
-  async function ouvre(v, r) {
+  function trouveDoc(q) { // le document dont le titre colle le mieux à ce qu'il a dit (« aujourd'hui » = le document du jour ou d'une réunion d'aujourd'hui)
+    const auj = new Date(), jourTxt = N(`${auj.getDate()} ${auj.toLocaleDateString('fr-FR', { month: 'long' })}`);
+    const mots = N(q).split(' ').filter(m => m.length >= 4 && !/^(document|documents|aujourd|celui|celle|dernier|derniere|ouvre|montre)$/.test(m));
+    let best = null, top = 0;
+    documents().forEach((it, k) => {
+      const t = N(titreDoc(it) + ' ' + (it.x.resume || '')); let s = mots.filter(m => t.includes(m)).length * 10 - k * 0.1;
+      if (/aujourd|ce matin|cet apres/.test(N(q)) && t.includes(jourTxt)) s += 15;
+      if (!mots.length) s += 1;
+      if (s > top) { top = s; best = it; }
+    });
+    return best;
+  }
+  async function ouvre(v, r, q) {
     if (!el) { el = document.createElement('div'); el.id = 'espace-bureau'; document.body.appendChild(el); el.addEventListener('click', clic); el.addEventListener('input', saisie); }
     if (v) { vue = v; sel = null; } else if (!ouvert()) { vue = S.espaceVue || 'jour'; sel = null; }
     if (vue === 'urgent') vue = 'traiter'; // (l'ancienne vue « urgent » : c'est maintenant la première partie de « Tout ce qui t'attend »)
@@ -315,6 +331,7 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
     if (typeof hideBoard === 'function' && !$('#board').hidden) hideBoard();
     if (!el.innerHTML) el.innerHTML = '<div class="eb-vide" style="padding-top:40vh">J\'ouvre ton bureau…</div>';
     await charger(r);
+    if (q) { const d = trouveDoc(q); if (d) sel = d.id; }
     if (!sel && window.innerWidth >= 900 && ['traiter', 'decisions', 'documents'].includes(vue)) { const l = items(); if (l.length) sel = l[0].id; }
     dessine();
     clearInterval(majT); majT = setInterval(rafraichit, 90000);
@@ -396,5 +413,5 @@ ${d.contexte ? `<div class="eb-bloc"><h4>Le contexte</h4><p class="pre">${esc(d.
     let i = l.findIndex(x => x.id === sel); i = /ArrowDown|j/.test(ev.key) ? Math.min(l.length - 1, i + 1) : Math.max(0, i - 1);
     ev.preventDefault(); sel = l[i].id; dessine();
   });
-  return { ouvre, ferme, ouvert };
+  return { ouvre, ferme, ouvert, trouveDoc: q => { const d = trouveDoc(q); return d ? titreDoc(d) : ''; } };
 })();

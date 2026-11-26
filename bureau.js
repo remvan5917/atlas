@@ -407,6 +407,8 @@ ${sec('Ton trading · tes chiffres', '#fcd34d', 'statistiques de ton journal, pa
     if (typeof ESPACE !== 'undefined' && ESPACE.ouvert() && /^(atlas )?(ferme|quitte|sors du|cache|range) (le |mon |l )?(bureau|espace bureau|espace de travail)\b/.test(n)) return () => { ESPACE.ferme(); return say("Je range le bureau."); };
     if (/\b(mes decisions|decisions a prendre|qu est ce que je dois decider|les decisions)\b/.test(n)) return () => { S.bureauFiltre = 'tout'; save(); return bureau('decisions'); };
     if (/\b(mes documents|les documents (a relire|de l atelier)|documents a relire)\b/.test(n)) return () => bureau('documents');
+    const qd = n.match(/\b(?:ouvre|montre|affiche|retrouve|trouve|ou est|redonne|ressors)(?: moi)? (?:le|mon|ce) (?:document|support|rapport|compte rendu) (.{3,80})$/);  // (26/11 : « je ne retrouve plus le document de la réunion »)
+    if (qd && !/march|trading|salle|appel/.test(qd[1]) && typeof ESPACE !== 'undefined') return async () => { let r; try { r = await api(); } catch (e) { return say("L'ordinateur de la maison ne répond pas."); } await ESPACE.ouvre('documents', r, qd[1]); const t = ESPACE.trouveDoc(qd[1]); return say(t ? `Le voici : ${t}.` : "Je ne le trouve pas : voici tous tes documents."); };
     const fb = n.match(/\bbureau (pro|perso|professionnel|personnel)\b|\b(?:le |mon )?(pro|perso) (?:du|de mon) bureau\b/);
     if (fb) return () => { S.bureauFiltre = /^pro/.test(fb[1] || fb[2]) ? 'pro' : 'perso'; save(); return bureau(); };
     if (derniersFaits && Date.now() - derniersFaits.at < 120000 && /^(atlas )?(annule|non (c est|pas) (pas )?(celle|celui) la|tu t es trompe|pas celle la|pas celui la)\b/.test(n)) return annuleFait;
